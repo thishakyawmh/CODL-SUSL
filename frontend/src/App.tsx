@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Outlet, Navigate, useLocation } from 'react-router-dom';
+
+// --- Student Portal Imports ---
 import { Sidebar } from './components/student-portal/Sidebar';
 // [M3] import { Dashboard } from './components/student-portal/Dashboard';
 // [M3] import { CourseDetailsWrapper } from './components/student-portal/CourseDetailsWrapper';
@@ -17,22 +19,20 @@ import { Profile } from './components/student-portal/Profile';
 import { Settings } from './components/student-portal/Settings';
 // [M3] import { SupportBubble } from './components/student-portal/SupportBubble';
 // [M4] import { GradingScale } from './components/student-portal/GradingScale';
-
 import { ApplicantDashboard } from './components/student-portal/ApplicantDashboard';
 import { ApplicantTrackStatus } from './components/student-portal/ApplicantTrackStatus';
 import { NewCourseApplication } from './components/student-portal/NewCourseApplication';
+// [M4] import ExaminationResults from './components/student-portal/ExaminationResults';
 
-// Admin Components
+// --- Admin Portal Imports ---
 import { AdminSidebar } from './components/admin-portal/AdminSidebar';
 import { AdminDashboard } from './components/admin-portal/AdminDashboard';
 import { AdminLogin } from './components/auth/AdminLogin';
-
 import { UserManagement } from './components/admin-portal/UserManagement';
 import { CourseManagement } from './components/admin-portal/CourseManagement';
 import { CreateCourse } from './components/admin-portal/CreateCourse';
 import { ManageCourse } from './components/admin-portal/ManageCourse';
 import { Applications } from './components/admin-portal/Applications';
-
 // [M3] import { LetterRequests } from './components/admin-portal/LetterRequests';
 import { AdminSettings } from './components/admin-portal/AdminSettings';
 // [M4] import { CreateExam } from './components/admin-portal/CreateExam';
@@ -41,26 +41,27 @@ import { AdminSettings } from './components/admin-portal/AdminSettings';
 // [M5] import { TrackStudent } from './components/admin-portal/TrackStudent';
 // [M3] import { AdminAnnouncements } from './components/admin-portal/AdminAnnouncements';
 // [M5] import { ActivityLogs } from './components/admin-portal/ActivityLogs';
+
+// --- Common/Services Imports ---
 import { systemSettingService } from './services/apiService';
 import { MaintenancePage } from './components/common/MaintenancePage';
-
 import './App.css';
-// [M4] import ExaminationResults from './components/student-portal/ExaminationResults';
 
+// --- Helper Components ---
 const LayoutWithSidebar = () => {
   const location = useLocation();
   const isDashboard = location.pathname === '/' || location.pathname === '/dashboard';
-  
+
   const token = sessionStorage.getItem('token');
   const userStr = sessionStorage.getItem('user');
-  
+
   if (!token || !userStr) {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
   const user = JSON.parse(userStr);
   if (user.role !== 'student' && user.role !== 'pro_student') {
-     return <Navigate to="/applicant-dashboard" replace />;
+    return <Navigate to="/applicant-dashboard" replace />;
   }
 
   return (
@@ -107,8 +108,9 @@ const TitleUpdater = () => {
   return null;
 };
 
+// --- Main App Component ---
 function App() {
-  const [settings, setSettings] = useState<any>(() => {
+  const [settings, setSettings] = useState(() => {
     const cached = localStorage.getItem('systemSettings');
     return cached ? JSON.parse(cached) : null;
   });
@@ -150,15 +152,14 @@ function App() {
 
         {/* Applicant Dashboard Routes */}
         <Route path="/applicant-dashboard" element={<ApplicantDashboard />}>
-            <Route path="track-status" element={<div className="applicant-app-container"><ApplicantTrackStatus /></div>} />
-            <Route path="new-course" element={<NewCourseApplication />} />
+          <Route path="track-status" element={<div className="applicant-app-container"><ApplicantTrackStatus /></div>} />
+          <Route path="new-course" element={<NewCourseApplication />} />
         </Route>
 
         {/* Super Admin Dashboard Routes */}
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="dashboard" element={<AdminDashboard />} />
-
           <Route path="users" element={<UserManagement />} />
           {/* [M5] <Route path="track-student" element={<TrackStudent />} /> */}
           <Route path="courses" element={<CourseManagement />} />
@@ -174,8 +175,6 @@ function App() {
           {/* [M3] <Route path="letters" element={<LetterRequests />} /> */}
           {/* [M3] <Route path="announcements" element={<AdminAnnouncements />} /> */}
           {/* [M5] <Route path="activity-logs" element={<ActivityLogs />} /> */}
-
-
           {/* [M5] <Route path="ai-analytics" element={<AIAnalytics />} /> */}
           <Route path="settings" element={<AdminSettings />} />
         </Route>
