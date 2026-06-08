@@ -1,134 +1,210 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
-
+import { useEffect, useState } from 'react';
+import { BrowserRouter, Routes, Route, Outlet, Navigate, useLocation } from 'react-router-dom';
+import { Sidebar } from './components/student-portal/Sidebar';
+// [M3] import { Dashboard } from './components/student-portal/Dashboard';
+// [M3] import { CourseDetailsWrapper } from './components/student-portal/CourseDetailsWrapper';
+// [M3] import { CourseDetails } from './components/student-portal/CourseDetails';
+// [M3] import { CourseExaminations } from './components/student-portal/CourseExaminations';
+// [M3] import { CourseResults } from './components/student-portal/CourseResults';
+// [M3] import { CourseMaterials } from './components/student-portal/CourseMaterials';
+// [M4] import { ResultSheet } from './components/student-portal/ResultSheet';
+// [M4] import { ExamApplicationForm } from './components/student-portal/ExamApplicationForm';
+// [M4] import { ExamApplicationSuccess } from './components/student-portal/ExamApplicationSuccess';
+// [M3] import { CourseAnnouncements } from './components/student-portal/CourseAnnouncements';
+import { LoginPortal } from './components/auth/LoginPortal';
+import { Profile } from './components/student-portal/Profile';
+// [M3] import { LetterRequest } from './components/student-portal/LetterRequest';
+import { Settings } from './components/student-portal/Settings';
+// [M3] import { SupportBubble } from './components/student-portal/SupportBubble';
+// [M4] import { GradingScale } from './components/student-portal/GradingScale';
 
 import { ApplicantDashboard } from './components/student-portal/ApplicantDashboard';
 import { ApplicantTrackStatus } from './components/student-portal/ApplicantTrackStatus';
 import { NewCourseApplication } from './components/student-portal/NewCourseApplication';
 
-//admin components 
+// Admin Components
+import { AdminSidebar } from './components/admin-portal/AdminSidebar';
+import { AdminDashboard } from './components/admin-portal/AdminDashboard';
+import { AdminLogin } from './components/auth/AdminLogin';
+
+import { UserManagement } from './components/admin-portal/UserManagement';
 import { CourseManagement } from './components/admin-portal/CourseManagement';
 import { CreateCourse } from './components/admin-portal/CreateCourse';
 import { ManageCourse } from './components/admin-portal/ManageCourse';
 import { Applications } from './components/admin-portal/Applications';
 
+// [M3] import { LetterRequests } from './components/admin-portal/LetterRequests';
+import { AdminSettings } from './components/admin-portal/AdminSettings';
+// [M4] import { CreateExam } from './components/admin-portal/CreateExam';
+// [M4] import { ManageExamStudents } from './components/admin-portal/ManageExamStudents';
+// [M5] import { AIAnalytics } from './components/admin-portal/AIAnalytics';
+// [M5] import { TrackStudent } from './components/admin-portal/TrackStudent';
+// [M3] import { AdminAnnouncements } from './components/admin-portal/AdminAnnouncements';
+// [M5] import { ActivityLogs } from './components/admin-portal/ActivityLogs';
+import { systemSettingService } from './services/apiService';
+import { MaintenancePage } from './components/common/MaintenancePage';
 
-function App() {
-  const [count, setCount] = useState(0)
+import './App.css';
+// [M4] import ExaminationResults from './components/student-portal/ExaminationResults';
+
+const LayoutWithSidebar = () => {
+  const location = useLocation();
+  const isDashboard = location.pathname === '/' || location.pathname === '/dashboard';
+  
+  const token = sessionStorage.getItem('token');
+  const userStr = sessionStorage.getItem('user');
+  
+  if (!token || !userStr) {
+    return <Navigate to="/login" replace state={{ from: location }} />;
+  }
+
+  const user = JSON.parse(userStr);
+  if (user.role !== 'student' && user.role !== 'pro_student') {
+     return <Navigate to="/applicant-dashboard" replace />;
+  }
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <div className="app-container">
+      <Sidebar />
+      <div className="main-content">
+        <Outlet context={{}} />
+      </div>
+      {/* [M3] {isDashboard && <SupportBubble />} */}
+    </div>
+  );
+};
 
-      <div className="ticks"></div>
+const AdminLayout = () => {
+  const location = useLocation();
+  const token = sessionStorage.getItem('token');
+  const adminRole = sessionStorage.getItem('adminRole');
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+  if (!token || !adminRole) {
+    return <Navigate to="/staff/login" replace state={{ from: location }} />;
+  }
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+  return (
+    <div className="admin-app-container">
+      <AdminSidebar />
+      <div className="admin-main-content">
+        <Outlet />
+      </div>
+    </div>
+  );
+};
+
+const TitleUpdater = () => {
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.pathname.startsWith('/admin') || location.pathname.startsWith('/staff')) {
+      document.title = 'CODL | SUSL - Staff';
+    } else {
+      document.title = 'CODL | SUSL - Student';
+    }
+  }, [location.pathname]);
+
+  return null;
+};
+
+function App() {
+  const [settings, setSettings] = useState<any>(() => {
+    const cached = localStorage.getItem('systemSettings');
+    return cached ? JSON.parse(cached) : null;
+  });
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const data = await systemSettingService.getSettings();
+        localStorage.setItem('systemSettings', JSON.stringify(data));
+        setSettings(data);
+      } catch (err) {
+        console.error("Failed to preload system settings:", err);
+      }
+    };
+    loadSettings();
+  }, []);
+
+  const token = sessionStorage.getItem('token');
+  const userStr = sessionStorage.getItem('user');
+  const user = userStr ? JSON.parse(userStr) : null;
+  const isSuperAdmin = user && user.role === 'super_admin';
+  const isStaffLoginPath = window.location.pathname === '/staff/login';
+
+  if (settings?.maintenance_mode && !isSuperAdmin && !isStaffLoginPath) {
+    return (
+      <BrowserRouter>
+        <MaintenancePage settings={settings} />
+      </BrowserRouter>
+    );
+  }
+
+  return (
+    <BrowserRouter>
+      <TitleUpdater />
+      <Routes>
+        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/login" element={<LoginPortal />} />
+        <Route path="/staff/login" element={<AdminLogin />} />
+
+        {/* Applicant Dashboard Routes */}
+        <Route path="/applicant-dashboard" element={<ApplicantDashboard />}>
+            <Route path="track-status" element={<div className="applicant-app-container"><ApplicantTrackStatus /></div>} />
+            <Route path="new-course" element={<NewCourseApplication />} />
+        </Route>
+
+        {/* Super Admin Dashboard Routes */}
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<Navigate to="/admin/dashboard" replace />} />
+          <Route path="dashboard" element={<AdminDashboard />} />
+
+          <Route path="users" element={<UserManagement />} />
+          {/* [M5] <Route path="track-student" element={<TrackStudent />} /> */}
+          <Route path="courses" element={<CourseManagement />} />
+          <Route path="courses/create" element={<CreateCourse />} />
+          <Route path="courses/edit/:id" element={<CreateCourse />} />
+          <Route path="courses/manage/:id" element={<ManageCourse />} />
+          {/* [M4]
+          <Route path="courses/manage/:id/exams/create" element={<CreateExam />} />
+          <Route path="courses/manage/:id/exams/edit/:examId" element={<CreateExam />} />
+          <Route path="courses/manage/:id/exams/:examId/students" element={<ManageExamStudents />} />
+          */}
+          <Route path="approvals/*" element={<Applications />} />
+          {/* [M3] <Route path="letters" element={<LetterRequests />} /> */}
+          {/* [M3] <Route path="announcements" element={<AdminAnnouncements />} /> */}
+          {/* [M5] <Route path="activity-logs" element={<ActivityLogs />} /> */}
+
+
+          {/* [M5] <Route path="ai-analytics" element={<AIAnalytics />} /> */}
+          <Route path="settings" element={<AdminSettings />} />
+        </Route>
+
+        {/* Registered Student Dashboard Routes */}
+        <Route element={<LayoutWithSidebar />}>
+          {/* [M3] <Route path="/dashboard" element={<Dashboard />} /> */}
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/settings" element={<Settings />} />
+          {/* [M3] <Route path="/letter-request" element={<LetterRequest />} /> */}
+          <Route path="/new-course" element={<NewCourseApplication />} />
+          {/* [M3]
+          <Route path="/course/:id" element={<CourseDetailsWrapper />}>
+            <Route index element={<CourseDetails />} />
+            <Route path="examinations" element={<CourseExaminations />} />
+            <Route path="examinations/:examId/results" element={<ExaminationResults />} />
+            <Route path="results" element={<CourseResults />} />
+            <Route path="results/:resultId" element={<ResultSheet />} />
+            <Route path="grading-scale" element={<GradingScale />} />
+            <Route path="materials" element={<CourseMaterials />} />
+            <Route path="announcements" element={<CourseAnnouncements />} />
+            <Route path="examinations/apply" element={<ExamApplicationForm />} />
+            <Route path="examinations/success" element={<ExamApplicationSuccess />} />
+          </Route>
+          */}
+        </Route>
+      </Routes>
+    </BrowserRouter>
+  );
 }
 
-export default App
+export default App;
