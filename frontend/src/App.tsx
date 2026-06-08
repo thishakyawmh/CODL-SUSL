@@ -5,6 +5,17 @@ import heroImg from './assets/hero.png'
 import './App.css'
 
 
+import { ApplicantDashboard } from './components/student-portal/ApplicantDashboard';
+import { ApplicantTrackStatus } from './components/student-portal/ApplicantTrackStatus';
+import { NewCourseApplication } from './components/student-portal/NewCourseApplication';
+
+//admin components 
+import { CourseManagement } from './components/admin-portal/CourseManagement';
+import { CreateCourse } from './components/admin-portal/CreateCourse';
+import { ManageCourse } from './components/admin-portal/ManageCourse';
+import { Applications } from './components/admin-portal/Applications';
+
+
 function App() {
   const [count, setCount] = useState(0)
 
