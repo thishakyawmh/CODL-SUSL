@@ -59,9 +59,21 @@ return [
             'prefix_indexes' => true,
             'strict' => true,
             'engine' => null,
-            'options' => extension_loaded('pdo_mysql') ? array_filter([
-                (PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
-            ]) : [],
+            'options' => extension_loaded('pdo_mysql') ? (
+                [
+                    // Persistent connections: reuse TCP+SSL connections across requests
+                    // Saves ~200-500ms per request on remote Azure DB
+                    PDO::ATTR_PERSISTENT => true,
+                    // Emulate prepares: reduces roundtrips (1 instead of 2 per query)
+                    PDO::ATTR_EMULATE_PREPARES => true,
+                ] + (
+                    // SSL settings for Azure MySQL
+                    (env('MYSQL_ATTR_SSL_CA') || file_exists(base_path('DigiCertGlobalRootG2.crt.pem'))) ? [
+                        PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA') ?: base_path('DigiCertGlobalRootG2.crt.pem'),
+                        PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => env('DB_SSL_VERIFY', true),
+                    ] : []
+                )
+            ) : [],
         ],
 
         'mariadb' => [
