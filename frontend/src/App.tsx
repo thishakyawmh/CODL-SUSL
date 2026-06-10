@@ -8,7 +8,7 @@ import { CourseDetailsWrapper } from './components/student-portal/CourseDetailsW
 import { CourseDetails } from './components/student-portal/CourseDetails';
 // [M3] import { CourseExaminations } from './components/student-portal/CourseExaminations';
 // [M3] import { CourseResults } from './components/student-portal/CourseResults';
-// [M3] import { CourseMaterials } from './components/student-portal/CourseMaterials';
+import { CourseMaterials } from './components/student-portal/CourseMaterials';
 // [M4] import { ResultSheet } from './components/student-portal/ResultSheet';
 // [M4] import { ExamApplicationForm } from './components/student-portal/ExamApplicationForm';
 // [M4] import { ExamApplicationSuccess } from './components/student-portal/ExamApplicationSuccess';
