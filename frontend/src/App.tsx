@@ -69,7 +69,7 @@ const LayoutWithSidebar = () => {
       <div className="main-content">
         <Outlet context={{}} />
       </div>
-      {/* [M3] {isDashboard && <SupportBubble />} */}
+      {isDashboard && <SupportBubble />}
     </div>
   );
 };
@@ -183,9 +183,9 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/settings" element={<Settings />} />
-          {/* [M3] <Route path="/letter-request" element={<LetterRequest />} /> */}
+          <Route path="/letter-request" element={<LetterRequest />} />
           <Route path="/new-course" element={<NewCourseApplication />} />
-          {/* [M3]
+
           <Route path="/course/:id" element={<CourseDetailsWrapper />}>
             <Route index element={<CourseDetails />} />
             <Route path="examinations" element={<CourseExaminations />} />
@@ -198,7 +198,7 @@ function App() {
             <Route path="examinations/apply" element={<ExamApplicationForm />} />
             <Route path="examinations/success" element={<ExamApplicationSuccess />} />
           </Route>
-          */}
+
         </Route>
       </Routes>
     </BrowserRouter>
