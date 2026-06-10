@@ -33,13 +33,12 @@ import { CourseManagement } from './components/admin-portal/CourseManagement';
 import { CreateCourse } from './components/admin-portal/CreateCourse';
 import { ManageCourse } from './components/admin-portal/ManageCourse';
 import { Applications } from './components/admin-portal/Applications';
-// [M3] import { LetterRequests } from './components/admin-portal/LetterRequests';
+import { LetterRequests } from './components/admin-portal/LetterRequests';
 import { AdminSettings } from './components/admin-portal/AdminSettings';
 // [M4] import { CreateExam } from './components/admin-portal/CreateExam';
 // [M4] import { ManageExamStudents } from './components/admin-portal/ManageExamStudents';
 // [M5] import { AIAnalytics } from './components/admin-portal/AIAnalytics';
-// [M5] import { TrackStudent } from './components/admin-portal/TrackStudent';
-// [M3] import { AdminAnnouncements } from './components/admin-portal/AdminAnnouncements';
+import { AdminAnnouncements } from './components/admin-portal/AdminAnnouncements';
 // [M5] import { ActivityLogs } from './components/admin-portal/ActivityLogs';
 
 // --- Common/Services Imports ---
