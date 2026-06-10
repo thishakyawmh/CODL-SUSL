@@ -180,7 +180,7 @@ function App() {
 
         {/* Registered Student Dashboard Routes */}
         <Route element={<LayoutWithSidebar />}>
-          {/* [M3] <Route path="/dashboard" element={<Dashboard />} /> */}
+          <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/settings" element={<Settings />} />
           {/* [M3] <Route path="/letter-request" element={<LetterRequest />} /> */}
