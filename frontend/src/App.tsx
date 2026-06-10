@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Outlet, Navigate, useLocation } from 'rea
 
 // --- Student Portal Imports ---
 import { Sidebar } from './components/student-portal/Sidebar';
-// [M3] import { Dashboard } from './components/student-portal/Dashboard';
+import { Dashboard } from './components/student-portal/Dashboard';
 // [M3] import { CourseDetailsWrapper } from './components/student-portal/CourseDetailsWrapper';
 // [M3] import { CourseDetails } from './components/student-portal/CourseDetails';
 // [M3] import { CourseExaminations } from './components/student-portal/CourseExaminations';
