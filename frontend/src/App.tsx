@@ -6,8 +6,8 @@ import { Sidebar } from './components/student-portal/Sidebar';
 import { Dashboard } from './components/student-portal/Dashboard';
 import { CourseDetailsWrapper } from './components/student-portal/CourseDetailsWrapper';
 import { CourseDetails } from './components/student-portal/CourseDetails';
-// [M3] import { CourseExaminations } from './components/student-portal/CourseExaminations';
-// [M3] import { CourseResults } from './components/student-portal/CourseResults';
+// [M4] import { CourseExaminations } from './components/student-portal/CourseExaminations';
+// [M4] import { CourseResults } from './components/student-portal/CourseResults';
 import { CourseMaterials } from './components/student-portal/CourseMaterials';
 // [M4] import { ResultSheet } from './components/student-portal/ResultSheet';
 // [M4] import { ExamApplicationForm } from './components/student-portal/ExamApplicationForm';
@@ -49,7 +49,8 @@ import './App.css';
 // --- Helper Components ---
 const LayoutWithSidebar = () => {
   const location = useLocation();
-  const isDashboard = location.pathname === '/' || location.pathname === '/dashboard';
+  const isDashboard =
+    location.pathname === '/' || location.pathname === '/dashboard';
 
   const token = sessionStorage.getItem('token');
   const userStr = sessionStorage.getItem('user');
@@ -59,6 +60,7 @@ const LayoutWithSidebar = () => {
   }
 
   const user = JSON.parse(userStr);
+
   if (user.role !== 'student' && user.role !== 'pro_student') {
     return <Navigate to="/applicant-dashboard" replace />;
   }
@@ -97,7 +99,10 @@ const TitleUpdater = () => {
   const location = useLocation();
 
   useEffect(() => {
-    if (location.pathname.startsWith('/admin') || location.pathname.startsWith('/staff')) {
+    if (
+      location.pathname.startsWith('/admin') ||
+      location.pathname.startsWith('/staff')
+    ) {
       document.title = 'CODL | SUSL - Staff';
     } else {
       document.title = 'CODL | SUSL - Student';
@@ -121,19 +126,23 @@ function App() {
         localStorage.setItem('systemSettings', JSON.stringify(data));
         setSettings(data);
       } catch (err) {
-        console.error("Failed to preload system settings:", err);
+        console.error('Failed to preload system settings:', err);
       }
     };
+
     loadSettings();
   }, []);
 
-  const token = sessionStorage.getItem('token');
   const userStr = sessionStorage.getItem('user');
   const user = userStr ? JSON.parse(userStr) : null;
   const isSuperAdmin = user && user.role === 'super_admin';
   const isStaffLoginPath = window.location.pathname === '/staff/login';
 
-  if (settings?.maintenance_mode && !isSuperAdmin && !isStaffLoginPath) {
+  if (
+    settings?.maintenance_mode &&
+    !isSuperAdmin &&
+    !isStaffLoginPath
+  ) {
     return (
       <BrowserRouter>
         <MaintenancePage settings={settings} />
@@ -144,61 +153,199 @@ function App() {
   return (
     <BrowserRouter>
       <TitleUpdater />
+
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
+
         <Route path="/login" element={<LoginPortal />} />
         <Route path="/staff/login" element={<AdminLogin />} />
 
         {/* Applicant Dashboard Routes */}
-        <Route path="/applicant-dashboard" element={<ApplicantDashboard />}>
-          <Route path="track-status" element={<div className="applicant-app-container"><ApplicantTrackStatus /></div>} />
-          <Route path="new-course" element={<NewCourseApplication />} />
+        <Route
+          path="/applicant-dashboard"
+          element={<ApplicantDashboard />}
+        >
+          <Route
+            path="track-status"
+            element={
+              <div className="applicant-app-container">
+                <ApplicantTrackStatus />
+              </div>
+            }
+          />
+
+          <Route
+            path="new-course"
+            element={<NewCourseApplication />}
+          />
         </Route>
 
         {/* Super Admin Dashboard Routes */}
         <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<Navigate to="/admin/dashboard" replace />} />
-          <Route path="dashboard" element={<AdminDashboard />} />
-          <Route path="users" element={<UserManagement />} />
+          <Route
+            index
+            element={<Navigate to="/admin/dashboard" replace />}
+          />
+
+          <Route
+            path="dashboard"
+            element={<AdminDashboard />}
+          />
+
+          <Route
+            path="users"
+            element={<UserManagement />}
+          />
+
           {/* [M5] <Route path="track-student" element={<TrackStudent />} /> */}
-          <Route path="courses" element={<CourseManagement />} />
-          <Route path="courses/create" element={<CreateCourse />} />
-          <Route path="courses/edit/:id" element={<CreateCourse />} />
-          <Route path="courses/manage/:id" element={<ManageCourse />} />
+
+          <Route
+            path="courses"
+            element={<CourseManagement />}
+          />
+
+          <Route
+            path="courses/create"
+            element={<CreateCourse />}
+          />
+
+          <Route
+            path="courses/edit/:id"
+            element={<CreateCourse />}
+          />
+
+          <Route
+            path="courses/manage/:id"
+            element={<ManageCourse />}
+          />
+
           {/* [M4]
-          <Route path="courses/manage/:id/exams/create" element={<CreateExam />} />
-          <Route path="courses/manage/:id/exams/edit/:examId" element={<CreateExam />} />
-          <Route path="courses/manage/:id/exams/:examId/students" element={<ManageExamStudents />} />
+          <Route
+            path="courses/manage/:id/exams/create"
+            element={<CreateExam />}
+          />
+          <Route
+            path="courses/manage/:id/exams/edit/:examId"
+            element={<CreateExam />}
+          />
+          <Route
+            path="courses/manage/:id/exams/:examId/students"
+            element={<ManageExamStudents />}
+          />
           */}
-          <Route path="approvals/*" element={<Applications />} />
-          {/* [M3] <Route path="letters" element={<LetterRequests />} /> */}
-          {/* [M3] <Route path="announcements" element={<AdminAnnouncements />} /> */}
+
+          <Route
+            path="approvals/*"
+            element={<Applications />}
+          />
+
+
+          <Route
+            path="letters"
+            element={<LetterRequests />}
+          />
+
+          <Route
+            path="announcements"
+            element={<AdminAnnouncements />}
+          />
+
           {/* [M5] <Route path="activity-logs" element={<ActivityLogs />} /> */}
           {/* [M5] <Route path="ai-analytics" element={<AIAnalytics />} /> */}
-          <Route path="settings" element={<AdminSettings />} />
+
+          <Route
+            path="settings"
+            element={<AdminSettings />}
+          />
         </Route>
 
         {/* Registered Student Dashboard Routes */}
         <Route element={<LayoutWithSidebar />}>
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/letter-request" element={<LetterRequest />} />
-          <Route path="/new-course" element={<NewCourseApplication />} />
+          <Route
+            path="/dashboard"
+            element={<Dashboard />}
+          />
 
-          <Route path="/course/:id" element={<CourseDetailsWrapper />}>
-            <Route index element={<CourseDetails />} />
-            <Route path="examinations" element={<CourseExaminations />} />
-            <Route path="examinations/:examId/results" element={<ExaminationResults />} />
-            <Route path="results" element={<CourseResults />} />
-            <Route path="results/:resultId" element={<ResultSheet />} />
-            <Route path="grading-scale" element={<GradingScale />} />
-            <Route path="materials" element={<CourseMaterials />} />
-            <Route path="announcements" element={<CourseAnnouncements />} />
-            <Route path="examinations/apply" element={<ExamApplicationForm />} />
-            <Route path="examinations/success" element={<ExamApplicationSuccess />} />
+          <Route
+            path="/profile"
+            element={<Profile />}
+          />
+
+          <Route
+            path="/settings"
+            element={<Settings />}
+          />
+
+          <Route
+            path="/letter-request"
+            element={<LetterRequest />}
+          />
+
+          <Route
+            path="/new-course"
+            element={<NewCourseApplication />}
+          />
+
+          <Route
+            path="/course/:id"
+            element={<CourseDetailsWrapper />}
+          >
+            <Route
+              index
+              element={<CourseDetails />}
+            />
+
+            {/* [M4]
+            <Route
+              path="examinations"
+              element={<CourseExaminations />}
+            />
+
+            <Route
+              path="examinations/:examId/results"
+              element={<ExaminationResults />}
+            />
+            */}
+
+            {/* [M4]
+            <Route
+              path="results"
+              element={<CourseResults />}
+            />
+
+            <Route
+              path="results/:resultId"
+              element={<ResultSheet />}
+            />
+
+            <Route
+              path="grading-scale"
+              element={<GradingScale />}
+            />
+            */}
+
+            <Route
+              path="materials"
+              element={<CourseMaterials />}
+            />
+
+            <Route
+              path="announcements"
+              element={<CourseAnnouncements />}
+            />
+
+            {/* [M4]
+            <Route
+              path="examinations/apply"
+              element={<ExamApplicationForm />}
+            />
+
+            <Route
+              path="examinations/success"
+              element={<ExamApplicationSuccess />}
+            />
+            */}
           </Route>
-
         </Route>
       </Routes>
     </BrowserRouter>
