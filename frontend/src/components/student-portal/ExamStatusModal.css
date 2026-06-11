@@ -1,0 +1,533 @@
+/* Exam Status Modal Styles */
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(15, 23, 42, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    backdrop-filter: blur(4px);
+    padding: 24px;
+}
+
+.modal-container {
+    background-color: var(--white);
+    border-radius: 20px;
+    width: 100%;
+    max-width: 560px;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+    animation: modalScaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalScaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid #F1F5F9;
+}
+
+.modal-title {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-dark);
+}
+
+.modal-close-btn {
+    background: #F1F5F9;
+    border: none;
+    color: #64748B;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.modal-close-btn:hover {
+    background-color: #E2E8F0;
+    color: var(--text-dark);
+}
+
+.modal-body {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    overflow-y: auto;
+}
+
+/* Status Banner Setup */
+.status-banner {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    border-radius: 12px;
+    gap: 12px;
+    border: 1px solid;
+}
+
+.status-content h3 {
+    margin: 0 0 2px 0;
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.status-content p {
+    margin: 0;
+    font-size: 13px;
+}
+
+/* Specific Banner Colors */
+.status-banner.approved {
+    background-color: #ECFDF5;
+    border-color: #A7F3D0;
+}
+
+.status-banner.approved .status-icon {
+    color: #10B981;
+}
+
+.status-banner.approved h3 {
+    color: #064E3B;
+    /* Deep emerald */
+}
+
+.status-banner.approved p {
+    color: #047857;
+    /* Emerald text */
+}
+
+/* Fallback Banners (Pending/Rejected) just in case they're clicked */
+.status-banner.pending {
+    background-color: #FFFFF0;
+    border-color: #FEF08A;
+}
+
+.status-banner.pending .status-icon {
+    color: #CA8A04;
+}
+
+.status-banner.pending h3 {
+    color: #854D0E;
+}
+
+.status-banner.pending p {
+    color: #A16207;
+}
+
+.status-banner.payment-pending {
+    background-color: #FEF2F2;
+    border-color: #FECACA;
+}
+
+.status-banner.payment-pending .status-icon {
+    color: #DC2626;
+}
+
+.status-banner.payment-pending h3 {
+    color: #7F1D1D;
+}
+
+.status-banner.payment-pending p {
+    color: #991B1B;
+}
+
+.application-status-timeline {
+    background-color: var(--white);
+    border: 1px solid #F1F5F9;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+}
+
+.application-status-timeline h4 {
+    margin: 0 0 20px 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-dark);
+}
+
+.timeline-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.timeline-number {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.timeline-item.completed .timeline-number {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.timeline-item.pending-step .timeline-number {
+    background-color: #E2E8F0;
+    color: #64748B;
+}
+
+.timeline-content {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.timeline-content h5 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text-dark);
+}
+
+.timeline-content p {
+    margin: 0;
+    font-size: 13px;
+    color: var(--text-gray);
+}
+
+.timeline-connector {
+    width: 2px;
+    height: 24px;
+    background-color: #E2E8F0;
+    margin-left: 13px;
+    margin-top: 6px;
+    margin-bottom: 6px;
+}
+
+.status-banner.rejected {
+    background-color: #FEF2F2;
+    border-color: #FECACA;
+}
+
+.status-banner.rejected .status-icon {
+    color: #DC2626;
+}
+
+.status-banner.rejected h3 {
+    color: #7F1D1D;
+}
+
+.status-banner.rejected p {
+    color: #991B1B;
+}
+
+/* Rejection Reason Box */
+.rejection-reason-box {
+    background-color: var(--white);
+    border: 1px solid #F1F5F9;
+    border-radius: 12px;
+    padding: 20px;
+}
+
+.rejection-reason-box h4 {
+    margin: 0 0 12px 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-dark);
+}
+
+.rejection-reason-box p {
+    margin: 0;
+    font-size: 15px;
+    color: #475569;
+}
+
+/* Need Help Box */
+.need-help-box {
+    background-color: #FEFCE8;
+    border: 1px solid #FEF08A;
+    border-radius: 12px;
+    padding: 20px;
+}
+
+.need-help-box h4 {
+    margin: 0 0 12px 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: #854D0E;
+}
+
+.help-desc {
+    margin: 0 0 16px 0 !important;
+    font-size: 14px;
+    color: #A16207;
+}
+
+.help-details {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.help-details p {
+    margin: 0;
+    font-size: 14px;
+    color: #854D0E;
+}
+
+.help-details strong {
+    font-weight: 700;
+}
+
+
+/* Instructions Box */
+.instructions-box {
+    background-color: #FAFAFE;
+    border: 1px solid #F1F5F9;
+    border-radius: 12px;
+    padding: 20px;
+}
+
+.instructions-box h4 {
+    margin: 0 0 12px 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-dark);
+}
+
+.instructions-list {
+    margin: 0;
+    padding: 0 0 0 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.instructions-list li {
+    font-size: 14px;
+    color: var(--text-dark);
+    line-height: 1.5;
+}
+
+/* Download Section block (Legacy - replaced by approved-layout contextually) */
+.approved-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.modal-action-header {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.quick-download-card {
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 18px;
+    padding: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    transition: all 0.2s ease;
+}
+
+.quick-download-card .download-btn-primary {
+    width: auto;
+    min-width: 160px;
+    padding: 14px 24px;
+    font-size: 14px;
+}
+
+.quick-download-card:hover {
+    border-color: #0EA5E9;
+    background: #F0F9FF;
+    transform: translateY(-1px);
+}
+
+.download-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.download-icon {
+    color: #0EA5E9;
+    flex-shrink: 0;
+    transform: scale(1.2);
+}
+
+.download-info h4 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: #1E293B;
+}
+
+.download-info p {
+    margin: 4px 0 0;
+    font-size: 13px;
+    color: #64748B;
+}
+
+.download-btn-primary {
+    width: 100%;
+    padding: 10px;
+    background: #0EA5E9;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+}
+
+.download-btn-primary:hover {
+    background: #0284C7;
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.2);
+}
+
+.postponement-notice {
+    background: #FFF7ED;
+    border: 1px dashed #FDBA74;
+    border-radius: 18px;
+    padding: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.notice-text h4 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: #9A3412;
+}
+
+.notice-text p {
+    margin: 4px 0 0;
+    font-size: 13px;
+    color: #C2410C;
+    font-weight: 600;
+}
+
+.postpone-btn {
+    width: auto;
+    min-width: 200px;
+    padding: 14px 24px;
+    background: white;
+    color: #C2410C;
+    border: 1px solid #FDBA74;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: all 0.2s ease;
+    margin-top: 0;
+}
+
+.postpone-btn:hover {
+    background: #FFF7ED;
+    border-color: #F97316;
+    transform: translateY(-1px);
+}
+
+/* Ensure modal body handles overflow gracefully but hide scrollbar */
+.modal-body {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    overflow-y: auto;
+    max-height: calc(85vh - 70px); /* 70px is approx header height */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none;  /* IE and Edge */
+}
+
+.modal-body::-webkit-scrollbar {
+    display: none; /* Chrome, Safari and Opera */
+}
+
+@media (max-width: 500px) {
+    .modal-action-header {
+        grid-template-columns: 1fr;
+    }
+
+    .quick-download-card {
+        flex-direction: column;
+        gap: 12px;
+        padding: 16px;
+    }
+
+    .quick-download-card .download-btn-primary {
+        width: 100%;
+        min-width: auto;
+    }
+
+    .postponement-notice {
+        flex-direction: column;
+        gap: 12px;
+        padding: 16px;
+    }
+
+    .postpone-btn {
+        width: 100%;
+        min-width: auto;
+    }
+
+    .modal-header {
+        padding: 16px;
+    }
+
+    .modal-title {
+        font-size: 17px;
+    }
+
+    .modal-body {
+        padding: 16px;
+    }
+
+    .status-banner {
+        flex-direction: column;
+        text-align: center;
+        gap: 8px;
+        padding: 12px;
+    }
+}

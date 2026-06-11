@@ -1,0 +1,1770 @@
+.course-examinations-container {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    width: 100%;
+}
+
+/* ================================================
+   POSTPONEMENTS & REATTEMPTS TAB
+   ================================================ */
+
+.post-apply-header {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 20px;
+}
+
+/* Floating Apply FAB — positioned where chat bubble was */
+.apply-fab-container {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 12px;
+}
+
+.apply-fab-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 24px;
+    background: linear-gradient(135deg, #4F46E5, #7C3AED);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgba(79, 70, 229, 0.35);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    letter-spacing: 0.01em;
+}
+
+.apply-fab-btn:hover {
+    transform: scale(1.05) translateY(-2px);
+    box-shadow: 0 12px 32px rgba(79, 70, 229, 0.45);
+}
+
+.apply-fab-btn.active {
+    background: #1E293B;
+    box-shadow: 0 8px 24px rgba(30, 41, 59, 0.35);
+    transform: scale(0.95);
+}
+
+.apply-fab-dropdown {
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 20px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+    padding: 8px;
+    min-width: 260px;
+    animation: fabSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    transform-origin: bottom right;
+}
+
+@keyframes fabSlideUp {
+    0% { opacity: 0; transform: translateY(12px) scale(0.9); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.post-apply-dropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 20px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    padding: 8px;
+    z-index: 100;
+    min-width: 260px;
+    animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.post-apply-option {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    border: none;
+    border-radius: 14px;
+    background: transparent;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.2s ease;
+}
+
+.post-apply-option:hover { background: #F8FAFC; }
+
+.post-option-icon { font-size: 22px; flex-shrink: 0; }
+
+.post-option-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1E293B;
+}
+
+.post-option-desc {
+    font-size: 12px;
+    color: #94A3B8;
+    margin-top: 2px;
+}
+
+.post-form-card {
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 24px;
+    margin-bottom: 20px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+}
+
+.post-form-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 28px;
+    border-bottom: 1px solid #F1F5F9;
+    background: #F8FAFC;
+}
+
+.post-form-header h4 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 800;
+    color: #0F172A;
+}
+
+.post-form-body {
+    padding: 24px 28px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.post-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.post-form-group.full {
+    grid-column: 1 / -1;
+}
+
+.post-form-group label {
+    font-size: 11px;
+    font-weight: 800;
+    color: #94A3B8;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.post-form-group input,
+.post-form-group select,
+.post-form-group textarea {
+    padding: 12px 16px;
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #1E293B;
+    background: #FFFFFF;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    font-family: inherit;
+    resize: none;
+}
+
+.post-form-group input:focus,
+.post-form-group select:focus,
+.post-form-group textarea:focus {
+    border-color: #4F46E5;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.08);
+}
+
+.post-form-actions {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding-top: 8px;
+}
+
+.exam-section {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.exam-section-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin: 0;
+}
+
+.exam-strips-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Professional Unified Card Design */
+.exam-pro-card {
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 24px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    height: 100%;
+    position: relative;
+    box-shadow: 0 4px 6px rgba(15, 23, 42, 0.02);
+}
+
+.exam-pro-card:hover {
+    border-color: #4F46E5;
+    box-shadow: 0 12px 30px rgba(79, 70, 229, 0.08);
+    transform: translateY(-2px);
+}
+
+.exam-pro-card.horizontal {
+    flex-direction: row;
+    align-items: center;
+    padding: 20px 24px;
+    gap: 24px;
+}
+
+.pro-card-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.pro-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.pro-meta-horizontal {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+}
+
+.pro-sep {
+    width: 1px;
+    height: 14px;
+    background: #E2E8F0;
+}
+
+.pro-card-actions {
+    min-width: 140px;
+}
+
+.pro-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.pro-icon-hub {
+    width: 44px;
+    height: 44px;
+    background: #F8FAFC;
+    color: #4F46E5;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #F1F5F9;
+}
+
+
+/* Status tags are now handled in the horizontal layout section below */
+
+.status-indicator-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #94A3B8;
+}
+
+.pro-exam-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: #1E293B;
+    margin: 0;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.pro-meta-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    padding-top: 4px;
+}
+
+.pro-meta-item {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+}
+
+.pro-meta-label {
+    font-size: 11px;
+    font-weight: 800;
+    color: #64748B;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.pro-meta-val {
+    font-size: 13px;
+    font-weight: 700;
+    color: #475569;
+}
+
+.pro-card-footer {
+    margin-top: auto;
+    padding-top: 8px;
+}
+
+/* Premium Design Revamp */
+.exam-pro-card.horizontal {
+    flex-direction: row;
+    align-items: center;
+    padding: 20px 24px;
+    gap: 20px;
+    background: #FFFFFF;
+    border: 1px solid #F1F5F9;
+    border-radius: 24px;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    cursor: pointer;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.01);
+    position: relative;
+    overflow: hidden;
+}
+
+.exam-pro-card.horizontal:hover {
+    transform: translateY(-4px) scale(1.005);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
+    border-color: #E2E8F0;
+}
+
+/* Status Left Accent */
+.exam-pro-card.horizontal::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: #E2E8F0;
+    transition: all 0.3s ease;
+}
+
+.exam-pro-card[data-status="Registrations are open"]::before { background: #10B981; }
+.exam-pro-card[data-status="Exam in progress"]::before { background: #3B82F6; }
+.exam-pro-card[data-status="Pending approvals"]::before { background: #F59E0B; }
+.exam-pro-card[data-status="Application approved"]::before { background: #0EA5E9; }
+.exam-pro-card[data-status="Application rejected"]::before { background: #EF4444; }
+.exam-pro-card[data-status="Application pending"]::before { background: #F59E0B; }
+.exam-pro-card[data-status="Results released"]::before,
+.exam-pro-card[data-status="Result Released"]::before { background: #8B5CF6; }
+.exam-pro-card[data-status="Result Updated"]::before { background: #F59E0B; }
+.exam-pro-card[data-status="postponement"]::before { background: #3B82F6; }
+.exam-pro-card[data-status="reattempt"]::before { background: #F59E0B; }
+
+.pro-icon-hub {
+    width: 52px;
+    height: 52px;
+    background: #F8FAFC;
+    color: #475569;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #F1F5F9;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+}
+
+.exam-pro-card[data-status="Registrations are open"] .pro-icon-hub { color: #10B981; background: #F0FDF4; }
+.exam-pro-card[data-status="Exam in progress"] .pro-icon-hub { color: #3B82F6; background: #EFF6FF; }
+.exam-pro-card[data-status="Pending approvals"] .pro-icon-hub { color: #F59E0B; background: #FFFBEB; }
+.exam-pro-card[data-status="Results released"] .pro-icon-hub,
+.exam-pro-card[data-status="Result Released"] .pro-icon-hub { color: #8B5CF6; background: #F5F3FF; }
+.exam-pro-card[data-status="Result Updated"] .pro-icon-hub { color: #F59E0B; background: #FFFBEB; }
+.exam-pro-card[data-status="Application approved"] .pro-icon-hub { color: #0EA5E9; background: #F0F9FF; }
+.exam-pro-card[data-status="Application rejected"] .pro-icon-hub { color: #EF4444; background: #FEF2F2; }
+.exam-pro-card[data-status="Application pending"] .pro-icon-hub { color: #F59E0B; background: #FFFBEB; }
+.exam-pro-card[data-status="postponement"] .pro-icon-hub { color: #3B82F6; background: #EFF6FF; }
+.exam-pro-card[data-status="reattempt"] .pro-icon-hub { color: #F59E0B; background: #FFFBEB; }
+
+.exam-pro-card:hover .pro-icon-hub {
+    background: #FFFFFF;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.04);
+}
+
+.pro-card-main {
+    flex: 2;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.created-at-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #94A3B8;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.pro-exam-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #0F172A;
+    margin: 0;
+    line-height: 1.2;
+}
+
+.pro-meta-horizontal {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-top: 4px;
+}
+
+.pro-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.pro-meta-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #94A3B8;
+}
+
+.pro-meta-val {
+    font-size: 12px;
+    font-weight: 600;
+    color: #475569;
+}
+
+.pro-sep {
+    width: 4px;
+    height: 4px;
+    background: #CBD5E1;
+    border-radius: 50%;
+}
+
+.pro-status-center {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-left: 20px;
+    padding-right: 20px;
+}
+
+.pro-status-tag {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    background: #F8FAFC;
+    border-radius: 9999px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #64748B;
+    border: 1px solid #F1F5F9;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
+.status-indicator-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #CBD5E1;
+}
+
+.exam-pro-card[data-status="Registrations are open"] .pro-status-tag { background: #ECFDF5; color: #065F46; border-color: #D1FAE5; }
+.exam-pro-card[data-status="Registrations are open"] .status-indicator-dot { background: #10B981; }
+
+.exam-pro-card[data-status="Exam in progress"] .pro-status-tag { background: #EFF6FF; color: #1E40AF; border-color: #DBEAFE; }
+.exam-pro-card[data-status="Exam in progress"] .status-indicator-dot { background: #3B82F6; }
+
+.exam-pro-card[data-status="Pending approvals"] .pro-status-tag { background: #FFFBEB; color: #92400E; border-color: #FEF3C7; }
+.exam-pro-card[data-status="Pending approvals"] .status-indicator-dot { background: #F59E0B; }
+
+.exam-pro-card[data-status="Results released"] .pro-status-tag,
+.exam-pro-card[data-status="Result Released"] .pro-status-tag { background: #F5F3FF; color: #5B21B6; border-color: #EDE9FE; }
+.exam-pro-card[data-status="Results released"] .status-indicator-dot,
+.exam-pro-card[data-status="Result Released"] .status-indicator-dot { background: #8B5CF6; }
+
+.exam-pro-card[data-status="Result Updated"] .pro-status-tag { background: #FFFBEB; color: #B45309; border-color: #FEF3C7; }
+.exam-pro-card[data-status="Result Updated"] .status-indicator-dot { background: #F59E0B; }
+
+.exam-pro-card[data-status="Application approved"] .pro-status-tag { background: #F0F9FF; color: #075985; border-color: #E0F2FE; }
+.exam-pro-card[data-status="Application approved"] .status-indicator-dot { background: #0EA5E9; }
+.exam-pro-card[data-status="Application rejected"] .pro-status-tag { background: #FEF2F2; color: #991B1B; border-color: #FEE2E2; }
+.exam-pro-card[data-status="Application rejected"] .status-indicator-dot { background: #EF4444; }
+.exam-pro-card[data-status="Application pending"] .pro-status-tag { background: #FFFBEB; color: #92400E; border-color: #FEF3C7; }
+.exam-pro-card[data-status="Application pending"] .status-indicator-dot { background: #F59E0B; }
+.exam-pro-card[data-status="postponement"] .pro-status-tag { background: #EFF6FF; color: #1E40AF; border-color: #DBEAFE; }
+.exam-pro-card[data-status="postponement"] .status-indicator-dot { background: #3B82F6; }
+.exam-pro-card[data-status="reattempt"] .pro-status-tag { background: #FFFBEB; color: #92400E; border-color: #FEF3C7; }
+.exam-pro-card[data-status="reattempt"] .status-indicator-dot { background: #F59E0B; }
+
+.pro-card-actions {
+    min-width: 150px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.pro-action-btn {
+    width: 100%;
+    padding: 12px 20px;
+    border-radius: 14px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    white-space: nowrap;
+}
+
+.pro-action-btn.primary {
+    background: #4F46E5;
+    color: white;
+    box-shadow: 0 4px 10px rgba(79, 70, 229, 0.15);
+}
+
+.pro-action-btn.primary:hover {
+    background: #4338CA;
+    box-shadow: 0 8px 20px rgba(79, 70, 229, 0.25);
+    transform: scale(1.02);
+}
+
+.pro-action-btn.secondary {
+    background: #FFFFFF;
+    color: #4F46E5;
+    border: 1px solid #E0E7FF;
+}
+
+.pro-action-btn.secondary:hover {
+    background: #F8FAFC;
+    border-color: #C7D2FE;
+    transform: scale(1.02);
+}
+
+.status-placeholder-strip {
+    background: #F1F5F9;
+    color: #94A3B8;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 10px 16px;
+    border-radius: 12px;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.exam-pro-card[data-status="Registrations are open"] .status-indicator-dot { background: #10B981; box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1); }
+.exam-pro-card[data-status="Exam in progress"] .status-indicator-dot { background: #3B82F6; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); }
+.exam-pro-card[data-status="Pending approvals"] .status-indicator-dot { background: #F59E0B; box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.1); }
+.exam-pro-card[data-status="Application rejected"] .status-indicator-dot { background: #EF4444; box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1); }
+.exam-pro-card[data-status="Application pending"] .status-indicator-dot { background: #F59E0B; box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.1); }
+.exam-pro-card[data-status="Results released"] .status-indicator-dot,
+.exam-pro-card[data-status="Result Released"] .status-indicator-dot { background: #7C3AED; box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.1); }
+.exam-pro-card[data-status="postponement"] .status-indicator-dot { background: #3B82F6; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); }
+.exam-pro-card[data-status="reattempt"] .status-indicator-dot { background: #F59E0B; box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.1); }
+
+.strip-action-btn { background: #0F172A; }
+.exam-strip-card:hover .strip-action-btn { background: linear-gradient(135deg, #4F46E5, #7C3AED); }
+
+.exam-card-status { 
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    z-index: 10;
+}
+.strip-status-badge { 
+    width: fit-content; 
+    padding: 8px 16px; 
+    border-radius: 12px; 
+    font-size: 12px; 
+    letter-spacing: 0.02em; 
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+}
+
+/* Status Tracker Modal Styles */
+.status-tracker-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(12px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 24px;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.status-tracker-modal {
+    background: #FFFFFF;
+    width: 100%;
+    max-width: 700px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    border-radius: 28px;
+    box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(0,0,0,0.04);
+    overflow: hidden;
+    animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUp {
+    from { transform: translateY(30px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.tracker-modal-header {
+    padding: 24px 32px;
+    background: #FFFFFF;
+    border-bottom: 1px solid #F1F5F9;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.header-text-group h3 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 800;
+    color: #0F172A;
+    letter-spacing: -0.02em;
+}
+
+.tracker-app-number {
+    margin: 6px 0 0;
+    font-size: 14px;
+    color: #64748B;
+    font-weight: 500;
+}
+
+.tracker-app-number strong {
+    color: #4F46E5;
+    background: #EEF2FF;
+    padding: 2px 8px;
+    border-radius: 6px;
+}
+
+.tracker-close-btn {
+    background: #F1F5F9;
+    border: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: #64748B;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tracker-close-btn:hover {
+    background: #E2E8F0;
+    color: #0F172A;
+    transform: rotate(90deg);
+}
+
+.tracker-content {
+    padding: 28px 32px;
+    flex: 1;
+    overflow-y: auto;
+}
+
+.tracker-exam-meta {
+    margin-bottom: 32px;
+    padding: 16px 20px;
+    background: #F8FAFC;
+    border-radius: 16px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    border: 1px solid #F1F5F9;
+}
+
+.tracker-exam-meta .meta-label {
+    font-size: 12px;
+    font-weight: 800;
+    color: #94A3B8;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.tracker-exam-meta .meta-value {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1E293B;
+}
+
+.status-flow-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    position: relative;
+    padding: 0 20px;
+    margin-bottom: 40px;
+}
+
+.flow-step {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    z-index: 1;
+}
+
+.step-point-container {
+    position: relative;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+    z-index: 2; /* Create local stacking context */
+}
+
+.step-point {
+    width: 44px;
+    height: 44px;
+    border-radius: 18px;
+    background: white !important; /* Force solid background */
+    border: 3px solid #E2E8F0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 800;
+    color: #94A3B8;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    z-index: 10; /* High z-index to stay on top */
+}
+
+.step-connector {
+    position: absolute;
+    top: 22px;
+    left: 50%;
+    width: 100%;
+    height: 4px;
+    background: #E2E8F0;
+    z-index: 1; /* Behind step-point */
+    transition: background 0.4s ease;
+}
+
+.flow-step.completed .step-point {
+    background: #10B981 !important;
+    border-color: #10B981;
+    color: white;
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+}
+
+.flow-step.completed .step-connector {
+    background: #10B981;
+}
+
+.flow-step.active .step-point {
+    background: #EEF2FF !important;
+    border-color: #4F46E5;
+    color: #4F46E5;
+    box-shadow: 0 0 0 6px rgba(79, 70, 229, 0.1);
+}
+
+.step-labels-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.step-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: #94A3B8;
+    text-align: center;
+    max-width: 140px;
+    line-height: 1.4;
+    transition: color 0.4s ease;
+}
+
+.step-date {
+    font-size: 11px;
+    font-weight: 600;
+    color: #94A3B8;
+    background: #F1F5F9;
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
+.flow-step.completed .step-date,
+.flow-step.active .step-date {
+    color: #4F46E5;
+    background: #EEF2FF;
+}
+
+.flow-step.completed .step-label,
+.flow-step.active .step-label {
+    color: #0F172A;
+}
+
+/* Exam Details Styles */
+.status-tracker-modal.details {
+    max-width: 600px;
+}
+
+/* Results Info — inside postponements modal */
+.results-info-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 20px 16px 8px;
+    gap: 12px;
+}
+
+.results-info-icon-box {
+    width: 64px;
+    height: 64px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, #EDE9FE, #F5F3FF);
+    color: #7C3AED;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 4px;
+}
+
+.results-info-title {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 800;
+    color: #0F172A;
+    letter-spacing: -0.02em;
+}
+
+.results-info-message {
+    font-size: 14px;
+    color: #64748B;
+    line-height: 1.7;
+    margin: 0;
+    max-width: 380px;
+}
+
+.results-info-message strong {
+    color: #4F46E5;
+    font-weight: 700;
+}
+
+.exam-details-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    margin-bottom: 32px;
+}
+
+.detail-box {
+    background: #F8FAFC;
+    padding: 18px 20px;
+    border-radius: 16px;
+    border: 1px solid #F1F5F9;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    transition: border-color 0.2s ease;
+}
+
+.detail-box:hover {
+    border-color: #C7D2FE;
+}
+
+.detail-label {
+    font-size: 11px;
+    font-weight: 800;
+    color: #94A3B8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+}
+
+.detail-value {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1E293B;
+}
+
+.detail-box.simple-download {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.simple-download-link {
+    background: #EEF2FF;
+    color: #4F46E5;
+    border: 1px solid #E0E7FF;
+    padding: 10px 16px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    transition: all 0.2s ease;
+    margin-top: 10px;
+}
+
+.simple-download-link:hover {
+    background: #4F46E5;
+    color: white;
+    border-color: #4F46E5;
+}
+
+/* Tracker Legend */
+.tracker-legend {
+    display: flex;
+    gap: 24px;
+    padding: 20px 0 4px 0;
+    border-top: 1px solid #F1F5F9;
+    margin-top: 32px;
+    justify-content: center;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #64748B;
+}
+
+.legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 4px;
+    background: #E2E8F0;
+    flex-shrink: 0;
+}
+
+.legend-dot.completed { background: #10B981; }
+.legend-dot.active    { background: #4F46E5; }
+
+/* Tracker Footer (Done/Close button) */
+.tracker-footer {
+    padding: 16px 32px 24px;
+    border-top: 1px solid #F1F5F9;
+    display: flex;
+    justify-content: flex-end;
+    background: #FFFFFF;
+    flex-shrink: 0; /* Never shrink — always visible */
+}
+
+.tracker-done-btn {
+    padding: 12px 36px;
+    background: #4F46E5;
+    color: #FFFFFF;
+    border-radius: 14px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
+}
+
+.tracker-done-btn:hover {
+    background: #4338CA;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 20px rgba(79, 70, 229, 0.3);
+}
+
+.tracker-done-btn:active {
+    transform: translateY(0);
+}
+
+/* Status flow bottom margin */
+.status-flow-container {
+    margin-bottom: 0;
+}
+
+.text-success {
+    color: #10B981 !important;
+}
+
+/* 
+   ==========================================================================
+   EXAMINATION RESULTS PAGE & ACADEMIC TRANSCRIPT
+   ========================================================================== 
+*/
+
+.official-result-card.full-page {
+    width: 100%;
+    max-width: 100%;
+    background: #FFFFFF;
+    border-radius: 24px;
+    padding: 48px 56px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.03);
+    border: 1px solid #F1F5F9;
+    min-height: 1000px;
+    display: flex;
+    flex-direction: column;
+}
+
+.result-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 32px; /* Reduced from 48px */
+}
+
+.institute-branding-modern {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.dept-title-top {
+    font-size: 26px;
+    font-weight: 800;
+    color: #0F172A;
+    margin: 0;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+}
+
+.uni-title-bottom {
+    font-size: 16px;
+    font-weight: 600;
+    color: #64748B;
+    margin: 4px 0 0 0;
+    letter-spacing: 0.02em;
+}
+
+.transcript-metadata-left {
+    display: flex;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.transcript-metadata-left .mini-meta {
+    font-size: 11px;
+    font-weight: 800;
+    padding: 6px 12px;
+    border-radius: 8px;
+    letter-spacing: 0.05em;
+    background: #F8FAFC;
+    color: #94A3B8;
+    text-transform: uppercase;
+}
+
+.transcript-metadata-left .mini-meta.status {
+    background: #DCFCE7;
+    color: #15803D;
+}
+
+.action-button-group.results-right {
+    display: flex;
+    gap: 12px;
+}
+
+/* Result Table Container */
+.result-table-container {
+    overflow-x: auto;
+}
+
+/* Result Table Refinements */
+.official-result-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin: 16px 0 24px 0;
+}
+
+.official-result-table th {
+    text-align: left;
+    padding: 16px 20px; /* Reduced from 20px */
+    font-size: 11px; /* Slightly smaller */
+    font-weight: 800;
+    color: #94A3B8;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    background: #F8FAFC;
+    border-top: 1px solid #F1F5F9;
+    border-bottom: 1px solid #F1F5F9;
+}
+
+.official-result-table th:first-child { border-radius: 12px 0 0 12px; }
+.official-result-table th:last-child { border-radius: 0 12px 12px 0; }
+
+.official-result-table td {
+    padding: 18px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #1E293B;
+    border-bottom: 1px solid #F8FAFC;
+    vertical-align: middle;
+}
+
+.grade-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 48px;
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+}
+
+.grade-pill.green {
+    background: #DCFCE7;
+    color: #15803D;
+}
+
+.grade-pill.blue {
+    background: #DBEAFE;
+    color: #1E40AF;
+}
+
+.grade-pill.orange {
+    background: #FEF3C7;
+    color: #D97706;
+}
+
+.mono {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 13px;
+    color: #4F46E5;
+    font-weight: 700;
+}
+
+.official-result-table tfoot td {
+    border: none;
+    padding-top: 32px; /* Reduced from 48px */
+    font-size: 18px;
+    font-weight: 800;
+}
+
+/* Student Information Grid */
+.student-transcript-meta {
+    margin: 16px 0 24px 0;
+    padding: 28px 32px;
+    background: #F8FAFC;
+    border-radius: 20px;
+    border: 1px solid #F1F5F9;
+}
+
+.student-info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px; /* Reduced from 32px */
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.info-item .label {
+    font-size: 10px; /* Condensed */
+    font-weight: 800;
+    color: #94A3B8;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.info-item .value {
+    font-size: 15px; /* Condensed */
+    font-weight: 700;
+    color: #0F172A;
+}
+
+/* Transcript Footer and Signatures */
+.transcript-footer {
+    margin-top: auto;
+    padding-top: 48px;
+}
+
+.verification-section {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 40px;
+    padding: 0 20px;
+}
+
+.verification-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    min-width: 200px;
+}
+
+.signature-placeholder {
+    width: 100%;
+    height: 1px;
+    background: #E2E8F0;
+    margin-bottom: 8px;
+}
+
+.verification-item .role {
+    font-size: 13px;
+    font-weight: 800;
+    color: #0F172A;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.result-disclaimer {
+    background: #F8FAFC;
+    border-radius: 20px;
+    padding: 24px;
+    border: 1px solid #F1F5F9;
+}
+
+.disclaimer-title {
+    font-size: 12px;
+    font-weight: 900;
+    color: #94A3B8;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    letter-spacing: 0.08em;
+}
+
+.result-disclaimer p {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #64748B;
+    font-style: italic;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 1024px) {
+    .official-result-card.full-page {
+        padding: 40px;
+    }
+}
+
+@media (max-width: 768px) {
+    .result-card-header {
+        flex-direction: column;
+        gap: 24px;
+    }
+    .action-button-group.results-right {
+        width: 100%;
+        justify-content: flex-start;
+    }
+    .verification-section {
+        flex-direction: column;
+        gap: 48px;
+    }
+}
+
+/* 
+   ==========================================================================
+   GENERAL EXAMINATION COMPONENTS (TABS & STATUS)
+   ========================================================================== 
+*/
+
+.exam-tabs-container {
+    display: flex;
+    gap: 12px;
+    padding: 8px;
+    background: #F8FAFC;
+    border-radius: 16px;
+    width: 100%;
+    margin-bottom: 32px;
+    border: 1px solid #F1F5F9;
+}
+
+.exam-tab {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 14px 24px;
+    border-radius: 12px;
+    border: none;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    background: transparent;
+    color: #64748B;
+}
+
+.exam-tab:hover {
+    color: #1E293B;
+    background: rgba(255, 255, 255, 0.5);
+}
+
+.exam-tab.active {
+    background: var(--primary-color);
+    color: #FFFFFF;
+    box-shadow: 0 8px 24px rgba(124, 58, 237, 0.25);
+}
+
+.exam-tab.active:hover {
+    background: #6D28D9;
+    color: #FFFFFF;
+}
+
+.tab-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 6px;
+    background: var(--primary-color);
+    color: white;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 800;
+}
+
+.empty-section-msg {
+    padding: 60px;
+    background: #F8FAFC;
+    border-radius: 24px;
+    text-align: center;
+    color: #94A3B8;
+    border: 2px dashed #E2E8F0;
+    grid-column: 1 / -1;
+}
+
+.placeholder-icon {
+    margin-bottom: 16px;
+    color: #CBD5E1;
+}
+
+.empty-section-msg h3 {
+    font-size: 18px;
+    color: #1E293B;
+    margin-bottom: 8px;
+}
+
+.empty-section-msg p {
+    font-size: 14px;
+    max-width: 320px;
+    margin: 0 auto;
+}
+
+.active-tab-placeholder {
+    padding: 100px 40px;
+    text-align: center;
+    background: #F8FAFC;
+    border-radius: 32px;
+    border: 2px dashed #E2E8F0;
+}
+
+/* ==========================================================================
+   PREMIUM TOAST NOTIFICATION STYLES (TOP RIGHT CORNER)
+   ========================================================================== */
+.premium-toast-container {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 9999;
+    pointer-events: none;
+    animation: toastSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.premium-toast {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+    background: #FFFFFF;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05);
+    pointer-events: auto;
+    min-width: 320px;
+    max-width: 450px;
+    position: relative;
+    overflow: hidden;
+    border-left: 4px solid #10B981;
+}
+
+.premium-toast::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: #10B981;
+    animation: toastProgress 4s linear forwards;
+}
+
+.premium-toast .toast-icon-wrapper {
+    width: 36px;
+    height: 36px;
+    background: #ECFDF5;
+    color: #10B981;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.premium-toast .toast-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+}
+
+.premium-toast .toast-title {
+    font-size: 14px;
+    font-weight: 800;
+    color: #1E293B;
+}
+
+.premium-toast .toast-message {
+    font-size: 13px;
+    font-weight: 500;
+    color: #64748B;
+}
+
+.premium-toast .toast-close-btn {
+    background: transparent;
+    border: none;
+    font-size: 20px;
+    color: #94A3B8;
+    cursor: pointer;
+    padding: 4px;
+    line-height: 1;
+    transition: color 0.2s ease;
+}
+
+.premium-toast .toast-close-btn:hover {
+    color: #475569;
+}
+
+@keyframes toastSlideIn {
+    from {
+        transform: translateY(-20px) scale(0.9);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes toastProgress {
+    from { width: 100%; }
+    to { width: 0%; }
+}
+
+.grade-pill.red {
+    background: #FEE2E2;
+    color: #991B1B;
+    border: 1px solid #FCA5A5;
+}
+
+@media (max-width: 768px) {
+    .exam-pro-card.horizontal {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        padding: 20px !important;
+        gap: 16px !important;
+    }
+    .pro-status-center {
+        padding-left: 0 !important;
+        justify-content: flex-start !important;
+    }
+    .pro-card-actions {
+        min-width: 100% !important;
+        display: flex;
+        justify-content: stretch !important;
+    }
+    .pro-action-btn {
+        width: 100% !important;
+    }
+    .pro-meta-horizontal {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 8px !important;
+    }
+    .pro-sep {
+        display: none !important;
+    }
+    .apply-fab-btn {
+        padding: 12px 18px !important;
+        font-size: 13px !important;
+    }
+    .status-flow-container {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 16px !important;
+        padding: 0 !important;
+    }
+    .flow-step {
+        flex-direction: row !important;
+        gap: 16px !important;
+        align-items: center !important;
+    }
+    .step-point-container {
+        width: auto !important;
+        margin-bottom: 0 !important;
+    }
+    .step-connector {
+        display: none !important;
+    }
+
+    .exam-tabs-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        gap: 8px;
+        padding: 6px;
+    }
+
+    .exam-tab {
+        padding: 10px 14px;
+        font-size: 13px;
+        gap: 6px;
+        white-space: nowrap;
+        flex: none;
+    }
+
+    .tab-badge {
+        min-width: 18px;
+        height: 18px;
+        font-size: 10px;
+    }
+
+    .post-form-body {
+        grid-template-columns: 1fr;
+        padding: 16px;
+    }
+
+    .post-form-header {
+        padding: 14px 16px;
+    }
+
+    .post-form-header h4 {
+        font-size: 14px;
+    }
+
+    .official-result-card.full-page {
+        padding: 20px 16px;
+        min-height: auto;
+    }
+
+    .result-table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .official-result-table {
+        min-width: 500px;
+    }
+
+    .official-result-table th {
+        padding: 10px 12px;
+        font-size: 10px;
+    }
+
+    .official-result-table td {
+        padding: 12px;
+        font-size: 13px;
+    }
+
+    .exam-details-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .student-info-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .student-transcript-meta {
+        padding: 16px;
+    }
+
+    .dept-title-top {
+        font-size: 18px;
+    }
+
+    .uni-title-bottom {
+        font-size: 13px;
+    }
+
+    .tracker-modal-header {
+        padding: 16px 20px;
+    }
+
+    .header-text-group h3 {
+        font-size: 18px;
+    }
+
+    .tracker-content {
+        padding: 16px 20px;
+    }
+
+    .tracker-footer {
+        padding: 12px 20px 16px;
+    }
+
+    .tracker-legend {
+        flex-wrap: wrap;
+        gap: 12px;
+        justify-content: flex-start;
+    }
+
+    .empty-section-msg {
+        padding: 32px 16px;
+    }
+
+    .premium-toast {
+        min-width: auto;
+        max-width: calc(100vw - 48px);
+    }
+    .portal-navigation-container {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+    }
+    .portal-nav-back-btn {
+        width: 100% !important;
+    }
+    .portal-breadcrumbs {
+        width: 100%;
+        box-sizing: border-box;
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+        padding: 0 12px;
+    }
+}
+
+/* Portal Navigation Styles */
+.portal-navigation-container {
+    margin-bottom: 20px;
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
+}
+
+.portal-nav-back-btn {
+    height: 38px !important;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    padding: 0 16px !important;
+    margin: 0 !important;
+    border-radius: 12px !important;
+    font-weight: 600 !important;
+    font-size: 14px !important;
+    gap: 6px !important;
+}
+
+.portal-breadcrumbs {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 38px;
+    padding: 0 20px;
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    font-size: 14px;
+    color: #64748B;
+    font-weight: 500;
+    line-height: 1;
+    box-sizing: border-box;
+}
+
+.breadcrumb-link {
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.breadcrumb-link:hover {
+    color: var(--primary-color);
+}
+
+.breadcrumb-separator {
+    color: #94A3B8;
+}
+
+.breadcrumb-current {
+    color: #1E293B;
+    font-weight: 700;
+}
+
+/* Assigned waitlist request styling */
+.exam-pro-card[data-status="assigned"] .pro-status-tag {
+    background: #ECFDF5;
+    color: #065F46;
+    border-color: #D1FAE5;
+}
+
+.exam-pro-card[data-status="assigned"] .status-indicator-dot {
+    background: #10B981;
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+}

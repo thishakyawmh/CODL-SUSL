@@ -1,0 +1,80 @@
+.results-card {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.view-more-link {
+    background: transparent;
+    color: var(--text-gray);
+    font-size: 13px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.view-more-link:hover {
+    color: var(--primary-color);
+}
+
+.results-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.result-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.result-title {
+    width: 120px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-dark);
+}
+
+.progress-container {
+    flex: 1;
+    height: 5px;
+    background-color: #F1F5F9;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 100%;
+    border-radius: 4px;
+}
+
+.result-percent {
+    width: 40px;
+    text-align: right;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+@media (max-width: 768px) {
+    .result-item {
+        gap: 10px;
+    }
+
+    .result-title {
+        width: 80px;
+        font-size: 12px;
+    }
+
+    .result-percent {
+        font-size: 12px;
+        width: 36px;
+    }
+}
