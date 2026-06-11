@@ -3,7 +3,7 @@ import { useNavigate, useOutletContext, useLocation } from 'react-router-dom';
 import { ArrowLeft, FileText, Calendar, Clock, Download, Plus, ChevronRight } from 'lucide-react';
 import { type Course } from './CourseDetails';
 import { toast } from '../../utils/toast';
-import { courseService, examService, postponementRequestService, reattemptRequestService, examApplicationService } from '../../services/apiService';
+import { courseService, postponementRequestService, reattemptRequestService, examApplicationService } from '../../services/apiService';
 import './CourseExaminations.css';
 
 const formatDate = (dateStr?: string) => {
@@ -361,7 +361,7 @@ export const CourseExaminations: React.FC = () => {
                             <Plus size={16} />
                             <span>Apply</span>
                         </button>
-                        
+
                         {showApplyDropdown && (
                             <div className="apply-nav-dropdown" style={{
                                 position: 'absolute',
@@ -693,7 +693,7 @@ export const CourseExaminations: React.FC = () => {
                             <div className="exam-strips-list">
                                 {postApplications.map(app => {
                                     const isAssigned = app.status === 'Assigned';
-                                    const isResultsReleased = isAssigned && app.assignedExam && 
+                                    const isResultsReleased = isAssigned && app.assignedExam &&
                                         (app.assignedExam.status === 'Results Released' || app.assignedExam.status === 'Result Updated');
                                     const displayStatus = isResultsReleased ? 'Result Released' : (isAssigned ? 'Assigned' : 'Waiting');
                                     const cardStatus = isResultsReleased ? 'Result Released' : (isAssigned ? 'assigned' : app.type.toLowerCase());
@@ -785,7 +785,7 @@ export const CourseExaminations: React.FC = () => {
                                                         className="pro-action-btn secondary"
                                                         onClick={(e) => {
                                                             e.stopPropagation();
-                                                            const originalExam = scheduledExams.find(ex => 
+                                                            const originalExam = scheduledExams.find(ex =>
                                                                 ex.id.toString() === app.examId?.toString() ||
                                                                 ex.title.trim().toLowerCase() === app.examTitle?.trim().toLowerCase()
                                                             );
@@ -960,12 +960,12 @@ export const CourseExaminations: React.FC = () => {
                                             {(showDetailsModal.assignedExam.status === 'Results Released' || showDetailsModal.assignedExam.status === 'Result Updated') && (
                                                 <div style={{ marginTop: '20px', background: '#F5F3FF', border: '1px solid #EDE9FE', padding: '16px 20px', borderRadius: '12px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
                                                     <span style={{ fontSize: '14px', color: '#5B21B6', fontWeight: 700 }}>🎉 Results are released for this assigned exam! Your grade has been updated in your original results sheet.</span>
-                                                    <button 
-                                                        className="pro-action-btn primary small" 
+                                                    <button
+                                                        className="pro-action-btn primary small"
                                                         style={{ width: 'auto', background: '#8B5CF6', color: '#FFFFFF', padding: '8px 24px', borderRadius: '8px' }}
                                                         onClick={() => {
                                                             setShowDetailsModal(null);
-                                                            const originalExam = scheduledExams.find(ex => 
+                                                            const originalExam = scheduledExams.find(ex =>
                                                                 ex.id.toString() === showDetailsModal.examId?.toString() ||
                                                                 ex.title.trim().toLowerCase() === showDetailsModal.examTitle?.trim().toLowerCase()
                                                             );

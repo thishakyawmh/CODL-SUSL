@@ -6,23 +6,23 @@ import { Sidebar } from './components/student-portal/Sidebar';
 import { Dashboard } from './components/student-portal/Dashboard';
 import { CourseDetailsWrapper } from './components/student-portal/CourseDetailsWrapper';
 import { CourseDetails } from './components/student-portal/CourseDetails';
-// [M4] import { CourseExaminations } from './components/student-portal/CourseExaminations';
-// [M4] import { CourseResults } from './components/student-portal/CourseResults';
+import { CourseExaminations } from './components/student-portal/CourseExaminations';
+import { CourseResults } from './components/student-portal/CourseResults';
 import { CourseMaterials } from './components/student-portal/CourseMaterials';
-// [M4] import { ResultSheet } from './components/student-portal/ResultSheet';
-// [M4] import { ExamApplicationForm } from './components/student-portal/ExamApplicationForm';
-// [M4] import { ExamApplicationSuccess } from './components/student-portal/ExamApplicationSuccess';
+import { ResultSheet } from './components/student-portal/ResultSheet';
+import { ExamApplicationForm } from './components/student-portal/ExamApplicationForm';
+import { ExamApplicationSuccess } from './components/student-portal/ExamApplicationSuccess';
 import { CourseAnnouncements } from './components/student-portal/CourseAnnouncements';
 import { LoginPortal } from './components/auth/LoginPortal';
 import { Profile } from './components/student-portal/Profile';
 import { LetterRequest } from './components/student-portal/LetterRequest';
 import { Settings } from './components/student-portal/Settings';
 import { SupportBubble } from './components/student-portal/SupportBubble';
-// [M4] import { GradingScale } from './components/student-portal/GradingScale';
+import { GradingScale } from './components/student-portal/GradingScale';
 import { ApplicantDashboard } from './components/student-portal/ApplicantDashboard';
 import { ApplicantTrackStatus } from './components/student-portal/ApplicantTrackStatus';
 import { NewCourseApplication } from './components/student-portal/NewCourseApplication';
-// [M4] import ExaminationResults from './components/student-portal/ExaminationResults';
+import ExaminationResults from './components/student-portal/ExaminationResults';
 
 // --- Admin Portal Imports ---
 import { AdminSidebar } from './components/admin-portal/AdminSidebar';
@@ -35,8 +35,8 @@ import { ManageCourse } from './components/admin-portal/ManageCourse';
 import { Applications } from './components/admin-portal/Applications';
 import { LetterRequests } from './components/admin-portal/LetterRequests';
 import { AdminSettings } from './components/admin-portal/AdminSettings';
-// [M4] import { CreateExam } from './components/admin-portal/CreateExam';
-// [M4] import { ManageExamStudents } from './components/admin-portal/ManageExamStudents';
+import { CreateExam } from './components/admin-portal/CreateExam';
+import { ManageExamStudents } from './components/admin-portal/ManageExamStudents';
 // [M5] import { AIAnalytics } from './components/admin-portal/AIAnalytics';
 import { AdminAnnouncements } from './components/admin-portal/AdminAnnouncements';
 // [M5] import { ActivityLogs } from './components/admin-portal/ActivityLogs';
@@ -219,7 +219,7 @@ function App() {
             element={<ManageCourse />}
           />
 
-          {/* [M4]
+          
           <Route
             path="courses/manage/:id/exams/create"
             element={<CreateExam />}
@@ -232,7 +232,7 @@ function App() {
             path="courses/manage/:id/exams/:examId/students"
             element={<ManageExamStudents />}
           />
-          */}
+         
 
           <Route
             path="approvals/*"
@@ -295,7 +295,7 @@ function App() {
               element={<CourseDetails />}
             />
 
-            {/* [M4]
+          
             <Route
               path="examinations"
               element={<CourseExaminations />}
@@ -305,9 +305,9 @@ function App() {
               path="examinations/:examId/results"
               element={<ExaminationResults />}
             />
-            */}
+           
 
-            {/* [M4]
+           
             <Route
               path="results"
               element={<CourseResults />}
@@ -322,7 +322,7 @@ function App() {
               path="grading-scale"
               element={<GradingScale />}
             />
-            */}
+           
 
             <Route
               path="materials"
@@ -334,7 +334,6 @@ function App() {
               element={<CourseAnnouncements />}
             />
 
-            {/* [M4]
             <Route
               path="examinations/apply"
               element={<ExamApplicationForm />}
@@ -344,7 +343,7 @@ function App() {
               path="examinations/success"
               element={<ExamApplicationSuccess />}
             />
-            */}
+           
           </Route>
         </Route>
       </Routes>
