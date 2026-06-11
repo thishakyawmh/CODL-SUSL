@@ -22,7 +22,7 @@ const FACULTY_OPTIONS = [
 ];
 
 interface Subject {
-    code: string;
+    code?: string;
     name: string;
     credits: string;
 }
@@ -266,14 +266,14 @@ export const CreateCourse: React.FC = () => {
                 payload.semesters = semesters.map((sem, idx) => ({
                     name: `Semester ${idx + 1}`,
                     subjects: sem.subjects.filter(s => s.name).map(s => ({
-                        code: s.code,
+                        code: s.code || '',
                         name: s.name,
                         credits: s.credits
                     }))
                 }));
             } else if (courseType === 'Diploma') {
                 payload.subjects = diplomaSubjects.filter(s => s.name).map(s => ({
-                    code: s.code,
+                    code: s.code || '',
                     name: s.name,
                     credits: s.credits
                 }));
