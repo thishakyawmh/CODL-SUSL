@@ -48,6 +48,14 @@ const injectStyles = () => {
             border-left: 4px solid #EF4444;
         }
 
+        .custom-toast-card.info {
+            border-left: 4px solid #3B82F6;
+        }
+
+        .custom-toast-card.warning {
+            border-left: 4px solid #F59E0B;
+        }
+
         .custom-toast-card.success .custom-toast-icon-wrapper {
             background: #ECFDF5;
             color: #10B981;
@@ -56,6 +64,16 @@ const injectStyles = () => {
         .custom-toast-card.error .custom-toast-icon-wrapper {
             background: #FEF2F2;
             color: #EF4444;
+        }
+
+        .custom-toast-card.info .custom-toast-icon-wrapper {
+            background: #EFF6FF;
+            color: #3B82F6;
+        }
+
+        .custom-toast-card.warning .custom-toast-icon-wrapper {
+            background: #FEF3C7;
+            color: #D97706;
         }
 
         .custom-toast-icon-wrapper {
@@ -120,6 +138,14 @@ const injectStyles = () => {
             background: #EF4444;
         }
 
+        .custom-toast-card.info .custom-toast-progress {
+            background: #3B82F6;
+        }
+
+        .custom-toast-card.warning .custom-toast-progress {
+            background: #F59E0B;
+        }
+
         @keyframes customToastSlideIn {
             from {
                 transform: translateY(-20px) scale(0.9);
@@ -151,9 +177,28 @@ const getContainer = (): HTMLElement | null => {
     return container;
 };
 
-const createToastElement = (type: 'success' | 'error', message: string, duration: number = 4000) => {
+export interface ToastOptions {
+    title?: string;
+    duration?: number;
+}
+
+const createToastElement = (
+    type: 'success' | 'error' | 'info' | 'warning', 
+    message: string, 
+    options?: number | ToastOptions
+) => {
     const container = getContainer();
     if (!container) return;
+
+    let titleText = type.charAt(0).toUpperCase() + type.slice(1);
+    let duration = 4000;
+
+    if (typeof options === 'number') {
+        duration = options;
+    } else if (options && typeof options === 'object') {
+        if (options.title) titleText = options.title;
+        if (options.duration) duration = options.duration;
+    }
 
     const toastCard = document.createElement('div');
     toastCard.className = `custom-toast-card ${type}`;
@@ -167,11 +212,27 @@ const createToastElement = (type: 'success' | 'error', message: string, duration
                 <polyline points="20 6 9 17 4 12"></polyline>
             </svg>
         `;
-    } else {
+    } else if (type === 'error') {
         iconWrapper.innerHTML = `
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18"></line>
                 <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+        `;
+    } else if (type === 'info') {
+        iconWrapper.innerHTML = `
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+        `;
+    } else {
+        iconWrapper.innerHTML = `
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                <line x1="12" y1="9" x2="12" y2="13"></line>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
             </svg>
         `;
     }
@@ -181,7 +242,7 @@ const createToastElement = (type: 'success' | 'error', message: string, duration
 
     const title = document.createElement('span');
     title.className = 'custom-toast-title';
-    title.innerText = type === 'success' ? 'Success' : 'Error';
+    title.innerText = titleText;
 
     const messageSpan = document.createElement('span');
     messageSpan.className = 'custom-toast-message';
@@ -223,10 +284,16 @@ const createToastElement = (type: 'success' | 'error', message: string, duration
 };
 
 export const toast = {
-    success: (message: string, duration?: number) => {
-        createToastElement('success', message, duration);
+    success: (message: string, options?: number | ToastOptions) => {
+        createToastElement('success', message, options);
     },
-    error: (message: string, duration?: number) => {
-        createToastElement('error', message, duration);
+    error: (message: string, options?: number | ToastOptions) => {
+        createToastElement('error', message, options);
+    },
+    info: (message: string, options?: number | ToastOptions) => {
+        createToastElement('info', message, options);
+    },
+    warning: (message: string, options?: number | ToastOptions) => {
+        createToastElement('warning', message, options);
     }
 };
