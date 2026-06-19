@@ -463,4 +463,11 @@ export const activityLogService = {
     }
 };
 
+export const aiAnalysisService = {
+    analyzeCourse: async (courseId: number | string) => {
+        const response = await api.post('/admin/ai-analysis', { course_id: Number(courseId) });
+        return response.data;
+    }
+};
+
 export default api;

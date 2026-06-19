@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             SuperAdminSeeder::class,
             CategorySeeder::class,
+            AIAnalyticsSeeder::class,
         ]);
 
         echo "Database seeded successfully with essential data!\n";

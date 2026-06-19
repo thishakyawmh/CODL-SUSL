@@ -37,7 +37,7 @@ import { LetterRequests } from './components/admin-portal/LetterRequests';
 import { AdminSettings } from './components/admin-portal/AdminSettings';
 import { CreateExam } from './components/admin-portal/CreateExam';
 import { ManageExamStudents } from './components/admin-portal/ManageExamStudents';
-// [M5] import { AIAnalytics } from './components/admin-portal/AIAnalytics';
+import { AIAnalytics } from './components/admin-portal/AIAnalytics';
 import { AdminAnnouncements } from './components/admin-portal/AdminAnnouncements';
 // [M5] import { ActivityLogs } from './components/admin-portal/ActivityLogs';
 
@@ -251,7 +251,7 @@ function App() {
           />
 
           {/* [M5] <Route path="activity-logs" element={<ActivityLogs />} /> */}
-          {/* [M5] <Route path="ai-analytics" element={<AIAnalytics />} /> */}
+          <Route path="ai-analytics" element={<AIAnalytics />} />
 
           <Route
             path="settings"

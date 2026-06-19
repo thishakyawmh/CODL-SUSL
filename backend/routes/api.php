@@ -15,6 +15,7 @@ use App\Http\Controllers\DatabaseTableController;
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\SystemSettingController;
 use App\Http\Controllers\BackupController;
+use App\Http\Controllers\AIAnalysisController;
 
 /*
 |--------------------------------------------------------------------------
@@ -153,4 +154,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/admin/backups/run', [BackupController::class, 'run']);
     Route::get('/admin/backups/download/{filename}', [BackupController::class, 'download']);
     Route::delete('/admin/backups/{filename}', [BackupController::class, 'destroy']);
+
+    // AI Analysis
+    Route::post('/admin/ai-analysis', [AIAnalysisController::class, 'analyze']);
 });

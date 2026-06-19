@@ -1,221 +1,533 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-    BarChart3, Lightbulb, ArrowLeft, ArrowRight, Sparkles, AlertCircle, ArrowUpRight
+    BarChart3, Lightbulb, ArrowLeft, Sparkles, AlertCircle, ArrowUpRight, 
+    BookOpen, Award, FileText, CheckCircle2, ChevronDown, ChevronUp, 
+    TrendingUp, Loader2, Download, Info, Layers
 } from 'lucide-react';
+import { categoryService, courseService, aiAnalysisService } from '../../services/apiService';
 import './AIAnalytics.css';
 
-export const AIAnalytics: React.FC = () => {
-    const [activeDetail, setActiveDetail] = React.useState<'none' | 'interests' | 'strategic'>('none');
+interface Category {
+    id: number;
+    name: string;
+    description: string;
+    icon: string;
+    color: string;
+}
 
-    const industryTrends = [
-        { name: 'AI & Machine Learning', value: 94, trend: '+4.2%' },
-        { name: 'Cloud Engineering', value: 89, trend: '+3.1%' },
-        { name: 'Data Privacy & Security', value: 87, trend: '+2.8%' },
-        { name: 'Full-Stack Development', value: 78, trend: '+1.5%' },
+interface Course {
+    id: number;
+    title: string;
+    code: string;
+    level: string;
+    department: string;
+    duration: string;
+    category_id: number;
+    category?: Category;
+    semesters_count?: number;
+    subjects_count?: number;
+}
+
+interface JobPath {
+    name: string;
+    matching_percentage: number;
+    description: string;
+    covered_skills: string[];
+    missing_skills: string[];
+}
+
+interface SubjectAnalysis {
+    name: string;
+    code: string;
+    usefulness_percentage: number;
+    topics_included: string[];
+    audited_slides: string[];
+    recommendations: string;
+}
+
+interface AnalysisResult {
+    matching_score: number;
+    job_paths: JobPath[];
+    subjects: SubjectAnalysis[];
+    summary: string;
+}
+
+export const AIAnalytics: React.FC = () => {
+    // Categories and Courses lists
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [courses, setCourses] = useState<Course[]>([]);
+    const [loadingFilters, setLoadingFilters] = useState<boolean>(true);
+
+    // Active Selection State
+    const [selectedCategoryName, setSelectedCategoryName] = useState<string>('All');
+    const [activeCourseId, setActiveCourseId] = useState<number | null>(null);
+    const [activeCourse, setActiveCourse] = useState<Course | null>(null);
+
+    // Auditing State
+    const [analyzing, setAnalyzing] = useState<boolean>(false);
+    const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
+    const [expandedSubjectCode, setExpandedSubjectCode] = useState<string | null>(null);
+
+    // Loading Screen Message Cycler
+    const [loadingText, setLoadingText] = useState<string>('Initializing AI curriculum auditor...');
+
+    const loadingSteps = [
+        'Connecting to AI Analysis Core...',
+        'Scanning academic database for courses and modules...',
+        'Aggregating uploaded slides and lecture files from CourseMaterials.tsx...',
+        'Parsing filename tags and mapping lecture topics...',
+        'Evaluating curriculum content against real-world job descriptors...',
+        'Computing alignment percentages for key industry roles...',
+        'Structuring curriculum audit suggestions and subject recommendations...'
     ];
+
+    // Fetch initial filter data
+    useEffect(() => {
+        const fetchFilters = async () => {
+            setLoadingFilters(true);
+            try {
+                const cats = await categoryService.getAll();
+                setCategories(cats);
+                const crs = await courseService.getAll();
+                setCourses(crs);
+            } catch (err) {
+                console.error('Failed to load filter directories:', err);
+            } finally {
+                setLoadingFilters(false);
+            }
+        };
+        fetchFilters();
+    }, []);
+
+    // Cycle analysis loader texts
+    useEffect(() => {
+        let timer: any;
+        if (analyzing) {
+            let step = 0;
+            timer = setInterval(() => {
+                step = (step + 1) % loadingSteps.length;
+                setLoadingText(loadingSteps[step]);
+            }, 1800);
+        }
+        return () => {
+            if (timer) clearInterval(timer);
+        };
+    }, [analyzing]);
+
+    // Handle course selection
+    const handleSelectCourse = async (course: Course) => {
+        setActiveCourseId(course.id);
+        setActiveCourse(course);
+        setAnalysisResult(null); // Clear previous analysis
+        setExpandedSubjectCode(null);
+    };
+
+    // Run AI analysis
+    const handleRunAnalysis = async () => {
+        if (!activeCourseId) return;
+        setAnalyzing(true);
+        setAnalysisResult(null);
+        setExpandedSubjectCode(null);
+        setLoadingText('Initializing AI curriculum auditor...');
+        try {
+            const data = await aiAnalysisService.analyzeCourse(activeCourseId);
+            setAnalysisResult(data);
+        } catch (err) {
+            console.error('Curriculum analysis failed:', err);
+            alert('AI Analysis failed. Please check backend log settings or API key limits.');
+        } finally {
+            setAnalyzing(false);
+        }
+    };
+
+    // Filter courses based on category tab selection
+    const getFilteredCourses = () => {
+        if (selectedCategoryName === 'All') return courses;
+        return courses.filter(c => {
+            // Match category name or category level
+            const cLvl = c.level ? c.level.toLowerCase() : '';
+            const cCatName = c.category ? c.category.name.toLowerCase() : '';
+            const filterLowe = selectedCategoryName.toLowerCase();
+            return cLvl === filterLowe || cCatName === filterLowe;
+        });
+    };
+
+    // Helper to get category color badge
+    const getCategoryStyles = (level: string) => {
+        const lvl = level.toLowerCase();
+        if (lvl === 'degree') return { bg: '#F5F3FF', color: '#7C3AED', border: '1px solid #DDD6FE' };
+        if (lvl.includes('diploma') || lvl.includes('hnd')) return { bg: '#EEF2FF', color: '#3B82F6', border: '1px solid #DBEAFE' };
+        if (lvl.includes('certificate')) return { bg: '#ECFDF5', color: '#10B981', border: '1px solid #D1FAE5' };
+        return { bg: '#F1F5F9', color: '#64748B', border: '1px solid #E2E8F0' };
+    };
+
+    // Category Tabs list (curated)
+    const categoryTabs = ['All', 'Degree', 'Higher National Diploma', 'Diploma', 'Certificate'];
 
     return (
         <div className="admin-dashboard">
             {/* Page Header */}
             <div className="admin-page-header">
                 <div>
-                    <h1 className="admin-page-title">AI Analytics</h1>
-                    <p className="admin-page-subtitle">Strategic institutional insights derived from internal performance and external market trends.</p>
+                    <h1 className="admin-page-title">AI Curriculum Auditor</h1>
+                    <p className="admin-page-subtitle">
+                        Analyze program syllabus contents and lecture slides against industrial demands and job paths.
+                    </p>
                 </div>
             </div>
 
+            {/* Main Content Area */}
             <div className="ai-analytics-page">
-                {activeDetail === 'none' ? (
-                    /* Main Dashboard View: Left buttons & Right big Matching Score Card */
-                    <div className="ai-dashboard-layout">
-                        {/* Left Column: Two Buttons */}
-                        <div className="ai-left-column">
-                            <button 
-                                className="ai-large-panel-btn interactive-card"
-                                onClick={() => setActiveDetail('interests')}
-                            >
-                                <div className="panel-btn-content">
-                                    <div className="panel-icon-box purple">
-                                        <BarChart3 size={24} />
-                                    </div>
-                                    <div className="panel-text">
-                                        <h3>Interests and industry demand</h3>
-                                        <p>Go inside to analyze current market survey trends, tech field demands, and curriculum alignments.</p>
-                                    </div>
-                                    <ArrowRight className="panel-arrow-icon" size={20} />
-                                </div>
-                            </button>
-
-                            <button 
-                                className="ai-large-panel-btn interactive-card"
-                                onClick={() => setActiveDetail('strategic')}
-                            >
-                                <div className="panel-btn-content">
-                                    <div className="panel-icon-box indigo">
-                                        <Lightbulb size={24} />
-                                    </div>
-                                    <div className="panel-text">
-                                        <h3>Strategic Recommendation</h3>
-                                        <p>Go inside to view high-priority course suggestions, regional expansions, and resource updates.</p>
-                                    </div>
-                                    <ArrowRight className="panel-arrow-icon" size={20} />
-                                </div>
-                            </button>
+                {activeCourseId === null ? (
+                    /* ── DASHBOARD VIEW: Course listing with filters ── */
+                    <div className="courses-dashboard-layout animate-fade-in">
+                        {/* Filters Panel */}
+                        <div className="filter-navigation-bar">
+                            <span className="filter-label">Filter Category:</span>
+                            <div className="filter-tabs-row">
+                                {categoryTabs.map(tab => (
+                                    <button
+                                        key={tab}
+                                        className={`filter-tab-btn ${selectedCategoryName === tab ? 'active' : ''}`}
+                                        onClick={() => setSelectedCategoryName(tab)}
+                                    >
+                                        {tab === 'All' ? 'All Programs' : tab}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
 
-                        {/* Right Column: Overall Matching Score Card */}
-                        <div className="ai-right-column">
-                            <div className="ai-big-match-card">
-                                <div className="match-gauge-header">
-                                    <div className="gauge-center-wrapper">
-                                        {/* Large Circular Matching Gauge */}
-                                        <div className="ai-gauge-container large-gauge">
-                                            <svg className="ai-gauge-svg" viewBox="0 0 100 100">
-                                                <circle className="ai-gauge-bg" cx="50" cy="50" r="40" />
-                                                <circle 
-                                                    className="ai-gauge-fill animate-gauge" 
-                                                    cx="50" 
-                                                    cy="50" 
-                                                    r="40" 
-                                                    style={{ 
-                                                        strokeDasharray: `${2 * Math.PI * 40}`, 
-                                                        strokeDashoffset: `${2 * Math.PI * 40 * (1 - 0.89)}` 
-                                                    }} 
-                                                />
-                                            </svg>
-                                            <div className="ai-gauge-text-overlay">
-                                                <span className="ai-gauge-percentage large-text">89%</span>
-                                                <span className="ai-gauge-label">Matching Score</span>
+                        {/* Courses Grid */}
+                        {loadingFilters ? (
+                            <div className="loading-state-box">
+                                <Loader2 className="spinning-icon" size={32} />
+                                <p>Loading academic catalogs...</p>
+                            </div>
+                        ) : getFilteredCourses().length === 0 ? (
+                            <div className="no-courses-card">
+                                <AlertCircle size={40} className="info-icon" />
+                                <h3>No Courses Found</h3>
+                                <p>No programs match the selected category in this semester.</p>
+                            </div>
+                        ) : (
+                            <div className="courses-analytics-grid">
+                                {getFilteredCourses().map(course => {
+                                    const styles = getCategoryStyles(course.level || course.category?.name || '');
+                                    const isCert = (course.level || '').toLowerCase().includes('certificate');
+                                    return (
+                                        <div key={course.id} className="course-card-premium interactive-card">
+                                            <div className="course-card-header">
+                                                <span 
+                                                    className="category-badge"
+                                                    style={{ backgroundColor: styles.bg, color: styles.color, borderColor: styles.border }}
+                                                >
+                                                    {course.level || course.category?.name || 'Academic'}
+                                                </span>
+                                                <span className="course-code-tag">{course.code}</span>
+                                            </div>
+
+                                            <div className="course-card-body">
+                                                <h3 className="course-title-text">{course.title}</h3>
+                                                <p className="course-dept-text">{course.department || 'Computing Department'}</p>
+                                                
+                                                <div className="course-meta-tags-row">
+                                                    <span className="meta-tag">
+                                                        <TrendingUp size={12} /> {course.duration}
+                                                    </span>
+                                                    <span className="meta-tag">
+                                                        <BookOpen size={12} /> {isCert ? 'Flat Syllabus' : 'Multi-Semester'}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <div className="course-card-footer">
+                                                <button 
+                                                    className="audit-action-btn"
+                                                    onClick={() => handleSelectCourse(course)}
+                                                >
+                                                    Audit Curriculum <ArrowUpRight size={14} />
+                                                </button>
                                             </div>
                                         </div>
-                                    </div>
-                                </div>
-
-                                {/* Text Box at the Bottom */}
-                                <div className="match-card-body">
-                                    <div className="ai-dashboard-summary-box">
-                                        <div className="summary-title-row">
-                                            <AlertCircle size={16} className="summary-icon" />
-                                            <h4>CODL Alignment Summary</h4>
-                                        </div>
-                                        <p className="summary-paragraph">
-                                            The institutional matching score combines recent applicant interest trends with active curriculum mappings to evaluate CODL's overall market readiness. Click the panels on the left to navigate inside and explore detailed analytics or strategic suggestions.
-                                        </p>
-                                    </div>
-                                </div>
+                                    );
+                                })}
                             </div>
-                        </div>
-                    </div>
-                ) : activeDetail === 'interests' ? (
-                    /* Interests and Industry Demand Sub-view */
-                    <div className="ai-detail-subview-container animate-fade-in">
-                        {/* Sub-view Header Nav */}
-                        <div className="subview-nav-row">
-                            <button className="subview-back-btn" onClick={() => setActiveDetail('none')}>
-                                <ArrowLeft size={16} /> Back to Dashboard
-                            </button>
-                        </div>
-
-                        <div className="subview-header">
-                            <div className="header-badge">
-                                <Sparkles size={12} style={{ marginRight: '4px' }} /> Analytical View
-                            </div>
-                            <h2>Interests and Industry Demand Analysis</h2>
-                            <p>Deep-dive evaluation of technological discipline requirements based on national employment registry surveys.</p>
-                        </div>
-
-                        <div className="subview-content-grid">
-                            <div className="subview-main-card">
-                                <div className="subview-card-header">
-                                    <h3>Industry Demand Alignment</h3>
-                                    <span className="ai-tag-pill">Latest Survey</span>
-                                </div>
-                                <div className="ai-stat-list">
-                                    {industryTrends.map((trend, i) => (
-                                        <div key={i} className="ai-stat-item">
-                                            <div className="ai-stat-label">
-                                                <span>{trend.name}</span>
-                                                <span style={{ color: '#10B981', fontWeight: 700 }}>{trend.trend}</span>
-                                            </div>
-                                            <div className="ai-progress-bg">
-                                                <div className="ai-progress-fill" style={{ width: `${trend.value}%` }}></div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div className="subview-narrative-card">
-                                <h3>Key Insights & Takeaways</h3>
-                                <p>
-                                    Technical proficiencies in artificial intelligence, cloud infrastructure, and cyber-security have shown exponential growth in demand across all industrial sectors.
-                                </p>
-                                <p style={{ marginTop: '12px' }}>
-                                    CODL's current curriculum covers full-stack development effectively, but there is a clear strategic opportunity to introduce dedicated micro-credentials or specialization tracks in AI/ML to cater to modern student preferences.
-                                </p>
-                                <div className="insight-stat-box">
-                                    <span className="number">94%</span>
-                                    <span className="label">AI & ML Demand</span>
-                                </div>
-                            </div>
-                        </div>
+                        )}
                     </div>
                 ) : (
-                    /* Strategic Recommendation Sub-view */
-                    <div className="ai-detail-subview-container animate-fade-in">
-                        {/* Sub-view Header Nav */}
+                    /* ── AUDIT REPORT VIEW ── */
+                    <div className="audit-detail-layout animate-fade-in">
+                        {/* Sub-view Nav Back */}
                         <div className="subview-nav-row">
-                            <button className="subview-back-btn" onClick={() => setActiveDetail('none')}>
-                                <ArrowLeft size={16} /> Back to Dashboard
+                            <button className="subview-back-btn" onClick={() => { setActiveCourseId(null); setActiveCourse(null); setAnalysisResult(null); }}>
+                                <ArrowLeft size={16} /> Back to Programs Dashboard
                             </button>
                         </div>
 
-                        <div className="subview-header">
-                            <div className="header-badge indigo">
-                                <Sparkles size={12} style={{ marginRight: '4px' }} /> Strategic View
+                        {/* Auditing Course Header */}
+                        <div className="program-audit-header-card">
+                            <div className="header-info">
+                                <span className="header-program-code">{activeCourse?.code}</span>
+                                <h2>{activeCourse?.title}</h2>
+                                <p>{activeCourse?.department} Department • Duration: {activeCourse?.duration} program</p>
                             </div>
-                            <h2>Strategic Recommendations</h2>
-                            <p>Data-driven suggestions generated by AI mapping models to optimize course catalogs and student reach.</p>
+                            
+                            {!analyzing && !analysisResult && (
+                                <button 
+                                    className="purple-btn-analyse animate-pulse-border"
+                                    onClick={handleRunAnalysis}
+                                >
+                                    <Sparkles size={18} /> Analyse with AI
+                                </button>
+                            )}
                         </div>
 
-                        <div className="subview-content-grid">
-                            <div className="subview-main-card">
-                                <div className="subview-card-header">
-                                    <h3>Actionable Items</h3>
-                                    <span className="ai-tag-pill">Prioritized List</span>
+                        {/* LOADING OVERLAY SCREEN */}
+                        {analyzing && (
+                            <div className="ai-loading-overlay-card">
+                                <div className="loading-spinner-wrapper">
+                                    <div className="outer-pulse-ring"></div>
+                                    <div className="inner-pulse-ring"></div>
+                                    <Sparkles size={36} className="sparkle-pulse-icon" />
                                 </div>
-                                <div className="ai-rec-list-vertical">
-                                    <div className="ai-rec-card-premium">
-                                        <div className="rec-card-header">
-                                            <span className="ai-tag-pill critical">High Priority</span>
-                                            <h4>Curriculum Update: AI & ML</h4>
-                                        </div>
-                                        <p>Market demand for AI skills is at 94%. We recommend introducing a foundational course to capture the surging interest in this sector.</p>
-                                    </div>
-
-                                    <div className="ai-rec-card-premium">
-                                        <div className="rec-card-header">
-                                            <span className="ai-tag-pill growth">Growth Opportunity</span>
-                                            <h4>Regional Expansion: Southern Provinces</h4>
-                                        </div>
-                                        <p>Application volume in Galle and Matara is below expected levels. Targeted digital outreach could increase regional intake by 15%.</p>
-                                    </div>
+                                <h3>Curriculum Audit in Progress</h3>
+                                <p className="loading-subtitle-msg">{loadingText}</p>
+                                <div className="loading-step-progressbar">
+                                    <div className="progress-fill-infinite"></div>
                                 </div>
                             </div>
+                        )}
 
-                            <div className="subview-narrative-card">
-                                <h3>Curriculum Strategy</h3>
+                        {/* EMPTY STATE: PROMPT TO AUDIT */}
+                        {!analyzing && !analysisResult && (
+                            <div className="empty-audit-state-card">
+                                <div className="icon-badge purple">
+                                    <Sparkles size={32} />
+                                </div>
+                                <h3>Launch Artificial Intelligence Audit</h3>
                                 <p>
-                                    Recommendations are ranked by alignment impact (ease of course integration vs. student demand conversion).
+                                    Click the <strong>Analyse with AI</strong> button above. The system will extract the program's syllabus details, subject codes, and all course slides uploaded to <strong>CourseMaterials.tsx</strong> to check alignment against industry job demands.
                                 </p>
-                                <p style={{ marginTop: '12px' }}>
-                                    Updating the AI & ML syllabus has the highest projected impact. A targeted digital marketing campaign centered in Galle and Matara is expected to yield immediate results for the upcoming enrollment cycle.
-                                </p>
-                                <a href="#/courses" className="rec-action-link">
-                                    Manage Courses Catalog <ArrowUpRight size={14} />
-                                </a>
+                                <div className="demo-data-teaser">
+                                    <div className="teaser-title">
+                                        <Info size={14} /> Pre-audited Industrial Demands Framework:
+                                    </div>
+                                    <div className="teaser-badges">
+                                        <span>Full-Stack Web Dev</span>
+                                        <span>AI / ML Engineer</span>
+                                        <span>Cloud & DevOps</span>
+                                        <span>Cybersecurity</span>
+                                        <span>Data Science</span>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
+                        )}
+
+                        {/* ANALYSIS REPORT DISPLAY */}
+                        {!analyzing && analysisResult && (
+                            <div className="audit-results-grid">
+                                
+                                {/* ── LEFT COLUMN: GAUGE & JOB PATH MATCHINGS ── */}
+                                <div className="results-left-column">
+                                    {/* Overall Score Circle Card */}
+                                    <div className="overall-score-premium-card">
+                                        <h3>Overall Job Market Readiness</h3>
+                                        <div className="gauge-center-wrapper">
+                                            <div className="ai-gauge-container large-gauge">
+                                                <svg className="ai-gauge-svg" viewBox="0 0 100 100">
+                                                    <circle className="ai-gauge-bg" cx="50" cy="50" r="40" />
+                                                    <circle 
+                                                        className="ai-gauge-fill animate-gauge" 
+                                                        cx="50" 
+                                                        cy="50" 
+                                                        r="40" 
+                                                        style={{ 
+                                                            strokeDasharray: `${2 * Math.PI * 40}`, 
+                                                            strokeDashoffset: `${2 * Math.PI * 40 * (1 - analysisResult.matching_score / 100)}` 
+                                                        }} 
+                                                    />
+                                                </svg>
+                                                <div className="ai-gauge-text-overlay">
+                                                    <span className="ai-gauge-percentage large-text">{analysisResult.matching_score}%</span>
+                                                    <span className="ai-gauge-label">Alignment Index</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Job Paths Match Breakdown */}
+                                    <div className="job-paths-alignment-card">
+                                        <div className="card-header-icon-title">
+                                            <TrendingUp className="header-icon" size={18} />
+                                            <h3>Job Paths Coverages</h3>
+                                        </div>
+                                        <p className="section-intro">
+                                            Matching score based on knowledge mapping of syllabus topics and lecture slides:
+                                        </p>
+
+                                        <div className="job-paths-list">
+                                            {analysisResult.job_paths.map((path, index) => (
+                                                <div key={index} className="job-path-item-card">
+                                                    <div className="path-header-row">
+                                                        <h4>{path.name}</h4>
+                                                        <span className="percentage-badge">{path.matching_percentage}% match</span>
+                                                    </div>
+
+                                                    <div className="ai-progress-bg">
+                                                        <div 
+                                                            className="ai-progress-fill" 
+                                                            style={{ width: `${path.matching_percentage}%` }}
+                                                        ></div>
+                                                    </div>
+
+                                                    <p className="path-desc-text">{path.description}</p>
+
+                                                    <div className="skills-clouds-container">
+                                                        {path.covered_skills.length > 0 && (
+                                                            <div className="skills-group">
+                                                                <span className="skills-label covered">Covered:</span>
+                                                                <div className="skills-tags">
+                                                                    {path.covered_skills.map((s, idx) => (
+                                                                        <span key={idx} className="skill-tag covered">{s}</span>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        {path.missing_skills.length > 0 && (
+                                                            <div className="skills-group">
+                                                                <span className="skills-label missing">Lacking:</span>
+                                                                <div className="skills-tags">
+                                                                    {path.missing_skills.map((s, idx) => (
+                                                                        <span key={idx} className="skill-tag missing">{s}</span>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* ── RIGHT COLUMN: SUMMARY & SUBJECT breakdown ── */}
+                                <div className="results-right-column">
+                                    {/* AI Executive Summary Card */}
+                                    <div className="ai-executive-summary-card">
+                                        <div className="summary-header">
+                                            <Sparkles size={16} className="summary-icon" />
+                                            <h4>AI Curriculum Audit Report</h4>
+                                        </div>
+                                        <p className="summary-text">{analysisResult.summary}</p>
+                                    </div>
+
+                                    {/* Subject usefulness breakdown */}
+                                    <div className="subjects-usefulness-card">
+                                        <div className="card-header-icon-title">
+                                            <BookOpen className="header-icon" size={18} />
+                                            <h3>Module Matching & Usefulness</h3>
+                                        </div>
+                                        <p className="section-intro">
+                                            Audited list of subjects. Click a usefulness bar to view slides analyzed and recommendations:
+                                        </p>
+
+                                        <div className="subjects-list-vertical">
+                                            {analysisResult.subjects.map((sub, index) => {
+                                                const isExpanded = expandedSubjectCode === sub.code;
+                                                return (
+                                                    <div 
+                                                        key={index} 
+                                                        className={`subject-audit-row ${isExpanded ? 'expanded' : ''}`}
+                                                    >
+                                                        {/* Header Details */}
+                                                        <div className="subject-row-header">
+                                                            <div className="sub-title-info">
+                                                                <span className="sub-code">{sub.code}</span>
+                                                                <h4>{sub.name}</h4>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Usefulness progress bar (interactive) */}
+                                                        <div 
+                                                            className="subject-bar-clickable-area"
+                                                            onClick={() => setExpandedSubjectCode(isExpanded ? null : sub.code)}
+                                                            title="Click to view details"
+                                                        >
+                                                            <div className="bar-labels">
+                                                                <span>Market Usefulness Index</span>
+                                                                <span className="pct-val">{sub.usefulness_percentage}%</span>
+                                                            </div>
+                                                            <div className="ai-progress-bg usefulness-bar">
+                                                                <div 
+                                                                    className="ai-progress-fill indigo-fill" 
+                                                                    style={{ width: `${sub.usefulness_percentage}%` }}
+                                                                ></div>
+                                                            </div>
+                                                            <div className="click-indicator-hint">
+                                                                {isExpanded ? (
+                                                                    <span>Collapse Details <ChevronUp size={12} /></span>
+                                                                ) : (
+                                                                    <span>Analyze Slides & Topics <ChevronDown size={12} /></span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Expanded Topics and Recommendations */}
+                                                        {isExpanded && (
+                                                            <div className="subject-expanded-content animate-fade-in">
+                                                                {/* Included Topics */}
+                                                                <div className="audit-detail-block">
+                                                                    <h5>Extracted Curriculum Topics:</h5>
+                                                                    <div className="topics-list-tags">
+                                                                        {sub.topics_included.map((t, idx) => (
+                                                                            <span key={idx} className="topic-badge">{t}</span>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Audited Slides */}
+                                                                <div className="audit-detail-block">
+                                                                    <h5>Audited Lecture Slides (CourseMaterials.tsx):</h5>
+                                                                    {sub.audited_slides.length > 0 ? (
+                                                                        <ul className="slides-filenames-list">
+                                                                            {sub.audited_slides.map((slide, idx) => (
+                                                                                <li key={idx}>
+                                                                                    <FileText size={12} className="file-icon" />
+                                                                                    <span>{slide}</span>
+                                                                                </li>
+                                                                            ))}
+                                                                        </ul>
+                                                                    ) : (
+                                                                        <div className="no-slides-warning">
+                                                                            <AlertCircle size={12} />
+                                                                            <span>No materials uploaded by lecturer for this subject.</span>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+
+                                                                {/* Recommendations */}
+                                                                <div className="audit-detail-block recommendation">
+                                                                    <h5>Auditor Recommendation:</h5>
+                                                                    <p>{sub.recommendations}</p>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Action button at the bottom */}
+                                    <div className="audit-actions-footer">
+                                        <button className="export-report-btn" onClick={() => window.print()}>
+                                            <Download size={14} /> Export Curriculum Audit PDF
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
