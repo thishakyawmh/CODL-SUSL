@@ -234,6 +234,44 @@ export const UserManagement: React.FC = () => {
         setOpenMenuId(null);
     };
 
+    const handleExportUsers = () => {
+        if (users.length === 0) {
+            toast.error("No users to export");
+            return;
+        }
+
+        // CSV Headers
+        const headers = ['Registration Number', 'Full Name', 'Email', 'NIC', 'Phone', 'Role', 'Status', 'Joined Date'];
+        
+        // Convert user objects to CSV rows
+        const csvRows = users.map(user => [
+            `"${user.studentNumber || ''}"`,
+            `"${user.fullName?.replace(/"/g, '""') || ''}"`,
+            `"${user.email || ''}"`,
+            `"${user.nic || ''}"`,
+            `"${user.phone || ''}"`,
+            `"${user.role || ''}"`,
+            `"${user.status || ''}"`,
+            `"${user.joinDate || ''}"`
+        ]);
+
+        // Combine headers and rows
+        const csvContent = [headers.join(','), ...csvRows.map(row => row.join(','))].join('\n');
+        
+        // Create Blob and trigger download
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `users_export_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        toast.success("Users exported successfully as CSV!");
+    };
+
     return (
         <div className="um-container">
             {/* Page Header */}
@@ -243,7 +281,7 @@ export const UserManagement: React.FC = () => {
                     <p className="admin-page-subtitle">Manage all users, create accounts, and assign roles across the system.</p>
                 </div>
                 <div className="admin-header-actions">
-                    <button className="admin-btn-outline" onClick={() => {}}>
+                    <button className="admin-btn-outline" onClick={handleExportUsers}>
                         <Download size={16} /> Export
                     </button>
                     <button className="admin-btn-primary" onClick={() => setShowCreateModal(true)}>
