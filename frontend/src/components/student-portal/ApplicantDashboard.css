@@ -590,4 +590,18 @@
     .welcome-banner-applicant h1 {
         font-size: 32px;
     }
+
+    .massive-icon-circle {
+        align-self: center;
+    }
+
+    .massive-action-card {
+        align-items: center;
+    }
+
+    .massive-action-card h3,
+    .massive-action-card p {
+        text-align: center;
+    }
+
 }
