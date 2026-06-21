@@ -40,6 +40,7 @@ import { ManageExamStudents } from './components/admin-portal/ManageExamStudents
 import { AIAnalytics } from './components/admin-portal/AIAnalytics';
 import { AdminAnnouncements } from './components/admin-portal/AdminAnnouncements';
 import { ActivityLogs } from './components/admin-portal/ActivityLogs';
+import { TrackStudent } from './components/admin-portal/TrackStudent';
 
 // --- Common/Services Imports ---
 import { systemSettingService } from './services/apiService';
@@ -197,7 +198,7 @@ function App() {
             element={<UserManagement />}
           />
 
-          {/* [M5] <Route path="track-student" element={<TrackStudent />} /> */}
+          <Route path="track-student" element={<TrackStudent />} />
 
           <Route
             path="courses"
@@ -250,8 +251,8 @@ function App() {
             element={<AdminAnnouncements />}
           />
 
-          {/* [M5] <Route path="activity-logs" element={<ActivityLogs />} /> */}
-          {/* [M5] <Route path="ai-analytics" element={<AIAnalytics />} /> */}
+          <Route path="activity-logs" element={<ActivityLogs />} />
+          <Route path="ai-analytics" element={<AIAnalytics />} />
 
           <Route
             path="settings"
