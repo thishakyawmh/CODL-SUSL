@@ -37,8 +37,8 @@ import { LetterRequests } from './components/admin-portal/LetterRequests';
 import { AdminSettings } from './components/admin-portal/AdminSettings';
 import { CreateExam } from './components/admin-portal/CreateExam';
 import { ManageExamStudents } from './components/admin-portal/ManageExamStudents';
-// [M5] import { AIAnalytics } from './components/admin-portal/AIAnalytics';
 import { AdminAnnouncements } from './components/admin-portal/AdminAnnouncements';
+import { TrackStudent } from './components/admin-portal/TrackStudent';
 // [M5] import { ActivityLogs } from './components/admin-portal/ActivityLogs';
 
 // --- Common/Services Imports ---
@@ -197,7 +197,7 @@ function App() {
             element={<UserManagement />}
           />
 
-          {/* [M5] <Route path="track-student" element={<TrackStudent />} /> */}
+          <Route path="track-student" element={<TrackStudent />} />
 
           <Route
             path="courses"
