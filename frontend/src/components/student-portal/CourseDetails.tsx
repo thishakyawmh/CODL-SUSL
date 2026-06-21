@@ -51,10 +51,23 @@ export const CourseDetails: React.FC = () => {
             // 1. Fetch course announcements
             try {
                 const data = await announcementService.getAll({ course_id: course.id, batch: activeBatch });
-                const processed = data.map((ann: any) => ({
-                    ...ann,
-                    icon: ann.type === 'Important' ? <Bell size={18} /> : (ann.type === 'Update' ? <MessageSquare size={18} /> : <Info size={18} />)
-                }));
+                const processed = data.map((ann: any) => {
+                    const annType = ann.type || 'Notice';
+                    const iconColor = annType === 'Important' ? '#EF4444' : (annType === 'Update' ? '#10B981' : '#3B82F6');
+                    const bgColor = annType === 'Important' ? '#FEF2F2' : (annType === 'Update' ? '#F0FDF4' : '#EFF6FF');
+                    return {
+                        ...ann,
+                        type: annType,
+                        icon: annType === 'Important' ? <Bell size={18} /> : (annType === 'Update' ? <MessageSquare size={18} /> : <Info size={18} />),
+                        iconColor,
+                        bgColor,
+                        date: new Date(ann.created_at || new Date()).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric'
+                        })
+                    };
+                });
                 setAnnouncements(processed);
             } catch (err) {
                 console.error("Failed to fetch course announcements:", err);

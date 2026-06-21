@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { letterRequestService } from '../../services/apiService';
 import { VerificationStages } from '../common/VerificationStages';
+import { getCurrentAdminUser } from '../../data/mockAdminData';
 
 import { toast } from '../../utils/toast';
 import './CourseManagement.css';
@@ -19,7 +20,7 @@ export const LetterRequests: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
 
-    const currentUser = JSON.parse(sessionStorage.getItem('adminUser') || '{}') || { role: sessionStorage.getItem('adminRole') || 'super_admin', id: null };
+    const currentUser = getCurrentAdminUser();
 
 
     const [selectedRequest, setSelectedRequest] = useState<any | null>(null);
@@ -151,8 +152,8 @@ export const LetterRequests: React.FC = () => {
         if (currentUser.role === 'super_admin') return false;
 
         const level = req.approval_level;
-        if (level === 0 && currentUser.role === 'secretary' && req.course?.secretary_id === currentUser.id) return true;
-        if (level === 1 && currentUser.role === 'coordinator' && req.course?.coordinator_id === currentUser.id) return true;
+        if (level === 0 && currentUser.role === 'secretary' && req.course?.secretary_id?.toString() === currentUser.id?.toString()) return true;
+        if (level === 1 && currentUser.role === 'coordinator' && req.course?.coordinator_id?.toString() === currentUser.id?.toString()) return true;
         if (level === 2 && currentUser.role === 'director') return true;
 
         return false;
@@ -299,7 +300,7 @@ export const LetterRequests: React.FC = () => {
                                                 >
                                                     <Eye size={16} />
                                                 </button>
-                                                {isActionable && (
+                                                {isActionable ? (
                                                     <button
                                                         className="at-action-btn approve"
                                                         title="Approve Stage"
@@ -307,6 +308,29 @@ export const LetterRequests: React.FC = () => {
                                                     >
                                                         <CheckCircle2 size={16} />
                                                     </button>
+                                                ) : (
+                                                    req.status === 'rejected' ? (
+                                                        <div title="Rejected" style={{ display: 'inline-flex', padding: '6px', color: '#DC2626', background: '#FEE2E2', borderRadius: '8px', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px' }}>
+                                                            <XCircle size={16} />
+                                                        </div>
+                                                    ) : req.status === 'approved' ? (
+                                                        <div title="Fully Approved" style={{ display: 'inline-flex', padding: '6px', color: '#059669', background: '#D1FAE5', borderRadius: '8px', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px' }}>
+                                                            <CheckCircle2 size={16} />
+                                                        </div>
+                                                    ) : (
+                                                        // Pending states but not actionable for this user
+                                                        (currentUser.role === 'secretary' && req.approval_level >= 1) ||
+                                                        (currentUser.role === 'coordinator' && req.approval_level >= 2) ||
+                                                        (currentUser.role === 'director' && req.approval_level >= 3) ? (
+                                                            <div title="Approved by You" style={{ display: 'inline-flex', padding: '6px', color: '#059669', background: '#D1FAE5', borderRadius: '8px', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px' }}>
+                                                                <CheckCircle2 size={16} />
+                                                            </div>
+                                                        ) : (
+                                                            <div title="Pending Stage" style={{ display: 'inline-flex', padding: '6px', color: '#94A3B8', background: '#F1F5F9', borderRadius: '8px', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px' }}>
+                                                                <Clock size={16} />
+                                                            </div>
+                                                        )
+                                                    )
                                                 )}
                                             </div>
                                         </td>

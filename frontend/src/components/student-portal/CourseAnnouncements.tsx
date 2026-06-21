@@ -27,8 +27,8 @@ export const CourseAnnouncements: React.FC = () => {
                 const data = await announcementService.getAll({ course_id: course.id, batch: activeBatch });
                 const processed = data.map((ann: any) => {
                     const annType = ann.type || 'Notice';
-                    const iconColor = annType === 'Important' ? '#EF4444' : (annType === 'Update' ? '#3B82F6' : '#10B981');
-                    const bgColor = annType === 'Important' ? '#FEF2F2' : (annType === 'Update' ? '#EFF6FF' : '#F0FDF4');
+                    const iconColor = annType === 'Important' ? '#EF4444' : (annType === 'Update' ? '#10B981' : '#3B82F6');
+                    const bgColor = annType === 'Important' ? '#FEF2F2' : (annType === 'Update' ? '#F0FDF4' : '#EFF6FF');
                     
                     return {
                         id: ann.id,
