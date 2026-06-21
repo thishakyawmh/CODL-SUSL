@@ -153,4 +153,20 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/admin/backups/run', [BackupController::class, 'run']);
     Route::get('/admin/backups/download/{filename}', [BackupController::class, 'download']);
     Route::delete('/admin/backups/{filename}', [BackupController::class, 'destroy']);
+
+    // Curriculum Alignment & AI Recommendations
+    Route::post('/admin/skills/extract', [\App\Http\Controllers\CurriculumAlignmentController::class, 'extractSkills']);
+    Route::get('/admin/skills', [\App\Http\Controllers\CurriculumAlignmentController::class, 'getSkills']);
+    Route::put('/admin/skills/{id}/category', [\App\Http\Controllers\CurriculumAlignmentController::class, 'updateSkillCategory']);
+    Route::get('/admin/survey/industry-stats', [\App\Http\Controllers\CurriculumAlignmentController::class, 'getIndustrySurveyData']);
+    Route::get('/admin/survey/student-stats', [\App\Http\Controllers\CurriculumAlignmentController::class, 'getStudentSurveyData']);
+    Route::get('/admin/courses/{courseId}/ai-insights', [\App\Http\Controllers\CurriculumAlignmentController::class, 'getAiInsights']);
+    Route::post('/admin/courses/{courseId}/ai-recommendations', [\App\Http\Controllers\CurriculumAlignmentController::class, 'generateAiRecommendations']);
 });
+
+// Public Survey Routes (Accessible without authentication)
+Route::post('/public/survey/industry', [\App\Http\Controllers\CurriculumAlignmentController::class, 'submitIndustrySurvey']);
+Route::post('/public/survey/student', [\App\Http\Controllers\CurriculumAlignmentController::class, 'submitStudentSurvey']);
+Route::get('/public/survey/industry-stats', [\App\Http\Controllers\CurriculumAlignmentController::class, 'getIndustrySurveyData']);
+Route::get('/public/survey/student-stats', [\App\Http\Controllers\CurriculumAlignmentController::class, 'getStudentSurveyData']);
+
