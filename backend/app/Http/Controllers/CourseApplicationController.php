@@ -281,7 +281,8 @@ class CourseApplicationController extends Controller
                             'student_number' => $studentNumber,
                             'full_name' => $application->applicant_name,
                             'display_name' => $application->display_name,
-                            // Do not overwrite existing user's password with their NIC (keeps their registered password)
+                            // Set password to their NIC (auto-hashed by model casts/mutators) so they can log in
+                            'password' => $application->applicant_nic,
                             'nic' => $application->applicant_nic,
                             'role' => 'student',
                             'status' => 'active',

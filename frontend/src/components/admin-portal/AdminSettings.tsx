@@ -293,7 +293,7 @@ export const AdminSettings: React.FC = () => {
     };
 
     const handleUploadAvatar = async () => {
-        if (!avatarFile) return;
+        if (!avatarFile) return null;
         setIsUploadingAvatar(true);
         try {
             const res = await userService.uploadAvatar(avatarFile);
@@ -307,10 +307,11 @@ export const AdminSettings: React.FC = () => {
                 URL.revokeObjectURL(avatarPreview);
                 setAvatarPreview(null);
             }
-            setTimeout(() => window.location.reload(), 1000);
+            return res.avatar_url;
         } catch (err: any) {
             console.error("Failed to upload avatar:", err);
             toast.error(err.response?.data?.message || 'Failed to upload profile picture.');
+            throw err;
         } finally {
             setIsUploadingAvatar(false);
         }
@@ -362,19 +363,28 @@ export const AdminSettings: React.FC = () => {
 
     const handleSave = async () => {
         if (activeSection === 'profile') {
-            // If there's a new avatar file, upload it first
-            if (avatarFile) {
-                await handleUploadAvatar();
-                return;
-            }
-
             setIsSaving(true);
             try {
+                let currentAvatar = profileData.avatar;
+                // If there's a new avatar file, upload it first
+                if (avatarFile) {
+                    try {
+                        const uploadedUrl = await handleUploadAvatar();
+                        if (uploadedUrl) {
+                            currentAvatar = uploadedUrl;
+                        }
+                    } catch (uploadErr) {
+                        // Error toast is already displayed inside handleUploadAvatar
+                        setIsSaving(false);
+                        return;
+                    }
+                }
+
                 const payload = {
                     full_name: profileData.fullName,
                     email: profileData.email,
                     phone: profileData.phone,
-                    avatar: profileData.avatar,
+                    avatar: currentAvatar,
                 };
                 const res = await userService.updateProfile(payload);
                 if (res.user) {
