@@ -91,7 +91,7 @@ export const UserManagement: React.FC = () => {
         const nameMatch = user.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) || false;
         const emailMatch = user.email?.toLowerCase().includes(searchTerm.toLowerCase()) || false;
         const idMatch = user.studentNumber?.toLowerCase().includes(searchTerm.toLowerCase()) || false;
-        
+
         const matchesSearch = nameMatch || emailMatch || idMatch;
         const matchesRole = roleFilter === 'all' || user.role === roleFilter;
         const matchesStatus = statusFilter === 'all' || user.status === statusFilter;
@@ -100,7 +100,7 @@ export const UserManagement: React.FC = () => {
 
     const generateStudentNumber = (role: string) => {
         const yearDigits = new Date().getFullYear().toString().slice(-2);
-        
+
         // Count users of this specific role to determine the next number
         // In a real production app, this would be handled by the backend
         const roleUsers = users.filter(u => u.role === role);
@@ -129,7 +129,7 @@ export const UserManagement: React.FC = () => {
         e.preventDefault();
         setIsLoading(true);
         const studentNumber = generateStudentNumber(newUser.role);
-        
+
         try {
             const payload = {
                 full_name: newUser.fullName,
@@ -242,7 +242,7 @@ export const UserManagement: React.FC = () => {
 
         // CSV Headers
         const headers = ['Registration Number', 'Full Name', 'Email', 'NIC', 'Phone', 'Role', 'Status', 'Joined Date'];
-        
+
         // Convert user objects to CSV rows
         const csvRows = users.map(user => [
             `"${user.studentNumber || ''}"`,
@@ -257,7 +257,7 @@ export const UserManagement: React.FC = () => {
 
         // Combine headers and rows
         const csvContent = [headers.join(','), ...csvRows.map(row => row.join(','))].join('\n');
-        
+
         // Create Blob and trigger download
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
@@ -268,7 +268,7 @@ export const UserManagement: React.FC = () => {
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
-        
+
         toast.success("Users exported successfully as CSV!");
     };
 
@@ -403,8 +403,8 @@ export const UserManagement: React.FC = () => {
                                                     <Eye size={15} />
                                                 </button>
                                                 {user.role !== 'super_admin' && (
-                                                    <button 
-                                                        className={`um-action-btn ${openMenuId === user.id ? 'active' : ''}`} 
+                                                    <button
+                                                        className={`um-action-btn ${openMenuId === user.id ? 'active' : ''}`}
                                                         onClick={() => setOpenMenuId(openMenuId === user.id ? null : user.id)}
                                                     >
                                                         <MoreVertical size={18} />
@@ -578,22 +578,22 @@ export const UserManagement: React.FC = () => {
                                         <div className="um-detail-info" style={{ flex: 1 }}>
                                             <div className="cm-form-group" style={{ marginBottom: '12px', width: '100%' }}>
                                                 <label>Full Name</label>
-                                                <input 
-                                                    type="text" 
-                                                    name="fullName" 
-                                                    value={editFormData.fullName} 
-                                                    onChange={handleEditChange} 
-                                                    className="admin-input" 
-                                                    required 
+                                                <input
+                                                    type="text"
+                                                    name="fullName"
+                                                    value={editFormData.fullName}
+                                                    onChange={handleEditChange}
+                                                    className="admin-input"
+                                                    required
                                                 />
                                             </div>
                                             <div style={{ display: 'flex', gap: '12px' }}>
                                                 <div className="cm-form-group" style={{ flex: 1 }}>
                                                     <label>Role</label>
-                                                    <select 
-                                                        name="role" 
-                                                        value={editFormData.role} 
-                                                        onChange={handleEditChange} 
+                                                    <select
+                                                        name="role"
+                                                        value={editFormData.role}
+                                                        onChange={handleEditChange}
                                                         className="admin-input"
                                                     >
                                                         {roles.filter(r => r.key !== 'all').map(r => (
@@ -603,10 +603,10 @@ export const UserManagement: React.FC = () => {
                                                 </div>
                                                 <div className="cm-form-group" style={{ flex: 1 }}>
                                                     <label>Status</label>
-                                                    <select 
-                                                        name="status" 
-                                                        value={editFormData.status} 
-                                                        onChange={handleEditChange} 
+                                                    <select
+                                                        name="status"
+                                                        value={editFormData.status}
+                                                        onChange={handleEditChange}
                                                         className="admin-input"
                                                     >
                                                         <option value="active">Active</option>
@@ -621,35 +621,35 @@ export const UserManagement: React.FC = () => {
                                     <div className="um-detail-grid">
                                         <div className="um-detail-item edit-field">
                                             <span className="um-dl"><Mail size={14} /> Email Address</span>
-                                            <input 
-                                                type="email" 
-                                                name="email" 
-                                                value={editFormData.email} 
-                                                onChange={handleEditChange} 
-                                                className="admin-input" 
-                                                required 
+                                            <input
+                                                type="email"
+                                                name="email"
+                                                value={editFormData.email}
+                                                onChange={handleEditChange}
+                                                className="admin-input"
+                                                required
                                             />
                                         </div>
                                         <div className="um-detail-item edit-field">
                                             <span className="um-dl"><Phone size={14} /> Phone Number</span>
-                                            <input 
-                                                type="tel" 
-                                                name="phone" 
-                                                value={editFormData.phone} 
-                                                onChange={handleEditChange} 
-                                                className="admin-input" 
-                                                required 
+                                            <input
+                                                type="tel"
+                                                name="phone"
+                                                value={editFormData.phone}
+                                                onChange={handleEditChange}
+                                                className="admin-input"
+                                                required
                                             />
                                         </div>
                                         <div className="um-detail-item edit-field">
                                             <span className="um-dl"><Shield size={14} /> NIC Number</span>
-                                            <input 
-                                                type="text" 
-                                                name="nic" 
-                                                value={editFormData.nic} 
-                                                onChange={handleEditChange} 
-                                                className="admin-input" 
-                                                required 
+                                            <input
+                                                type="text"
+                                                name="nic"
+                                                value={editFormData.nic}
+                                                onChange={handleEditChange}
+                                                className="admin-input"
+                                                required
                                             />
                                         </div>
                                     </div>
