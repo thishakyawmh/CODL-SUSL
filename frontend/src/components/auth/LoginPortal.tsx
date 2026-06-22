@@ -228,8 +228,28 @@ export const LoginPortal: React.FC = () => {
 
             {/* Right Side - Authentication Forms */}
             <div className="login-right-pane">
+                {/* Mobile Branding & Welcome Header */}
+                <div className="mobile-header-banner">
+                    <div className="mobile-branding-header">
+                        <img src={branding.logo} alt="Logo" className="mobile-branding-logo" />
+                        <div className="mobile-branding-title-group">
+                            <h1 className="mobile-branding-institution">{branding.institution}</h1>
+                            <p className="mobile-branding-university">{branding.university}</p>
+                        </div>
+                    </div>
+
+                    <div className="mobile-welcome-header">
+                        <h2 className="mobile-welcome-title">Welcome to CODL</h2>
+                        <p className="mobile-welcome-subtitle">
+                            {activeView === 'selection' ? 'Please select your relevant portal to continue' :
+                                activeView === 'existing' ? 'Login to your official student workspace' :
+                                    'Create your identity workspace to start enrolling'}
+                        </p>
+                    </div>
+                </div>
+
                 <div className="login-form-container">
-                    <div className="welcome-header">
+                    <div className="welcome-header desktop-only">
                         <h2 className="welcome-title">Welcome to CODL</h2>
                         <p className="welcome-subtitle">
                             {activeView === 'selection' ? 'Please select your relevant portal to continue' :
@@ -237,6 +257,7 @@ export const LoginPortal: React.FC = () => {
                                     'Create your identity workspace to start enrolling'}
                         </p>
                     </div>
+
 
                     {activeView === 'selection' && (
                         <div className="auth-cards-wrapper fade-in-up">
