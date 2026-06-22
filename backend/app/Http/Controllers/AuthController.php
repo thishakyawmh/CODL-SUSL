@@ -95,7 +95,7 @@ class AuthController extends Controller
 
         \Log::info('Login successful', ['user_id' => $user->id, 'role' => $user->role]);
 
-        if (in_array($user->role, ['super_admin', 'director', 'coordinator', 'secretary', 'lecturer'])) {
+        if (in_array($user->role, ['super_admin', 'director', 'coordinator', 'secretary', 'lecturer', 'student', 'pro_student', 'applicant'])) {
             \App\Models\ActivityLog::log($user->id, 'Logged in to the system', 'Portal Dashboard', 'system');
         }
 
@@ -182,7 +182,7 @@ class AuthController extends Controller
         // Create Sanctum Token
         $token = $user->createToken('auth_token', ['role:' . $user->role])->plainTextToken;
 
-        if (in_array($user->role, ['super_admin', 'director', 'coordinator', 'secretary', 'lecturer'])) {
+        if (in_array($user->role, ['super_admin', 'director', 'coordinator', 'secretary', 'lecturer', 'student', 'pro_student', 'applicant'])) {
             \App\Models\ActivityLog::log($user->id, 'Logged in via Google', 'Portal Dashboard', 'system');
         }
 
