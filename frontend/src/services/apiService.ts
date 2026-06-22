@@ -463,4 +463,44 @@ export const activityLogService = {
     }
 };
 
+export const curriculumAlignmentService = {
+    extractCourseSkills: async (courseId: string | number) => {
+        const response = await api.post('/admin/skills/extract', { course_id: courseId });
+        return response.data;
+    },
+    getSkills: async (params?: any) => {
+        const response = await api.get('/admin/skills', { params });
+        return response.data;
+    },
+    updateSkillCategory: async (id: string | number, category: string) => {
+        const response = await api.put(`/admin/skills/${id}/category`, { category });
+        return response.data;
+    },
+    submitIndustrySurvey: async (data: any) => {
+        const response = await api.post('/public/survey/industry', data);
+        return response.data;
+    },
+    getIndustrySurveyStats: async (isAdmin = false) => {
+        const response = await api.get(isAdmin ? '/admin/survey/industry-stats' : '/public/survey/industry-stats');
+        return response.data;
+    },
+    submitStudentSurvey: async (data: any) => {
+        const response = await api.post('/public/survey/student', data);
+        return response.data;
+    },
+    getStudentSurveyStats: async (isAdmin = false) => {
+        const response = await api.get(isAdmin ? '/admin/survey/student-stats' : '/public/survey/student-stats');
+        return response.data;
+    },
+    getAiInsights: async (courseId: string | number) => {
+        const response = await api.get(`/admin/courses/${courseId}/ai-insights`);
+        return response.data;
+    },
+    generateAiRecommendations: async (courseId: string | number) => {
+        const response = await api.post(`/admin/courses/${courseId}/ai-recommendations`);
+        return response.data;
+    }
+};
+
 export default api;
+
