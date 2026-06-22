@@ -181,6 +181,7 @@ const normalizeCourse = (course: any) => {
 const normalizeExamApplication = (ea: any) => {
     return {
         id: String(ea.id),
+        userId: ea.user_id ? String(ea.user_id) : (ea.user ? String(ea.user.id) : ''),
         studentName: ea.user ? ea.user.full_name : '',
         studentNumber: ea.user ? ea.user.student_number : '',
         course: ea.course ? ea.course.title : '',
@@ -198,6 +199,7 @@ const normalizeExamApplication = (ea: any) => {
 const normalizeLetterRequest = (lr: any) => {
     return {
         id: String(lr.id),
+        userId: lr.user_id ? String(lr.user_id) : (lr.user ? String(lr.user.id) : ''),
         studentName: lr.user ? lr.user.full_name : '',
         studentNumber: lr.user ? lr.user.student_number : '',
         course: lr.course ? lr.course.title : '',
@@ -212,6 +214,7 @@ const normalizeLetterRequest = (lr: any) => {
 const normalizePostponement = (pr: any) => {
     return {
         id: String(pr.id),
+        userId: pr.user_id ? String(pr.user_id) : (pr.user ? String(pr.user.id) : ''),
         studentName: pr.user ? pr.user.full_name : '',
         studentNumber: pr.user ? pr.user.student_number : '',
         course: pr.course ? pr.course.title : '',
@@ -229,6 +232,7 @@ const normalizePostponement = (pr: any) => {
 const normalizeReattempt = (rr: any) => {
     return {
         id: String(rr.id),
+        userId: rr.user_id ? String(rr.user_id) : (rr.user ? String(rr.user.id) : ''),
         studentName: rr.user ? rr.user.full_name : '',
         studentNumber: rr.user ? rr.user.student_number : '',
         course: rr.course ? rr.course.title : '',
@@ -257,6 +261,7 @@ const normalizeExamResult = (er: any) => {
         results: er.grades ? er.grades.map((g: any) => ({
             studentId: g.user ? g.user.student_number : '',
             studentName: g.user ? g.user.full_name : '',
+            userId: g.user_id ? String(g.user_id) : (g.user ? String(g.user.id) : ''),
             grade: g.grade
         })) : [],
         approvalStages: er.approval_stages || []
@@ -509,22 +514,22 @@ export const TrackStudent: React.FC = () => {
 
     const getStudentData = (student: DBUserType) => {
         const examApps = realExamApplications.filter(
-            e => e.studentNumber === student.studentNumber || e.studentName === student.fullName
+            e => e.userId === student.id || (student.studentNumber && e.studentNumber === student.studentNumber) || (student.fullName && e.studentName === student.fullName)
         );
         const letterReqs = realLetterRequests.filter(
-            l => l.studentNumber === student.studentNumber || l.studentName === student.fullName
+            l => l.userId === student.id || (student.studentNumber && l.studentNumber === student.studentNumber) || (student.fullName && l.studentName === student.fullName)
         );
         const reattempts = realReattempts.filter(
-            r => r.studentNumber === student.studentNumber || r.studentName === student.fullName
+            r => r.userId === student.id || (student.studentNumber && r.studentNumber === student.studentNumber) || (student.fullName && r.studentName === student.fullName)
         );
         const postponements = realPostponements.filter(
-            p => p.studentNumber === student.studentNumber || p.studentName === student.fullName
+            p => p.userId === student.id || (student.studentNumber && p.studentNumber === student.studentNumber) || (student.fullName && p.studentName === student.fullName)
         );
 
         const results: { subject: string; subjectCode: string; grade: string; course: string; semester: string; status: string; uploadDate: string; lecturer: string; batch: string }[] = [];
         realExamResults.forEach(er => {
             er.results.forEach((r: any) => {
-                if (r.studentId === student.studentNumber || r.studentName === student.fullName) {
+                if (r.userId === student.id || (student.studentNumber && r.studentId === student.studentNumber) || (student.fullName && r.studentName === student.fullName)) {
                     results.push({
                         subject: er.subject,
                         subjectCode: er.subjectCode,

@@ -8,7 +8,7 @@ interface GlobalAnn {
     title: string;
     date: string;
     desc: string;
-    type?: 'Important' | 'Update' | 'General';
+    type?: 'Important' | 'Update' | 'General' | 'Notice';
 }
 
 export const Announcements: React.FC = () => {

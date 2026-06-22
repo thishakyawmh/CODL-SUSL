@@ -459,7 +459,7 @@ export const ManageExamStudents: React.FC = () => {
                 reattempts: selectedReattempts,
                 postponements: selectedPostponements,
                 subjects: exam.subjects || [],
-                timetablePath: exam.timetablePath || '',
+                timetable_path: exam.timetable_path || exam.timetablePath || '',
                 semester: exam.semester || 1
             });
             setSelectedRegulars(newRegulars);
@@ -494,7 +494,7 @@ export const ManageExamStudents: React.FC = () => {
                 reattempts: selectedReattempts,
                 postponements: selectedPostponements,
                 subjects: exam.subjects || [],
-                timetablePath: exam.timetablePath || '',
+                timetable_path: exam.timetable_path || exam.timetablePath || '',
                 semester: exam.semester || 1
             });
             toast.success('Student assignments saved successfully!');

@@ -545,9 +545,11 @@ export const ManageCourse: React.FC = () => {
             if (enrollmentSearchQuery.trim()) {
                 const query = enrollmentSearchQuery.toLowerCase();
                 const nameMatch = (req.name || '').toLowerCase().includes(query);
+                const emailMatch = (req.email || '').toLowerCase().includes(query);
                 const idMatch = (req.id || '').toLowerCase().includes(query);
                 const realIdMatch = String(req.realId || '').toLowerCase().includes(query);
-                if (!nameMatch && !idMatch && !realIdMatch) return false;
+                const studentNumberMatch = (req.studentNumber || '').toLowerCase().includes(query);
+                if (!nameMatch && !emailMatch && !idMatch && !realIdMatch && !studentNumberMatch) return false;
             }
 
             return true;
