@@ -339,7 +339,7 @@ export const CourseManagement: React.FC = () => {
             case 'Degree': return { bg: '#EDE9FE', text: '#7C3AED' };
             case 'Diploma': return { bg: '#DBEAFE', text: '#2563EB' };
             case 'Higher National Diploma': return { bg: '#FEF3C7', text: '#D97706' };
-            case 'Advance Certificate': return { bg: '#FCE7F3', text: '#DB2777' };
+            case 'Advanced Certificate': return { bg: '#FCE7F3', text: '#DB2777' };
             case 'Certificate': return { bg: '#CCFBF1', text: '#0D9488' };
             default: return { bg: '#F1F5F9', text: '#475569' };
         }
@@ -474,7 +474,7 @@ export const CourseManagement: React.FC = () => {
                             { name: 'Degree', desc: '4-Year Academic Programs', icon: BookOpen, color: '#7C3AED', count: allCourses.filter(c => c.level === 'Degree').length },
                             { name: 'Higher National Diploma', desc: 'Advanced Professional Diplomas', icon: Layers, color: '#F59E0B', count: allCourses.filter(c => c.level === 'Higher National Diploma').length },
                             { name: 'Diploma', desc: '1-2 Year Specialized Courses', icon: BookOpen, color: '#3B82F6', count: allCourses.filter(c => c.level === 'Diploma').length },
-                            { name: 'Advance Certificate', desc: 'Intermediate Level Certifications', icon: Award, color: '#EC4899', count: allCourses.filter(c => c.level === 'Advance Certificate').length },
+                            { name: 'Advanced Certificate', desc: 'Intermediate Level Certifications', icon: Award, color: '#EC4899', count: allCourses.filter(c => c.level === 'Advanced Certificate').length },
                             { name: 'Certificate', desc: 'Short-term Skill Programs', icon: Award, color: '#10B981', count: allCourses.filter(c => c.level === 'Certificate').length },
                         ].filter(type => {
                             if (['secretary', 'coordinator', 'lecturer'].includes(userRole)) {

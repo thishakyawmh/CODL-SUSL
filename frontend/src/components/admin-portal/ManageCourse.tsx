@@ -420,7 +420,7 @@ export const ManageCourse: React.FC = () => {
     }, [id]);
 
     // Form State (Details)
-    const [courseType, setCourseType] = useState<'Degree' | 'Higher National Diploma' | 'Diploma' | 'Advance Certificate' | 'Certificate'>('Degree');
+    const [courseType, setCourseType] = useState<'Degree' | 'Higher National Diploma' | 'Diploma' | 'Advanced Certificate' | 'Certificate'>('Degree');
     const [commonData, setCommonData] = useState({
         name: '',
         code: '',
@@ -817,7 +817,7 @@ export const ManageCourse: React.FC = () => {
         } else {
             // Generate empty structure
             let generated: any[] = [];
-            if (['Certificate', 'Advance Certificate'].includes(courseType)) {
+            if (['Certificate', 'Advanced Certificate'].includes(courseType)) {
                 generated = [
                     {
                         id: 1,
@@ -897,10 +897,10 @@ export const ManageCourse: React.FC = () => {
         }
     }, [materialsSemesters, id, selectedBatch, batches]);
 
-    // Automatically skip semester/subject view for Certificate and Advance Certificate courses
+    // Automatically skip semester/subject view for Certificate and Advanced Certificate courses
     useEffect(() => {
         if (activeSection === 'materials') {
-            if (['Certificate', 'Advance Certificate'].includes(courseType)) {
+            if (['Certificate', 'Advanced Certificate'].includes(courseType)) {
                 setMaterialsSelectedSemesterId(1);
                 setMaterialsSelectedModuleId('materials');
                 setMaterialsViewState('resources');
@@ -1908,7 +1908,7 @@ export const ManageCourse: React.FC = () => {
             setSelectedExamForResult(null);
             setImportedResults(null);
         } else if (activeSection === 'materials' && materialsViewState === 'resources') {
-            if (['Certificate', 'Advance Certificate'].includes(courseType)) {
+            if (['Certificate', 'Advanced Certificate'].includes(courseType)) {
                 if (userRole === 'lecturer') {
                     setSelectedBatch(null);
                 } else {
@@ -2906,7 +2906,7 @@ export const ManageCourse: React.FC = () => {
                                                     <option value="Close">Close</option>
                                                 </select>
                                             </div>
-                                            {['Certificate', 'Advance Certificate'].includes(courseType) && (
+                                            {['Certificate', 'Advanced Certificate'].includes(courseType) && (
                                                 <div className="cm-form-group">
                                                     <label>Lecturer / Instructor</label>
                                                     <select
@@ -2934,7 +2934,7 @@ export const ManageCourse: React.FC = () => {
                                     </div>
 
                                     {/* Section 2: Academic Structure */}
-                                    {!['Certificate', 'Advance Certificate'].includes(courseType) && (
+                                    {!['Certificate', 'Advanced Certificate'].includes(courseType) && (
                                         <div className="form-section-card no-shadow">
                                             <div className="section-header">
                                                 <Layers size={18} />
@@ -3388,7 +3388,7 @@ export const ManageCourse: React.FC = () => {
                                                 }
                                                 return exam.status;
                                             })();
-                                            const getExamStatus = () => (resolvedStatus === 'Results Released' ? { color: '#10B981', bg: '#ECFDF5' } : (resolvedStatus === 'Result Updated' ? { color: '#D97706', bg: '#FEF3C7' } : { color: '#EF4444', bg: '#FEF2F2' }));
+                                            const getExamStatus = () => (resolvedStatus === 'Results Released' ? { color: '#10B981', bg: '#ECFDF5' } : (resolvedStatus === 'Result Updated' ? { color: '#D97706', bg: '#FEF3C7' } : { color: '#EF4444', bg: '#FEF3C7' }));
                                             const status = getExamStatus();
 
                                             return (
@@ -4127,7 +4127,7 @@ export const ManageCourse: React.FC = () => {
                                 {materialsViewState === 'resources' && materialsActiveModule && (
                                     <div className="resources-view">
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                                            <span className="section-label" style={{ margin: 0 }}>{['Certificate', 'Advance Certificate'].includes(courseType) ? 'Course Materials' : `Materials for ${materialsActiveModule.title}`}</span>
+                                            <span className="section-label" style={{ margin: 0 }}>{['Certificate', 'Advanced Certificate'].includes(courseType) ? 'Course Materials' : `Materials for ${materialsActiveModule.title}`}</span>
                                             <div style={{ display: 'flex', gap: '12px' }}>
                                                 <button className="admin-btn-primary" style={{ background: '#FFF1F2', color: '#E11D48', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }} onClick={() => setShowVideoModal(true)}>
                                                     <Video size={16} /> Add Video

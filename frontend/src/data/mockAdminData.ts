@@ -186,7 +186,7 @@ export interface AdminCourse {
     id: string;
     title: string;
     code: string;
-    level: 'Certificate' | 'Advance Certificate' | 'Diploma' | 'Higher National Diploma' | 'Degree';
+    level: 'Certificate' | 'Advanced Certificate' | 'Diploma' | 'Higher National Diploma' | 'Degree';
     department: string;
     duration: string;
     intakeStatus: 'Open' | 'Closed';
