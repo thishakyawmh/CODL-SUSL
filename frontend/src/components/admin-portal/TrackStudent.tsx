@@ -27,7 +27,7 @@ interface DBUserType {
     fullName: string;
     email: string;
     nic: string;
-    role: 'super_admin' | 'admin' | 'director' | 'coordinator' | 'secretary' | 'lecturer' | 'pro_student' | 'student';
+    role: 'super_admin' | 'admin' | 'director' | 'coordinator' | 'secretary' | 'lecturer' | 'student';
     status: 'active' | 'inactive' | 'suspended';
     avatar: string;
     phone: string;
@@ -129,7 +129,7 @@ const normalizeStudent = (user: any): DBUserType => {
         fullName: user.full_name || '',
         email: user.email || '',
         nic: user.nic || '',
-        role: (user.role === 'student' || user.role === 'pro_student') ? user.role : 'student',
+        role: user.role === 'student' ? user.role : 'student',
         status: (user.status === 'active' || user.status === 'inactive' || user.status === 'suspended') ? user.status : 'active',
         avatar: user.avatar ? getFullAvatarUrl(user.avatar) : `https://i.pravatar.cc/150?u=${user.id}`,
         phone: user.phone || '',
@@ -277,7 +277,7 @@ export const TrackStudent: React.FC = () => {
         fullName: '',
         email: '',
         nic: '',
-        role: 'student' as 'student' | 'pro_student',
+        role: 'student' as 'student',
         status: 'active' as 'active' | 'inactive' | 'suspended',
         phone: '',
         dob: '',
@@ -459,7 +459,7 @@ export const TrackStudent: React.FC = () => {
                         if (!u) return false;
                         const role = u.role || '';
                         const studentNumber = u.student_number || '';
-                        return role === 'student' || role === 'pro_student' || studentNumber.startsWith('CODL/');
+                        return role === 'student' || studentNumber.startsWith('CODL/');
                     })
                     .map((u: any) => {
                         try {
@@ -817,7 +817,7 @@ export const TrackStudent: React.FC = () => {
                                         {selectedStudent.status}
                                     </span>
                                     <span className="ts-role-badge">
-                                        {selectedStudent.role === 'pro_student' ? 'Pro Student' : 'Student'}
+                                        Student
                                     </span>
                                     <span className="ts-last-login" style={{ marginLeft: 'auto' }}>
                                         <Clock size={12} /> Last Login: {new Date(selectedStudent.lastLogin).toLocaleString()}
@@ -1214,9 +1214,8 @@ export const TrackStudent: React.FC = () => {
                                     </div>
                                     <div className="cm-form-group">
                                         <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748B', marginBottom: '6px', display: 'block' }}>System Role</label>
-                                        <select value={editForm.role} onChange={(e: any) => setEditForm(prev => ({ ...prev, role: e.target.value }))} className="admin-input">
+                                        <select value={editForm.role} onChange={(e: any) => setEditForm(prev => ({ ...prev, role: e.target.value }))} className="admin-input" disabled>
                                             <option value="student">Student</option>
-                                            <option value="pro_student">Pro Student</option>
                                         </select>
                                     </div>
                                     <div className="cm-form-group">

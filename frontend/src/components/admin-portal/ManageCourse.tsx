@@ -420,7 +420,7 @@ export const ManageCourse: React.FC = () => {
     }, [id]);
 
     // Form State (Details)
-    const [courseType, setCourseType] = useState<'Degree' | 'Higher National Diploma' | 'Diploma' | 'Advance Certificate' | 'Certificate'>('Degree');
+    const [courseType, setCourseType] = useState<'Degree' | 'Higher National Diploma' | 'Diploma' | 'Advanced Certificate' | 'Certificate'>('Degree');
     const [commonData, setCommonData] = useState({
         name: '',
         code: '',
@@ -680,6 +680,8 @@ export const ManageCourse: React.FC = () => {
         onConfirm: () => void;
     }>({ show: false, title: '', message: '', onConfirm: () => { } });
 
+    const [isConfirmLoading, setIsConfirmLoading] = useState(false);
+
     const showConfirm = (title: string, message: string, onConfirm: () => void) => {
         setConfirmModal({ show: true, title, message, onConfirm });
     };
@@ -815,7 +817,7 @@ export const ManageCourse: React.FC = () => {
         } else {
             // Generate empty structure
             let generated: any[] = [];
-            if (['Certificate', 'Advance Certificate'].includes(courseType)) {
+            if (['Certificate', 'Advanced Certificate'].includes(courseType)) {
                 generated = [
                     {
                         id: 1,
@@ -895,10 +897,10 @@ export const ManageCourse: React.FC = () => {
         }
     }, [materialsSemesters, id, selectedBatch, batches]);
 
-    // Automatically skip semester/subject view for Certificate and Advance Certificate courses
+    // Automatically skip semester/subject view for Certificate and Advanced Certificate courses
     useEffect(() => {
         if (activeSection === 'materials') {
-            if (['Certificate', 'Advance Certificate'].includes(courseType)) {
+            if (['Certificate', 'Advanced Certificate'].includes(courseType)) {
                 setMaterialsSelectedSemesterId(1);
                 setMaterialsSelectedModuleId('materials');
                 setMaterialsViewState('resources');
@@ -1906,7 +1908,7 @@ export const ManageCourse: React.FC = () => {
             setSelectedExamForResult(null);
             setImportedResults(null);
         } else if (activeSection === 'materials' && materialsViewState === 'resources') {
-            if (['Certificate', 'Advance Certificate'].includes(courseType)) {
+            if (['Certificate', 'Advanced Certificate'].includes(courseType)) {
                 if (userRole === 'lecturer') {
                     setSelectedBatch(null);
                 } else {
@@ -2904,7 +2906,7 @@ export const ManageCourse: React.FC = () => {
                                                     <option value="Close">Close</option>
                                                 </select>
                                             </div>
-                                            {['Certificate', 'Advance Certificate'].includes(courseType) && (
+                                            {['Certificate', 'Advanced Certificate'].includes(courseType) && (
                                                 <div className="cm-form-group">
                                                     <label>Lecturer / Instructor</label>
                                                     <select
@@ -2932,7 +2934,7 @@ export const ManageCourse: React.FC = () => {
                                     </div>
 
                                     {/* Section 2: Academic Structure */}
-                                    {!['Certificate', 'Advance Certificate'].includes(courseType) && (
+                                    {!['Certificate', 'Advanced Certificate'].includes(courseType) && (
                                         <div className="form-section-card no-shadow">
                                             <div className="section-header">
                                                 <Layers size={18} />
@@ -3386,7 +3388,7 @@ export const ManageCourse: React.FC = () => {
                                                 }
                                                 return exam.status;
                                             })();
-                                            const getExamStatus = () => (resolvedStatus === 'Results Released' ? { color: '#10B981', bg: '#ECFDF5' } : (resolvedStatus === 'Result Updated' ? { color: '#D97706', bg: '#FEF3C7' } : { color: '#EF4444', bg: '#FEF2F2' }));
+                                            const getExamStatus = () => (resolvedStatus === 'Results Released' ? { color: '#10B981', bg: '#ECFDF5' } : (resolvedStatus === 'Result Updated' ? { color: '#D97706', bg: '#FEF3C7' } : { color: '#EF4444', bg: '#FEF3C7' }));
                                             const status = getExamStatus();
 
                                             return (
@@ -4125,7 +4127,7 @@ export const ManageCourse: React.FC = () => {
                                 {materialsViewState === 'resources' && materialsActiveModule && (
                                     <div className="resources-view">
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                                            <span className="section-label" style={{ margin: 0 }}>{['Certificate', 'Advance Certificate'].includes(courseType) ? 'Course Materials' : `Materials for ${materialsActiveModule.title}`}</span>
+                                            <span className="section-label" style={{ margin: 0 }}>{['Certificate', 'Advanced Certificate'].includes(courseType) ? 'Course Materials' : `Materials for ${materialsActiveModule.title}`}</span>
                                             <div style={{ display: 'flex', gap: '12px' }}>
                                                 <button className="admin-btn-primary" style={{ background: '#FFF1F2', color: '#E11D48', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }} onClick={() => setShowVideoModal(true)}>
                                                     <Video size={16} /> Add Video
@@ -6269,7 +6271,15 @@ export const ManageCourse: React.FC = () => {
             })()}
 
             {confirmModal.show && (
-                <div className="cm-modal-overlay" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setConfirmModal(prev => ({ ...prev, show: false }))}>
+                <div 
+                    className="cm-modal-overlay" 
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }} 
+                    onClick={() => {
+                        if (!isConfirmLoading) {
+                            setConfirmModal(prev => ({ ...prev, show: false }));
+                        }
+                    }}
+                >
                     <div className="cm-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px', borderRadius: '16px', background: '#FFFFFF', padding: '24px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
                         <div className="cm-modal-header" style={{ borderBottom: 'none', padding: 0, marginBottom: '12px' }}>
                             <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#0F172A', margin: 0 }}>{confirmModal.title}</h2>
@@ -6278,16 +6288,49 @@ export const ManageCourse: React.FC = () => {
                             <p style={{ color: '#64748B', fontSize: '14px', lineHeight: 1.5, margin: 0 }}>{confirmModal.message}</p>
                         </div>
                         <div className="cm-modal-footer" style={{ borderTop: 'none', padding: 0, display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-                            <button className="admin-btn-outline" style={{ height: '38px', padding: '0 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, border: '1px solid #E2E8F0', background: '#FFFFFF', color: '#475569' }} onClick={() => setConfirmModal(prev => ({ ...prev, show: false }))}>Cancel</button>
+                            <button 
+                                className="admin-btn-outline" 
+                                style={{ height: '38px', padding: '0 16px', borderRadius: '8px', cursor: isConfirmLoading ? 'not-allowed' : 'pointer', fontWeight: 600, border: '1px solid #E2E8F0', background: '#FFFFFF', color: '#475569' }} 
+                                disabled={isConfirmLoading}
+                                onClick={() => setConfirmModal(prev => ({ ...prev, show: false }))}
+                            >
+                                Cancel
+                            </button>
                             <button
                                 className="admin-btn-primary"
-                                style={{ height: '38px', padding: '0 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, border: 'none', background: '#EF4444', color: '#FFFFFF' }}
-                                onClick={() => {
-                                    confirmModal.onConfirm();
-                                    setConfirmModal(prev => ({ ...prev, show: false }));
+                                style={{ 
+                                    height: '38px', 
+                                    padding: '0 16px', 
+                                    borderRadius: '8px', 
+                                    cursor: isConfirmLoading ? 'not-allowed' : 'pointer', 
+                                    fontWeight: 600, 
+                                    border: 'none', 
+                                    background: '#EF4444', 
+                                    color: '#FFFFFF',
+                                    opacity: isConfirmLoading ? 0.7 : 1,
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '8px'
+                                }}
+                                disabled={isConfirmLoading}
+                                onClick={async () => {
+                                    setIsConfirmLoading(true);
+                                    try {
+                                        await confirmModal.onConfirm();
+                                    } catch (err) {
+                                        console.error('Action failed:', err);
+                                    } finally {
+                                        setIsConfirmLoading(false);
+                                        setConfirmModal(prev => ({ ...prev, show: false }));
+                                    }
                                 }}
                             >
-                                Confirm
+                                {isConfirmLoading ? (
+                                    <>
+                                        <div style={{ width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }} />
+                                        Deleting...
+                                    </>
+                                ) : 'Confirm'}
                             </button>
                         </div>
                     </div>
