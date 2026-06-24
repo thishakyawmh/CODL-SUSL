@@ -62,7 +62,7 @@ const LayoutWithSidebar = () => {
 
   const user = JSON.parse(userStr);
 
-  if (user.role !== 'student' && user.role !== 'pro_student') {
+  if (user.role !== 'student') {
     return <Navigate to="/applicant-dashboard" replace />;
   }
 

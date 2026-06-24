@@ -55,7 +55,6 @@ export const UserManagement: React.FC = () => {
         { key: 'coordinator', label: 'Course Coordinator', plural: 'Course Coordinators', color: '#2563EB' },
         { key: 'secretary', label: 'Course Secretary', plural: 'Course Secretaries', color: '#0891B2' },
         { key: 'lecturer', label: 'Lecturer', plural: 'Lecturers', color: '#4F46E5' },
-        { key: 'pro_student', label: 'Pro Student', plural: 'Pro Students', color: '#D97706' },
         { key: 'student', label: 'Student', plural: 'Students', color: '#059669' },
     ];
 
@@ -118,7 +117,6 @@ export const UserManagement: React.FC = () => {
             case 'lecturer':
                 return `CODL/LC${nextNum}`;
             case 'student':
-            case 'pro_student':
                 return `${yearDigits}CODL${nextNum}`;
             default:
                 return `CODL/UN${nextNum}`; // Unknown
@@ -713,7 +711,7 @@ export const UserManagement: React.FC = () => {
                                         </div>
                                     )}
 
-                                    {(selectedUser.role === 'student' || selectedUser.role === 'pro_student') && (
+                                    {selectedUser.role === 'student' && (
                                         <div className="um-performance-summary">
                                             <h4>Performance Summary</h4>
                                             <div className="um-perf-grid">
