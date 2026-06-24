@@ -72,7 +72,7 @@ export const LoginPortal: React.FC = () => {
             const data = await authService.login({ login: regNumber, password });
 
             // Only registered and existing students can log in from the existing portal
-            if (data.user.role !== 'student' && data.user.role !== 'pro_student') {
+            if (data.user.role !== 'student') {
                 // Immediately revoke the session
                 try { await authService.logout(); } catch (_) { }
                 if (data.user.role === 'applicant') {
@@ -133,7 +133,7 @@ export const LoginPortal: React.FC = () => {
         try {
             const data = await authService.googleLogin(response.credential);
 
-            // Do not force role to 'applicant' if the user is already a student/pro_student
+            // Do not force role to 'applicant' if the user is already a student
             const role = data.user.role;
             const sessionUser = { ...data.user, role: role };
 
@@ -142,7 +142,7 @@ export const LoginPortal: React.FC = () => {
             sessionStorage.setItem('adminRole', role);
 
             // Redirect students to their dashboard, otherwise applicants to applicant dashboard
-            if (role === 'student' || role === 'pro_student') {
+            if (role === 'student') {
                 navigate('/dashboard');
             } else {
                 navigate('/applicant-dashboard');

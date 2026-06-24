@@ -8,7 +8,7 @@ export interface User {
     fullName: string;
     email: string;
     nic: string;
-    role: 'super_admin' | 'admin' | 'director' | 'coordinator' | 'secretary' | 'lecturer' | 'pro_student' | 'student';
+    role: 'super_admin' | 'admin' | 'director' | 'coordinator' | 'secretary' | 'lecturer' | 'student';
     status: 'active' | 'inactive' | 'suspended';
     avatar: string;
     phone: string;
