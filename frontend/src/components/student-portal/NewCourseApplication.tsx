@@ -175,6 +175,8 @@ export const NewCourseApplication: React.FC = () => {
         setSelectedCourse(prog);
         if (prog.batches && prog.batches.length > 0) {
             setSelectedBatch(prog.batches[0]);
+        } else {
+            setSelectedBatch(null);
         }
         setSubmitError(null);
     };

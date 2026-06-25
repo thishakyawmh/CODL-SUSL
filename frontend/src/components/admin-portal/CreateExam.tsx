@@ -162,7 +162,7 @@ export const CreateExam: React.FC = () => {
                         else setSelectedRegulars([]);
                         if (exam.reattempts) setSelectedReattempts(exam.reattempts);
                         if (exam.postponements) setSelectedPostponements(exam.postponements);
-                        if (exam.timetablePath) setTimetablePath(exam.timetablePath);
+                        if (exam.timetable_path || exam.timetablePath) setTimetablePath(exam.timetable_path || exam.timetablePath);
                     }
                 } catch (err) {
                     console.error("Failed to load exam details for editing:", err);
@@ -193,7 +193,7 @@ export const CreateExam: React.FC = () => {
             reattempts: selectedReattempts,
             postponements: selectedPostponements,
             subjects,
-            timetablePath,
+            timetable_path: timetablePath,
             semester: selectedSemester + 1
         };
 

@@ -5,7 +5,7 @@ import {
     History, Clock, UserPlus, X, Users,
     Search, Plus, Trash2, Loader, Check, XCircle,
     ClipboardList, User, FileText, Eye, RefreshCw,
-    CreditCard, MapPin
+    CreditCard, MapPin, ShieldCheck
 } from 'lucide-react';
 import {
     courseService,
@@ -18,6 +18,7 @@ import { toast } from '../../utils/toast';
 import { getCurrentAdminUser } from '../../data/mockAdminData';
 import { VerificationStages } from '../common/VerificationStages';
 import './CourseManagement.css';
+import './ApplicationApprovals.css';
 
 export const ManageExamStudents: React.FC = () => {
     const { id, examId } = useParams<{ id: string; examId: string }>();
@@ -368,6 +369,112 @@ export const ManageExamStudents: React.FC = () => {
         } catch (err: any) {
             console.error('Failed to reject application:', err);
             toast.error(err.response?.data?.message || 'Failed to reject application.');
+        }
+    };
+
+    const handleApproveStage = async (app: any, stageName: 'secretary' | 'coordinator' | 'director') => {
+        const user = getCurrentAdminUser();
+        const approvedBy = user?.fullName || 'Admin';
+        const approvedAt = new Date().toLocaleDateString('en-US');
+
+        let nextStages = app.stages && typeof app.stages === 'object' && !Array.isArray(app.stages)
+            ? { ...app.stages }
+            : { secretary: 'pending', coordinator: 'pending', director: 'pending' };
+
+        if (Array.isArray(app.stages)) {
+            nextStages = {
+                secretary: app.stages[0]?.status || 'pending',
+                coordinator: app.stages[1]?.status || 'pending',
+                director: app.stages[2]?.status || 'pending'
+            };
+        }
+
+        nextStages[stageName] = 'approved';
+        nextStages[`${stageName}_approved_by`] = approvedBy;
+        nextStages[`${stageName}_approved_at`] = approvedAt;
+
+        let currentStep = app.current_step || 1;
+        let nextStatus = 'pending';
+
+        if (nextStages.secretary === 'approved' && nextStages.coordinator === 'approved' && nextStages.director === 'approved') {
+            nextStatus = 'approved';
+            currentStep = 3;
+        } else if (nextStages.secretary === 'approved' && nextStages.coordinator === 'approved') {
+            currentStep = 3;
+            nextStatus = 'pending';
+        } else if (nextStages.secretary === 'approved') {
+            currentStep = 2;
+            nextStatus = 'pending';
+        } else {
+            currentStep = 1;
+            nextStatus = 'pending';
+        }
+
+        try {
+            await examApplicationService.update(app.id, {
+                status: nextStatus,
+                stages: nextStages,
+                current_step: currentStep,
+                rejection_reason: null
+            });
+            toast.success(`Stage ${stageName.charAt(0).toUpperCase() + stageName.slice(1)} approved successfully!`);
+            await fetchAll(true);
+            setSelectedAppDetails((prev: any) => {
+                if (prev && prev.id === app.id) {
+                    return {
+                        ...prev,
+                        status: nextStatus,
+                        stages: nextStages,
+                        current_step: currentStep,
+                        rejection_reason: null
+                    };
+                }
+                return prev;
+            });
+        } catch (err: any) {
+            console.error('Failed to approve stage:', err);
+            toast.error(err.response?.data?.message || 'Failed to approve stage.');
+        }
+    };
+
+    const handleRejectStage = async (app: any, stageName: 'secretary' | 'coordinator' | 'director', reason: string) => {
+        let nextStages = app.stages && typeof app.stages === 'object' && !Array.isArray(app.stages)
+            ? { ...app.stages }
+            : { secretary: 'pending', coordinator: 'pending', director: 'pending' };
+
+        if (Array.isArray(app.stages)) {
+            nextStages = {
+                secretary: app.stages[0]?.status || 'pending',
+                coordinator: app.stages[1]?.status || 'pending',
+                director: app.stages[2]?.status || 'pending'
+            };
+        }
+
+        nextStages[stageName] = 'rejected';
+
+        try {
+            await examApplicationService.update(app.id, {
+                status: 'rejected',
+                stages: nextStages,
+                current_step: app.current_step || 1,
+                rejection_reason: reason || 'Rejected'
+            });
+            toast.success(`Stage ${stageName.charAt(0).toUpperCase() + stageName.slice(1)} rejected.`);
+            await fetchAll(true);
+            setSelectedAppDetails((prev: any) => {
+                if (prev && prev.id === app.id) {
+                    return {
+                        ...prev,
+                        status: 'rejected',
+                        stages: nextStages,
+                        rejection_reason: reason
+                    };
+                }
+                return prev;
+            });
+        } catch (err: any) {
+            console.error('Failed to reject stage:', err);
+            toast.error(err.response?.data?.message || 'Failed to reject stage.');
         }
     };
 
@@ -766,7 +873,7 @@ export const ManageExamStudents: React.FC = () => {
                                                     (userRole === 'secretary' && getStageStatus(app, 'secretary') === 'pending') ||
                                                     (userRole === 'coordinator' && getStageStatus(app, 'secretary') === 'approved' && getStageStatus(app, 'coordinator') === 'pending') ||
                                                     (userRole === 'director' && getStageStatus(app, 'coordinator') === 'approved' && getStageStatus(app, 'director') === 'pending') ||
-                                                    (userRole === 'super_admin')
+                                                    (userRole === 'super_admin' || userRole === 'admin')
                                                 );
 
                                                 return (
@@ -1485,7 +1592,11 @@ export const ManageExamStudents: React.FC = () => {
                 }}
                 onConfirm={() => {
                     if (pendingApp) {
-                        handleReject(pendingApp, rejectionReason);
+                        if (pendingApp.stageToReject) {
+                            handleRejectStage(pendingApp, pendingApp.stageToReject, rejectionReason);
+                        } else {
+                            handleReject(pendingApp, rejectionReason);
+                        }
                         setShowRejectModal(false);
                         setPendingApp(null);
                     }
@@ -1506,7 +1617,7 @@ export const ManageExamStudents: React.FC = () => {
                     (userRole === 'secretary' && secStatus === 'pending') ||
                     (userRole === 'coordinator' && secStatus === 'approved' && coorStatus === 'pending') ||
                     (userRole === 'director' && coorStatus === 'approved' && dirStatus === 'pending') ||
-                    (userRole === 'super_admin')
+                    (userRole === 'super_admin' || userRole === 'admin')
                 );
 
                 return (
@@ -1643,6 +1754,136 @@ export const ManageExamStudents: React.FC = () => {
                                             <div style={{ color: '#9F1239', fontSize: '14px', lineHeight: 1.5 }}>{app.rejection_reason}</div>
                                         </div>
                                     )}
+
+                                    <div className="am-section-divider">
+                                        <h4><ShieldCheck size={16} /> Approval Stages</h4>
+                                    </div>
+
+                                    {(() => {
+                                        const approvalStages = [
+                                            {
+                                                role: 'Secretary',
+                                                status: secStatus,
+                                                approvedBy: app.stages?.secretary_approved_by || (secStatus === 'approved' ? 'Course Secretary 1' : null),
+                                                approvedAt: app.stages?.secretary_approved_at || null,
+                                                comment: app.stages?.secretary_comment || null
+                                            },
+                                            {
+                                                role: 'Coordinator',
+                                                status: coorStatus,
+                                                approvedBy: app.stages?.coordinator_approved_by || (coorStatus === 'approved' ? 'Course Coordinator 1' : null),
+                                                approvedAt: app.stages?.coordinator_approved_at || null,
+                                                comment: app.stages?.coordinator_comment || null
+                                            },
+                                            {
+                                                role: 'Director',
+                                                status: dirStatus,
+                                                approvedBy: app.stages?.director_approved_by || (dirStatus === 'approved' ? 'Director 1' : null),
+                                                approvedAt: app.stages?.director_approved_at || null,
+                                                comment: app.stages?.director_comment || null
+                                            }
+                                        ];
+
+                                        return (
+                                            <div className="am-approval-flow" style={{ marginTop: '12px' }}>
+                                                <div className="am-flow-steps">
+                                                    {approvalStages.map((stage: any, idx: number) => {
+                                                        const isStepActive = (idx === 0 && stage.status === 'pending') ||
+                                                            (idx === 1 && approvalStages[0].status === 'approved' && stage.status === 'pending') ||
+                                                            (idx === 2 && approvalStages[1].status === 'approved' && stage.status === 'pending');
+
+                                                        const canApproveThisStage = isStepActive && (
+                                                            (stage.role.toLowerCase() === 'secretary' && userRole === 'secretary') ||
+                                                            (stage.role.toLowerCase() === 'coordinator' && userRole === 'coordinator') ||
+                                                            (stage.role.toLowerCase() === 'director' && userRole === 'director') ||
+                                                            userRole === 'super_admin' || userRole === 'admin'
+                                                        );
+
+                                                        return (
+                                                            <div key={idx} className={`am-flow-step ${stage.status}`} style={{ display: 'flex', gap: '20px', paddingBottom: idx < 2 ? '24px' : '0', position: 'relative' }}>
+                                                                <div className="am-step-marker" style={{
+                                                                    width: '20px',
+                                                                    height: '20px',
+                                                                    borderRadius: '50%',
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    justifyContent: 'center',
+                                                                    color: '#FFFFFF',
+                                                                    background: stage.status === 'approved' ? '#10B981' : (stage.status === 'rejected' ? '#EF4444' : '#F1F5F9'),
+                                                                    border: `2px solid ${stage.status === 'approved' ? '#10B981' : (stage.status === 'rejected' ? '#EF4444' : '#94A3B8')}`,
+                                                                    zIndex: 3
+                                                                }}>
+                                                                    {stage.status === 'approved' ? <Check size={12} /> :
+                                                                     stage.status === 'rejected' ? <XCircle size={12} /> : <Clock size={12} style={{ color: '#94A3B8' }} />}
+                                                                </div>
+                                                                <div className="am-step-content" style={{ flex: 1 }}>
+                                                                    <div className="am-step-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                                        <span className="am-step-role" style={{ fontWeight: 700, color: '#1E293B' }}>{stage.role}</span>
+                                                                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                                                            <span className={`at-status-badge ${stage.status}`} style={{
+                                                                                background: stage.status === 'approved' ? '#D1FAE5' : (stage.status === 'rejected' ? '#FEE2E2' : '#FEF3C7'),
+                                                                                color: stage.status === 'approved' ? '#059669' : (stage.status === 'rejected' ? '#DC2626' : '#D97706'),
+                                                                                fontSize: '11px', padding: '3px 10px', borderRadius: '12px', fontWeight: 700, textTransform: 'capitalize'
+                                                                            }}>
+                                                                                {stage.status}
+                                                                            </span>
+                                                                            {canApproveThisStage && (
+                                                                                <div style={{ display: 'flex', gap: '6px' }}>
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        onClick={() => {
+                                                                                            setPendingApp({ ...app, stageToReject: stage.role.toLowerCase() });
+                                                                                            setRejectionReason('');
+                                                                                            setShowRejectModal(true);
+                                                                                            setShowDetailsModal(false);
+                                                                                        }}
+                                                                                        style={{
+                                                                                            background: '#FEE2E2',
+                                                                                            color: '#DC2626',
+                                                                                            border: 'none',
+                                                                                            padding: '4px 10px',
+                                                                                            borderRadius: '6px',
+                                                                                            fontSize: '11px',
+                                                                                            fontWeight: 700,
+                                                                                            cursor: 'pointer'
+                                                                                        }}
+                                                                                    >
+                                                                                        Reject
+                                                                                    </button>
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        onClick={() => handleApproveStage(app, stage.role.toLowerCase())}
+                                                                                        style={{
+                                                                                            background: '#D1FAE5',
+                                                                                            color: '#059669',
+                                                                                            border: 'none',
+                                                                                            padding: '4px 10px',
+                                                                                            borderRadius: '6px',
+                                                                                            fontSize: '11px',
+                                                                                            fontWeight: 700,
+                                                                                            cursor: 'pointer'
+                                                                                        }}
+                                                                                    >
+                                                                                        Approve
+                                                                                    </button>
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                    {stage.approvedBy && (
+                                                                        <div className="am-step-info" style={{ fontSize: '12px', color: '#64748B', marginTop: '4px' }}>
+                                                                            <span>Approved by {stage.approvedBy}</span>
+                                                                            {stage.approvedAt && <span> on {stage.approvedAt}</span>}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        );
+                                    })()}
                                 </div>
                             </div>
 
@@ -1654,6 +1895,25 @@ export const ManageExamStudents: React.FC = () => {
                                 >
                                     <Trash2 size={16} /> Delete Application
                                 </button>
+
+                                {!canAct && appStatusLower === 'pending' && (
+                                    <div className="am-waiting-badge" style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '8px',
+                                        background: '#FEF3C7',
+                                        color: '#D97706',
+                                        padding: '10px 20px',
+                                        borderRadius: '8px',
+                                        border: '1px solid #FDE68A',
+                                        fontWeight: 700,
+                                        fontSize: '13px',
+                                        justifyContent: 'center'
+                                    }}>
+                                        <Clock size={16} />
+                                        Waiting for {app.current_step === 1 ? 'Secretary' : app.current_step === 2 ? 'Coordinator' : 'Director'} approval
+                                    </div>
+                                )}
 
                                 {canAct && (
                                     <>
