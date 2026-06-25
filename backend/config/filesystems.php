@@ -76,14 +76,5 @@ return [
     'links' => [
         public_path('storage') => storage_path('app/public'),
     ],
-
-    // Existing connections...
-    
-    'analytics' => [
-        'driver' => 'sqlite',
-        'url' => env('DB_ANALYTICS_URL'),
-        'database' => database_path('analytics.sqlite'),
-        'prefix' => '',
-        'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
-    ],
 ];
+

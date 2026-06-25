@@ -15,6 +15,7 @@ use App\Http\Controllers\DatabaseTableController;
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\SystemSettingController;
 use App\Http\Controllers\BackupController;
+use App\Http\Controllers\AIAnalyticsController;
 
 /*
 |--------------------------------------------------------------------------
@@ -162,6 +163,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/admin/survey/student-stats', [\App\Http\Controllers\CurriculumAlignmentController::class, 'getStudentSurveyData']);
     Route::get('/admin/courses/{courseId}/ai-insights', [\App\Http\Controllers\CurriculumAlignmentController::class, 'getAiInsights']);
     Route::post('/admin/courses/{courseId}/ai-recommendations', [\App\Http\Controllers\CurriculumAlignmentController::class, 'generateAiRecommendations']);
+
+    // AI Analytics Dashboard (Milestone 5)
+    Route::get('/admin/ai-analytics/overview', [AIAnalyticsController::class, 'getOverview']);
+    Route::get('/admin/ai-analytics/student-interest', [AIAnalyticsController::class, 'getStudentInterest']);
+    Route::get('/admin/ai-analytics/industry-gap', [AIAnalyticsController::class, 'getIndustryGap']);
+    Route::get('/admin/ai-analytics/recommendations', [AIAnalyticsController::class, 'getRecommendations']);
+    Route::get('/admin/ai-analytics/surveys', [AIAnalyticsController::class, 'getSurveys']);
+    Route::post('/admin/ai-analytics/surveys', [AIAnalyticsController::class, 'storeSurvey']);
+    Route::post('/admin/ai-analytics/sync', [AIAnalyticsController::class, 'syncSheet']);
 });
 
 // Public Survey Routes (Accessible without authentication)
