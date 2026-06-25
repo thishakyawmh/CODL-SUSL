@@ -312,6 +312,14 @@ export const examService = {
     delete: async (id: string | number) => {
         const response = await api.delete(`/exams/${id}`);
         return response.data;
+    },
+    uploadTimetable: async (file: File) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        const response = await api.post('/exams/upload-timetable', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        return response.data;
     }
 };
 

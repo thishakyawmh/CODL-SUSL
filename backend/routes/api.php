@@ -16,11 +16,7 @@ use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\SystemSettingController;
 use App\Http\Controllers\BackupController;
 
-/*
-|--------------------------------------------------------------------------
-| API Routes
-|--------------------------------------------------------------------------
-*/
+/* API Routes */
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
@@ -105,6 +101,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/courses/{id}/exams', [ExamController::class, 'store']);
     Route::put('/exams/{id}', [ExamController::class, 'update']);
     Route::delete('/exams/{id}', [ExamController::class, 'destroy']);
+    Route::post('/exams/upload-timetable', [ExamController::class, 'uploadTimetable']);
 
     // Announcements
     Route::get('/announcements', [AnnouncementController::class, 'index']);

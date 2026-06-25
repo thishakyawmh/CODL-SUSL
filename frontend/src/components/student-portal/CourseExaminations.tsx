@@ -22,6 +22,18 @@ export const CourseExaminations: React.FC = () => {
     const location = useLocation();
     const { course } = useOutletContext<{ course: Course }>();
 
+    const handleDownloadTimetable = (path: string) => {
+        if (!path) {
+            toast.error("No timetable available for this exam.");
+            return;
+        }
+        if (path.startsWith('http://') || path.startsWith('https://')) {
+            window.open(path, '_blank');
+        } else {
+            toast.warning("This timetable was not uploaded. Please ask an administrator to re-upload it.");
+        }
+    };
+
     const courseSubjects = React.useMemo(() => {
         if (course.subjects && course.subjects.length > 0) {
             return course.subjects;
@@ -948,8 +960,12 @@ export const CourseExaminations: React.FC = () => {
                                                 </div>
                                                 <div className="detail-box simple-download">
                                                     <span className="detail-label" style={{ display: 'block', fontSize: '11px', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', marginBottom: '4px' }}>Time Table</span>
-                                                    {showDetailsModal.assignedExam.timetable_path ? (
-                                                        <button className="simple-download-link" style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', color: '#3B82F6', cursor: 'pointer', fontWeight: 600, fontSize: '14px', padding: 0 }}>
+                                                    {showDetailsModal.assignedExam.timetable_path || showDetailsModal.assignedExam.timetablePath ? (
+                                                        <button 
+                                                            className="simple-download-link" 
+                                                            onClick={() => handleDownloadTimetable(showDetailsModal.assignedExam.timetable_path || showDetailsModal.assignedExam.timetablePath)}
+                                                            style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', color: '#3B82F6', cursor: 'pointer', fontWeight: 600, fontSize: '14px', padding: 0 }}
+                                                        >
                                                             <Download size={14} /> Download Time Table
                                                         </button>
                                                     ) : (
@@ -1127,9 +1143,16 @@ export const CourseExaminations: React.FC = () => {
                                         )}
                                         <div className="detail-box simple-download" style={{ gridColumn: hasSubjects ? 'span 2' : 'span 1' }}>
                                             <span className="detail-label">Time Table</span>
-                                            <button className="simple-download-link">
-                                                <Download size={14} /> Download Time Table
-                                            </button>
+                                            {showDetailsModal.exam.timetable_path || showDetailsModal.exam.timetablePath ? (
+                                                <button 
+                                                    className="simple-download-link"
+                                                    onClick={() => handleDownloadTimetable(showDetailsModal.exam.timetable_path || showDetailsModal.exam.timetablePath)}
+                                                >
+                                                    <Download size={14} /> Download Time Table
+                                                </button>
+                                            ) : (
+                                                <span className="detail-value" style={{ fontSize: '14px', fontWeight: 600, color: '#94A3B8' }}>Not yet uploaded</span>
+                                            )}
                                         </div>
                                     </div>
                                 );

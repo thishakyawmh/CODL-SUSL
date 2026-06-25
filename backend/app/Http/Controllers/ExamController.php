@@ -148,4 +148,23 @@ class ExamController extends Controller
         \App\Http\Controllers\CourseController::clearManageCourseCache($courseId);
         return response()->json(['message' => 'Exam deleted successfully']);
     }
+
+    public function uploadTimetable(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:pdf,doc,docx|max:20480', // 20MB limit
+        ]);
+
+        $file = $request->file('file');
+        $filename = 'timetable_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+        $path = $file->storeAs('timetables', $filename, 'public');
+
+        $url = asset('storage/' . $path);
+
+        return response()->json([
+            'message' => 'Timetable uploaded successfully',
+            'url' => $url,
+            'filename' => $file->getClientOriginalName(),
+        ]);
+    }
 }
