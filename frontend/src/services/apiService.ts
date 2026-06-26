@@ -494,6 +494,10 @@ export const aiAnalyticsService = {
     getRecommendations: async () => {
         const response = await api.get('/admin/ai-analytics/recommendations');
         return response.data;
+    },
+    syncGoogleSheet: async (data: { type: 'student' | 'industry'; url: string }) => {
+        const response = await api.post('/admin/ai-analytics/sync-sheet', data);
+        return response.data;
     }
 };
 
