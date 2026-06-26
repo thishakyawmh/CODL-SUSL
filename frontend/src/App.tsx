@@ -39,7 +39,7 @@ import { CreateExam } from './components/admin-portal/CreateExam';
 import { ManageExamStudents } from './components/admin-portal/ManageExamStudents';
 import { AIAnalytics } from './components/admin-portal/AIAnalytics';
 import { AdminAnnouncements } from './components/admin-portal/AdminAnnouncements';
-// [M5] import { ActivityLogs } from './components/admin-portal/ActivityLogs';
+import { ActivityLogs } from './components/admin-portal/ActivityLogs';
 
 // --- Common/Services Imports ---
 import { systemSettingService } from './services/apiService';
@@ -219,7 +219,7 @@ function App() {
             element={<ManageCourse />}
           />
 
-          
+
           <Route
             path="courses/manage/:id/exams/create"
             element={<CreateExam />}
@@ -232,7 +232,7 @@ function App() {
             path="courses/manage/:id/exams/:examId/students"
             element={<ManageExamStudents />}
           />
-         
+
 
           <Route
             path="approvals/*"
@@ -295,7 +295,7 @@ function App() {
               element={<CourseDetails />}
             />
 
-          
+
             <Route
               path="examinations"
               element={<CourseExaminations />}
@@ -305,9 +305,9 @@ function App() {
               path="examinations/:examId/results"
               element={<ExaminationResults />}
             />
-           
 
-           
+
+
             <Route
               path="results"
               element={<CourseResults />}
@@ -322,7 +322,7 @@ function App() {
               path="grading-scale"
               element={<GradingScale />}
             />
-           
+
 
             <Route
               path="materials"
@@ -343,7 +343,7 @@ function App() {
               path="examinations/success"
               element={<ExamApplicationSuccess />}
             />
-           
+
           </Route>
         </Route>
       </Routes>
