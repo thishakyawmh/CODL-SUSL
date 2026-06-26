@@ -482,7 +482,19 @@ export const aiAnalyticsService = {
     createSurvey: async (data: { survey_type: 'student' | 'industry'; data: any }) => {
         const response = await api.post('/admin/ai-analytics/surveys', data);
         return response.data;
+    },
+    getStudentInterest: async () => {
+        const response = await api.get('/admin/ai-analytics/student-interest');
+        return response.data;
+    },
+    getIndustryGap: async () => {
+        const response = await api.get('/admin/ai-analytics/industry-gap');
+        return response.data;
+    },
+    getRecommendations: async () => {
+        const response = await api.get('/admin/ai-analytics/recommendations');
+        return response.data;
     }
 };
 
-export default api;
+export default api
