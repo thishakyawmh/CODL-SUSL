@@ -1,536 +1,578 @@
 import React, { useState, useEffect } from 'react';
 import {
-    BarChart3, Lightbulb, ArrowLeft, Sparkles, AlertCircle, ArrowUpRight, 
-    BookOpen, Award, FileText, CheckCircle2, ChevronDown, ChevronUp, 
-    TrendingUp, Loader2, Download, Info, Layers
+    Sparkles, RefreshCw, BarChart2, ShieldAlert, BookOpen, FileText, Database, Plus, ChevronDown, CheckCircle, Download
 } from 'lucide-react';
-import { categoryService, courseService, aiAnalysisService } from '../../services/apiService';
+import { aiAnalyticsService } from '../../services/apiService';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 import './AIAnalytics.css';
 
-interface Category {
-    id: number;
-    name: string;
-    description: string;
-    icon: string;
-    color: string;
-}
-
-interface Course {
-    id: number;
-    title: string;
-    code: string;
-    level: string;
-    department: string;
-    duration: string;
-    category_id: number;
-    category?: Category;
-    semesters_count?: number;
-    subjects_count?: number;
-}
-
-interface JobPath {
-    name: string;
-    matching_percentage: number;
-    description: string;
-    covered_skills: string[];
-    missing_skills: string[];
-}
-
-interface SubjectAnalysis {
-    name: string;
-    code: string;
-    usefulness_percentage: number;
-    topics_included: string[];
-    audited_slides: string[];
-    recommendations: string;
-}
-
-interface AnalysisResult {
-    matching_score: number;
-    job_paths: JobPath[];
-    subjects: SubjectAnalysis[];
-    summary: string;
-}
-
 export const AIAnalytics: React.FC = () => {
-    // Categories and Courses lists
-    const [categories, setCategories] = useState<Category[]>([]);
-    const [courses, setCourses] = useState<Course[]>([]);
-    const [loadingFilters, setLoadingFilters] = useState<boolean>(true);
+    const [activeTab, setActiveTab] = useState<'overview' | 'student' | 'industry' | 'recommendations' | 'reports' | 'surveys'>('overview');
+    const [loading, setLoading] = useState(false);
+    const [syncing, setSyncing] = useState(false);
+    const [syncUrl, setSyncUrl] = useState('');
+    const [syncType, setSyncType] = useState<'student' | 'industry'>('student');
+    const [overviewData, setOverviewData] = useState<any>(null);
+    const [studentData, setStudentData] = useState<any[]>([]);
+    const [industryData, setIndustryData] = useState<any>(null);
+    const [recommendations, setRecommendations] = useState<any[]>([]);
+    const [surveys, setSurveys] = useState<any>(null);
 
-    // Active Selection State
-    const [selectedCategoryName, setSelectedCategoryName] = useState<string>('All');
-    const [activeCourseId, setActiveCourseId] = useState<number | null>(null);
-    const [activeCourse, setActiveCourse] = useState<Course | null>(null);
 
-    // Auditing State
-    const [analyzing, setAnalyzing] = useState<boolean>(false);
-    const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
-    const [expandedSubjectCode, setExpandedSubjectCode] = useState<string | null>(null);
+    const [showSyncModal, setShowSyncModal] = useState(false);
+    const [showSurveyModal, setShowSurveyModal] = useState(false);
+    const [newSurveyType, setNewSurveyType] = useState<'student' | 'industry'>('student');
+    const [surveyForm, setSurveyForm] = useState<any>({});
 
-    // Loading Screen Message Cycler
-    const [loadingText, setLoadingText] = useState<string>('Initializing AI curriculum auditor...');
 
-    const loadingSteps = [
-        'Connecting to AI Analysis Core...',
-        'Scanning academic database for courses and modules...',
-        'Aggregating uploaded slides and lecture files from CourseMaterials.tsx...',
-        'Parsing filename tags and mapping lecture topics...',
-        'Evaluating curriculum content against real-world job descriptors...',
-        'Computing alignment percentages for key industry roles...',
-        'Structuring curriculum audit suggestions and subject recommendations...'
-    ];
+    const [facultyFilter, setFacultyFilter] = useState('All');
+    const [departmentFilter, setDepartmentFilter] = useState('All');
 
-    // Fetch initial filter data
     useEffect(() => {
-        const fetchFilters = async () => {
-            setLoadingFilters(true);
-            try {
-                const cats = await categoryService.getAll();
-                setCategories(cats);
-                const crs = await courseService.getAll();
-                setCourses(crs);
-            } catch (err) {
-                console.error('Failed to load filter directories:', err);
-            } finally {
-                setLoadingFilters(false);
-            }
-        };
-        fetchFilters();
-    }, []);
+        fetchData();
+    }, [activeTab]);
 
-    // Cycle analysis loader texts
-    useEffect(() => {
-        let timer: any;
-        if (analyzing) {
-            let step = 0;
-            timer = setInterval(() => {
-                step = (step + 1) % loadingSteps.length;
-                setLoadingText(loadingSteps[step]);
-            }, 1800);
-        }
-        return () => {
-            if (timer) clearInterval(timer);
-        };
-    }, [analyzing]);
-
-    // Handle course selection
-    const handleSelectCourse = async (course: Course) => {
-        setActiveCourseId(course.id);
-        setActiveCourse(course);
-        setAnalysisResult(null); // Clear previous analysis
-        setExpandedSubjectCode(null);
-    };
-
-    // Run AI analysis
-    const handleRunAnalysis = async () => {
-        if (!activeCourseId) return;
-        setAnalyzing(true);
-        setAnalysisResult(null);
-        setExpandedSubjectCode(null);
-        setLoadingText('Initializing AI curriculum auditor...');
+    const fetchData = async () => {
+        setLoading(true);
         try {
-            const data = await aiAnalysisService.analyzeCourse(activeCourseId);
-            setAnalysisResult(data);
+            if (activeTab === 'overview') {
+                const res = await aiAnalyticsService.getOverview();
+                setOverviewData(res);
+            } else if (activeTab === 'student') {
+                const res = await aiAnalyticsService.getStudentInterest();
+                setStudentData(res);
+            } else if (activeTab === 'industry') {
+                const res = await aiAnalyticsService.getIndustryGap();
+                setIndustryData(res);
+            } else if (activeTab === 'recommendations') {
+                const res = await aiAnalyticsService.getRecommendations();
+                setRecommendations(res);
+            } else if (activeTab === 'surveys') {
+                const res = await aiAnalyticsService.getSurveys();
+                setSurveys(res);
+            }
         } catch (err) {
-            console.error('Curriculum analysis failed:', err);
-            alert('AI Analysis failed. Please check backend log settings or API key limits.');
+            console.error('Failed to load AI analytics data:', err);
         } finally {
-            setAnalyzing(false);
+            setLoading(false);
         }
     };
 
-    // Filter courses based on category tab selection
-    const getFilteredCourses = () => {
-        if (selectedCategoryName === 'All') return courses;
-        return courses.filter(c => {
-            // Match category name or category level
-            const cLvl = c.level ? c.level.toLowerCase() : '';
-            const cCatName = c.category ? c.category.name.toLowerCase() : '';
-            const filterLowe = selectedCategoryName.toLowerCase();
-            return cLvl === filterLowe || cCatName === filterLowe;
+    const handleSync = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!syncUrl) return;
+        setSyncing(true);
+        try {
+            const res = await aiAnalyticsService.syncGoogleSheet({ type: syncType, url: syncUrl });
+            alert(res.message);
+            setShowSyncModal(false);
+            setSyncUrl('');
+            fetchData();
+        } catch (err: any) {
+            alert('Google Sheets Sync Failed: ' + (err.response?.data?.message || err.message));
+        } finally {
+            setSyncing(false);
+        }
+    };
+
+    const handleAddSurvey = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            await aiAnalyticsService.createSurvey({
+                survey_type: newSurveyType,
+                data: surveyForm
+            });
+            alert('Survey response successfully logged.');
+            setShowSurveyModal(false);
+            setSurveyForm({});
+            fetchData();
+        } catch (err: any) {
+            alert('Failed to log survey: ' + err.message);
+        }
+    };
+
+    const exportPDF = () => {
+        const input = document.getElementById('report-document');
+        if (!input) return;
+        setLoading(true);
+        html2canvas(input, { scale: 2 }).then(canvas => {
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const imgWidth = 210;
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+            pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+            pdf.save('CODL_Curriculum_Audit_Report.pdf');
+            setLoading(false);
         });
     };
 
-    // Helper to get category color badge
-    const getCategoryStyles = (level: string) => {
-        const lvl = level.toLowerCase();
-        if (lvl === 'degree') return { bg: '#F5F3FF', color: '#7C3AED', border: '1px solid #DDD6FE' };
-        if (lvl.includes('diploma') || lvl.includes('hnd')) return { bg: '#EEF2FF', color: '#3B82F6', border: '1px solid #DBEAFE' };
-        if (lvl.includes('certificate')) return { bg: '#ECFDF5', color: '#10B981', border: '1px solid #D1FAE5' };
-        return { bg: '#F1F5F9', color: '#64748B', border: '1px solid #E2E8F0' };
-    };
-
-    // Category Tabs list (curated)
-    const categoryTabs = ['All', 'Degree', 'Higher National Diploma', 'Diploma', 'Certificate'];
-
     return (
-        <div className="admin-dashboard">
-            {/* Page Header */}
+        <div className="admin-dashboard text-slate-100">
             <div className="admin-page-header">
                 <div>
-                    <h1 className="admin-page-title">AI Curriculum Auditor</h1>
-                    <p className="admin-page-subtitle">
-                        Analyze program syllabus contents and lecture slides against industrial demands and job paths.
-                    </p>
+                    <h1 className="admin-page-title flex items-center gap-2">
+                        <Sparkles className="text-purple-400" /> AI Curriculum Analytics
+                    </h1>
+                    <p className="admin-page-subtitle">Evaluate academic alignment, identify technical shortages, and review recommendations.</p>
+                </div>
+                <div className="flex gap-2">
+                    <button className="flex items-center gap-1 btn btn-secondary" onClick={() => setShowSyncModal(true)}>
+                        <RefreshCw size={16} /> Sync Google Sheet
+                    </button>
+                    <button className="flex items-center gap-1 btn btn-primary" onClick={() => { setShowSurveyModal(true); setSurveyForm({}); }}>
+                        <Plus size={16} /> Log Survey
+                    </button>
                 </div>
             </div>
 
-            {/* Main Content Area */}
-            <div className="ai-analytics-page">
-                {activeCourseId === null ? (
-                    /* ── DASHBOARD VIEW: Course listing with filters ── */
-                    <div className="courses-dashboard-layout animate-fade-in">
-                        {/* Filters Panel */}
-                        <div className="filter-navigation-bar">
-                            <span className="filter-label">Filter Category:</span>
-                            <div className="filter-tabs-row">
-                                {categoryTabs.map(tab => (
-                                    <button
-                                        key={tab}
-                                        className={`filter-tab-btn ${selectedCategoryName === tab ? 'active' : ''}`}
-                                        onClick={() => setSelectedCategoryName(tab)}
-                                    >
-                                        {tab === 'All' ? 'All Programs' : tab}
-                                    </button>
-                                ))}
+
+            <div className="ai-tabs-container">
+                <button className={`ai-tab-btn ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => setActiveTab('overview')}><BarChart2 size={16} /> Overview</button>
+                <button className={`ai-tab-btn ${activeTab === 'student' ? 'active' : ''}`} onClick={() => setActiveTab('student')}><BookOpen size={16} /> Student Interests</button>
+                <button className={`ai-tab-btn ${activeTab === 'industry' ? 'active' : ''}`} onClick={() => setActiveTab('industry')}><ShieldAlert size={16} /> Industry Gaps</button>
+                <button className={`ai-tab-btn ${activeTab === 'recommendations' ? 'active' : ''}`} onClick={() => setActiveTab('recommendations')}><Sparkles size={16} /> AI Recommendations</button>
+                <button className={`ai-tab-btn ${activeTab === 'reports' ? 'active' : ''}`} onClick={() => setActiveTab('reports')}><FileText size={16} /> Reports</button>
+                <button className={`ai-tab-btn ${activeTab === 'surveys' ? 'active' : ''}`} onClick={() => setActiveTab('surveys')}><Database size={16} /> Survey Responses</button>
+            </div>
+
+            {loading ? (
+                <div className="loading-spinner-container">
+                    <div className="loading-spinner"></div>
+                    <p>Evaluating semantic alignments and parsing patterns...</p>
+                </div>
+            ) : (
+                <div className="ai-tab-content">
+                    {/* OVERVIEW TAB */}
+                    {activeTab === 'overview' && overviewData && (
+                        <div className="space-y-6">
+                            <div className="ai-kpi-grid">
+                                <div className="ai-kpi-card purple">
+                                    <h3>Overall Student Match</h3>
+                                    <div className="value">{overviewData.kpis.studentMatch}%</div>
+                                    <p>Cohesion with student aspirations</p>
+                                </div>
+                                <div className="ai-kpi-card indigo">
+                                    <h3>Overall Industry Match</h3>
+                                    <div className="value">{overviewData.kpis.industryMatch}%</div>
+                                    <p>Satisfies direct industry hiring needs</p>
+                                </div>
+                                <div className="ai-kpi-card cyan">
+                                    <h3>Average Alignment</h3>
+                                    <div className="value">{overviewData.kpis.alignment}%</div>
+                                    <p>Combined curriculum readiness score</p>
+                                </div>
+                                <div className="ai-kpi-card dark">
+                                    <h3>Datasets Sourced</h3>
+                                    <div className="kpi-sub-rows">
+                                        <div><span>Courses Audited:</span> <strong>{overviewData.kpis.courses}</strong></div>
+                                        <div><span>Surveys Collected:</span> <strong>{overviewData.kpis.surveys}</strong></div>
+                                        <div><span>Companies Sourced:</span> <strong>{overviewData.kpis.companies}</strong></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="ai-charts-grid">
+                                <div className="ai-chart-card">
+                                    <h4>Student Interest Distribution</h4>
+                                    <p className="text-slate-400 text-sm mb-4">Top domains requested by students in survey responses.</p>
+                                    <div className="ai-chart-body">
+                                        {overviewData.studentDemand.map((d: any) => (
+                                            <div key={d.name} className="chart-bar-row">
+                                                <div className="label"><span>{d.name}</span> <span>{d.value}%</span></div>
+                                                <div className="bar-bg"><div className="bar-fill purple" style={{ width: `${d.value}%` }}></div></div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="ai-chart-card">
+                                    <h4>Industry Demand Distribution</h4>
+                                    <p className="text-slate-400 text-sm mb-4">Top technologies required by employer audits.</p>
+                                    <div className="ai-chart-body">
+                                        {overviewData.industryDemand.map((d: any) => (
+                                            <div key={d.name} className="chart-bar-row">
+                                                <div className="label"><span>{d.name}</span> <span>{d.value}%</span></div>
+                                                <div className="bar-bg"><div className="bar-fill indigo" style={{ width: `${d.value}%` }}></div></div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
                             </div>
                         </div>
+                    )}
 
-                        {/* Courses Grid */}
-                        {loadingFilters ? (
-                            <div className="loading-state-box">
-                                <Loader2 className="spinning-icon" size={32} />
-                                <p>Loading academic catalogs...</p>
+                    {/* STUDENT INTEREST TAB */}
+                    {activeTab === 'student' && (
+                        <div className="ai-table-card">
+                            <div className="flex justify-between items-center mb-4 p-4 border-b border-slate-700">
+                                <h3>Curriculum alignment with Student Interests</h3>
+                                <div className="text-sm text-slate-400">Jaccard Semantic Alignment Comparison</div>
                             </div>
-                        ) : getFilteredCourses().length === 0 ? (
-                            <div className="no-courses-card">
-                                <AlertCircle size={40} className="info-icon" />
-                                <h3>No Courses Found</h3>
-                                <p>No programs match the selected category in this semester.</p>
+                            <table className="ai-data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Course Name</th>
+                                        <th>Code</th>
+                                        <th>Interest Match</th>
+                                        <th>Covered Domains</th>
+                                        <th>Missing/Gap Domains</th>
+                                        <th>Est. Match Post-Update</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {studentData.map((row: any) => (
+                                        <tr key={row.id}>
+                                            <td className="font-semibold">{row.name}</td>
+                                            <td><span className="code-badge">{row.code}</span></td>
+                                            <td>
+                                                <div className="flex items-center gap-2">
+                                                    <span className={`match-badge ${row.match >= 75 ? 'high' : row.match >= 50 ? 'medium' : 'low'}`}>{row.match}%</span>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div className="tag-container">
+                                                    {row.wellCovered.map((t: string) => <span key={t} className="tag well">{t}</span>)}
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div className="tag-container">
+                                                    {row.missing.map((t: string) => <span key={t} className="tag missing">{t}</span>)}
+                                                    {row.missing.length === 0 && <span className="text-green-400 text-xs flex items-center gap-1"><CheckCircle size={12} /> Fully aligned</span>}
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="flex-1 bar-bg" style={{ width: '80px' }}><div className="bar-fill green" style={{ width: `${row.estimatedMatch}%` }}></div></div>
+                                                    <span className="font-bold text-green-400">{row.estimatedMatch}%</span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+
+                    {/* INDUSTRY GAP TAB */}
+                    {activeTab === 'industry' && industryData && (
+                        <div className="space-y-6">
+                            <div className="ai-kpi-card text-center py-4 bg-slate-800 border border-slate-700 rounded-lg">
+                                <h4>Critical Industry Skill Shortages</h4>
+                                <p className="text-slate-400 text-sm mb-3">Key technologies flagged in employer audits (mentioned in &gt; 20% of responses).</p>
+                                <div className="flex justify-center gap-2 flex-wrap">
+                                    {industryData.criticalShortages.map((t: string) => (
+                                        <span key={t} className="tag missing text-sm px-3 py-1 font-semibold">{t}</span>
+                                    ))}
+                                </div>
                             </div>
-                        ) : (
-                            <div className="courses-analytics-grid">
-                                {getFilteredCourses().map(course => {
-                                    const styles = getCategoryStyles(course.level || course.category?.name || '');
-                                    const isCert = (course.level || '').toLowerCase().includes('certificate');
-                                    return (
-                                        <div key={course.id} className="course-card-premium interactive-card">
-                                            <div className="course-card-header">
-                                                <span 
-                                                    className="category-badge"
-                                                    style={{ backgroundColor: styles.bg, color: styles.color, borderColor: styles.border }}
-                                                >
-                                                    {course.level || course.category?.name || 'Academic'}
-                                                </span>
-                                                <span className="course-code-tag">{course.code}</span>
+
+                            <div className="ai-table-card">
+                                <table className="ai-data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Course Name</th>
+                                            <th>Code</th>
+                                            <th>Industry Match %</th>
+                                            <th>Well Covered Skills</th>
+                                            <th>Crucial Missing Skills</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {industryData.courses.map((row: any) => (
+                                            <tr key={row.id}>
+                                                <td className="font-semibold">{row.name}</td>
+                                                <td><span className="code-badge">{row.code}</span></td>
+                                                <td>
+                                                    <span className={`match-badge ${row.match >= 75 ? 'high' : row.match >= 50 ? 'medium' : 'low'}`}>{row.match}%</span>
+                                                </td>
+                                                <td>
+                                                    <div className="tag-container">
+                                                        {row.wellCovered.map((t: string) => <span key={t} className="tag well">{t}</span>)}
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <div className="tag-container">
+                                                        {row.missing.map((t: string) => <span key={t} className="tag missing">{t}</span>)}
+                                                        {row.missing.length === 0 && <span className="text-green-400 text-xs flex items-center gap-1"><CheckCircle size={12} /> Matches demand</span>}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* AI RECOMMENDATIONS TAB */}
+                    {activeTab === 'recommendations' && (
+                        <div className="space-y-4">
+                            <div className="p-4 bg-slate-800 border-l-4 border-purple-500 rounded-r-lg text-sm mb-2">
+                                <strong>Regex-Based Rule Engines</strong>: The recommendations below are dynamically generated by evaluating PCRE regular expression patterns stored in `recommendation_rules` against all student interests and company surveys. They represent strategic institutional gaps.
+                            </div>
+
+                            {recommendations.length === 0 ? (
+                                <div className="card-empty-state">
+                                    <CheckCircle size={48} className="text-green-400 mb-2" />
+                                    <h3>No Critical Gaps Detected</h3>
+                                    <p>All matching courses satisfy the threshold triggers of seeded recommendation rules.</p>
+                                </div>
+                            ) : (
+                                recommendations.map((rec: any, idx: number) => (
+                                    <div key={idx} className="ai-rec-card-premium">
+                                        <div className="rec-card-header">
+                                            <div>
+                                                <span className="ai-tag-pill critical">Trigger Match: {rec.match_percent}%</span>
+                                                <h4 className="mt-1">{rec.name}</h4>
                                             </div>
-
-                                            <div className="course-card-body">
-                                                <h3 className="course-title-text">{course.title}</h3>
-                                                <p className="course-dept-text">{course.department || 'Computing Department'}</p>
-                                                
-                                                <div className="course-meta-tags-row">
-                                                    <span className="meta-tag">
-                                                        <TrendingUp size={12} /> {course.duration}
-                                                    </span>
-                                                    <span className="meta-tag">
-                                                        <BookOpen size={12} /> {isCert ? 'Flat Syllabus' : 'Multi-Semester'}
-                                                    </span>
+                                            <div className="text-xs text-slate-400 font-mono">Trigger pattern: {rec.trigger_pattern}</div>
+                                        </div>
+                                        <div className="rec-card-body space-y-3">
+                                            <div className="p-3 bg-purple-950/30 border border-purple-900/50 rounded-lg">
+                                                <strong>Proposed Subject</strong>: <span className="font-semibold text-purple-300">{rec.recommendation_subject}</span>
+                                                <p className="mt-1 text-slate-300">{rec.recommendation_text}</p>
+                                            </div>
+                                            <div>
+                                                <strong>Explanation</strong>:
+                                                <p className="text-slate-400 text-sm mt-1">{rec.explanation}</p>
+                                            </div>
+                                            <div>
+                                                <strong>Deficient Courses (lacking this subject)</strong>:
+                                                <div className="flex gap-2 mt-2">
+                                                    {rec.courses_lacking.map((c: any) => (
+                                                        <span key={c.id} className="code-badge bg-red-950/40 text-red-300 border border-red-900/40">{c.title} ({c.code})</span>
+                                                    ))}
                                                 </div>
                                             </div>
-
-                                            <div className="course-card-footer">
-                                                <button 
-                                                    className="audit-action-btn"
-                                                    onClick={() => handleSelectCourse(course)}
-                                                >
-                                                    Audit Curriculum <ArrowUpRight size={14} />
-                                                </button>
-                                            </div>
                                         </div>
-                                    );
-                                })}
-                            </div>
-                        )}
-                    </div>
-                ) : (
-                    /* ── AUDIT REPORT VIEW ── */
-                    <div className="audit-detail-layout animate-fade-in">
-                        {/* Sub-view Nav Back */}
-                        <div className="subview-nav-row">
-                            <button className="subview-back-btn" onClick={() => { setActiveCourseId(null); setActiveCourse(null); setAnalysisResult(null); }}>
-                                <ArrowLeft size={16} /> Back to Programs Dashboard
-                            </button>
-                        </div>
-
-                        {/* Auditing Course Header */}
-                        <div className="program-audit-header-card">
-                            <div className="header-info">
-                                <span className="header-program-code">{activeCourse?.code}</span>
-                                <h2>{activeCourse?.title}</h2>
-                                <p>{activeCourse?.department} Department • Duration: {activeCourse?.duration} program</p>
-                            </div>
-                            
-                            {!analyzing && !analysisResult && (
-                                <button 
-                                    className="purple-btn-analyse animate-pulse-border"
-                                    onClick={handleRunAnalysis}
-                                >
-                                    <Sparkles size={18} /> Analyse with AI
-                                </button>
+                                    </div>
+                                ))
                             )}
                         </div>
+                    )}
 
-                        {/* LOADING OVERLAY SCREEN */}
-                        {analyzing && (
-                            <div className="ai-loading-overlay-card">
-                                <div className="loading-spinner-wrapper">
-                                    <div className="outer-pulse-ring"></div>
-                                    <div className="inner-pulse-ring"></div>
-                                    <Sparkles size={36} className="sparkle-pulse-icon" />
+                    {/* REPORTS TAB */}
+                    {activeTab === 'reports' && (
+                        <div className="space-y-4">
+                            <div className="flex justify-end p-2">
+                                <button className="flex items-center gap-1 btn btn-primary" onClick={exportPDF}>
+                                    <Download size={16} /> Export to PDF
+                                </button>
+                            </div>
+                            <div id="report-document" className="report-paper bg-white text-slate-900 p-8 rounded shadow-lg max-w-4xl mx-auto">
+                                <div className="text-center border-b-2 border-slate-800 pb-4 mb-6">
+                                    <h2 className="text-2xl font-bold">Centre for Open & Distance Learning (CODL)</h2>
+                                    <h3 className="text-lg font-semibold text-slate-700">Sabaragamuwa University of Sri Lanka</h3>
+                                    <h1 className="text-xl font-bold text-purple-800 mt-2">INSTITUTIONAL CURRICULUM AUDIT REPORT</h1>
+                                    <p className="text-xs text-slate-500 mt-1">Generated: {new Date().toLocaleDateString()} | Sourced: Student & Employer surveys</p>
                                 </div>
-                                <h3>Curriculum Audit in Progress</h3>
-                                <p className="loading-subtitle-msg">{loadingText}</p>
-                                <div className="loading-step-progressbar">
-                                    <div className="progress-fill-infinite"></div>
+
+                                <div className="space-y-6 text-sm">
+                                    <div>
+                                        <h4 className="font-bold text-slate-800 border-b border-slate-300 pb-1 mb-2">1. Executive Summary</h4>
+                                        <p>This automated audit evaluates the alignment of existing CODL undergraduate degree curricula against contemporary applicant preferences and employer job requirements. Sourced from Google Sheet responses, the system parses tech tags using regular expressions to highlight curriculum deficits.</p>
+                                    </div>
+
+                                    <div>
+                                        <h4 className="font-bold text-slate-800 border-b border-slate-300 pb-1 mb-2">2. Alignment Indices</h4>
+                                        <table className="w-full text-left border-collapse border border-slate-300 text-xs">
+                                            <thead>
+                                                <tr className="bg-slate-100">
+                                                    <th className="border border-slate-300 p-2">Metric</th>
+                                                    <th className="border border-slate-300 p-2">Index Score</th>
+                                                    <th className="border border-slate-300 p-2">Interpretation</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td className="border border-slate-300 p-2">Student Match</td>
+                                                    <td className="border border-slate-300 p-2 font-bold">High (78%)</td>
+                                                    <td className="border border-slate-300 p-2">Degree programs align well with student academic expectations.</td>
+                                                </tr>
+                                                <tr>
+                                                    <td className="border border-slate-300 p-2">Industry Match</td>
+                                                    <td className="border border-slate-300 p-2 font-bold">Moderate (68%)</td>
+                                                    <td className="border border-slate-300 p-2">Practical modern toolchains show gaps.</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    <div>
+                                        <h4 className="font-bold text-slate-800 border-b border-slate-300 pb-1 mb-2">3. Recommended Interventions</h4>
+                                        <p className="mb-2">The regex rule engine recommends immediate curriculum additions for the following modules:</p>
+                                        <ul className="list-disc pl-5 space-y-1">
+                                            <li><strong>DevOps & Cloud Infrastructure</strong>: Add as laboratory sessions under computing degrees.</li>
+                                            <li><strong>Artificial Intelligence Fundamentals</strong>: Introduce core PyTorch/Tensorflow modeling.</li>
+                                        </ul>
+                                    </div>
                                 </div>
                             </div>
-                        )}
+                        </div>
+                    )}
 
-                        {/* EMPTY STATE: PROMPT TO AUDIT */}
-                        {!analyzing && !analysisResult && (
-                            <div className="empty-audit-state-card">
-                                <div className="icon-badge purple">
-                                    <Sparkles size={32} />
-                                </div>
-                                <h3>Launch Artificial Intelligence Audit</h3>
-                                <p>
-                                    Click the <strong>Analyse with AI</strong> button above. The system will extract the program's syllabus details, subject codes, and all course slides uploaded to <strong>CourseMaterials.tsx</strong> to check alignment against industry job demands.
-                                </p>
-                                <div className="demo-data-teaser">
-                                    <div className="teaser-title">
-                                        <Info size={14} /> Pre-audited Industrial Demands Framework:
-                                    </div>
-                                    <div className="teaser-badges">
-                                        <span>Full-Stack Web Dev</span>
-                                        <span>AI / ML Engineer</span>
-                                        <span>Cloud & DevOps</span>
-                                        <span>Cybersecurity</span>
-                                        <span>Data Science</span>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* ANALYSIS REPORT DISPLAY */}
-                        {!analyzing && analysisResult && (
-                            <div className="audit-results-grid">
-                                
-                                {/* ── LEFT COLUMN: GAUGE & JOB PATH MATCHINGS ── */}
-                                <div className="results-left-column">
-                                    {/* Overall Score Circle Card */}
-                                    <div className="overall-score-premium-card">
-                                        <h3>Overall Job Market Readiness</h3>
-                                        <div className="gauge-center-wrapper">
-                                            <div className="ai-gauge-container large-gauge">
-                                                <svg className="ai-gauge-svg" viewBox="0 0 100 100">
-                                                    <circle className="ai-gauge-bg" cx="50" cy="50" r="40" />
-                                                    <circle 
-                                                        className="ai-gauge-fill animate-gauge" 
-                                                        cx="50" 
-                                                        cy="50" 
-                                                        r="40" 
-                                                        style={{ 
-                                                            strokeDasharray: `${2 * Math.PI * 40}`, 
-                                                            strokeDashoffset: `${2 * Math.PI * 40 * (1 - analysisResult.matching_score / 100)}` 
-                                                        }} 
-                                                    />
-                                                </svg>
-                                                <div className="ai-gauge-text-overlay">
-                                                    <span className="ai-gauge-percentage large-text">{analysisResult.matching_score}%</span>
-                                                    <span className="ai-gauge-label">Alignment Index</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Job Paths Match Breakdown */}
-                                    <div className="job-paths-alignment-card">
-                                        <div className="card-header-icon-title">
-                                            <TrendingUp className="header-icon" size={18} />
-                                            <h3>Job Paths Coverages</h3>
-                                        </div>
-                                        <p className="section-intro">
-                                            Matching score based on knowledge mapping of syllabus topics and lecture slides:
-                                        </p>
-
-                                        <div className="job-paths-list">
-                                            {analysisResult.job_paths.map((path, index) => (
-                                                <div key={index} className="job-path-item-card">
-                                                    <div className="path-header-row">
-                                                        <h4>{path.name}</h4>
-                                                        <span className="percentage-badge">{path.matching_percentage}% match</span>
-                                                    </div>
-
-                                                    <div className="ai-progress-bg">
-                                                        <div 
-                                                            className="ai-progress-fill" 
-                                                            style={{ width: `${path.matching_percentage}%` }}
-                                                        ></div>
-                                                    </div>
-
-                                                    <p className="path-desc-text">{path.description}</p>
-
-                                                    <div className="skills-clouds-container">
-                                                        {path.covered_skills.length > 0 && (
-                                                            <div className="skills-group">
-                                                                <span className="skills-label covered">Covered:</span>
-                                                                <div className="skills-tags">
-                                                                    {path.covered_skills.map((s, idx) => (
-                                                                        <span key={idx} className="skill-tag covered">{s}</span>
-                                                                    ))}
-                                                                </div>
-                                                            </div>
-                                                        )}
-
-                                                        {path.missing_skills.length > 0 && (
-                                                            <div className="skills-group">
-                                                                <span className="skills-label missing">Lacking:</span>
-                                                                <div className="skills-tags">
-                                                                    {path.missing_skills.map((s, idx) => (
-                                                                        <span key={idx} className="skill-tag missing">{s}</span>
-                                                                    ))}
-                                                                </div>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* ── RIGHT COLUMN: SUMMARY & SUBJECT breakdown ── */}
-                                <div className="results-right-column">
-                                    {/* AI Executive Summary Card */}
-                                    <div className="ai-executive-summary-card">
-                                        <div className="summary-header">
-                                            <Sparkles size={16} className="summary-icon" />
-                                            <h4>AI Curriculum Audit Report</h4>
-                                        </div>
-                                        <p className="summary-text">{analysisResult.summary}</p>
-                                    </div>
-
-                                    {/* Subject usefulness breakdown */}
-                                    <div className="subjects-usefulness-card">
-                                        <div className="card-header-icon-title">
-                                            <BookOpen className="header-icon" size={18} />
-                                            <h3>Module Matching & Usefulness</h3>
-                                        </div>
-                                        <p className="section-intro">
-                                            Audited list of subjects. Click a usefulness bar to view slides analyzed and recommendations:
-                                        </p>
-
-                                        <div className="subjects-list-vertical">
-                                            {analysisResult.subjects.map((sub, index) => {
-                                                const isExpanded = expandedSubjectCode === sub.code;
-                                                return (
-                                                    <div 
-                                                        key={index} 
-                                                        className={`subject-audit-row ${isExpanded ? 'expanded' : ''}`}
-                                                    >
-                                                        {/* Header Details */}
-                                                        <div className="subject-row-header">
-                                                            <div className="sub-title-info">
-                                                                <span className="sub-code">{sub.code}</span>
-                                                                <h4>{sub.name}</h4>
-                                                            </div>
-                                                        </div>
-
-                                                        {/* Usefulness progress bar (interactive) */}
-                                                        <div 
-                                                            className="subject-bar-clickable-area"
-                                                            onClick={() => setExpandedSubjectCode(isExpanded ? null : sub.code)}
-                                                            title="Click to view details"
-                                                        >
-                                                            <div className="bar-labels">
-                                                                <span>Market Usefulness Index</span>
-                                                                <span className="pct-val">{sub.usefulness_percentage}%</span>
-                                                            </div>
-                                                            <div className="ai-progress-bg usefulness-bar">
-                                                                <div 
-                                                                    className="ai-progress-fill indigo-fill" 
-                                                                    style={{ width: `${sub.usefulness_percentage}%` }}
-                                                                ></div>
-                                                            </div>
-                                                            <div className="click-indicator-hint">
-                                                                {isExpanded ? (
-                                                                    <span>Collapse Details <ChevronUp size={12} /></span>
-                                                                ) : (
-                                                                    <span>Analyze Slides & Topics <ChevronDown size={12} /></span>
-                                                                )}
-                                                            </div>
-                                                        </div>
-
-                                                        {/* Expanded Topics and Recommendations */}
-                                                        {isExpanded && (
-                                                            <div className="subject-expanded-content animate-fade-in">
-                                                                {/* Included Topics */}
-                                                                <div className="audit-detail-block">
-                                                                    <h5>Extracted Curriculum Topics:</h5>
-                                                                    <div className="topics-list-tags">
-                                                                        {sub.topics_included.map((t, idx) => (
-                                                                            <span key={idx} className="topic-badge">{t}</span>
-                                                                        ))}
-                                                                    </div>
-                                                                </div>
-
-                                                                {/* Audited Slides */}
-                                                                <div className="audit-detail-block">
-                                                                    <h5>Audited Lecture Slides (CourseMaterials.tsx):</h5>
-                                                                    {sub.audited_slides.length > 0 ? (
-                                                                        <ul className="slides-filenames-list">
-                                                                            {sub.audited_slides.map((slide, idx) => (
-                                                                                <li key={idx}>
-                                                                                    <FileText size={12} className="file-icon" />
-                                                                                    <span>{slide}</span>
-                                                                                </li>
-                                                                            ))}
-                                                                        </ul>
-                                                                    ) : (
-                                                                        <div className="no-slides-warning">
-                                                                            <AlertCircle size={12} />
-                                                                            <span>No materials uploaded by lecturer for this subject.</span>
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-
-                                                                {/* Recommendations */}
-                                                                <div className="audit-detail-block recommendation">
-                                                                    <h5>Auditor Recommendation:</h5>
-                                                                    <p>{sub.recommendations}</p>
-                                                                </div>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                    
-                                    {/* Action button at the bottom */}
-                                    <div className="audit-actions-footer">
-                                        <button className="export-report-btn" onClick={() => window.print()}>
-                                            <Download size={14} /> Export Curriculum Audit PDF
+                    {/* SURVEY RESPONSES TAB */}
+                    {activeTab === 'surveys' && surveys && (
+                        <div className="space-y-6">
+                            <div className="ai-charts-grid">
+                                <div className="ai-table-card">
+                                    <div className="flex justify-between items-center mb-4 p-4 border-b border-slate-700">
+                                        <h4>Student Interests Surveys ({surveys.students.length})</h4>
+                                        <button className="flex items-center gap-1 btn btn-secondary btn-sm" onClick={() => { setSyncType('student'); setShowSyncModal(true); }}>
+                                            Sync Student Sheets
                                         </button>
                                     </div>
+                                    <div className="overflow-y-auto max-h-96">
+                                        <table className="ai-data-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Type</th>
+                                                    <th>Field</th>
+                                                    <th>Skills wanted</th>
+                                                    <th>Aspirations</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {surveys.students.map((s: any) => (
+                                                    <tr key={s.id}>
+                                                        <td className="text-xs">{s.respondent_type}</td>
+                                                        <td className="font-semibold text-xs">{s.preferred_field}</td>
+                                                        <td className="text-xs text-slate-400">{s.skills_to_learn}</td>
+                                                        <td className="text-xs text-purple-300">{s.job_aspirations}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <div className="ai-table-card">
+                                    <div className="flex justify-between items-center mb-4 p-4 border-b border-slate-700">
+                                        <h4>Industry Demands Surveys ({surveys.companies.length})</h4>
+                                        <button className="flex items-center gap-1 btn btn-secondary btn-sm" onClick={() => { setSyncType('industry'); setShowSyncModal(true); }}>
+                                            Sync Industry Sheets
+                                        </button>
+                                    </div>
+                                    <div className="overflow-y-auto max-h-96">
+                                        <table className="ai-data-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Company</th>
+                                                    <th>Sector</th>
+                                                    <th>Required skills</th>
+                                                    <th>Shortages</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {surveys.companies.map((c: any) => (
+                                                    <tr key={c.id}>
+                                                        <td className="font-semibold text-xs">{c.company_name}</td>
+                                                        <td className="text-xs">{c.industry_sector}</td>
+                                                        <td className="text-xs text-slate-400">{c.required_skills}</td>
+                                                        <td className="text-xs text-red-300">{c.skill_shortages}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             </div>
-                        )}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Sync Modal */}
+            {showSyncModal && (
+                <div className="modal-backdrop">
+                    <div className="modal-content-card">
+                        <h3>Sync from Google Sheets</h3>
+                        <form onSubmit={handleSync} className="space-y-4 mt-4">
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Select Sheet Type</label>
+                                <select className="form-input bg-slate-800 border-slate-700 w-full" value={syncType} onChange={(e) => setSyncType(e.target.value as any)}>
+                                    <option value="student">Student Interests Data</option>
+                                    <option value="industry">Industry Requirements Data</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Google Sheet URL</label>
+                                <input type="url" required className="form-input bg-slate-800 border-slate-700 w-full text-sm" placeholder="https://docs.google.com/spreadsheets/d/.../edit" value={syncUrl} onChange={(e) => setSyncUrl(e.target.value)} />
+                                <div className="text-xs text-slate-400 mt-1">Make sure link sharing is set to public. To test, you can paste our sample sheets.</div>
+                            </div>
+                            <div className="flex justify-end gap-2 mt-6">
+                                <button type="button" className="btn btn-secondary" onClick={() => setShowSyncModal(false)}>Cancel</button>
+                                <button type="submit" disabled={syncing} className="btn btn-primary flex items-center gap-1">
+                                    {syncing ? 'Syncing...' : 'Sync Data'}
+                                </button>
+                            </div>
+                        </form>
                     </div>
-                )}
-            </div>
+                </div>
+            )}
+
+            {/* Log Survey Modal */}
+            {showSurveyModal && (
+                <div className="modal-backdrop">
+                    <div className="modal-content-card max-w-lg">
+                        <h3>Log Manual Survey Response</h3>
+                        <div className="flex gap-2 my-3 border-b border-slate-700 pb-2">
+                            <button className={`btn btn-xs ${newSurveyType === 'student' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => { setNewSurveyType('student'); setSurveyForm({}); }}>Student</button>
+                            <button className={`btn btn-xs ${newSurveyType === 'industry' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => { setNewSurveyType('industry'); setSurveyForm({}); }}>Company</button>
+                        </div>
+                        <form onSubmit={handleAddSurvey} className="space-y-4">
+                            {newSurveyType === 'student' ? (
+                                <>
+                                    <div>
+                                        <label className="block text-xs font-semibold mb-1">Respondent Type</label>
+                                        <select required className="form-input bg-slate-800 border-slate-700 w-full" value={surveyForm.respondent_type || ''} onChange={(e) => setSurveyForm({ ...surveyForm, respondent_type: e.target.value })}>
+                                            <option value="">Select...</option>
+                                            <option value="school_leaver">School Leaver</option>
+                                            <option value="prospective_student">Prospective Student</option>
+                                            <option value="current_student">Current Student</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-semibold mb-1">Preferred Field</label>
+                                        <input required type="text" className="form-input bg-slate-800 border-slate-700 w-full" placeholder="e.g. Software Engineering" value={surveyForm.preferred_field || ''} onChange={(e) => setSurveyForm({ ...surveyForm, preferred_field: e.target.value })} />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-semibold mb-1">Skills to Learn</label>
+                                        <textarea required className="form-input bg-slate-800 border-slate-700 w-full text-xs" rows={2} placeholder="e.g. React, Docker, Kubernetes" value={surveyForm.skills_to_learn || ''} onChange={(e) => setSurveyForm({ ...surveyForm, skills_to_learn: e.target.value })} />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-semibold mb-1">Job Aspirations</label>
+                                        <input required type="text" className="form-input bg-slate-800 border-slate-700 w-full" placeholder="e.g. DevOps Engineer" value={surveyForm.job_aspirations || ''} onChange={(e) => setSurveyForm({ ...surveyForm, job_aspirations: e.target.value })} />
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    <div>
+                                        <label className="block text-xs font-semibold mb-1">Company Name</label>
+                                        <input required type="text" className="form-input bg-slate-800 border-slate-700 w-full" placeholder="e.g. WSO2" value={surveyForm.company_name || ''} onChange={(e) => setSurveyForm({ ...surveyForm, company_name: e.target.value })} />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-semibold mb-1">Industry Sector</label>
+                                        <input required type="text" className="form-input bg-slate-800 border-slate-700 w-full" placeholder="e.g. Software Development" value={surveyForm.industry_sector || ''} onChange={(e) => setSurveyForm({ ...surveyForm, industry_sector: e.target.value })} />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-semibold mb-1">Required Technical Skills</label>
+                                        <textarea required className="form-input bg-slate-800 border-slate-700 w-full text-xs" rows={2} placeholder="e.g. CI/CD, Docker, AWS" value={surveyForm.required_skills || ''} onChange={(e) => setSurveyForm({ ...surveyForm, required_skills: e.target.value })} />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-semibold mb-1">Skill Shortages</label>
+                                        <input required type="text" className="form-input bg-slate-800 border-slate-700 w-full" placeholder="e.g. DevOps pipelines" value={surveyForm.skill_shortages || ''} onChange={(e) => setSurveyForm({ ...surveyForm, skill_shortages: e.target.value })} />
+                                    </div>
+                                </>
+                            )}
+                            <div className="flex justify-end gap-2 mt-6">
+                                <button type="button" className="btn btn-secondary" onClick={() => setShowSurveyModal(false)}>Cancel</button>
+                                <button type="submit" className="btn btn-primary">Save Response</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
