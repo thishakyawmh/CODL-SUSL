@@ -1978,6 +1978,48 @@ export const ManageCourse: React.FC = () => {
         }
     };
 
+    const handleExportStudents = () => {
+        if (filteredStudents.length === 0) {
+            toast.error("No students to export");
+            return;
+        }
+
+        // CSV Headers
+        const headers = ['Student ID', 'Student Name', 'Email', 'Phone', 'Enrollment Date', 'Batch'];
+
+        // Convert student objects to CSV rows
+        const csvRows = filteredStudents.map(student => [
+            `"${student.id || ''}"`,
+            `"${(student.displayName || student.name || '').replace(/"/g, '""')}"`,
+            `"${student.email || ''}"`,
+            `"${student.phone || ''}"`,
+            `"${student.enrollmentDate || ''}"`,
+            `"${student.batch || 'N/A'}"`
+        ]);
+
+        // Combine headers and rows
+        const csvContent = [headers.join(','), ...csvRows.map(row => row.join(','))].join('\n');
+
+        // Create Blob and trigger download
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        
+        // Construct filename: course code and batch
+        const courseStr = course?.code ? course.code.replace(/[^a-zA-Z0-9-_]/g, '_') : 'course';
+        const batchStr = selectedBatch ? selectedBatch.toString().replace(/[^a-zA-Z0-9-_]/g, '_') : 'all';
+        const dateStr = new Date().toISOString().split('T')[0];
+        
+        link.setAttribute("download", `Students_${courseStr}_${batchStr}_${dateStr}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        toast.success("Student list exported successfully!");
+    };
+
     const handleOpenAddWaitlistModal = () => {
         setWaitlistForm({
             type: 'postponement',
@@ -2393,10 +2435,14 @@ export const ManageCourse: React.FC = () => {
                                     </button>
                                 )}
                                 <button className="create-exam-btn" style={{ background: 'linear-gradient(135deg, #0284C7 0%, #0369A1 100%)', boxShadow: '0 4px 15px rgba(2, 132, 199, 0.25)' }} onClick={() => {
+                                    if (filteredStudents.length === 0) {
+                                        toast.error("No students to export");
+                                        return;
+                                    }
                                     setIsExporting(true);
                                     setTimeout(() => {
                                         setIsExporting(false);
-                                        toast.success('Student list exported successfully');
+                                        handleExportStudents();
                                     }, 1500);
                                 }}>
                                     <Download size={18} /> {isExporting ? 'Exporting...' : 'Export List'}
