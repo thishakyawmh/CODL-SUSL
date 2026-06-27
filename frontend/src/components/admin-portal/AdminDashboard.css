@@ -118,7 +118,6 @@
 .ru-role-badge.supervisor { background: var(--info-light); color: var(--info); }
 .ru-role-badge.lecturer { background: #CFFAFE; color: #0891B2; }
 .ru-role-badge.student { background: var(--success-light); color: var(--success); }
-.ru-role-badge.pro_student { background: var(--warning-light); color: var(--warning); }
 /* Add many other styles here which I previously saw in the file */
 
 /* Page Header */

@@ -8,7 +8,7 @@ export interface User {
     fullName: string;
     email: string;
     nic: string;
-    role: 'super_admin' | 'admin' | 'director' | 'coordinator' | 'secretary' | 'lecturer' | 'pro_student' | 'student';
+    role: 'super_admin' | 'admin' | 'director' | 'coordinator' | 'secretary' | 'lecturer' | 'student';
     status: 'active' | 'inactive' | 'suspended';
     avatar: string;
     phone: string;
@@ -186,7 +186,7 @@ export interface AdminCourse {
     id: string;
     title: string;
     code: string;
-    level: 'Certificate' | 'Advance Certificate' | 'Diploma' | 'Higher National Diploma' | 'Degree';
+    level: 'Certificate' | 'Advanced Certificate' | 'Diploma' | 'Higher National Diploma' | 'Degree';
     department: string;
     duration: string;
     intakeStatus: 'Open' | 'Closed';

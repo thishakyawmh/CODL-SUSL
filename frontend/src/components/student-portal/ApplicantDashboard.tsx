@@ -71,7 +71,7 @@ export const ApplicantDashboard: React.FC = () => {
                     </div>
                     <h2>Applicant Workspace</h2>
                 </div>
-                <div className="header-actions">
+                <div className="workspace-header-actions">
                     <div className="user-profile-summary">
                         <img
                             src={user.avatar ? getFullAvatarUrl(user.avatar) : `https://ui-avatars.com/api/?name=${encodeURIComponent(user.display_name || user.displayName || user.full_name)}&background=7C3AED&color=fff`}

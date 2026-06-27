@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             SuperAdminSeeder::class,
             CategorySeeder::class,
             AIAnalyticsSeeder::class,
+            RealCoursesSeeder::class,
         ]);
 
         echo "Database seeded successfully with essential data!\n";

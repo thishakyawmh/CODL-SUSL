@@ -17,7 +17,7 @@ export const CourseDetailsWrapper: React.FC = () => {
                     id: data.id.toString(),
                     title: data.title,
                     code: data.code,
-                    type: data.level === 'Certificate' || data.level === 'Advance Certificate' ? 'Certification' : data.level,
+                    type: data.level === 'Certificate' || data.level === 'Advanced Certificate' ? 'Certification' : data.level,
                     startDate: data.created_at ? new Date(data.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Jan 15, 2026',
                     endDate: data.duration || '3 Years',
                     semesters: data.semesters,

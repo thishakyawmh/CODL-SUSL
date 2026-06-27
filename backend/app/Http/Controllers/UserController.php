@@ -140,7 +140,7 @@ class UserController extends Controller
             'avatar' => 'nullable|string',
         ]);
 
-        if ($user->role === 'student' || $user->role === 'pro_student') {
+        if ($user->role === 'student') {
             $validated['full_name'] = $user->full_name;
             $validated['dob'] = $user->dob ? $user->dob->format('Y-m-d') : null;
             $validated['sex'] = $user->sex;

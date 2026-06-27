@@ -283,13 +283,13 @@ export const CreateExam: React.FC = () => {
                                 value={examType}
                                 onChange={(e) => setExamType(e.target.value)}
                             >
-                                {course.level !== 'Certificate' && course.level !== 'Advance Certificate' && (
+                                {course.level !== 'Certificate' && course.level !== 'Advanced Certificate' && (
                                     <>
                                         <option value="Semester Exam">Semester Exam</option>
                                         <option value="Mid Exam">Mid Exam</option>
                                     </>
                                 )}
-                                <option value="Course Exam">{course.level === 'Certificate' || course.level === 'Advance Certificate' ? 'Module Exam' : 'Unit Exam'}</option>
+                                <option value="Course Exam">{course.level === 'Certificate' || course.level === 'Advanced Certificate' ? 'Module Exam' : 'Unit Exam'}</option>
                                 <option value="Other">Other (Custom)</option>
                             </select>
                         </div>
