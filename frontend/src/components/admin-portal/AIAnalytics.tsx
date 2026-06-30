@@ -116,11 +116,11 @@ export const AIAnalytics: React.FC = () => {
                     </h1>
                     <p className="admin-page-subtitle">Evaluate academic alignment, identify technical shortages, and review recommendations.</p>
                 </div>
-                <div className="flex gap-2">
-                    <button className="flex items-center gap-1 btn btn-secondary" onClick={() => setShowSyncModal(true)}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                    <button className="flex items-center btn btn-secondary" style={{ gap: '6px' }} onClick={() => setShowSyncModal(true)}>
                         <RefreshCw size={16} /> Sync Google Sheet
                     </button>
-                    <button className="flex items-center gap-1 btn btn-primary" onClick={() => { setShowSurveyModal(true); setSurveyForm({}); }}>
+                    <button className="flex items-center btn btn-primary" style={{ gap: '6px' }} onClick={() => { setShowSurveyModal(true); setSurveyForm({}); }}>
                         <Plus size={16} /> Log Survey
                     </button>
                 </div>
@@ -500,9 +500,9 @@ export const AIAnalytics: React.FC = () => {
                                 <input type="url" required className="form-input w-full text-sm" placeholder="https://docs.google.com/spreadsheets/d/.../edit" value={syncUrl} onChange={(e) => setSyncUrl(e.target.value)} />
                                 <div className="text-xs text-slate-500 mt-1">Make sure link sharing is set to public. To test, you can paste our sample sheets.</div>
                             </div>
-                            <div className="flex justify-end gap-2 mt-6">
+                            <div className="flex justify-end gap-4 mt-6">
                                 <button type="button" className="btn btn-secondary" onClick={() => setShowSyncModal(false)}>Cancel</button>
-                                <button type="submit" disabled={syncing} className="btn btn-primary flex items-center gap-1">
+                                <button type="submit" disabled={syncing} className="btn btn-primary flex items-center gap-2">
                                     {syncing ? 'Syncing...' : 'Sync Data'}
                                 </button>
                             </div>
@@ -516,9 +516,9 @@ export const AIAnalytics: React.FC = () => {
                 <div className="modal-backdrop">
                     <div className="modal-content-card max-w-lg">
                         <h3>Log Manual Survey Response</h3>
-                        <div className="flex gap-2 my-3 border-b border-slate-700 pb-2">
-                            <button className={`btn btn-xs ${newSurveyType === 'student' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => { setNewSurveyType('student'); setSurveyForm({}); }}>Student</button>
-                            <button className={`btn btn-xs ${newSurveyType === 'industry' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => { setNewSurveyType('industry'); setSurveyForm({}); }}>Company</button>
+                        <div className="flex gap-3 my-4 border-b border-slate-200 pb-3">
+                            <button className={`btn btn-sm ${newSurveyType === 'student' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => { setNewSurveyType('student'); setSurveyForm({}); }}>Student</button>
+                            <button className={`btn btn-sm ${newSurveyType === 'industry' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => { setNewSurveyType('industry'); setSurveyForm({}); }}>Company</button>
                         </div>
                         <form onSubmit={handleAddSurvey} className="space-y-4">
                             {newSurveyType === 'student' ? (
@@ -565,7 +565,7 @@ export const AIAnalytics: React.FC = () => {
                                     </div>
                                 </>
                             )}
-                            <div className="flex justify-end gap-2 mt-6">
+                            <div className="flex justify-end gap-4 mt-8">
                                 <button type="button" className="btn btn-secondary" onClick={() => setShowSurveyModal(false)}>Cancel</button>
                                 <button type="submit" className="btn btn-primary">Save Response</button>
                             </div>
