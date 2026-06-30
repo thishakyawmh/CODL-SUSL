@@ -16,6 +16,7 @@ use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\SystemSettingController;
 use App\Http\Controllers\BackupController;
 use App\Http\Controllers\AIAnalysisController;
+use App\Http\Controllers\AIAnalyticsController;
 
 /*
 |--------------------------------------------------------------------------
@@ -157,4 +158,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // AI Analysis
     Route::post('/admin/ai-analysis', [AIAnalysisController::class, 'analyze']);
+
+    // AI Analytics Dashboard
+    Route::get('/admin/ai-analytics/overview', [AIAnalyticsController::class, 'getOverview']);
+    Route::get('/admin/ai-analytics/student-interest', [AIAnalyticsController::class, 'getStudentInterest']);
+    Route::get('/admin/ai-analytics/industry-gap', [AIAnalyticsController::class, 'getIndustryGap']);
+    Route::get('/admin/ai-analytics/recommendations', [AIAnalyticsController::class, 'getRecommendations']);
+    Route::get('/admin/ai-analytics/surveys', [AIAnalyticsController::class, 'getSurveys']);
+    Route::post('/admin/ai-analytics/surveys', [AIAnalyticsController::class, 'storeSurvey']);
+    Route::post('/admin/ai-analytics/sync-sheet', [AIAnalyticsController::class, 'syncGoogleSheet']);
 });
