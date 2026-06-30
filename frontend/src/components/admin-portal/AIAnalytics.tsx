@@ -487,22 +487,22 @@ export const AIAnalytics: React.FC = () => {
                 <div className="modal-backdrop">
                     <div className="modal-content-card">
                         <h3>Sync from Google Sheets</h3>
-                        <form onSubmit={handleSync} className="space-y-4 mt-4">
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Select Sheet Type</label>
-                                <select className="form-input w-full" value={syncType} onChange={(e) => setSyncType(e.target.value as any)}>
+                        <form onSubmit={handleSync} style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '16px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <label style={{ fontSize: '14px', fontWeight: '600' }}>Select Sheet Type</label>
+                                <select className="form-input" style={{ width: '100%' }} value={syncType} onChange={(e) => setSyncType(e.target.value as any)}>
                                     <option value="student">Student Interests Data</option>
                                     <option value="industry">Industry Requirements Data</option>
                                 </select>
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Google Sheet URL</label>
-                                <input type="url" required className="form-input w-full text-sm" placeholder="https://docs.google.com/spreadsheets/d/.../edit" value={syncUrl} onChange={(e) => setSyncUrl(e.target.value)} />
-                                <div className="text-xs text-slate-500 mt-1">Make sure link sharing is set to public. To test, you can paste our sample sheets.</div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <label style={{ fontSize: '14px', fontWeight: '600' }}>Google Sheet URL</label>
+                                <input type="url" required className="form-input" style={{ width: '100%' }} placeholder="https://docs.google.com/spreadsheets/d/.../edit" value={syncUrl} onChange={(e) => setSyncUrl(e.target.value)} />
+                                <div style={{ fontSize: '12.5px', color: '#64748B' }}>Make sure link sharing is set to public. To test, you can paste our sample sheets.</div>
                             </div>
-                            <div className="flex justify-end gap-4 mt-6">
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '16px', marginTop: '12px' }}>
                                 <button type="button" className="btn btn-secondary" onClick={() => setShowSyncModal(false)}>Cancel</button>
-                                <button type="submit" disabled={syncing} className="btn btn-primary flex items-center gap-2">
+                                <button type="submit" disabled={syncing} className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     {syncing ? 'Syncing...' : 'Sync Data'}
                                 </button>
                             </div>
@@ -516,56 +516,56 @@ export const AIAnalytics: React.FC = () => {
                 <div className="modal-backdrop">
                     <div className="modal-content-card max-w-lg">
                         <h3>Log Manual Survey Response</h3>
-                        <div className="flex gap-3 my-4 border-b border-slate-200 pb-3">
+                        <div style={{ display: 'flex', gap: '12px', margin: '16px 0', borderBottom: '1px solid #E2E8F0', paddingBottom: '16px' }}>
                             <button className={`btn btn-sm ${newSurveyType === 'student' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => { setNewSurveyType('student'); setSurveyForm({}); }}>Student</button>
                             <button className={`btn btn-sm ${newSurveyType === 'industry' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => { setNewSurveyType('industry'); setSurveyForm({}); }}>Company</button>
                         </div>
-                        <form onSubmit={handleAddSurvey} className="space-y-4">
+                        <form onSubmit={handleAddSurvey} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                             {newSurveyType === 'student' ? (
                                 <>
-                                    <div>
-                                        <label className="block text-xs font-semibold mb-1">Respondent Type</label>
-                                        <select required className="form-input w-full" value={surveyForm.respondent_type || ''} onChange={(e) => setSurveyForm({ ...surveyForm, respondent_type: e.target.value })}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                        <label style={{ fontSize: '13px', fontWeight: '600' }}>Respondent Type</label>
+                                        <select required className="form-input" style={{ width: '100%' }} value={surveyForm.respondent_type || ''} onChange={(e) => setSurveyForm({ ...surveyForm, respondent_type: e.target.value })}>
                                             <option value="">Select...</option>
                                             <option value="school_leaver">School Leaver</option>
                                             <option value="prospective_student">Prospective Student</option>
                                             <option value="current_student">Current Student</option>
                                         </select>
                                     </div>
-                                    <div>
-                                        <label className="block text-xs font-semibold mb-1">Preferred Field</label>
-                                        <input required type="text" className="form-input w-full" placeholder="e.g. Software Engineering" value={surveyForm.preferred_field || ''} onChange={(e) => setSurveyForm({ ...surveyForm, preferred_field: e.target.value })} />
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                        <label style={{ fontSize: '13px', fontWeight: '600' }}>Preferred Field</label>
+                                        <input required type="text" className="form-input" style={{ width: '100%' }} placeholder="e.g. Software Engineering" value={surveyForm.preferred_field || ''} onChange={(e) => setSurveyForm({ ...surveyForm, preferred_field: e.target.value })} />
                                     </div>
-                                    <div>
-                                        <label className="block text-xs font-semibold mb-1">Skills to Learn</label>
-                                        <textarea required className="form-input w-full text-xs" rows={2} placeholder="e.g. React, Docker, Kubernetes" value={surveyForm.skills_to_learn || ''} onChange={(e) => setSurveyForm({ ...surveyForm, skills_to_learn: e.target.value })} />
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                        <label style={{ fontSize: '13px', fontWeight: '600' }}>Skills to Learn</label>
+                                        <textarea required className="form-input" style={{ width: '100%', fontSize: '13px' }} rows={2} placeholder="e.g. React, Docker, Kubernetes" value={surveyForm.skills_to_learn || ''} onChange={(e) => setSurveyForm({ ...surveyForm, skills_to_learn: e.target.value })} />
                                     </div>
-                                    <div>
-                                        <label className="block text-xs font-semibold mb-1">Job Aspirations</label>
-                                        <input required type="text" className="form-input w-full" placeholder="e.g. DevOps Engineer" value={surveyForm.job_aspirations || ''} onChange={(e) => setSurveyForm({ ...surveyForm, job_aspirations: e.target.value })} />
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                        <label style={{ fontSize: '13px', fontWeight: '600' }}>Job Aspirations</label>
+                                        <input required type="text" className="form-input" style={{ width: '100%' }} placeholder="e.g. DevOps Engineer" value={surveyForm.job_aspirations || ''} onChange={(e) => setSurveyForm({ ...surveyForm, job_aspirations: e.target.value })} />
                                     </div>
                                 </>
                             ) : (
                                 <>
-                                    <div>
-                                        <label className="block text-xs font-semibold mb-1">Company Name</label>
-                                        <input required type="text" className="form-input w-full" placeholder="e.g. WSO2" value={surveyForm.company_name || ''} onChange={(e) => setSurveyForm({ ...surveyForm, company_name: e.target.value })} />
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                        <label style={{ fontSize: '13px', fontWeight: '600' }}>Company Name</label>
+                                        <input required type="text" className="form-input" style={{ width: '100%' }} placeholder="e.g. WSO2" value={surveyForm.company_name || ''} onChange={(e) => setSurveyForm({ ...surveyForm, company_name: e.target.value })} />
                                     </div>
-                                    <div>
-                                        <label className="block text-xs font-semibold mb-1">Industry Sector</label>
-                                        <input required type="text" className="form-input w-full" placeholder="e.g. Software Development" value={surveyForm.industry_sector || ''} onChange={(e) => setSurveyForm({ ...surveyForm, industry_sector: e.target.value })} />
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                        <label style={{ fontSize: '13px', fontWeight: '600' }}>Industry Sector</label>
+                                        <input required type="text" className="form-input" style={{ width: '100%' }} placeholder="e.g. Software Development" value={surveyForm.industry_sector || ''} onChange={(e) => setSurveyForm({ ...surveyForm, industry_sector: e.target.value })} />
                                     </div>
-                                    <div>
-                                        <label className="block text-xs font-semibold mb-1">Required Technical Skills</label>
-                                        <textarea required className="form-input w-full text-xs" rows={2} placeholder="e.g. CI/CD, Docker, AWS" value={surveyForm.required_skills || ''} onChange={(e) => setSurveyForm({ ...surveyForm, required_skills: e.target.value })} />
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                        <label style={{ fontSize: '13px', fontWeight: '600' }}>Required Technical Skills</label>
+                                        <textarea required className="form-input" style={{ width: '100%', fontSize: '13px' }} rows={2} placeholder="e.g. CI/CD, Docker, AWS" value={surveyForm.required_skills || ''} onChange={(e) => setSurveyForm({ ...surveyForm, required_skills: e.target.value })} />
                                     </div>
-                                    <div>
-                                        <label className="block text-xs font-semibold mb-1">Skill Shortages</label>
-                                        <input required type="text" className="form-input w-full" placeholder="e.g. DevOps pipelines" value={surveyForm.skill_shortages || ''} onChange={(e) => setSurveyForm({ ...surveyForm, skill_shortages: e.target.value })} />
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                        <label style={{ fontSize: '13px', fontWeight: '600' }}>Skill Shortages</label>
+                                        <input required type="text" className="form-input" style={{ width: '100%' }} placeholder="e.g. DevOps pipelines" value={surveyForm.skill_shortages || ''} onChange={(e) => setSurveyForm({ ...surveyForm, skill_shortages: e.target.value })} />
                                     </div>
                                 </>
                             )}
-                            <div className="flex justify-end gap-4 mt-8">
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '16px', marginTop: '24px' }}>
                                 <button type="button" className="btn btn-secondary" onClick={() => setShowSurveyModal(false)}>Cancel</button>
                                 <button type="submit" className="btn btn-primary">Save Response</button>
                             </div>
