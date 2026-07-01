@@ -63,7 +63,7 @@ export const RegisteredCourses: React.FC<RegisteredCoursesProps> = ({ onSelect }
                             id: c.id.toString(),
                             title: c.title,
                             code: c.code,
-                            type: c.level === 'Certificate' || c.level === 'Advance Certificate' ? 'Certification' : c.level,
+                            type: c.level === 'Certificate' || c.level === 'Advanced Certificate' ? 'Certification' : c.level,
                             startDate: c.created_at ? new Date(c.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Jan 15, 2026',
                             endDate: c.duration || '3 Years',
                             batch: c.pivot?.batch || 'Batch TBD'
@@ -79,7 +79,7 @@ export const RegisteredCourses: React.FC<RegisteredCoursesProps> = ({ onSelect }
                     id: c.id.toString(),
                     title: c.title,
                     code: c.code,
-                    type: c.level === 'Certificate' || c.level === 'Advance Certificate' ? 'Certification' : c.level,
+                    type: c.level === 'Certificate' || c.level === 'Advanced Certificate' ? 'Certification' : c.level,
                     startDate: c.created_at ? new Date(c.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Jan 15, 2026',
                     endDate: c.duration || '3 Years',
                     batch: c.pivot?.batch || 'Batch TBD'

@@ -355,7 +355,7 @@ class CourseController extends Controller
         
         $enrolledStudents = $this->mapEnrolledStudents($course);
         
-        $studentUsers = \App\Models\User::whereIn('role', ['student', 'pro_student', 'applicant'])
+        $studentUsers = \App\Models\User::whereIn('role', ['student', 'applicant'])
             ->select('id', 'student_number', 'full_name', 'display_name', 'email', 'phone', 'nic', 'address')
             ->get();
             

@@ -463,4 +463,42 @@ export const activityLogService = {
     }
 };
 
-export default api;
+export const aiAnalysisService = {
+    analyzeCourse: async (courseId: number | string) => {
+        const response = await api.post('/admin/ai-analysis', { course_id: Number(courseId) });
+        return response.data;
+    }
+};
+
+export const aiAnalyticsService = {
+    getOverview: async () => {
+        const response = await api.get('/admin/ai-analytics/overview');
+        return response.data;
+    },
+    getSurveys: async () => {
+        const response = await api.get('/admin/ai-analytics/surveys');
+        return response.data;
+    },
+    createSurvey: async (data: { survey_type: 'student' | 'industry'; data: any }) => {
+        const response = await api.post('/admin/ai-analytics/surveys', data);
+        return response.data;
+    },
+    getStudentInterest: async () => {
+        const response = await api.get('/admin/ai-analytics/student-interest');
+        return response.data;
+    },
+    getIndustryGap: async () => {
+        const response = await api.get('/admin/ai-analytics/industry-gap');
+        return response.data;
+    },
+    getRecommendations: async () => {
+        const response = await api.get('/admin/ai-analytics/recommendations');
+        return response.data;
+    },
+    syncGoogleSheet: async (data: { type: 'student' | 'industry'; url: string }) => {
+        const response = await api.post('/admin/ai-analytics/sync-sheet', data);
+        return response.data;
+    }
+};
+
+export default api
