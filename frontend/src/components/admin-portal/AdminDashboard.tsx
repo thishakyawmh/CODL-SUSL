@@ -21,6 +21,10 @@ import {
 } from '../../services/apiService';
 import './AdminDashboard.css';
 
+const getRoleLabel = (role: string) => {
+    return role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+};
+
 export const AdminDashboard: React.FC = () => {
     const navigate = useNavigate();
     const user = getCurrentAdminUser();
@@ -185,10 +189,6 @@ export const AdminDashboard: React.FC = () => {
             type: 'users'
         },
     ];
-
-    const getRoleLabel = (role: string) => {
-        return role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
-    };
 
 
 
