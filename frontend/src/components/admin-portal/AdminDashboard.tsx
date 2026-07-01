@@ -9,16 +9,7 @@ import {
 import {
     mockActivityLogs, getCurrentAdminUser
 } from '../../data/mockAdminData';
-import {
-    userService,
-    courseService,
-    courseApplicationService,
-    letterRequestService,
-    postponementRequestService,
-    examApplicationService,
-    reattemptRequestService,
-    activityLogService
-} from '../../services/apiService';
+import { statsService } from '../../services/apiService';
 import './AdminDashboard.css';
 
 export const AdminDashboard: React.FC = () => {
@@ -27,7 +18,16 @@ export const AdminDashboard: React.FC = () => {
 
     const [realUsers, setRealUsers] = useState<any[]>([]);
     const [realCourses, setRealCourses] = useState<any[]>([]);
-    const [courseApplications, setCourseApplications] = useState<any[]>([]);
+    const [stats, setStats] = useState<any>({
+        totalStudents: 0,
+        activeStudents: 0,
+        totalUsers: 0,
+        activeCourses: 0,
+        totalEnrolled: 0,
+        totalPendingApprovals: 0
+    });
+    const [topDistricts, setTopDistricts] = useState<[string, number][]>([]);
+    const [courseEnrollments, setCourseEnrollments] = useState<any[]>([]);
     const [pendingCount, setPendingCount] = useState<number>(0);
     const [activityLogs, setActivityLogs] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -44,30 +44,13 @@ export const AdminDashboard: React.FC = () => {
     useEffect(() => {
         const fetchDashboardData = async () => {
             try {
-                const [
-                    usersData,
-                    coursesData,
-                    courseApps,
-                    letterReqs,
-                    postponementReqs,
-                    examApps,
-                    reattemptReqs,
-                    logsData
-                ] = await Promise.all([
-                    userService.getAll().catch(() => []),
-                    courseService.getAll().catch(() => []),
-                    courseApplicationService.getAll().catch(() => []),
-                    letterRequestService.getAll().catch(() => []),
-                    postponementRequestService.getAll().catch(() => []),
-                    examApplicationService.getAll().catch(() => []),
-                    reattemptRequestService.getAll().catch(() => []),
-                    activityLogService.getAll().catch(() => [])
-                ]);
+                const data = await statsService.getFullDashboardData();
 
-                setRealUsers(usersData);
-                setCourseApplications(courseApps);
+                setRealUsers(data.recentUsers || []);
+                setStats(data.stats || {});
+                setPendingCount(data.stats?.totalPendingApprovals || 0);
 
-                const mappedLogs = logsData.map((log: any) => ({
+                const mappedLogs = (data.recentLogs || []).map((log: any) => ({
                     id: log.id,
                     user: log.user ? log.user.full_name : 'Unknown User',
                     role: log.user ? getRoleLabel(log.user.role) : 'N/A',
@@ -78,7 +61,7 @@ export const AdminDashboard: React.FC = () => {
                 }));
                 setActivityLogs(mappedLogs);
                 
-                const mappedCourses = coursesData.map((c: any) => ({
+                const mappedCourses = (data.recentCourses || []).map((c: any) => ({
                     id: c.id.toString(),
                     title: c.title,
                     code: c.code,
@@ -95,27 +78,12 @@ export const AdminDashboard: React.FC = () => {
                 }));
                 setRealCourses(mappedCourses);
 
-                let pCourses = 0;
-                let pLetters = 0;
-                let pPostponements = 0;
-                let pExams = 0;
-                let pReattempts = 0;
-
-                if (userRole === 'director') {
-                    pCourses = courseApps.filter((app: any) => app.status === 'pending' && app.approval_level === 2).length;
-                    pLetters = letterReqs.filter((req: any) => req.status === 'pending' && req.approval_level === 2).length;
-                    pPostponements = postponementReqs.filter((req: any) => req.status === 'pending' && req.current_step === 3).length;
-                    pExams = examApps.filter((req: any) => req.status === 'pending' && req.current_step === 3).length;
-                    pReattempts = reattemptReqs.filter((req: any) => req.status === 'pending' && req.current_step === 3).length;
-                } else if (userRole === 'super_admin') {
-                    pCourses = courseApps.filter((app: any) => app.status === 'pending').length;
-                    pLetters = letterReqs.filter((req: any) => req.status === 'pending').length;
-                    pPostponements = postponementReqs.filter((req: any) => req.status === 'pending').length;
-                    pExams = examApps.filter((req: any) => req.status === 'pending').length;
-                    pReattempts = reattemptReqs.filter((req: any) => req.status === 'pending').length;
+                if (data.topDistricts) {
+                    setTopDistricts(data.topDistricts.map((d: any) => [d.district, d.count]));
                 }
-
-                setPendingCount(pCourses + pLetters + pPostponements + pExams + pReattempts);
+                if (data.courseEnrollments) {
+                    setCourseEnrollments(data.courseEnrollments);
+                }
 
             } catch (err) {
                 console.error('Failed to load dashboard statistics:', err);
@@ -127,25 +95,13 @@ export const AdminDashboard: React.FC = () => {
         fetchDashboardData();
     }, [userRole, userId]);
 
-    // Geographic analysis
-    const districtMap: Record<string, number> = {};
-    courseApplications.forEach(a => {
-        if (a.district) districtMap[a.district] = (districtMap[a.district] || 0) + 1;
-    });
-    const topDistricts = Object.entries(districtMap).sort((a, b) => b[1] - a[1]).slice(0, 5);
     const maxDistrictCount = topDistricts.length > 0 ? topDistricts[0][1] : 1;
-
-    // Course Enrollment Analysis
-    const courseEnrollments = realCourses
-        .map(c => ({ title: c.title, count: c.activeStudents }))
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 5);
     const maxCourseEnrollment = courseEnrollments.length > 0 ? courseEnrollments[0].count : 1;
 
-    const totalStudentsVal = realUsers.filter(u => u.role === 'student').length;
-    const activeStudentsVal = realUsers.filter(u => u.role === 'student' && (u.status === 'active' || !u.status)).length;
-    const activeCoursesVal = realCourses.filter(c => c.intakeStatus !== 'Closed').length;
-    const totalEnrolledVal = realCourses.reduce((sum, c) => sum + c.activeStudents, 0);
+    const totalStudentsVal = stats.totalStudents || 0;
+    const activeStudentsVal = stats.activeStudents || 0;
+    const activeCoursesVal = stats.activeCourses || 0;
+    const totalEnrolledVal = stats.totalEnrolled || 0;
 
     const kpiCards = [
         {

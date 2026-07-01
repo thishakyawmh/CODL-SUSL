@@ -40,9 +40,14 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Student routes
     Route::get('/student/courses', [UserController::class, 'getStudentCourses']);
+    Route::get('/student/dashboard-overview', [UserController::class, 'getStudentDashboardOverview']);
     Route::get('/student/courses/{courseId}/materials', [UserController::class, 'getCourseMaterials']);
     Route::get('/student/applications', [UserController::class, 'getStudentApplications']);
     Route::get('/student/courses/{courseId}/examinations-data', [UserController::class, 'getStudentExaminationsData']);
+
+    // Student Tracking
+    Route::get('/admin/track-students/search', [UserController::class, 'searchStudents']);
+    Route::get('/admin/track-students/{id}/details', [UserController::class, 'getStudentTrackingDetails']);
 
     // Admin Stats
     Route::get('/admin/stats', [StatsController::class, 'getAdminStats']);

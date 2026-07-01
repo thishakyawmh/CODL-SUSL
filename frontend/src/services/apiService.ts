@@ -104,6 +104,14 @@ export const userService = {
     delete: async (id: string) => {
         const response = await api.delete(`/users/${id}`);
         return response.data;
+    },
+    searchStudents: async (query: string) => {
+        const response = await api.get('/admin/track-students/search', { params: { q: query } });
+        return response.data;
+    },
+    getStudentTrackingDetails: async (id: string) => {
+        const response = await api.get(`/admin/track-students/${id}/details`);
+        return response.data;
     }
 };
 
@@ -165,6 +173,10 @@ export const courseService = {
     },
     getStudentExaminationsData: async (courseId: string) => {
         const response = await api.get(`/student/courses/${courseId}/examinations-data`);
+        return response.data;
+    },
+    getDashboardOverview: async () => {
+        const response = await api.get('/student/dashboard-overview');
         return response.data;
     }
 };
@@ -459,6 +471,13 @@ export const backupService = {
 export const activityLogService = {
     getAll: async () => {
         const response = await api.get('/admin/activity-logs');
+        return response.data;
+    }
+};
+
+export const statsService = {
+    getFullDashboardData: async () => {
+        const response = await api.get('/admin/dashboard-full');
         return response.data;
     }
 };
