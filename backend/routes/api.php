@@ -22,9 +22,9 @@ use App\Http\Controllers\BackupController;
 |--------------------------------------------------------------------------
 */
 
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
-Route::post('/auth/google', [AuthController::class, 'googleLogin']);
+Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:login');
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
+Route::post('/auth/google', [AuthController::class, 'googleLogin'])->middleware('throttle:login');
 
 // Public: Available courses for applicants (with batches)
 Route::get('/public/courses', [CourseController::class, 'publicIndex']);
@@ -46,7 +46,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/student/courses/{courseId}/examinations-data', [UserController::class, 'getStudentExaminationsData']);
 
     // Student Tracking
-    Route::get('/admin/track-students/search', [UserController::class, 'searchStudents']);
+    Route::get('/admin/track-students/search', [UserController::class, 'searchStudents'])->middleware('throttle:api');
     Route::get('/admin/track-students/{id}/details', [UserController::class, 'getStudentTrackingDetails']);
 
     // Admin Stats
