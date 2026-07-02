@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BookOpen, Calendar, Filter } from 'lucide-react';
 import { PendingStatusModal } from './PendingStatusModal';
-import { courseService, courseApplicationService, examService } from '../../services/apiService';
+import { courseService } from '../../services/apiService';
 import './RegisteredCourses.css';
 
 export interface Course {
@@ -29,53 +29,25 @@ export const RegisteredCourses: React.FC<RegisteredCoursesProps> = ({ onSelect }
     const [courseNotifications, setCourseNotifications] = useState<Record<string, number>>({});
 
     useEffect(() => {
-        const fetchPendingApplications = async () => {
+        const fetchDashboardData = async () => {
             try {
-                const cacheKey = 'pending_applications_cache';
+                const cacheKey = 'student_dashboard_overview_cache';
                 const cachedData = sessionStorage.getItem(cacheKey);
+                
+                let data;
                 if (cachedData) {
-                    const { data, timestamp } = JSON.parse(cachedData);
-                    if (Date.now() - timestamp < 60000) {
-                        const pending = data.filter((app: any) => app.status === 'pending');
-                        setPendingApplications(pending);
-                        return;
+                    const { data: cached, timestamp } = JSON.parse(cachedData);
+                    if (Date.now() - timestamp < 30000) {
+                        data = cached;
                     }
                 }
 
-                const apps = await courseApplicationService.getMyApplications();
-                sessionStorage.setItem(cacheKey, JSON.stringify({ data: apps, timestamp: Date.now() }));
-                const pending = apps.filter((app: any) => app.status === 'pending');
-                setPendingApplications(pending);
-            } catch (err) {
-                console.error('Failed to fetch pending applications:', err);
-                setPendingApplications([]);
-            }
-        };
-
-        const fetchBackendCourses = async () => {
-            try {
-                const cacheKey = 'student_courses_cache';
-                const cachedData = sessionStorage.getItem(cacheKey);
-                if (cachedData) {
-                    const { data, timestamp } = JSON.parse(cachedData);
-                    if (Date.now() - timestamp < 60000) {
-                        const mapped: Course[] = data.map((c: any) => ({
-                            id: c.id.toString(),
-                            title: c.title,
-                            code: c.code,
-                            type: c.level === 'Certificate' || c.level === 'Advanced Certificate' ? 'Certification' : c.level,
-                            startDate: c.created_at ? new Date(c.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Jan 15, 2026',
-                            endDate: c.duration || '3 Years',
-                            batch: c.pivot?.batch || 'Batch TBD'
-                        }));
-                        setBackendCourses(mapped);
-                        return;
-                    }
+                if (!data) {
+                    data = await courseService.getDashboardOverview();
+                    sessionStorage.setItem(cacheKey, JSON.stringify({ data, timestamp: Date.now() }));
                 }
 
-                const data = await courseService.getStudentCourses();
-                sessionStorage.setItem(cacheKey, JSON.stringify({ data, timestamp: Date.now() }));
-                const mapped: Course[] = data.map((c: any) => ({
+                const mapped: Course[] = (data.courses || []).map((c: any) => ({
                     id: c.id.toString(),
                     title: c.title,
                     code: c.code,
@@ -85,44 +57,26 @@ export const RegisteredCourses: React.FC<RegisteredCoursesProps> = ({ onSelect }
                     batch: c.pivot?.batch || 'Batch TBD'
                 }));
                 setBackendCourses(mapped);
-            } catch (err) {
-                console.error('Failed to fetch backend courses:', err);
-            }
-        };
-        fetchPendingApplications();
-        fetchBackendCourses();
-    }, []);
 
-    useEffect(() => {
-        if (backendCourses.length === 0) return;
+                const pending = (data.pendingApplications || []).filter((app: any) => app.status === 'pending');
+                setPendingApplications(pending);
 
-        const loadNotifications = async () => {
-            const cacheKey = 'course_notifications_cache';
-            const cachedData = sessionStorage.getItem(cacheKey);
-            if (cachedData) {
-                const { data, timestamp } = JSON.parse(cachedData);
-                if (Date.now() - timestamp < 60000) {
-                    setCourseNotifications(data);
-                    return;
-                }
-            }
+                const notificationsMap: Record<string, number> = {};
 
-            const notificationsMap: Record<string, number> = {};
-
-            await Promise.all(
-                backendCourses.map(async (course) => {
+                mapped.forEach((course) => {
                     let totalCount = 0;
                     try {
+                        const courseData = data.notificationsData?.[course.id];
+                        if (!courseData) return;
+
                         const lastVisitedMaterials = localStorage.getItem(`materials_lastVisited_${course.id}`);
                         const lastVisitedMaterialsTs = lastVisitedMaterials ? parseInt(lastVisitedMaterials, 10) : 0;
 
                         const lastVisitedExams = localStorage.getItem(`exams_lastVisited_${course.id}`);
                         const lastVisitedExamsTs = lastVisitedExams ? parseInt(lastVisitedExams, 10) : 0;
 
-                        const [materials, examData] = await Promise.all([
-                            courseService.getCourseMaterials(course.id).catch(() => []),
-                            courseService.getStudentExaminationsData(course.id).catch(() => ({ exams: [], my_applications: [], postponement_requests: [], reattempt_requests: [] }))
-                        ]);
+                        const materials = courseData.materials || [];
+                        const examData = courseData.examData || { exams: [], my_applications: [], postponement_requests: [], reattempt_requests: [] };
 
                         // 1. Calculate new materials count
                         let matCount = 0;
@@ -191,15 +145,16 @@ export const RegisteredCourses: React.FC<RegisteredCoursesProps> = ({ onSelect }
                         console.error(`Failed to calculate notification count for course ${course.id}:`, e);
                     }
                     notificationsMap[course.id] = totalCount;
-                })
-            );
+                });
 
-            sessionStorage.setItem(cacheKey, JSON.stringify({ data: notificationsMap, timestamp: Date.now() }));
-            setCourseNotifications(notificationsMap);
+                setCourseNotifications(notificationsMap);
+            } catch (err) {
+                console.error('Failed to fetch dashboard data:', err);
+            }
         };
 
-        loadNotifications();
-    }, [backendCourses]);
+        fetchDashboardData();
+    }, []);
 
     const filteredCourses = backendCourses.filter(prog => filter === 'All' || prog.type === filter);
 
