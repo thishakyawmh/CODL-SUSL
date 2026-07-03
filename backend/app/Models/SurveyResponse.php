@@ -9,6 +9,8 @@ class SurveyResponse extends Model
 {
     use HasFactory;
 
+    protected $connection = 'analytics';
+
     protected $fillable = [
         'type',
         'respondent_type',
