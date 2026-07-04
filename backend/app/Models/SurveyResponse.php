@@ -21,5 +21,10 @@ class SurveyResponse extends Model
         'industry_sector',
         'required_skills',
         'skill_shortages',
+        'metadata',
+    ];
+
+    protected $casts = [
+        'metadata' => 'array',
     ];
 }

@@ -181,7 +181,27 @@ class AIAnalyticsController extends Controller
         $data = $request->data;
         $data['type'] = $request->survey_type;
 
-        SurveyResponse::create($data);
+        // Separate core fields from metadata
+        $coreFields = [
+            'type', 'respondent_type', 'preferred_field', 'skills_to_learn',
+            'job_aspirations', 'company_name', 'industry_sector',
+            'required_skills', 'skill_shortages'
+        ];
+
+        $insertData = [];
+        $metadata = [];
+
+        foreach ($data as $key => $value) {
+            if (in_array($key, $coreFields)) {
+                $insertData[$key] = $value;
+            } else {
+                $metadata[$key] = $value;
+            }
+        }
+
+        $insertData['metadata'] = empty($metadata) ? null : $metadata;
+
+        SurveyResponse::create($insertData);
 
         return response()->json(['message' => 'Survey response successfully logged.']);
     }

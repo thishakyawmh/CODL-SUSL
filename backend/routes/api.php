@@ -31,6 +31,7 @@ Route::post('/auth/google', [AuthController::class, 'googleLogin']);
 // Public: Available courses for applicants (with batches)
 Route::get('/public/courses', [CourseController::class, 'publicIndex']);
 Route::get('/admin/system-settings', [SystemSettingController::class, 'getSettings']);
+Route::post('/public/surveys', [AIAnalyticsController::class, 'storeSurvey']); // Public survey submission
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
