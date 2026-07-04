@@ -4,7 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Course;
-use App\Models\SurveyResponse;
+use App\Models\StudentInterest;
+use App\Models\IndustryRequirement;
 
 class AIAnalyticsController extends Controller
 {
@@ -14,14 +15,17 @@ class AIAnalyticsController extends Controller
     public function getOverview()
     {
         $coursesCount = Course::count();
-        $surveysCount = SurveyResponse::count();
-        $companiesCount = SurveyResponse::where('type', 'industry')->distinct('company_name')->count();
+        $studentSurveysCount = StudentInterest::count();
+        $industrySurveysCount = IndustryRequirement::count();
+        $surveysCount = $studentSurveysCount + $industrySurveysCount;
+        $companiesCount = IndustryRequirement::distinct('company_name')->count();
 
-        // Calculate student demand (top keywords in preferred_field/skills_to_learn)
-        $studentSurveys = SurveyResponse::where('type', 'student')->get();
+        // Calculate student demand (top keywords in primary_field/emerging_fields)
+        $studentSurveys = StudentInterest::all();
         $studentKeywords = [];
         foreach ($studentSurveys as $survey) {
-            $words = array_filter(explode(',', $survey->skills_to_learn));
+            // Using primary_field as a proxy for skills/interest based on new schema
+            $words = array_filter(explode(',', $survey->primary_field));
             foreach ($words as $word) {
                 $word = trim($word);
                 if (!empty($word)) {
@@ -42,7 +46,7 @@ class AIAnalyticsController extends Controller
         }
 
         // Calculate industry demand
-        $industrySurveys = SurveyResponse::where('type', 'industry')->get();
+        $industrySurveys = IndustryRequirement::all();
         $industryKeywords = [];
         foreach ($industrySurveys as $survey) {
             $words = array_filter(explode(',', $survey->required_skills));
@@ -164,7 +168,18 @@ class AIAnalyticsController extends Controller
      */
     public function getSurveys()
     {
-        $surveys = SurveyResponse::orderBy('created_at', 'desc')->get();
+        $studentSurveys = \App\Models\StudentInterest::orderBy('created_at', 'desc')->get()->map(function($item) {
+            $item->type = 'student';
+            return $item;
+        });
+        
+        $industrySurveys = \App\Models\IndustryRequirement::orderBy('created_at', 'desc')->get()->map(function($item) {
+            $item->type = 'industry';
+            return $item;
+        });
+        
+        $surveys = $studentSurveys->concat($industrySurveys)->sortByDesc('created_at')->values();
+        
         return response()->json($surveys);
     }
 
@@ -179,29 +194,43 @@ class AIAnalyticsController extends Controller
         ]);
 
         $data = $request->data;
-        $data['type'] = $request->survey_type;
 
-        // Separate core fields from metadata
-        $coreFields = [
-            'type', 'respondent_type', 'preferred_field', 'skills_to_learn',
-            'job_aspirations', 'company_name', 'industry_sector',
-            'required_skills', 'skill_shortages'
-        ];
-
-        $insertData = [];
-        $metadata = [];
-
+        // Convert array values into comma-separated strings for database insertion
+        $parsedData = [];
         foreach ($data as $key => $value) {
-            if (in_array($key, $coreFields)) {
-                $insertData[$key] = $value;
+            if (is_array($value)) {
+                $parsedData[$key] = implode(', ', $value);
             } else {
-                $metadata[$key] = $value;
+                $parsedData[$key] = $value;
             }
         }
 
-        $insertData['metadata'] = empty($metadata) ? null : $metadata;
-
-        SurveyResponse::create($insertData);
+        if ($request->survey_type === 'student') {
+            // Note: Our current form doesn't capture all of these exactly, but maps to them
+            \App\Models\StudentInterest::create([
+                'education_level' => $parsedData['education_level'] ?? 'Not Specified',
+                'primary_field' => $parsedData['preferred_field'] ?? 'Various',
+                'learning_preferences' => $parsedData['academic_practices'] ?? null,
+                'emerging_fields' => $parsedData['emerging_fields'] ?? null,
+                'new_program_suggestion' => $parsedData['new_program_recommendation'] ?? null,
+            ]);
+        } else {
+            \App\Models\IndustryRequirement::create([
+                'company_name' => $parsedData['company_name'] ?? null,
+                'industry_sector' => $parsedData['industry_sector'] ?? 'Unknown',
+                'organization_size' => $parsedData['organization_size'] ?? null,
+                'primary_academic_field' => $parsedData['preferred_field'] ?? 'Various', // Using preferred_field mapped from form
+                'required_skills' => $parsedData['required_skills'] ?? null,
+                'academic_practices' => $parsedData['academic_practices'] ?? null,
+                'minimum_qualification' => $parsedData['min_qualification'] ?? null,
+                'minimum_degree_result' => $parsedData['expected_gpa'] ?? null,
+                'certification_importance' => isset($parsedData['certification_importance']) ? (int) $parsedData['certification_importance'] : null,
+                'emerging_fields' => $parsedData['emerging_fields'] ?? null,
+                'new_program_suggestion' => $parsedData['new_program_recommendation'] ?? null,
+                'graduate_skill_gaps' => $parsedData['skill_shortages'] ?? null,
+                'additional_recommendations' => $parsedData['additional_recommendations'] ?? null,
+            ]);
+        }
 
         return response()->json(['message' => 'Survey response successfully logged.']);
     }
@@ -218,24 +247,26 @@ class AIAnalyticsController extends Controller
 
         // Simulating the extraction of data from Google Sheets API
         // For MVP we just add a dummy record.
-        
-        $dummyData = [
-            'type' => $request->type,
-        ];
 
         if ($request->type === 'student') {
-            $dummyData['respondent_type'] = 'Sheet Import';
-            $dummyData['preferred_field'] = 'Various';
-            $dummyData['skills_to_learn'] = 'React, Node, Python, Cloud';
-            $dummyData['job_aspirations'] = 'Fullstack Engineer';
+            \App\Models\StudentInterest::create([
+                'education_level' => 'Undergraduate',
+                'primary_field' => 'Software Engineering',
+                'specializations' => 'Cloud Computing',
+                'learning_preferences' => 'Practical Labs',
+                'theory_practical_score' => 80,
+                'emerging_fields' => 'AI, Cloud',
+            ]);
         } else {
-            $dummyData['company_name'] = 'Tech Corp Imported';
-            $dummyData['industry_sector'] = 'IT Services';
-            $dummyData['required_skills'] = 'Docker, Kubernetes, CI/CD';
-            $dummyData['skill_shortages'] = 'Cloud Architecture';
+            \App\Models\IndustryRequirement::create([
+                'company_name' => 'Tech Corp Imported',
+                'industry_sector' => 'IT Services',
+                'organization_size' => 'Medium',
+                'primary_academic_field' => 'Software Engineering',
+                'required_skills' => 'Docker, Kubernetes, CI/CD',
+                'graduate_skill_gaps' => 'Cloud Architecture',
+            ]);
         }
-
-        SurveyResponse::create($dummyData);
 
         return response()->json(['message' => 'Google Sheet synced successfully. Found and imported new records.']);
     }

@@ -14,10 +14,13 @@ class RecommendationRule extends Model
 
     protected $fillable = [
         'rule_name',
+        'description',
         'target_course_pattern',
         'trigger_skill_pattern',
+        'recommendation_type',
         'recommendation_subject',
         'recommendation_text',
         'threshold_percent',
+        'is_active',
     ];
 }
