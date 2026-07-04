@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\DB;
 use App\Models\Course;
 use App\Models\StudentInterest;
 use App\Models\IndustryRequirement;
@@ -236,38 +238,192 @@ class AIAnalyticsController extends Controller
     }
 
     /**
-     * Mock syncing Google Sheets.
+     * Sync data from Google Sheets CSV.
      */
     public function syncGoogleSheet(Request $request)
     {
+        $startTime = microtime(true);
+        
         $request->validate([
             'type' => 'required|in:student,industry',
-            'url' => 'required|url'
+            'sheet_url' => 'required|url'
         ]);
 
-        // Simulating the extraction of data from Google Sheets API
-        // For MVP we just add a dummy record.
+        $type = $request->type;
+        $url = $request->sheet_url;
 
-        if ($request->type === 'student') {
-            \App\Models\StudentInterest::create([
-                'education_level' => 'Undergraduate',
-                'primary_field' => 'Software Engineering',
-                'specializations' => 'Cloud Computing',
-                'learning_preferences' => 'Practical Labs',
-                'theory_practical_score' => 80,
-                'emerging_fields' => 'AI, Cloud',
-            ]);
+        // 1. URL Rewriting
+        // Convert /edit#gid=X or /edit?usp=sharing to /export?format=csv&gid=X
+        if (preg_match('/\/d\/([a-zA-Z0-9-_]+)/', $url, $matches)) {
+            $spreadsheetId = $matches[1];
+            $gid = 0;
+            if (preg_match('/gid=([0-9]+)/', $url, $gidMatches)) {
+                $gid = $gidMatches[1];
+            }
+            $csvUrl = "https://docs.google.com/spreadsheets/d/{$spreadsheetId}/export?format=csv&gid={$gid}";
         } else {
-            \App\Models\IndustryRequirement::create([
-                'company_name' => 'Tech Corp Imported',
-                'industry_sector' => 'IT Services',
-                'organization_size' => 'Medium',
-                'primary_academic_field' => 'Software Engineering',
-                'required_skills' => 'Docker, Kubernetes, CI/CD',
-                'graduate_skill_gaps' => 'Cloud Architecture',
-            ]);
+            return response()->json(['error' => 'Invalid Google Sheets URL format.'], 400);
         }
 
-        return response()->json(['message' => 'Google Sheet synced successfully. Found and imported new records.']);
+        // 2. HTTP Fetch
+        try {
+            $response = Http::get($csvUrl);
+            if (!$response->successful()) {
+                return response()->json(['error' => 'Failed to download CSV from Google Sheets. Make sure the sheet is public.'], 400);
+            }
+            $csvData = $response->body();
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'HTTP request failed: ' . $e->getMessage()], 500);
+        }
+
+        // 3. Parsing CSV
+        $lines = explode("\n", $csvData);
+        if (count($lines) < 2) {
+            return response()->json(['error' => 'CSV file is empty or only contains headers.'], 400);
+        }
+
+        $headers = str_getcsv(array_shift($lines));
+        $headers = array_map('trim', $headers);
+
+        // 4. Configurable Mapping Dictionary
+        $studentHeaderMap = [
+            'Current Education Level' => 'education_level',
+            'Province' => 'province',
+            'District' => 'district',
+            'Which academic field(s) are you interested in studying at university?' => 'primary_field',
+            'Secondary field of interest' => 'secondary_field',
+            'Third field of interest' => 'third_field',
+            'Specializations you want to pursue' => 'specializations',
+            'Preferred learning methods' => 'learning_preferences',
+            'Theory vs Practical (1-100)' => 'theory_practical_score',
+            'Desired university opportunities' => 'university_opportunities',
+            'Emerging fields to introduce' => 'emerging_fields',
+            'New program suggestions' => 'new_program_suggestion',
+        ];
+
+        $industryHeaderMap = [
+            'Organization / Company Name' => 'company_name',
+            'Industry Sector' => 'industry_sector',
+            'Organization Size' => 'organization_size',
+            'Primary academic field recruited' => 'primary_academic_field',
+            'Secondary academic field recruited' => 'secondary_academic_field',
+            'Third academic field recruited' => 'third_academic_field',
+            'Required skills' => 'required_skills',
+            'Academic practices required' => 'academic_practices',
+            'Minimum qualification' => 'minimum_qualification',
+            'Minimum degree result' => 'minimum_degree_result',
+            'Certification importance (1-5)' => 'certification_importance',
+            'Emerging fields to introduce' => 'emerging_fields',
+            'New program suggestions' => 'new_program_suggestion',
+            'Graduate skill gaps' => 'graduate_skill_gaps',
+            'Additional recommendations' => 'additional_recommendations',
+        ];
+
+        $mapToUse = $type === 'student' ? $studentHeaderMap : $industryHeaderMap;
+        $requiredColumns = $type === 'student' ? ['education_level', 'primary_field'] : ['industry_sector', 'primary_academic_field'];
+        
+        $mappedIndexes = [];
+        
+        // Find exact matches first, then keyword matches
+        foreach ($headers as $index => $header) {
+            $headerLower = strtolower(trim($header));
+            $foundMatch = false;
+
+            // Try exact match in map keys
+            foreach ($mapToUse as $mapKey => $dbColumn) {
+                if (strtolower($mapKey) === $headerLower) {
+                    $mappedIndexes[$dbColumn] = $index;
+                    $foundMatch = true;
+                    break;
+                }
+            }
+
+            // If no exact match, fallback to simple keyword matching
+            if (!$foundMatch) {
+                foreach ($mapToUse as $mapKey => $dbColumn) {
+                    $cleanHeader = strtolower(preg_replace('/[^a-z0-9]/i', '', $headerLower));
+                    if (str_contains($cleanHeader, 'company') && $dbColumn === 'company_name') { $mappedIndexes[$dbColumn] = $index; break; }
+                    if (str_contains($cleanHeader, 'sector') && $dbColumn === 'industry_sector') { $mappedIndexes[$dbColumn] = $index; break; }
+                    if (str_contains($cleanHeader, 'education') && $dbColumn === 'education_level') { $mappedIndexes[$dbColumn] = $index; break; }
+                    if (str_contains($cleanHeader, 'province') && $dbColumn === 'province') { $mappedIndexes[$dbColumn] = $index; break; }
+                }
+            }
+        }
+
+        // 5. Add Validation for required columns
+        $missingColumns = [];
+        foreach ($requiredColumns as $reqCol) {
+            if (!isset($mappedIndexes[$reqCol])) {
+                $missingColumns[] = $reqCol;
+            }
+        }
+
+        if (count($missingColumns) > 0) {
+            return response()->json([
+                'error' => 'Missing required columns in Google Sheet based on mapping.',
+                'missing_columns' => $missingColumns
+            ], 422);
+        }
+
+        // 6 & 7 & 8: Wrap Truncate and Bulk Insert in Transaction
+        $rowsImported = 0;
+        $rowsIgnored = 0;
+
+        try {
+            DB::connection('analytics')->transaction(function () use ($lines, $mappedIndexes, $type, &$rowsImported, &$rowsIgnored) {
+                
+                if ($type === 'student') {
+                    StudentInterest::truncate();
+                } else {
+                    IndustryRequirement::truncate();
+                }
+
+                $insertData = [];
+                foreach ($lines as $line) {
+                    if (empty(trim($line))) continue;
+                    
+                    $row = str_getcsv($line);
+                    
+                    // Simple skip if row doesn't have enough columns
+                    if (count($row) <= max(array_values($mappedIndexes))) {
+                        $rowsIgnored++;
+                        continue;
+                    }
+
+                    $record = [];
+                    foreach ($mappedIndexes as $dbColumn => $index) {
+                        $record[$dbColumn] = $row[$index] ?? null;
+                    }
+                    
+                    $record['created_at'] = now();
+                    $record['updated_at'] = now();
+
+                    $insertData[] = $record;
+                    $rowsImported++;
+                }
+
+                if (!empty($insertData)) {
+                    if ($type === 'student') {
+                        StudentInterest::insert($insertData);
+                    } else {
+                        IndustryRequirement::insert($insertData);
+                    }
+                }
+            });
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Database transaction failed: ' . $e->getMessage()], 500);
+        }
+
+        $executionTime = round(microtime(true) - $startTime, 2);
+
+        // 9. Detailed Response
+        return response()->json([
+            'message' => ucfirst($type) . ' Survey Imported Successfully',
+            'type' => $type,
+            'rows_imported' => $rowsImported,
+            'rows_ignored' => $rowsIgnored,
+            'execution_time_sec' => $executionTime,
+            'status' => 'success'
+        ]);
     }
 }
