@@ -11,6 +11,7 @@ return new class extends Migration
         Schema::connection('analytics')->create('industry_requirements', function (Blueprint $table) {
 
             $table->id();
+            $table->timestamp('survey_submitted_at')->nullable();
 
             // Section 1
             $table->string('company_name')->nullable();

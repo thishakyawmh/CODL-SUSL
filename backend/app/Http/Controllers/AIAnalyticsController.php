@@ -287,6 +287,7 @@ class AIAnalyticsController extends Controller
 
         // 4. Configurable Mapping Dictionary
         $studentHeaderMap = [
+            'Timestamp' => 'survey_submitted_at',
             'Current Education Level' => 'education_level',
             'Province' => 'province',
             'District' => 'district',
@@ -302,6 +303,7 @@ class AIAnalyticsController extends Controller
         ];
 
         $industryHeaderMap = [
+            'Timestamp' => 'survey_submitted_at',
             'Organization / Company Name' => 'company_name',
             'Industry Sector' => 'industry_sector',
             'Organization Size' => 'organization_size',

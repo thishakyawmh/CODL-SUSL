@@ -12,6 +12,7 @@ class StudentInterest extends Model
     protected $connection = 'analytics';
 
     protected $fillable = [
+        'survey_submitted_at',
         'education_level',
         'province',
         'district',

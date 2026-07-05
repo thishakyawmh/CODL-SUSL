@@ -12,6 +12,7 @@ class IndustryRequirement extends Model
     protected $connection = 'analytics';
 
     protected $fillable = [
+        'survey_submitted_at',
         'company_name',
         'industry_sector',
         'organization_size',
