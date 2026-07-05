@@ -465,22 +465,22 @@ export const TrackStudent: React.FC = () => {
 
     const getStudentData = (student: DBUserType) => {
         const examApps = realExamApplications.filter(
-            e => e.studentNumber === student.studentNumber || e.studentName === student.fullName
+            e => e.studentNumber === student.studentNumber
         );
         const letterReqs = realLetterRequests.filter(
-            l => l.studentNumber === student.studentNumber || l.studentName === student.fullName
+            l => l.studentNumber === student.studentNumber
         );
         const reattempts = realReattempts.filter(
-            r => r.studentNumber === student.studentNumber || r.studentName === student.fullName
+            r => r.studentNumber === student.studentNumber
         );
         const postponements = realPostponements.filter(
-            p => p.studentNumber === student.studentNumber || p.studentName === student.fullName
+            p => p.studentNumber === student.studentNumber
         );
 
         const results: { subject: string; subjectCode: string; grade: string; course: string; semester: string; status: string; uploadDate: string; lecturer: string; batch: string }[] = [];
         realExamResults.forEach(er => {
             er.results.forEach((r: any) => {
-                if (r.studentId === student.studentNumber || r.studentName === student.fullName) {
+                if (r.studentId === student.studentNumber) {
                     results.push({
                         subject: er.subject,
                         subjectCode: er.subjectCode,

@@ -25,6 +25,116 @@ const ExaminationResults: React.FC = () => {
     const studentName = currentUser?.fullName || currentUser?.full_name || currentUser?.name || 'Kasun Perera';
     const studentRegNo = currentUser?.student_number || currentUser?.studentNumber || 'CODL/2401';
 
+    const generatePDF = async () => {
+        const element = document.querySelector('.official-result-card');
+        if (!element) throw new Error("Result card element not found");
+
+        const { default: jsPDF } = await import('jspdf');
+        const { default: html2canvas } = await import('html2canvas');
+
+        const canvas = await html2canvas(element as HTMLElement, {
+            scale: 2,
+            useCORS: true,
+            logging: false,
+            backgroundColor: '#ffffff'
+        });
+
+        const imgData = canvas.toDataURL('image/png');
+        
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        
+        const imgWidth = pdfWidth;
+        const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+        
+        let heightLeft = imgHeight;
+        let position = 0;
+        
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, Math.min(imgHeight, pdfHeight));
+        heightLeft -= pdfHeight;
+        
+        while (heightLeft >= 0) {
+            position = heightLeft - imgHeight;
+            pdf.addPage();
+            pdf.addImage(imgData, 'PNG', 0, position, imgWidth, Math.min(imgHeight, pdfHeight));
+            heightLeft -= pdfHeight;
+        }
+
+        return pdf;
+    };
+
+    const handlePrint = async () => {
+        const element = document.querySelector('.official-result-card');
+        if (!element) return;
+
+        try {
+            const { default: html2canvas } = await import('html2canvas');
+
+            const canvas = await html2canvas(element as HTMLElement, {
+                scale: 2,
+                useCORS: true,
+                logging: false,
+                backgroundColor: '#ffffff'
+            });
+
+            const imgData = canvas.toDataURL('image/png');
+
+            const printImg = document.createElement('img');
+            printImg.src = imgData;
+            printImg.id = 'temp-print-image';
+
+            const style = document.createElement('style');
+            style.id = 'temp-print-style';
+            style.innerHTML = `
+                @media print {
+                    body * {
+                        visibility: hidden !important;
+                    }
+                    #temp-print-image, #temp-print-image * {
+                        visibility: visible !important;
+                    }
+                    #temp-print-image {
+                        position: absolute !important;
+                        left: 0 !important;
+                        top: 0 !important;
+                        width: 100% !important;
+                        height: auto !important;
+                        display: block !important;
+                    }
+                    @page {
+                        size: auto;
+                        margin: 0;
+                    }
+                }
+            `;
+
+            document.body.appendChild(printImg);
+            document.head.appendChild(style);
+
+            setTimeout(() => {
+                window.print();
+                document.body.removeChild(printImg);
+                document.head.removeChild(style);
+            }, 150);
+
+        } catch (error) {
+            console.error('Print failed:', error);
+            alert('Failed to print transcript. Please try again.');
+        }
+    };
+
+    const handleDownload = async () => {
+        try {
+            const pdf = await generatePDF();
+            const fileName = `Exam_Results_${studentRegNo.replace(/\//g, '_')}_${exam.title.replace(/\s+/g, '_')}.pdf`;
+            pdf.save(fileName);
+        } catch (error) {
+            console.error('PDF download failed:', error);
+            alert('Failed to generate PDF. Please try again.');
+        }
+    };
+
     useEffect(() => {
         const fetchResultsData = async () => {
             setLoading(true);
@@ -64,18 +174,25 @@ const ExaminationResults: React.FC = () => {
 
                     // Is there a postponement request from this exam to that grade's exam?
                     const isPostponed = postponements.some((p: any) => {
-                        const pOriginalExamId = p.exams && p.exams[0] && !p.exams[0].includes(' - ') ? p.exams[0] : '';
                         const pOriginalTitle = p.exam_title || '';
-                        const matchesOriginal = pOriginalExamId.toString() === examId?.toString() ||
-                            (targetExam && pOriginalTitle.trim().toLowerCase() === targetExam.title.trim().toLowerCase());
+                        
+                        // Fuzzy title match
+                        const cleanPTitle = pOriginalTitle.toLowerCase().replace(/[^a-z0-9]/g, '');
+                        const cleanTargetTitle = (targetExam?.title || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+                        const matchesOriginal = cleanPTitle.includes(cleanTargetTitle) || cleanTargetTitle.includes(cleanPTitle);
+
                         const matchesAssigned = p.assigned_exam_id?.toString() === gradeExamId;
 
                         if (matchesOriginal && matchesAssigned) {
                             if (p.exams && p.exams.length > 0) {
                                 const gradeSubjectCode = g.exam_result?.subject?.code;
-                                const matchesSubject = p.exams.some((s: string) => s.includes(gradeSubjectCode));
-                                if (matchesSubject) return true;
-                                if (p.exams.some((s: string) => s.includes(' - '))) return false;
+                                if (!gradeSubjectCode) return false;
+                                const cleanCode = gradeSubjectCode.toLowerCase().replace(/[^a-z0-9]/g, '');
+                                
+                                return p.exams.some((s: string) => {
+                                    const cleanS = s.toLowerCase().replace(/[^a-z0-9]/g, '');
+                                    return cleanS.includes(cleanCode);
+                                });
                             }
                             return true;
                         }
@@ -86,9 +203,13 @@ const ExaminationResults: React.FC = () => {
 
                     // Is there a reattempt request from this exam for this subject to that grade's exam?
                     const isReattempted = reattempts.some((r: any) => {
-                        const rOriginalExamId = r.exam_id?.toString();
-                        const matchesOriginal = rOriginalExamId === examId?.toString() ||
-                            (targetExam && r.exam_title?.trim().toLowerCase() === targetExam.title.trim().toLowerCase());
+                        const rOriginalTitle = r.exam_title || '';
+                        
+                        // Fuzzy title match
+                        const cleanRTitle = rOriginalTitle.toLowerCase().replace(/[^a-z0-9]/g, '');
+                        const cleanTargetTitle = (targetExam?.title || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+                        const matchesOriginal = cleanRTitle.includes(cleanTargetTitle) || cleanTargetTitle.includes(cleanRTitle);
+
                         const matchesAssigned = r.assigned_exam_id?.toString() === gradeExamId;
                         const matchesSubject = r.subject_id?.toString() === g.exam_result?.subject?.id?.toString();
 
@@ -118,13 +239,20 @@ const ExaminationResults: React.FC = () => {
                     };
                 };
 
-                const mappedDirect = directGrades.map((g: any) => mapGradeRow(g, false));
-                const mappedIndirect = indirectGrades.map((g: any) => {
-                    const gradeSubjectId = g.exam_result?.subject?.id?.toString();
-                    const isReattempt = reattempts.some((r: any) => r.subject_id?.toString() === gradeSubjectId);
-                    const label = isReattempt ? 'Reattempt Grade' : 'Postponed Grade';
-                    return mapGradeRow(g, true, label);
-                });
+                 const mappedDirect = directGrades.map((g: any) => mapGradeRow(g, false));
+                 const mappedIndirect = indirectGrades.map((g: any) => {
+                     const gradeSubjectId = g.exam_result?.subject?.id?.toString();
+                     const matchingReattempt = reattempts.find((r: any) => r.subject_id?.toString() === gradeSubjectId);
+                     
+                     let label = '';
+                     if (matchingReattempt) {
+                         const attemptNo = matchingReattempt.attempt || 2;
+                         label = `Attempt ${attemptNo}`;
+                     } else {
+                         label = ''; // Clear label/reason for postponements
+                     }
+                     return mapGradeRow(g, true, label);
+                 });
 
                 // Merge: indirect grades overwrite/update direct grades
                 const mergedMap: Record<string, any> = {};
@@ -175,11 +303,19 @@ const ExaminationResults: React.FC = () => {
                                 <span className="mini-meta">ISSUED: {new Date().toLocaleDateString()}</span>
                             </div>
                         </div>
-                        <div className="action-button-group results-right">
-                            <button className="pro-action-btn secondary icon-only" title="Print Transcript">
+                        <div className="action-button-group results-right" data-html2canvas-ignore="true">
+                            <button 
+                                className="pro-action-btn secondary icon-only" 
+                                title="Print Transcript"
+                                onClick={handlePrint}
+                            >
                                 <Printer size={18} />
                             </button>
-                            <button className="pro-action-btn primary small" style={{ gap: '8px' }}>
+                            <button 
+                                className="pro-action-btn primary small" 
+                                style={{ gap: '8px' }}
+                                onClick={handleDownload}
+                            >
                                 <Download size={16} /> Download
                             </button>
                         </div>

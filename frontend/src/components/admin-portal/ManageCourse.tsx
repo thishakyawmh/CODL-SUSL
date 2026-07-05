@@ -925,12 +925,18 @@ export const ManageCourse: React.FC = () => {
         if (realStudents.length > 0 && approvalRequests.length > 0) {
             let updated = false;
             const enriched = approvalRequests.map(req => {
-                const matched = realStudents.find((s: any) =>
-                    s.student_number === req.studentNumber ||
-                    s.email === req.email ||
-                    s.full_name?.toLowerCase() === req.name?.toLowerCase() ||
-                    s.name?.toLowerCase() === req.name?.toLowerCase()
-                );
+                const matched = realStudents.find((s: any) => {
+                    const reqHasNo = req.studentNumber && req.studentNumber !== 'CODL/2404';
+                    const sHasNo = s.student_number && s.student_number !== 'CODL/2404';
+                    if (reqHasNo && sHasNo) {
+                        return s.student_number === req.studentNumber;
+                    }
+                    if (req.email && s.email) {
+                        return s.email === req.email;
+                    }
+                    return s.full_name?.toLowerCase() === req.name?.toLowerCase() ||
+                           s.name?.toLowerCase() === req.name?.toLowerCase();
+                });
                 if (matched) {
                     const newPhone = matched.phone || matched.mobilePhone || req.phone;
                     const newNic = matched.nic || req.nic;
@@ -1299,7 +1305,7 @@ export const ManageCourse: React.FC = () => {
                     const matchesSubject = subjects.length === 0 || subjects.some((s: string) => isForSubject(s, selectedSubjectForResult));
                     if (matchesSubject) {
                         postponementIds.add(req.studentNumber);
-                        studentNotes.set(req.studentNumber, req.reason || "");
+                        studentNotes.set(req.studentNumber, "");
                         studentAttempts.set(req.studentNumber, Number(req.raw?.attempt || req.attempt || 1));
                     }
                 }
@@ -2149,8 +2155,9 @@ export const ManageCourse: React.FC = () => {
                     exam_title: examText,
                     reason: waitlistForm.reason,
                     batch: waitlistForm.originBatch,
-                    status,
-                    exams: waitlistForm.selectedSubjects
+                    status: waitlistForm.examId ? 'assigned' : status,
+                    exams: waitlistForm.selectedSubjects,
+                    assigned_exam_id: waitlistForm.examId ? parseInt(waitlistForm.examId) : null
                 };
 
                 if (isEdit && editingWaitlistRecord) {
@@ -2180,7 +2187,8 @@ export const ManageCourse: React.FC = () => {
                         exam_title: examText,
                         reason: waitlistForm.reason,
                         batch: waitlistForm.originBatch,
-                        status
+                        status: waitlistForm.examId ? 'assigned' : status,
+                        assigned_exam_id: waitlistForm.examId ? parseInt(waitlistForm.examId) : null
                     };
                     await reattemptRequestService.update(editingWaitlistRecord.id, payload);
                     toast.success('Reattempt request updated successfully');
@@ -2201,7 +2209,8 @@ export const ManageCourse: React.FC = () => {
                             exam_title: examText,
                             reason: waitlistForm.reason,
                             batch: waitlistForm.originBatch,
-                            status
+                            status: waitlistForm.examId ? 'assigned' : status,
+                            assigned_exam_id: waitlistForm.examId ? parseInt(waitlistForm.examId) : null
                         };
                         await reattemptRequestService.create(payload);
                     }
