@@ -16,77 +16,29 @@ class AIAnalyticsController extends Controller
      */
     public function getOverview()
     {
-        $coursesCount = Course::count();
-        $studentSurveysCount = StudentInterest::count();
-        $industrySurveysCount = IndustryRequirement::count();
-        $surveysCount = $studentSurveysCount + $industrySurveysCount;
-        $companiesCount = IndustryRequirement::distinct('company_name')->count();
+        $cache = \App\Models\AnalyticsCache::orderBy('generated_at', 'desc')->first();
 
-        // Calculate student demand (top keywords in primary_field/emerging_fields)
-        $studentSurveys = StudentInterest::all();
-        $studentKeywords = [];
-        foreach ($studentSurveys as $survey) {
-            // Using primary_field as a proxy for skills/interest based on new schema
-            $words = array_filter(explode(',', $survey->primary_field));
-            foreach ($words as $word) {
-                $word = trim($word);
-                if (!empty($word)) {
-                    $studentKeywords[$word] = ($studentKeywords[$word] ?? 0) + 1;
-                }
-            }
+        if (!$cache) {
+            return response()->json([
+                'kpis' => [
+                    'studentMatch' => 0,
+                    'industryMatch' => 0,
+                    'alignment' => 0,
+                    'courses' => Course::count(),
+                    'surveys' => 0,
+                    'companies' => 0,
+                ],
+                'studentDemand' => [['name' => 'Data needed', 'value' => 0]],
+                'industryDemand' => [['name' => 'Data needed', 'value' => 0]],
+                'last_generated' => null
+            ]);
         }
-        arsort($studentKeywords);
-        $topStudentDemand = array_slice($studentKeywords, 0, 5, true);
-        
-        $studentDemandDistribution = [];
-        $totalStudentKeywords = array_sum($studentKeywords) ?: 1;
-        foreach ($topStudentDemand as $name => $count) {
-            $studentDemandDistribution[] = [
-                'name' => $name,
-                'value' => round(($count / $totalStudentKeywords) * 100)
-            ];
-        }
-
-        // Calculate industry demand
-        $industrySurveys = IndustryRequirement::all();
-        $industryKeywords = [];
-        foreach ($industrySurveys as $survey) {
-            $words = array_filter(explode(',', $survey->required_skills));
-            foreach ($words as $word) {
-                $word = trim($word);
-                if (!empty($word)) {
-                    $industryKeywords[$word] = ($industryKeywords[$word] ?? 0) + 1;
-                }
-            }
-        }
-        arsort($industryKeywords);
-        $topIndustryDemand = array_slice($industryKeywords, 0, 5, true);
-
-        $industryDemandDistribution = [];
-        $totalIndustryKeywords = array_sum($industryKeywords) ?: 1;
-        foreach ($topIndustryDemand as $name => $count) {
-            $industryDemandDistribution[] = [
-                'name' => $name,
-                'value' => round(($count / $totalIndustryKeywords) * 100)
-            ];
-        }
-
-        // Mock semantic match calculation based on available data presence
-        $studentMatch = $coursesCount > 0 ? rand(60, 95) : 0;
-        $industryMatch = $coursesCount > 0 ? rand(55, 90) : 0;
-        $alignment = round(($studentMatch + $industryMatch) / 2);
 
         return response()->json([
-            'kpis' => [
-                'studentMatch' => $studentMatch,
-                'industryMatch' => $industryMatch,
-                'alignment' => $alignment,
-                'courses' => $coursesCount,
-                'surveys' => $surveysCount,
-                'companies' => $companiesCount,
-            ],
-            'studentDemand' => count($studentDemandDistribution) > 0 ? $studentDemandDistribution : [['name' => 'Data needed', 'value' => 0]],
-            'industryDemand' => count($industryDemandDistribution) > 0 ? $industryDemandDistribution : [['name' => 'Data needed', 'value' => 0]],
+            'kpis' => $cache->kpis,
+            'studentDemand' => $cache->student_demand_distribution,
+            'industryDemand' => $cache->industry_demand_distribution,
+            'last_generated' => $cache->generated_at->format('M j, Y - g:i A'),
         ]);
     }
 
@@ -143,26 +95,13 @@ class AIAnalyticsController extends Controller
      */
     public function getRecommendations()
     {
-        $data = [
-            [
-                'id' => 1,
-                'course' => 'System-wide Curriculum',
-                'type' => 'critical',
-                'title' => 'Integrate Cloud Computing',
-                'description' => 'Multiple industry surveys indicate a strong demand for AWS and Azure skills which are currently missing across the board.',
-                'impact' => '+15% Industry Match',
-            ],
-            [
-                'id' => 2,
-                'course' => 'Introduction to Programming',
-                'type' => 'moderate',
-                'title' => 'Update language focus',
-                'description' => 'Students are heavily requesting Python and JavaScript over traditional legacy languages.',
-                'impact' => '+10% Student Match',
-            ]
-        ];
+        $cache = \App\Models\AnalyticsCache::orderBy('generated_at', 'desc')->first();
 
-        return response()->json($data);
+        if (!$cache || empty($cache->generated_recommendations)) {
+            return response()->json([]);
+        }
+
+        return response()->json($cache->generated_recommendations);
     }
 
     /**
@@ -240,7 +179,7 @@ class AIAnalyticsController extends Controller
     /**
      * Sync data from Google Sheets CSV.
      */
-    public function syncGoogleSheet(Request $request)
+    public function syncGoogleSheet(Request $request, \App\Services\AnalyticsNLPService $nlpService, \App\Services\RecommendationEngineService $recommendationEngine)
     {
         $startTime = microtime(true);
         
@@ -414,6 +353,25 @@ class AIAnalyticsController extends Controller
             });
         } catch (\Exception $e) {
             return response()->json(['error' => 'Database transaction failed: ' . $e->getMessage()], 500);
+        }
+
+        // Trigger NLP Processing Pipeline Offline
+        try {
+            $analytics = $nlpService->processAll();
+            $recommendations = $recommendationEngine->generateRecommendations($analytics);
+
+            \App\Models\AnalyticsCache::create([
+                'student_demand_distribution' => $analytics['student_demand_distribution'],
+                'industry_demand_distribution' => $analytics['industry_demand_distribution'],
+                'domain_frequency_counts' => $analytics['domain_frequency_counts'],
+                'jaccard_similarity_results' => $analytics['jaccard_similarity_results'],
+                'kpis' => $analytics['kpis'],
+                'generated_recommendations' => $recommendations,
+                'generated_at' => now(),
+            ]);
+        } catch (\Exception $e) {
+            // Log but don't fail the entire import request
+            \Log::error('NLP Pipeline failed during CSV Sync: ' . $e->getMessage());
         }
 
         $executionTime = round(microtime(true) - $startTime, 2);
