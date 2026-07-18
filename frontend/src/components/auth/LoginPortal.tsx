@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { GraduationCap, ArrowRight, BookOpen, ArrowLeft, ChevronRight, MapPin, Phone, Mail } from 'lucide-react';
+import { GraduationCap, ArrowRight, BookOpen, ArrowLeft, ChevronRight, MapPin, Phone, Mail, Eye, EyeOff } from 'lucide-react';
 import { authService } from '../../services/apiService';
 import { SupportBubble } from '../student-portal/SupportBubble';
 import './LoginPortal.css';
@@ -55,6 +55,7 @@ export const LoginPortal: React.FC = () => {
     const [activeView, setActiveView] = useState<'selection' | 'existing' | 'new'>('selection');
     const [regNumber, setRegNumber] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [registerFullName, setRegisterFullName] = useState('');
     const [registerEmail, setRegisterEmail] = useState('');
     const [registerPassword, setRegisterPassword] = useState('');
@@ -228,8 +229,28 @@ export const LoginPortal: React.FC = () => {
 
             {/* Right Side - Authentication Forms */}
             <div className="login-right-pane">
+                {/* Mobile Branding & Welcome Header */}
+                <div className="mobile-header-banner">
+                    <div className="mobile-branding-header">
+                        <img src={branding.logo} alt="Logo" className="mobile-branding-logo" />
+                        <div className="mobile-branding-title-group">
+                            <h1 className="mobile-branding-institution">{branding.institution}</h1>
+                            <p className="mobile-branding-university">{branding.university}</p>
+                        </div>
+                    </div>
+
+                    <div className="mobile-welcome-header">
+                        <h2 className="mobile-welcome-title">Welcome to CODL</h2>
+                        <p className="mobile-welcome-subtitle">
+                            {activeView === 'selection' ? 'Please select your relevant portal to continue' :
+                                activeView === 'existing' ? 'Login to your official student workspace' :
+                                    'Create your identity workspace to start enrolling'}
+                        </p>
+                    </div>
+                </div>
+
                 <div className="login-form-container">
-                    <div className="welcome-header">
+                    <div className="welcome-header desktop-only">
                         <h2 className="welcome-title">Welcome to CODL</h2>
                         <p className="welcome-subtitle">
                             {activeView === 'selection' ? 'Please select your relevant portal to continue' :
@@ -237,6 +258,7 @@ export const LoginPortal: React.FC = () => {
                                     'Create your identity workspace to start enrolling'}
                         </p>
                     </div>
+
 
                     {activeView === 'selection' && (
                         <div className="auth-cards-wrapper fade-in-up">
@@ -311,13 +333,24 @@ export const LoginPortal: React.FC = () => {
 
                                     <div className="form-group">
                                         <label>Password</label>
-                                        <input
-                                            type="password"
-                                            value={password}
-                                            onChange={(e) => setPassword(e.target.value)}
-                                            required
-                                        />
+                                        <div className="password-input-wrapper">
+                                            <input
+                                                type={showPassword ? "text" : "password"}
+                                                value={password}
+                                                onChange={(e) => setPassword(e.target.value)}
+                                                required
+                                            />
+                                            <button
+                                                type="button"
+                                                className="password-toggle-btn"
+                                                onClick={() => setShowPassword(!showPassword)}
+                                                tabIndex={-1}
+                                            >
+                                                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                            </button>
+                                        </div>
                                     </div>
+
 
                                     <div className="form-options">
                                         <label className="remember-me">
