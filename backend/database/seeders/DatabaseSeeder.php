@@ -20,7 +20,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             SuperAdminSeeder::class,
             CategorySeeder::class,
-            AIAnalyticsSeeder::class,
+            RecommendationRuleSeeder::class,
             RealCoursesSeeder::class,
         ]);
 
