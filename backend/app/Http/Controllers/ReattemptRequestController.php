@@ -22,9 +22,10 @@ class ReattemptRequestController extends Controller
             'exam_title' => 'nullable|string',
             'reason' => 'nullable|string',
             'previous_grade' => 'nullable|string',
-            'attempt' => 'integer',
+            'attempt' => 'nullable|integer',
             'batch' => 'nullable|string',
-            'status' => 'nullable|string|in:pending,approved,rejected',
+            'status' => 'nullable|string|in:pending,approved,rejected,assigned',
+            'assigned_exam_id' => 'nullable|exists:exams,id',
         ]);
 
         if (!isset($validated['user_id'])) {
@@ -63,6 +64,7 @@ class ReattemptRequestController extends Controller
             'stages' => 'nullable|array',
             'current_step' => 'nullable|integer',
             'rejection_reason' => 'nullable|string',
+            'assigned_exam_id' => 'nullable|exists:exams,id',
         ]);
 
         $reattempt->update($validated);

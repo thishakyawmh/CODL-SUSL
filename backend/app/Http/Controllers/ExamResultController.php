@@ -81,6 +81,86 @@ class ExamResultController extends Controller
 
             StudentGrade::insert($gradeRows);
 
+            // Synchronize postponed and reattempt student grades to their original exams' result sheets
+            foreach ($validated['grades'] as $g) {
+                $userId = $g['user_id'];
+                
+                // 1. Postponements
+                $postponement = \App\Models\PostponementRequest::where('user_id', $userId)
+                    ->where('assigned_exam_id', $examResult->exam_id)
+                    ->where('status', 'assigned')
+                    ->first();
+                if ($postponement) {
+                    $originalExam = \App\Models\Exam::where('course_id', $postponement->course_id)
+                        ->where('title', $postponement->exam_title)
+                        ->first();
+                    if ($originalExam) {
+                        $originalExamResult = ExamResult::firstOrCreate([
+                            'course_id'  => $postponement->course_id,
+                            'subject_id' => $validated['subject_id'],
+                            'exam_id'    => $originalExam->id,
+                        ], [
+                            'batch'            => $originalExam->batch_name ?? $originalExam->batch ?? $postponement->batch ?? 'Unknown',
+                            'semester'         => $validated['semester'],
+                            'status'           => 'released',
+                            'student_count'    => 0,
+                            'released_at'      => Carbon::now(),
+                            'min_repeat_grade' => $validated['min_repeat_grade'] ?? 'D',
+                        ]);
+                        
+                        StudentGrade::updateOrCreate([
+                            'exam_result_id' => $originalExamResult->id,
+                            'user_id'        => $userId,
+                        ], [
+                            'grade'        => $g['grade'],
+                            'special_note' => $g['special_note'] ?? null,
+                        ]);
+                        
+                        $originalExamResult->update([
+                            'student_count' => StudentGrade::where('exam_result_id', $originalExamResult->id)->count()
+                        ]);
+                    }
+                }
+                
+                // 2. Reattempts
+                $reattempt = \App\Models\ReattemptRequest::where('user_id', $userId)
+                    ->where('assigned_exam_id', $examResult->exam_id)
+                    ->where('subject_id', $validated['subject_id'])
+                    ->where('status', 'assigned')
+                    ->first();
+                if ($reattempt) {
+                    $originalExam = \App\Models\Exam::where('course_id', $reattempt->course_id)
+                        ->where('title', $reattempt->exam_title)
+                        ->first();
+                    if ($originalExam) {
+                        $originalExamResult = ExamResult::firstOrCreate([
+                            'course_id'  => $reattempt->course_id,
+                            'subject_id' => $validated['subject_id'],
+                            'exam_id'    => $originalExam->id,
+                        ], [
+                            'batch'            => $originalExam->batch_name ?? $originalExam->batch ?? $reattempt->batch ?? 'Unknown',
+                            'semester'         => $validated['semester'],
+                            'status'           => 'released',
+                            'student_count'    => 0,
+                            'released_at'      => Carbon::now(),
+                            'min_repeat_grade' => $validated['min_repeat_grade'] ?? 'D',
+                        ]);
+                        
+                        StudentGrade::updateOrCreate([
+                            'exam_result_id' => $originalExamResult->id,
+                            'user_id'        => $userId,
+                        ], [
+                            'grade'        => $g['grade'],
+                            'special_note' => $g['special_note'] ?? null,
+                        ]);
+                        
+                        $originalExamResult->update([
+                            'student_count' => StudentGrade::where('exam_result_id', $originalExamResult->id)->count()
+                        ]);
+                    }
+                }
+            }
+
             DB::commit();
 
             return response()->json(

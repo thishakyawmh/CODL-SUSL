@@ -254,16 +254,19 @@ const ExaminationResults: React.FC = () => {
                      return mapGradeRow(g, true, label);
                  });
 
-                // Merge: indirect grades overwrite/update direct grades
-                const mergedMap: Record<string, any> = {};
-                mappedDirect.forEach((row: any) => {
-                    mergedMap[row.code] = row;
-                });
-                mappedIndirect.forEach((row: any) => {
-                    mergedMap[row.code] = row;
-                });
+                 // Merge: indirect grades overwrite/update direct grades
+                 const mergedMap: Record<string, any> = {};
+                 mappedDirect.forEach((row: any) => {
+                     mergedMap[row.code] = row;
+                 });
+                 mappedIndirect.forEach((row: any) => {
+                     mergedMap[row.code] = row;
+                 });
 
-                setResults(Object.values(mergedMap));
+                 const sortedResults = Object.values(mergedMap).sort((a: any, b: any) =>
+                     a.code.localeCompare(b.code, undefined, { numeric: true, sensitivity: 'base' })
+                 );
+                 setResults(sortedResults);
             } catch (err) {
                 console.error("Failed to load results from backend:", err);
             } finally {
