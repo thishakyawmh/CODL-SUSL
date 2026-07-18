@@ -21,6 +21,8 @@ class RecommendationRule extends Model
         'recommendation_subject',
         'recommendation_text',
         'threshold_percent',
+        'priority',
+        'evidence_source',
         'is_active',
     ];
 }
