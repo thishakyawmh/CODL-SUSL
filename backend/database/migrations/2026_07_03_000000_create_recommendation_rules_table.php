@@ -44,7 +44,11 @@ return new class extends Migration
             // Trigger Threshold
             $table->unsignedTinyInteger('threshold_percent')->default(15);
 
-            // Enable / Disable Rule
+            // New Columns
+            $table->string('priority')->default('Medium');
+            $table->string('evidence_source')->default('Industry');
+
+            // Metadata
             $table->boolean('is_active')->default(true);
 
             $table->timestamps();

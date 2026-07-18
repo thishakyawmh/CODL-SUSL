@@ -53,29 +53,39 @@ class RecommendationEngineService
     }
 
     /**
-     * Loads active recommendation rules from the database.
+     * Loads active recommendation rules from the database and sorts them by priority.
      */
     protected function loadRules()
     {
-        return RecommendationRule::where('is_active', true)->get();
+        $rules = RecommendationRule::where('is_active', true)->get();
+        
+        $priorityMap = [
+            'Critical' => 4,
+            'High' => 3,
+            'Medium' => 2,
+            'Low' => 1
+        ];
+
+        // Sort rules so highest priority triggers first
+        return $rules->sortByDesc(function ($rule) use ($priorityMap) {
+            return $priorityMap[$rule->priority] ?? 0;
+        })->values();
     }
 
     /**
-     * Evaluates a single rule against the processed analytics data.
+     * Evaluates a single rule against the processed analytics data (normalized domains).
      */
     protected function evaluateRule(RecommendationRule $rule, array $industryFrequencies, int $totalDemand): bool
     {
-        // Get the trigger pattern (e.g., 'Cloud Computing' or 'docker|kubernetes')
-        $triggerPattern = strtolower($rule->trigger_skill_pattern);
+        $triggerPattern = $rule->trigger_skill_pattern;
         
-        // Check if any of our high-frequency industry domains match this trigger
         foreach ($industryFrequencies as $domain => $count) {
             $percentage = ($count / $totalDemand) * 100;
             
-            // Basic matching for MVP (can be upgraded to full regex later)
-            if (str_contains(strtolower($domain), $triggerPattern) || str_contains($triggerPattern, strtolower($domain))) {
+            // Execute the exact regex string stored in the database against the normalized domain
+            if (preg_match($triggerPattern, $domain)) {
                 if ($percentage >= $rule->threshold_percent) {
-                    return true; // The demand exceeds the threshold, trigger the rule
+                    return true;
                 }
             }
         }
