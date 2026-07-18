@@ -887,7 +887,8 @@ export const ManageCourse: React.FC = () => {
         }
     }, [selectedBatch, batches, course, courseType]);
 
-    // Automatically synchronize any materials changes back to Database
+    // Automatically synchronize any materials changes back to Database (disabled to prevent infinite loops - manual saves are handled in event handlers)
+    /*
     useEffect(() => {
         if (materialsSemesters && materialsSemesters.length > 0 && selectedBatch) {
             const currentBatch = batches.find(b => b.name === selectedBatch);
@@ -896,6 +897,7 @@ export const ManageCourse: React.FC = () => {
             }
         }
     }, [materialsSemesters, id, selectedBatch, batches]);
+    */
 
     // Automatically skip semester/subject view for Certificate and Advanced Certificate courses
     useEffect(() => {
@@ -1228,6 +1230,99 @@ export const ManageCourse: React.FC = () => {
             });
             setImportedResults(updated);
         }
+    };
+
+    const handleCsvUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const text = e.target?.result as string;
+            if (!text) return;
+
+            const lines = text.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+            if (lines.length < 1) {
+                toast.error("CSV file is empty.");
+                return;
+            }
+
+            const parseCSVLine = (line: string) => {
+                const result = [];
+                let current = '';
+                let inQuotes = false;
+                for (let i = 0; i < line.length; i++) {
+                    const char = line[i];
+                    if (char === '"' || char === "'") {
+                        inQuotes = !inQuotes;
+                    } else if (char === ',' && !inQuotes) {
+                        result.push(current.trim());
+                        current = '';
+                    } else {
+                        current += char;
+                    }
+                }
+                result.push(current.trim());
+                return result;
+            };
+
+            const parsedRows = lines.map(parseCSVLine);
+            const headers = parsedRows[0].map(h => h.toLowerCase());
+
+            let regNoIndex = headers.findIndex(h => h.includes('reg') || h.includes('index') || h.includes('id') || h.includes('student') || h.includes('number'));
+            let gradeIndex = headers.findIndex(h => h.includes('grade') || h.includes('result') || h.includes('marks') || h.includes('score'));
+
+            if (regNoIndex === -1) regNoIndex = 0;
+            if (gradeIndex === -1) gradeIndex = regNoIndex === 0 ? 1 : 0;
+
+            const hasHeader = parsedRows[0].some(cell => 
+                cell.toLowerCase().includes('reg') || 
+                cell.toLowerCase().includes('id') || 
+                cell.toLowerCase().includes('grade') || 
+                cell.toLowerCase().includes('result') ||
+                cell.toLowerCase().includes('student')
+            );
+            
+            const dataRows = hasHeader ? parsedRows.slice(1) : parsedRows;
+
+            if (!importedResults) {
+                toast.error("No student list loaded to map results to.");
+                return;
+            }
+
+            let mappedCount = 0;
+            const updatedResults = importedResults.map(existing => {
+                const matchingRow = dataRows.find(row => {
+                    const csvRegNo = row[regNoIndex];
+                    if (!csvRegNo || !existing.studentId) return false;
+                    
+                    const cleanCsv = csvRegNo.toLowerCase().replace(/[^a-z0-9]/g, '');
+                    const cleanExisting = existing.studentId.toLowerCase().replace(/[^a-z0-9]/g, '');
+                    
+                    return cleanCsv === cleanExisting || cleanCsv.includes(cleanExisting) || cleanExisting.includes(cleanCsv);
+                });
+
+                if (matchingRow) {
+                    const rawGrade = matchingRow[gradeIndex] || 'N/A';
+                    let formattedGrade = rawGrade.trim().toUpperCase();
+                    if (formattedGrade === 'NA' || formattedGrade === 'PENDING') formattedGrade = 'N/A';
+                    
+                    mappedCount++;
+                    return {
+                        ...existing,
+                        grade: formattedGrade,
+                        marks: mapGradeToMarks(formattedGrade)
+                    };
+                }
+                return existing;
+            });
+
+            setImportedResults(updatedResults);
+            toast.success(`Successfully mapped ${mappedCount} student results from CSV!`);
+            
+            if (csvInputRef.current) csvInputRef.current.value = '';
+        };
+        reader.readAsText(file);
     };
 
     const getEligibleStudentsForResults = () => {
@@ -2155,9 +2250,9 @@ export const ManageCourse: React.FC = () => {
                     exam_title: examText,
                     reason: waitlistForm.reason,
                     batch: waitlistForm.originBatch,
-                    status: waitlistForm.examId ? 'assigned' : status,
+                    status: isEdit && editingWaitlistRecord?.status === 'assigned' ? 'assigned' : status,
                     exams: waitlistForm.selectedSubjects,
-                    assigned_exam_id: waitlistForm.examId ? parseInt(waitlistForm.examId) : null
+                    assigned_exam_id: isEdit && editingWaitlistRecord?.assigned_exam_id ? editingWaitlistRecord.assigned_exam_id : null
                 };
 
                 if (isEdit && editingWaitlistRecord) {
@@ -2187,8 +2282,8 @@ export const ManageCourse: React.FC = () => {
                         exam_title: examText,
                         reason: waitlistForm.reason,
                         batch: waitlistForm.originBatch,
-                        status: waitlistForm.examId ? 'assigned' : status,
-                        assigned_exam_id: waitlistForm.examId ? parseInt(waitlistForm.examId) : null
+                        status: isEdit && editingWaitlistRecord?.status === 'assigned' ? 'assigned' : status,
+                        assigned_exam_id: isEdit && editingWaitlistRecord?.assigned_exam_id ? editingWaitlistRecord.assigned_exam_id : null
                     };
                     await reattemptRequestService.update(editingWaitlistRecord.id, payload);
                     toast.success('Reattempt request updated successfully');
@@ -2209,8 +2304,8 @@ export const ManageCourse: React.FC = () => {
                             exam_title: examText,
                             reason: waitlistForm.reason,
                             batch: waitlistForm.originBatch,
-                            status: waitlistForm.examId ? 'assigned' : status,
-                            assigned_exam_id: waitlistForm.examId ? parseInt(waitlistForm.examId) : null
+                            status: status,
+                            assigned_exam_id: null
                         };
                         await reattemptRequestService.create(payload);
                     }
@@ -2295,12 +2390,12 @@ export const ManageCourse: React.FC = () => {
         .sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true, sensitivity: 'base' }));
 
     const filteredWaitlistPostponements = waitlistPostponements.filter(p =>
-        p.status?.toString().toLowerCase() !== 'assigned' &&
+        (!p.raw?.assigned_exam_id) &&
         p.status?.toString().toLowerCase() !== 'rejected' &&
         (!selectedBatch || p.batch?.toString().trim().toLowerCase() === selectedBatch.toString().trim().toLowerCase())
     );
     const filteredWaitlistReattempts = waitlistReattempts.filter(r =>
-        r.status?.toString().toLowerCase() !== 'assigned' &&
+        (!r.raw?.assigned_exam_id) &&
         r.status?.toString().toLowerCase() !== 'rejected' &&
         (!selectedBatch || r.batch?.toString().trim().toLowerCase() === selectedBatch.toString().trim().toLowerCase())
     );
@@ -3721,6 +3816,36 @@ export const ManageCourse: React.FC = () => {
                                                                                         }}
                                                                                     />
                                                                                 </button>
+                                                                                <input
+                                                                                    type="file"
+                                                                                    ref={csvInputRef}
+                                                                                    accept=".csv"
+                                                                                    onChange={handleCsvUpload}
+                                                                                    style={{ display: 'none' }}
+                                                                                />
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => csvInputRef.current?.click()}
+                                                                                    style={{
+                                                                                        padding: '6px 14px',
+                                                                                        fontSize: '12px',
+                                                                                        height: '34px',
+                                                                                        borderRadius: '8px',
+                                                                                        background: '#EFF6FF',
+                                                                                        color: '#1D4ED8',
+                                                                                        border: '1px solid #BFDBFE',
+                                                                                        fontWeight: 700,
+                                                                                        cursor: 'pointer',
+                                                                                        display: 'inline-flex',
+                                                                                        alignItems: 'center',
+                                                                                        gap: '6px',
+                                                                                        transition: 'all 0.15s ease'
+                                                                                    }}
+                                                                                    onMouseEnter={(e) => { e.currentTarget.style.background = '#DBEAFE'; }}
+                                                                                    onMouseLeave={(e) => { e.currentTarget.style.background = '#EFF6FF'; }}
+                                                                                >
+                                                                                    <Upload size={14} /> Upload CSV
+                                                                                </button>
                                                                                 <span style={{ background: '#E0F2FE', color: '#0369A1', padding: '4px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 700 }}>
                                                                                     {count} Registered
                                                                                 </span>
@@ -4071,9 +4196,11 @@ export const ManageCourse: React.FC = () => {
                                                                 <Calendar size={24} />
                                                             </div>
                                                             <button
-                                                                onClick={(e) => {
+                                                                onClick={async (e) => {
                                                                     e.stopPropagation();
-                                                                    setMaterialsSemesters(prev => prev.map(s => s.id === sem.id ? { ...s, visible: !s.visible } : s));
+                                                                    const updatedSemesters = materialsSemesters.map(s => s.id === sem.id ? { ...s, visible: !s.visible } : s);
+                                                                    setMaterialsSemesters(updatedSemesters);
+                                                                    await saveMaterialsToDatabase(updatedSemesters);
                                                                 }}
                                                                 style={{ background: 'none', border: 'none', color: sem.visible ? '#10B981' : '#94A3B8', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 600 }}
                                                                 title={sem.visible ? 'Hide from students' : 'Show to students'}

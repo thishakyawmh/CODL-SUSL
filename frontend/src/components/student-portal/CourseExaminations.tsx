@@ -695,8 +695,26 @@ export const CourseExaminations: React.FC = () => {
                                     const isAssigned = app.status === 'Assigned';
                                     const isResultsReleased = isAssigned && app.assignedExam &&
                                         (app.assignedExam.status === 'Results Released' || app.assignedExam.status === 'Result Updated');
-                                    const displayStatus = isResultsReleased ? 'Result Released' : (isAssigned ? 'Assigned' : 'Waiting');
-                                    const cardStatus = isResultsReleased ? 'Result Released' : (isAssigned ? 'assigned' : app.type.toLowerCase());
+                                    const isRejected = app.status === 'Rejected';
+                                    const isApproved = app.status === 'Approved';
+
+                                    const displayStatus = isResultsReleased
+                                        ? 'Result Released'
+                                        : (isAssigned
+                                            ? 'Assigned'
+                                            : (isRejected
+                                                ? 'Rejected'
+                                                : (isApproved
+                                                    ? 'Approved (Waiting)'
+                                                    : 'Pending')));
+
+                                    const cardStatus = isResultsReleased
+                                        ? 'Result Released'
+                                        : (isAssigned || isApproved
+                                            ? 'Application approved'
+                                            : (isRejected
+                                                ? 'Application rejected'
+                                                : 'Application pending'));
 
                                     return (
                                         <div
@@ -730,46 +748,11 @@ export const CourseExaminations: React.FC = () => {
                                                     </div>
                                                 </div>
 
-                                                {app.type === 'postponement' && app.subjectsList && app.subjectsList.length > 0 && app.subjectsList[0].includes(' - ') && (
-                                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '6px', marginBottom: '4px' }}>
-                                                        {app.subjectsList.map((sub: string, index: number) => (
-                                                            <span key={index} style={{
-                                                                fontSize: '11px',
-                                                                background: '#EEF2FF',
-                                                                color: '#4F46E5',
-                                                                padding: '2px 8px',
-                                                                borderRadius: '6px',
-                                                                fontWeight: 700,
-                                                                border: '1px solid #4F46E520'
-                                                            }}>
-                                                                {sub}
-                                                            </span>
-                                                        ))}
+                                                {isAssigned && app.assignedExam && (
+                                                    <div className="pro-card-footer-text" style={{ fontSize: '13px', color: '#64748B', fontWeight: 500, marginTop: '8px' }}>
+                                                        {`Assigned to: ${app.assignedExam.title} (${app.assignedExam.batch_name || 'All Batches'})`}
                                                     </div>
                                                 )}
-
-                                                {app.type === 'reattempt' && app.subject && (
-                                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '6px', marginBottom: '4px' }}>
-                                                        <span style={{
-                                                            fontSize: '11px',
-                                                            background: '#FFF7ED',
-                                                            color: '#D97706',
-                                                            padding: '2px 8px',
-                                                            borderRadius: '6px',
-                                                            fontWeight: 700,
-                                                            border: '1px solid #D9770620'
-                                                        }}>
-                                                            {app.subject}
-                                                        </span>
-                                                    </div>
-                                                )}
-
-                                                <div className="pro-card-footer-text" style={{ fontSize: '13px', color: '#64748B', fontWeight: 500, marginTop: '2px' }}>
-                                                    {isAssigned && app.assignedExam
-                                                        ? `Assigned to: ${app.assignedExam.title} (${app.assignedExam.batch_name || 'All Batches'})`
-                                                        : "You will be assigned to next available examination"
-                                                    }
-                                                </div>
                                             </div>
 
                                             <div className="pro-status-center">
@@ -779,7 +762,7 @@ export const CourseExaminations: React.FC = () => {
                                                 </div>
                                             </div>
 
-                                            <div className="pro-card-actions" style={{ display: 'flex', gap: '8px' }}>
+                                            <div className="pro-card-actions" style={{ display: 'flex', gap: '8px', width: isResultsReleased ? 'auto' : '100%' }}>
                                                 {isResultsReleased ? (
                                                     <button
                                                         className="pro-action-btn secondary"
@@ -796,17 +779,19 @@ export const CourseExaminations: React.FC = () => {
                                                                 navigate(`/course/${course.id}/examinations/${app.assignedExam.id}/results`);
                                                             }
                                                         }}
+                                                        style={{ width: '100%' }}
                                                     >
                                                         View Results
                                                     </button>
-                                                ) : null}
-                                                <button
-                                                    className="pro-action-btn primary"
-                                                    onClick={() => setShowDetailsModal(app)}
-                                                    style={{ width: isResultsReleased ? 'auto' : '100%' }}
-                                                >
-                                                    View Details
-                                                </button>
+                                                ) : (
+                                                    <button
+                                                        className="pro-action-btn primary"
+                                                        onClick={() => setShowDetailsModal(app)}
+                                                        style={{ width: '100%' }}
+                                                    >
+                                                        View Details
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                     );
