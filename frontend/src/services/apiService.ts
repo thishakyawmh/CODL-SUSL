@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:8000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
 const api = axios.create({
     baseURL: API_BASE_URL,
@@ -104,6 +104,14 @@ export const userService = {
     delete: async (id: string) => {
         const response = await api.delete(`/users/${id}`);
         return response.data;
+    },
+    searchStudents: async (query: string) => {
+        const response = await api.get('/admin/track-students/search', { params: { q: query } });
+        return response.data;
+    },
+    getStudentTrackingDetails: async (id: string) => {
+        const response = await api.get(`/admin/track-students/${id}/details`);
+        return response.data;
     }
 };
 
@@ -165,6 +173,10 @@ export const courseService = {
     },
     getStudentExaminationsData: async (courseId: string) => {
         const response = await api.get(`/student/courses/${courseId}/examinations-data`);
+        return response.data;
+    },
+    getDashboardOverview: async () => {
+        const response = await api.get('/student/dashboard-overview');
         return response.data;
     }
 };
@@ -463,6 +475,13 @@ export const activityLogService = {
     }
 };
 
+export const statsService = {
+    getFullDashboardData: async () => {
+        const response = await api.get('/admin/dashboard-full');
+        return response.data;
+    }
+};
+
 export const aiAnalysisService = {
     analyzeCourse: async (courseId: number | string) => {
         const response = await api.post('/admin/ai-analysis', { course_id: Number(courseId) });
@@ -501,4 +520,4 @@ export const aiAnalyticsService = {
     }
 };
 
-export default api
+export default api;

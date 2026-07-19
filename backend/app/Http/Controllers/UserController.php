@@ -277,4 +277,145 @@ class UserController extends Controller
 
         return response()->json(['message' => 'Password reset successfully.']);
     }
+
+    public function searchStudents(Request $request)
+    {
+        $q = $request->query('q');
+        if (empty($q)) {
+            return response()->json([]);
+        }
+
+        $students = User::where(function($query) use ($q) {
+                $query->where('full_name', 'like', "%{$q}%")
+                      ->orWhere('student_number', 'like', "%{$q}%")
+                      ->orWhere('email', 'like', "%{$q}%")
+                      ->orWhere('nic', 'like', "%{$q}%");
+            })
+            ->where(function($query) {
+                $query->where('role', 'student')
+                      ->orWhere('student_number', 'like', 'CODL/%');
+            })
+            ->with('courses')
+            ->take(20)
+            ->get();
+
+        return response()->json($students);
+    }
+
+    public function getStudentTrackingDetails(Request $request, $id)
+    {
+        $user = User::with('courses')->findOrFail($id);
+
+        $examApplications = \App\Models\ExamApplication::where('user_id', $user->id)
+            ->with(['course', 'user'])
+            ->get();
+
+        $letterRequests = \App\Models\LetterRequest::where('user_id', $user->id)
+            ->with(['course', 'user'])
+            ->get();
+
+        $reattemptRequests = \App\Models\ReattemptRequest::where('user_id', $user->id)
+            ->with(['course', 'user', 'subject'])
+            ->get();
+
+        $postponementRequests = \App\Models\PostponementRequest::where('user_id', $user->id)
+            ->with(['course', 'user', 'assignedExam'])
+            ->get();
+
+        $examResults = \App\Models\ExamResult::whereHas('grades', function ($query) use ($user) {
+                $query->where('user_id', $user->id);
+            })
+            ->with(['course', 'subject', 'lecturer', 'grades' => function ($query) use ($user) {
+                $query->where('user_id', $user->id)->with('user');
+            }])
+            ->get();
+
+        $courses = \App\Models\Course::whereIn('id', $user->courses->pluck('id'))
+            ->with(['secretary', 'coordinator', 'semesters.subjects', 'subjects'])
+            ->get();
+
+        return response()->json([
+            'examApplications' => $examApplications,
+            'letterRequests' => $letterRequests,
+            'reattemptRequests' => $reattemptRequests,
+            'postponementRequests' => $postponementRequests,
+            'examResults' => $examResults,
+            'courses' => $courses,
+        ]);
+    }
+
+    public function getStudentDashboardOverview(Request $request)
+    {
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        $courses = $user->courses()->withPivot('batch')->get();
+
+        $pendingApplications = \App\Models\CourseApplication::where('applicant_email', $user->email)
+            ->where('status', 'pending')
+            ->get();
+
+        $notificationsData = [];
+        foreach ($courses as $course) {
+            $materials = [];
+            $enrollment = \Illuminate\Support\Facades\DB::table('user_courses')
+                ->where('user_id', $user->id)
+                ->where('course_id', $course->id)
+                ->first();
+                
+            if ($enrollment && $enrollment->batch) {
+                $batch = \App\Models\Batch::where('course_id', $course->id)
+                    ->where('name', $enrollment->batch)
+                    ->first();
+                if ($batch) {
+                    $materials = $batch->materials ?: [];
+                }
+            }
+
+            $studentBatch = ($enrollment && $enrollment->batch) ? $enrollment->batch : 'Batch 01';
+            
+            $version = \Illuminate\Support\Facades\Cache::get("manage_course_version_{$course->id}", 1);
+            $cacheKey = "student_exams_data_{$course->id}_{$user->id}_v{$version}";
+            
+            $examData = \Illuminate\Support\Facades\Cache::remember($cacheKey, 120, function () use ($course, $user, $studentBatch) {
+                $exams = \App\Models\Exam::where('course_id', $course->id)->latest()->get();
+                $myApplications = \App\Models\ExamApplication::where('user_id', $user->id)
+                    ->where('course_id', $course->id)
+                    ->with('user')
+                    ->latest()
+                    ->get();
+                $postponements = \App\Models\PostponementRequest::where('user_id', $user->id)
+                    ->where('course_id', $course->id)
+                    ->with(['user', 'assignedExam'])
+                    ->latest()
+                    ->get();
+                $reattempts = \App\Models\ReattemptRequest::where('user_id', $user->id)
+                    ->where('course_id', $course->id)
+                    ->with(['user', 'subject', 'assignedExam'])
+                    ->latest()
+                    ->get();
+
+                return [
+                    'student_batch' => $studentBatch,
+                    'exams' => $exams,
+                    'my_applications' => $myApplications,
+                    'postponement_requests' => $postponements,
+                    'reattempt_requests' => $reattempts,
+                ];
+            });
+
+            $notificationsData[$course->id] = [
+                'materials' => $materials,
+                'examData' => $examData
+            ];
+        }
+
+        return response()->json([
+            'courses' => $courses,
+            'pendingApplications' => $pendingApplications,
+            'notificationsData' => $notificationsData,
+        ]);
+    }
 }

@@ -281,8 +281,13 @@
 }
 
 @media (max-width: 480px) {
+    .registered-Courses-wrapper {
+        gap: 12px;
+    }
+
     .registered-Courses-header {
         gap: 10px;
+        padding-bottom: 4px;
     }
 
     .rp-title {
@@ -318,8 +323,8 @@
 
     .rp-chip {
         flex-shrink: 0;
-        padding: 5px 12px;
-        font-size: 12px;
+        padding: 8px 18px;
+        font-size: 14px;
     }
 
     .rp-card {

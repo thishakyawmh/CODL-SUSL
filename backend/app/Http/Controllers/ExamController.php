@@ -77,51 +77,55 @@ class ExamController extends Controller
         $exam->update($examData);
 
         // Process Postponement Assignments
-        $newPostponementIds = [];
-        if ($request->has('postponements') && is_array($request->postponements)) {
-            $newPostponementIds = collect($request->postponements)
-                ->filter(function ($id) {
-                    return is_numeric($id);
-                })
-                ->map(function ($id) {
-                    return (int)$id;
-                })
-                ->toArray();
-        }
+        if ($request->has('postponements')) {
+            $newPostponementIds = [];
+            if (is_array($request->postponements)) {
+                $newPostponementIds = collect($request->postponements)
+                    ->filter(function ($id) {
+                        return is_numeric($id);
+                    })
+                    ->map(function ($id) {
+                        return (int)$id;
+                    })
+                    ->toArray();
+            }
 
-        // Un-assign any postponement requests that were linked but are no longer selected
-        \App\Models\PostponementRequest::where('assigned_exam_id', $exam->id)
-            ->whereNotIn('id', $newPostponementIds)
-            ->update(['assigned_exam_id' => null, 'status' => 'approved']);
+            // Un-assign any postponement requests that were linked but are no longer selected
+            \App\Models\PostponementRequest::where('assigned_exam_id', $exam->id)
+                ->whereNotIn('id', $newPostponementIds)
+                ->update(['assigned_exam_id' => null, 'status' => 'approved']);
 
-        // Assign the new postponement requests
-        if (!empty($newPostponementIds)) {
-            \App\Models\PostponementRequest::whereIn('id', $newPostponementIds)
-                ->update(['assigned_exam_id' => $exam->id, 'status' => 'assigned']);
+            // Assign the new postponement requests
+            if (!empty($newPostponementIds)) {
+                \App\Models\PostponementRequest::whereIn('id', $newPostponementIds)
+                    ->update(['assigned_exam_id' => $exam->id, 'status' => 'assigned']);
+            }
         }
 
         // Process Reattempt Assignments
-        $newReattemptIds = [];
-        if ($request->has('reattempts') && is_array($request->reattempts)) {
-            $newReattemptIds = collect($request->reattempts)
-                ->filter(function ($id) {
-                    return is_numeric($id);
-                })
-                ->map(function ($id) {
-                    return (int)$id;
-                })
-                ->toArray();
-        }
+        if ($request->has('reattempts')) {
+            $newReattemptIds = [];
+            if (is_array($request->reattempts)) {
+                $newReattemptIds = collect($request->reattempts)
+                    ->filter(function ($id) {
+                        return is_numeric($id);
+                    })
+                    ->map(function ($id) {
+                        return (int)$id;
+                    })
+                    ->toArray();
+            }
 
-        // Un-assign any reattempt requests that were linked but are no longer selected
-        \App\Models\ReattemptRequest::where('assigned_exam_id', $exam->id)
-            ->whereNotIn('id', $newReattemptIds)
-            ->update(['assigned_exam_id' => null, 'status' => 'approved']);
+            // Un-assign any reattempt requests that were linked but are no longer selected
+            \App\Models\ReattemptRequest::where('assigned_exam_id', $exam->id)
+                ->whereNotIn('id', $newReattemptIds)
+                ->update(['assigned_exam_id' => null, 'status' => 'approved']);
 
-        // Assign the new reattempt requests
-        if (!empty($newReattemptIds)) {
-            \App\Models\ReattemptRequest::whereIn('id', $newReattemptIds)
-                ->update(['assigned_exam_id' => $exam->id, 'status' => 'assigned']);
+            // Assign the new reattempt requests
+            if (!empty($newReattemptIds)) {
+                \App\Models\ReattemptRequest::whereIn('id', $newReattemptIds)
+                    ->update(['assigned_exam_id' => $exam->id, 'status' => 'assigned']);
+            }
         }
 
         \App\Http\Controllers\CourseController::clearManageCourseCache($exam->course_id);

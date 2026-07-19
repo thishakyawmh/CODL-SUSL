@@ -409,58 +409,21 @@ export const TrackStudent: React.FC = () => {
     const [realReattempts, setRealReattempts] = useState<any[]>([]);
     const [realPostponements, setRealPostponements] = useState<any[]>([]);
     const [realExamResults, setRealExamResults] = useState<any[]>([]);
-    const [realCourses, setRealCourses] = useState<any[]>([]);
-    const [loading, setLoading] = useState<boolean>(true);
+    const [realCourses, setRealCourses] = useState<any[]>([]);    const [loading, setLoading] = useState<boolean>(false);
     const [dbError, setDbError] = useState<string | null>(null);
 
-    // Fetch live data on mount
+    // Fetch live search results when query changes
     useEffect(() => {
-        const fetchRealData = async () => {
+        if (!searchQuery.trim()) {
+            setRealStudents([]);
+            return;
+        }
+
+        const delayDebounceFn = setTimeout(async () => {
             setLoading(true);
-
-            const safeFetch = async (fetchFn: () => Promise<any>, fallbackValue: any = []) => {
-                try {
-                    const res = await fetchFn();
-                    return res || fallbackValue;
-                } catch (err: any) {
-                    console.error('Failed to fetch from service:', err);
-                    if (err?.response?.status === 401 || err?.response?.status === 403) {
-                        throw err; // Propagate auth errors
-                    }
-                    return fallbackValue;
-                }
-            };
-
             try {
-                const [
-                    usersData,
-                    examAppsData,
-                    lettersData,
-                    reattemptsData,
-                    postponementsData,
-                    resultsData,
-                    coursesData
-                ] = await Promise.all([
-                    safeFetch(() => userService.getAll(), null),
-                    safeFetch(() => examApplicationService.getAll()),
-                    safeFetch(() => letterRequestService.getAll()),
-                    safeFetch(() => reattemptRequestService.getAll()),
-                    safeFetch(() => postponementRequestService.getAll()),
-                    safeFetch(() => examResultService.getAll()),
-                    safeFetch(() => courseService.getAll())
-                ]);
-
-                if (usersData === null) {
-                    throw new Error('Unauthorized');
-                }
-
-                const studentsOnly = (usersData || [])
-                    .filter((u: any) => {
-                        if (!u) return false;
-                        const role = u.role || '';
-                        const studentNumber = u.student_number || '';
-                        return role === 'student' || studentNumber.startsWith('CODL/');
-                    })
+                const results = await userService.searchStudents(searchQuery);
+                const studentsOnly = (results || [])
                     .map((u: any) => {
                         try {
                             return normalizeStudent(u);
@@ -470,29 +433,22 @@ export const TrackStudent: React.FC = () => {
                         }
                     })
                     .filter(Boolean) as DBUserType[];
-
                 setRealStudents(studentsOnly);
-                setRealExamApplications((examAppsData || []).map(normalizeExamApplication));
-                setRealLetterRequests((lettersData || []).map(normalizeLetterRequest));
-                setRealReattempts((reattemptsData || []).map(normalizeReattempt));
-                setRealPostponements((postponementsData || []).map(normalizePostponement));
-                setRealExamResults((resultsData || []).map(normalizeExamResult));
-                setRealCourses((coursesData || []).map(normalizeCourse));
                 setDbError(null);
             } catch (error: any) {
-                console.error('Failed to fetch real database data for student tracking:', error);
+                console.error('Failed to search database students:', error);
                 if (error?.response?.status === 401 || error?.response?.status === 403) {
-                    setDbError('Session token is invalid or expired. Please log out and log back in to load real database students.');
+                    setDbError('Session token is invalid or expired. Please log out and log back in.');
                 } else {
-                    setDbError('Could not connect to database server. Please check your connection and try again.');
+                    setDbError('Could not connect to database server. Please check your connection.');
                 }
             } finally {
                 setLoading(false);
             }
-        };
+        }, 300);
 
-        fetchRealData();
-    }, []);
+        return () => clearTimeout(delayDebounceFn);
+    }, [searchQuery]);
 
     // Use database data directly — no mock blending
 
@@ -509,22 +465,22 @@ export const TrackStudent: React.FC = () => {
 
     const getStudentData = (student: DBUserType) => {
         const examApps = realExamApplications.filter(
-            e => e.studentNumber === student.studentNumber || e.studentName === student.fullName
+            e => e.studentNumber === student.studentNumber
         );
         const letterReqs = realLetterRequests.filter(
-            l => l.studentNumber === student.studentNumber || l.studentName === student.fullName
+            l => l.studentNumber === student.studentNumber
         );
         const reattempts = realReattempts.filter(
-            r => r.studentNumber === student.studentNumber || r.studentName === student.fullName
+            r => r.studentNumber === student.studentNumber
         );
         const postponements = realPostponements.filter(
-            p => p.studentNumber === student.studentNumber || p.studentName === student.fullName
+            p => p.studentNumber === student.studentNumber
         );
 
         const results: { subject: string; subjectCode: string; grade: string; course: string; semester: string; status: string; uploadDate: string; lecturer: string; batch: string }[] = [];
         realExamResults.forEach(er => {
             er.results.forEach((r: any) => {
-                if (r.studentId === student.studentNumber || r.studentName === student.fullName) {
+                if (r.studentId === student.studentNumber) {
                     results.push({
                         subject: er.subject,
                         subjectCode: er.subjectCode,
@@ -543,12 +499,29 @@ export const TrackStudent: React.FC = () => {
         return { examApps, letterReqs, reattempts, postponements, results };
     };
 
-    const selectStudent = (student: DBUserType) => {
+    const selectStudent = async (student: DBUserType) => {
+        setLoading(true);
         setSelectedStudent(student);
         setSearchQuery('');
         const expanded: Record<string, boolean> = {};
         student.courses.forEach(c => { expanded[c] = true; });
         setExpandedCourses(expanded);
+
+        try {
+            const data = await userService.getStudentTrackingDetails(student.id);
+            setRealExamApplications((data.examApplications || []).map(normalizeExamApplication));
+            setRealLetterRequests((data.letterRequests || []).map(normalizeLetterRequest));
+            setRealReattempts((data.reattemptRequests || []).map(normalizeReattempt));
+            setRealPostponements((data.postponementRequests || []).map(normalizePostponement));
+            setRealExamResults((data.examResults || []).map(normalizeExamResult));
+            setRealCourses((data.courses || []).map(normalizeCourse));
+            setDbError(null);
+        } catch (error: any) {
+            console.error('Failed to fetch tracking details for student:', error);
+            setDbError('Could not retrieve tracking details. Please try again.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const clearStudent = () => {
@@ -764,7 +737,7 @@ export const TrackStudent: React.FC = () => {
                         padding: '0 4px'
                     }}>
                         <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: '#10B981' }}></span>
-                        <span>Connected to Database: {realStudents.length} students loaded.</span>
+                        <span>Connected to Database: {realStudents.length > 0 ? `${realStudents.length} search results found.` : 'Ready to search students.'}</span>
                     </div>
                 )}
 

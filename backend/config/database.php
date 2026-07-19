@@ -44,6 +44,18 @@ return [
             'transaction_mode' => 'DEFERRED',
         ],
 
+        'analytics' => [
+            'driver' => 'sqlite',
+            'url' => env('DB_ANALYTICS_URL'),
+            'database' => env('DB_ANALYTICS_DATABASE', database_path('analytics.sqlite')),
+            'prefix' => '',
+            'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
+            'busy_timeout' => null,
+            'journal_mode' => null,
+            'synchronous' => null,
+            'transaction_mode' => 'DEFERRED',
+        ],
+
         'mysql' => [
             'driver' => 'mysql',
             'url' => env('DB_URL'),

@@ -24,13 +24,14 @@ use App\Http\Controllers\AIAnalyticsController;
 |--------------------------------------------------------------------------
 */
 
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
-Route::post('/auth/google', [AuthController::class, 'googleLogin']);
+Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:login');
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
+Route::post('/auth/google', [AuthController::class, 'googleLogin'])->middleware('throttle:login');
 
 // Public: Available courses for applicants (with batches)
 Route::get('/public/courses', [CourseController::class, 'publicIndex']);
 Route::get('/admin/system-settings', [SystemSettingController::class, 'getSettings']);
+Route::post('/public/surveys', [AIAnalyticsController::class, 'storeSurvey']); // Public survey submission
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
@@ -42,9 +43,14 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Student routes
     Route::get('/student/courses', [UserController::class, 'getStudentCourses']);
+    Route::get('/student/dashboard-overview', [UserController::class, 'getStudentDashboardOverview']);
     Route::get('/student/courses/{courseId}/materials', [UserController::class, 'getCourseMaterials']);
     Route::get('/student/applications', [UserController::class, 'getStudentApplications']);
     Route::get('/student/courses/{courseId}/examinations-data', [UserController::class, 'getStudentExaminationsData']);
+
+    // Student Tracking
+    Route::get('/admin/track-students/search', [UserController::class, 'searchStudents'])->middleware('throttle:api');
+    Route::get('/admin/track-students/{id}/details', [UserController::class, 'getStudentTrackingDetails']);
 
     // Admin Stats
     Route::get('/admin/stats', [StatsController::class, 'getAdminStats']);

@@ -329,4 +329,8 @@
     .sidebar.open {
         transform: translateX(280px);
     }
+
+    .sidebar-bottom-actions {
+        margin-bottom: 40px;
+    }
 }

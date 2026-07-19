@@ -325,7 +325,12 @@ class CourseController extends Controller
     public static function clearManageCourseCache($courseId)
     {
         try {
-            \Illuminate\Support\Facades\Cache::increment("manage_course_version_{$courseId}");
+            $version = \Illuminate\Support\Facades\Cache::get("manage_course_version_{$courseId}");
+            if ($version === null || $version === false) {
+                \Illuminate\Support\Facades\Cache::put("manage_course_version_{$courseId}", time(), 120);
+            } else {
+                \Illuminate\Support\Facades\Cache::put("manage_course_version_{$courseId}", (int)$version + 1, 120);
+            }
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Cache::put("manage_course_version_{$courseId}", time(), 120);
         }

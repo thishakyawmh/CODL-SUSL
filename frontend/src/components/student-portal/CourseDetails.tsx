@@ -3,11 +3,7 @@ import { useNavigate, useOutletContext } from 'react-router-dom';
 import { ArrowLeft, BookOpen, FileText, Bell, MessageSquare, Info, ChevronLeft, ChevronRight } from 'lucide-react';
 import {
     courseService,
-    announcementService,
-    examService,
-    examApplicationService,
-    postponementRequestService,
-    reattemptRequestService
+    announcementService
 } from '../../services/apiService';
 import './CourseDetails.css';
 
@@ -106,7 +102,8 @@ export const CourseDetails: React.FC = () => {
 
                 setNewMaterialsCount(matCount);
 
-                const exams = await examService.getByCourse(course.id);
+                const examData = await courseService.getStudentExaminationsData(course.id);
+                const exams = examData.exams || [];
                 let exCount = 0;
                 let totalExamCount = 0;
                 if (exams && Array.isArray(exams)) {
@@ -127,15 +124,9 @@ export const CourseDetails: React.FC = () => {
                     exCount = totalExamCount - previousExamCount;
                 }
 
-                const [myApps, myPostponements, myReattempts] = await Promise.all([
-                    examApplicationService.getMyApplications(),
-                    postponementRequestService.getMyRequests(),
-                    reattemptRequestService.getMyRequests()
-                ]);
-
-                const courseApps = myApps.filter((app: any) => app.course_id?.toString() === course.id.toString());
-                const coursePostponements = myPostponements.filter((req: any) => req.course_id?.toString() === course.id.toString());
-                const courseReattempts = myReattempts.filter((req: any) => req.course_id?.toString() === course.id.toString());
+                const courseApps = examData.my_applications || [];
+                const coursePostponements = examData.postponement_requests || [];
+                const courseReattempts = examData.reattempt_requests || [];
 
                 courseApps.forEach((app: any) => {
                     const updatedAt = app.updated_at ? new Date(app.updated_at).getTime() : 0;
