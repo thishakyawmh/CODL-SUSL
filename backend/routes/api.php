@@ -15,6 +15,8 @@ use App\Http\Controllers\DatabaseTableController;
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\SystemSettingController;
 use App\Http\Controllers\BackupController;
+use App\Http\Controllers\AIAnalysisController;
+use App\Http\Controllers\AIAnalyticsController;
 
 /*
 |--------------------------------------------------------------------------
@@ -29,6 +31,7 @@ Route::post('/auth/google', [AuthController::class, 'googleLogin'])->middleware(
 // Public: Available courses for applicants (with batches)
 Route::get('/public/courses', [CourseController::class, 'publicIndex']);
 Route::get('/admin/system-settings', [SystemSettingController::class, 'getSettings']);
+Route::post('/public/surveys', [AIAnalyticsController::class, 'storeSurvey']); // Public survey submission
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
@@ -158,4 +161,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/admin/backups/run', [BackupController::class, 'run']);
     Route::get('/admin/backups/download/{filename}', [BackupController::class, 'download']);
     Route::delete('/admin/backups/{filename}', [BackupController::class, 'destroy']);
+
+    // AI Analysis
+    Route::post('/admin/ai-analysis', [AIAnalysisController::class, 'analyze']);
+
+    // AI Analytics Dashboard
+    Route::get('/admin/ai-analytics/overview', [AIAnalyticsController::class, 'getOverview']);
+    Route::get('/admin/ai-analytics/student-interest', [AIAnalyticsController::class, 'getStudentInterest']);
+    Route::get('/admin/ai-analytics/industry-gap', [AIAnalyticsController::class, 'getIndustryGap']);
+    Route::get('/admin/ai-analytics/recommendations', [AIAnalyticsController::class, 'getRecommendations']);
+    Route::get('/admin/ai-analytics/surveys', [AIAnalyticsController::class, 'getSurveys']);
+    Route::post('/admin/ai-analytics/surveys', [AIAnalyticsController::class, 'storeSurvey']);
+    Route::post('/admin/ai-analytics/sync-sheet', [AIAnalyticsController::class, 'syncGoogleSheet']);
 });
