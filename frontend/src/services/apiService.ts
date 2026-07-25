@@ -167,8 +167,8 @@ export const courseService = {
         const response = await api.get(`/student/courses/${courseId}/materials`);
         return response.data;
     },
-    getManageCourseData: async (courseId: string) => {
-        const response = await api.get(`/manage-course/${courseId}`);
+    getManageCourseData: async (courseId: string, options?: { signal?: AbortSignal }) => {
+        const response = await api.get(`/manage-course/${courseId}`, { signal: options?.signal });
         return response.data;
     },
     getStudentExaminationsData: async (courseId: string) => {

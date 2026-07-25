@@ -48,22 +48,51 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/student/applications', [UserController::class, 'getStudentApplications']);
     Route::get('/student/courses/{courseId}/examinations-data', [UserController::class, 'getStudentExaminationsData']);
 
-    // Student Tracking
-    Route::get('/admin/track-students/search', [UserController::class, 'searchStudents'])->middleware('throttle:api');
-    Route::get('/admin/track-students/{id}/details', [UserController::class, 'getStudentTrackingDetails']);
+    // Shared Staff & Admin routes
+    Route::middleware('role:super_admin,director,coordinator,secretary,lecturer')->group(function () {
+        Route::get('/admin/track-students/search', [UserController::class, 'searchStudents'])->middleware('throttle:api');
+        Route::get('/admin/track-students/{id}/details', [UserController::class, 'getStudentTrackingDetails']);
+        Route::get('/admin/stats', [StatsController::class, 'getAdminStats']);
+        Route::get('/admin/dashboard-full', [StatsController::class, 'getFullDashboardData']);
+        Route::get('/admin/activity-logs', [StatsController::class, 'getActivityLogs']);
+    });
 
-    // Admin Stats
-    Route::get('/admin/stats', [StatsController::class, 'getAdminStats']);
-    Route::get('/admin/dashboard-full', [StatsController::class, 'getFullDashboardData']);
-    Route::get('/admin/activity-logs', [StatsController::class, 'getActivityLogs']);
+    // Staff/Course Management routes
+    Route::middleware('role:super_admin,director,coordinator,secretary')->group(function () {
+        Route::get('/users', [UserController::class, 'index']);
+        Route::post('/admin/system-settings', [SystemSettingController::class, 'updateSettings']);
+        Route::post('/admin/system-settings/logo', [SystemSettingController::class, 'uploadLogo']);
+        Route::post('/admin/ai-analysis', [AIAnalysisController::class, 'analyze']);
+        Route::get('/admin/ai-analytics/overview', [AIAnalyticsController::class, 'getOverview']);
+        Route::get('/admin/ai-analytics/student-interest', [AIAnalyticsController::class, 'getStudentInterest']);
+        Route::get('/admin/ai-analytics/industry-gap', [AIAnalyticsController::class, 'getIndustryGap']);
+        Route::get('/admin/ai-analytics/recommendations', [AIAnalyticsController::class, 'getRecommendations']);
+        Route::get('/admin/ai-analytics/surveys', [AIAnalyticsController::class, 'getSurveys']);
+        Route::post('/admin/ai-analytics/surveys', [AIAnalyticsController::class, 'storeSurvey']);
+        Route::post('/admin/ai-analytics/sync-sheet', [AIAnalyticsController::class, 'syncGoogleSheet']);
+    });
 
-    // Admin/User routes
-    Route::get('/users', [UserController::class, 'index']);
-    Route::post('/users', [UserController::class, 'store']);
-    Route::put('/users/{id}', [UserController::class, 'update']);
-    Route::post('/users/{id}/reset-password', [UserController::class, 'resetPassword']);
-    Route::delete('/users/{id}', [UserController::class, 'destroy']);
-    
+    // Super Admin / Director Management routes
+    Route::middleware('role:super_admin,director')->group(function () {
+        Route::post('/users', [UserController::class, 'store']);
+        Route::put('/users/{id}', [UserController::class, 'update']);
+        Route::post('/users/{id}/reset-password', [UserController::class, 'resetPassword']);
+        Route::delete('/users/{id}', [UserController::class, 'destroy']);
+    });
+
+    // Super Admin Only System & Database Table routes
+    Route::middleware('role:super_admin')->group(function () {
+        Route::get('/admin/tables', [DatabaseTableController::class, 'getTables']);
+        Route::get('/admin/tables/{tableName}', [DatabaseTableController::class, 'getTableData']);
+        Route::delete('/admin/tables/{tableName}/{id}', [DatabaseTableController::class, 'deleteRecord']);
+
+        // Backups (Super Admin only)
+        Route::get('/admin/backups', [BackupController::class, 'index']);
+        Route::post('/admin/backups/run', [BackupController::class, 'run']);
+        Route::get('/admin/backups/download/{filename}', [BackupController::class, 'download']);
+        Route::delete('/admin/backups/{filename}', [BackupController::class, 'destroy']);
+    });
+
     // Letters
     Route::get('/letter-requests', [LetterRequestController::class, 'index']);
     Route::post('/letter-requests', [LetterRequestController::class, 'store']);
@@ -145,32 +174,4 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/exam-results', [\App\Http\Controllers\ExamResultController::class, 'store']);
     Route::get('/exam-results/my', [\App\Http\Controllers\ExamResultController::class, 'myResults']);
     Route::get('/exam-results/exam/{examId}', [\App\Http\Controllers\ExamResultController::class, 'getByExam']);
-
-
-    // Database Tables (Super Admin only)
-    Route::get('/admin/tables', [DatabaseTableController::class, 'getTables']);
-    Route::get('/admin/tables/{tableName}', [DatabaseTableController::class, 'getTableData']);
-    Route::delete('/admin/tables/{tableName}/{id}', [DatabaseTableController::class, 'deleteRecord']);
-
-    // System Settings
-    Route::post('/admin/system-settings', [SystemSettingController::class, 'updateSettings']);
-    Route::post('/admin/system-settings/logo', [SystemSettingController::class, 'uploadLogo']);
-
-    // Backups
-    Route::get('/admin/backups', [BackupController::class, 'index']);
-    Route::post('/admin/backups/run', [BackupController::class, 'run']);
-    Route::get('/admin/backups/download/{filename}', [BackupController::class, 'download']);
-    Route::delete('/admin/backups/{filename}', [BackupController::class, 'destroy']);
-
-    // AI Analysis
-    Route::post('/admin/ai-analysis', [AIAnalysisController::class, 'analyze']);
-
-    // AI Analytics Dashboard
-    Route::get('/admin/ai-analytics/overview', [AIAnalyticsController::class, 'getOverview']);
-    Route::get('/admin/ai-analytics/student-interest', [AIAnalyticsController::class, 'getStudentInterest']);
-    Route::get('/admin/ai-analytics/industry-gap', [AIAnalyticsController::class, 'getIndustryGap']);
-    Route::get('/admin/ai-analytics/recommendations', [AIAnalyticsController::class, 'getRecommendations']);
-    Route::get('/admin/ai-analytics/surveys', [AIAnalyticsController::class, 'getSurveys']);
-    Route::post('/admin/ai-analytics/surveys', [AIAnalyticsController::class, 'storeSurvey']);
-    Route::post('/admin/ai-analytics/sync-sheet', [AIAnalyticsController::class, 'syncGoogleSheet']);
 });

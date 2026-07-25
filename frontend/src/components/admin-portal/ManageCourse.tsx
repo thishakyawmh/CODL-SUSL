@@ -110,11 +110,11 @@ export const ManageCourse: React.FC = () => {
     const [isLoadingData, setIsLoadingData] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
 
-    const loadAllCourseData = async (showLoading = true) => {
+    const loadAllCourseData = async (showLoading = true, signal?: AbortSignal) => {
         if (!id) return;
         if (showLoading) setIsLoadingData(true);
         try {
-            const data = await courseService.getManageCourseData(id);
+            const data = await courseService.getManageCourseData(id, { signal });
 
             // 1. Course details
             if (data.course) {
@@ -414,9 +414,13 @@ export const ManageCourse: React.FC = () => {
     };
 
     useEffect(() => {
+        const controller = new AbortController();
         if (id) {
-            loadAllCourseData(true);
+            loadAllCourseData(true, controller.signal);
         }
+        return () => {
+            controller.abort();
+        };
     }, [id]);
 
     // Form State (Details)
