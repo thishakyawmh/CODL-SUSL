@@ -263,12 +263,20 @@ const normalizeExamResult = (er: any) => {
     };
 };
 
+import { StudentHeroBanner } from './track-student/StudentHeroBanner';
+import { StudentProfileTab } from './track-student/StudentProfileTab';
+import { AcademicProgressTab } from './track-student/AcademicProgressTab';
+import { RequestsApprovalTab } from './track-student/RequestsApprovalTab';
+import { StudentTimelineTab } from './track-student/StudentTimelineTab';
+import { EditStudentModal } from './track-student/EditStudentModal';
+
 export const TrackStudent: React.FC = () => {
     const currentAdminUser = getCurrentAdminUser();
     const isSuperAdmin = currentAdminUser.role === 'super_admin';
 
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedStudent, setSelectedStudent] = useState<DBUserType | null>(null);
+    const [activeTab, setActiveTab] = useState<'profile' | 'academic' | 'requests' | 'timeline'>('profile');
     const [expandedCourses, setExpandedCourses] = useState<Record<string, boolean>>({});
 
     const [showEditModal, setShowEditModal] = useState(false);
@@ -772,537 +780,137 @@ export const TrackStudent: React.FC = () => {
 
             {selectedStudent && studentData && academicProfile ? (
                 <div className="ts-profile-section-new">
-                    {/* Profile Header Banner */}
-                    <div className="ts-profile-header-new" style={{ display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'stretch', padding: '24px' }}>
-                        <div className="ts-profile-header-left" style={{ display: 'flex', alignItems: 'center', gap: '24px', width: '100%' }}>
-                            <button className="ts-back-btn" onClick={clearStudent}>
-                                <ArrowLeft size={18} />
-                            </button>
-                            <img src={selectedStudent.avatar} alt={selectedStudent.fullName} className="ts-profile-avatar-new" />
-                            <div className="ts-profile-info-new">
-                                <div className="ts-profile-name-row">
-                                    <h2>{selectedStudent.fullName}</h2>
-                                </div>
-                                <div className="ts-profile-meta-row" style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-                                    <span className="ts-profile-id-new"><Hash size={14} /> {selectedStudent.studentNumber}</span>
-                                    <span className={`ts-user-status ${selectedStudent.status}`}>
-                                        <span className="ts-dot"></span>
-                                        {selectedStudent.status}
-                                    </span>
-                                    <span className="ts-role-badge">
-                                        Student
-                                    </span>
-                                    <span className="ts-last-login" style={{ marginLeft: 'auto' }}>
-                                        <Clock size={12} /> Last Login: {new Date(selectedStudent.lastLogin).toLocaleString()}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                        {isSuperAdmin && (
-                            <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid #F1F5F9', paddingTop: '16px', marginTop: '8px' }}>
-                                <button
-                                    onClick={() => openEditModal(selectedStudent, academicProfile)}
-                                    style={{
-                                        background: 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)',
-                                        color: '#FFF', border: 'none', padding: '10px 20px',
-                                        borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px',
-                                        fontWeight: 600, fontSize: '14px', cursor: 'pointer',
-                                        boxShadow: '0 4px 12px rgba(124,58,237,0.25)', transition: 'all 0.2s ease'
-                                    }}
-                                >
-                                    <Eye size={16} /> Edit Profile Data
-                                </button>
-                            </div>
-                        )}
+                    {/* Student Hero Banner */}
+                    <StudentHeroBanner
+                        student={selectedStudent}
+                        profile={academicProfile}
+                        studentData={studentData}
+                        onBack={clearStudent}
+                        onEdit={() => openEditModal(selectedStudent, academicProfile)}
+                    />
+
+                    {/* Tabbed Navigation Bar */}
+                    <div style={{ display: 'flex', gap: '8px', borderBottom: '2px solid #E2E8F0', marginBottom: '24px' }}>
+                        <button
+                            onClick={() => setActiveTab('profile')}
+                            style={{
+                                padding: '12px 20px',
+                                fontWeight: 700,
+                                fontSize: '14px',
+                                border: 'none',
+                                background: 'none',
+                                cursor: 'pointer',
+                                color: activeTab === 'profile' ? '#2563EB' : '#64748B',
+                                borderBottom: activeTab === 'profile' ? '3px solid #2563EB' : '3px solid transparent',
+                                marginBottom: '-2px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px'
+                            }}
+                        >
+                            <User size={16} /> Student Profile
+                        </button>
+
+                        <button
+                            onClick={() => setActiveTab('academic')}
+                            style={{
+                                padding: '12px 20px',
+                                fontWeight: 700,
+                                fontSize: '14px',
+                                border: 'none',
+                                background: 'none',
+                                cursor: 'pointer',
+                                color: activeTab === 'academic' ? '#2563EB' : '#64748B',
+                                borderBottom: activeTab === 'academic' ? '3px solid #2563EB' : '3px solid transparent',
+                                marginBottom: '-2px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px'
+                            }}
+                        >
+                            <GraduationCap size={16} /> Academic Progress
+                        </button>
+
+                        <button
+                            onClick={() => setActiveTab('requests')}
+                            style={{
+                                padding: '12px 20px',
+                                fontWeight: 700,
+                                fontSize: '14px',
+                                border: 'none',
+                                background: 'none',
+                                cursor: 'pointer',
+                                color: activeTab === 'requests' ? '#2563EB' : '#64748B',
+                                borderBottom: activeTab === 'requests' ? '3px solid #2563EB' : '3px solid transparent',
+                                marginBottom: '-2px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px'
+                            }}
+                        >
+                            <ClipboardCheck size={16} /> Applications & Requests
+                        </button>
+
+                        <button
+                            onClick={() => setActiveTab('timeline')}
+                            style={{
+                                padding: '12px 20px',
+                                fontWeight: 700,
+                                fontSize: '14px',
+                                border: 'none',
+                                background: 'none',
+                                cursor: 'pointer',
+                                color: activeTab === 'timeline' ? '#2563EB' : '#64748B',
+                                borderBottom: activeTab === 'timeline' ? '3px solid #2563EB' : '3px solid transparent',
+                                marginBottom: '-2px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px'
+                            }}
+                        >
+                            <Clock size={16} /> Activity Timeline
+                        </button>
                     </div>
 
-                    {/* Profile Dashboard Grid */}
-                    <div className="ts-profile-grid">
-                        {/* Column 1: Personal & Contact Info */}
-                        <div className="ts-section-card">
-                            <div className="ts-section-header">
-                                <User size={18} />
-                                <h3>Personal & Contact Information</h3>
-                            </div>
-                            <div className="ts-section-body">
-                                <div className="ts-info-group">
-                                    <h4>Personal Details</h4>
-                                    <div className="ts-info-grid">
-                                        <div className="ts-info-item">
-                                            <span className="ts-info-label">Full Name</span>
-                                            <span className="ts-info-val">{selectedStudent.fullName}</span>
-                                        </div>
-                                        <div className="ts-info-item">
-                                            <span className="ts-info-label">Display Name</span>
-                                            <span className="ts-info-val">{selectedStudent.displayName || 'Not Set'}</span>
-                                        </div>
-                                        <div className="ts-info-item">
-                                            <span className="ts-info-label">NIC Number</span>
-                                            <span className="ts-info-val">{selectedStudent.nic}</span>
-                                        </div>
-                                        <div className="ts-info-item">
-                                            <span className="ts-info-label">Date of Birth</span>
-                                            <span className="ts-info-val">{academicProfile.dob}</span>
-                                        </div>
-                                        <div className="ts-info-item">
-                                            <span className="ts-info-label">Gender</span>
-                                            <span className="ts-info-val">{academicProfile.sex}</span>
-                                        </div>
-                                        <div className="ts-info-item">
-                                            <span className="ts-info-label">Civil Status</span>
-                                            <span className="ts-info-val">{academicProfile.civilStatus}</span>
-                                        </div>
-                                        <div className="ts-info-item">
-                                            <span className="ts-info-label">Join Date</span>
-                                            <span className="ts-info-val">{selectedStudent.joinDate}</span>
-                                        </div>
-                                    </div>
-                                </div>
+                    {/* Tab Contents */}
+                    {activeTab === 'profile' && (
+                        <StudentProfileTab student={selectedStudent} profile={academicProfile} />
+                    )}
 
-                                <div className="ts-info-group ts-border-top">
-                                    <h4>Contact Details</h4>
-                                    <div className="ts-info-grid">
-                                        <div className="ts-info-item">
-                                            <span className="ts-info-label">Email Address</span>
-                                            <span className="ts-info-val">{selectedStudent.email}</span>
-                                        </div>
-                                        <div className="ts-info-item">
-                                            <span className="ts-info-label">Phone Number</span>
-                                            <span className="ts-info-val">{selectedStudent.phone}</span>
-                                        </div>
-                                        <div className="ts-info-item">
-                                            <span className="ts-info-label">WhatsApp Number</span>
-                                            <span className="ts-info-val">{academicProfile.whatsapp}</span>
-                                        </div>
-                                        <div className="ts-info-item full-width">
-                                            <span className="ts-info-label">Permanent Address</span>
-                                            <span className="ts-info-val">{academicProfile.address}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                    {activeTab === 'academic' && (
+                        <AcademicProgressTab
+                            student={selectedStudent}
+                            studentData={studentData}
+                            realCourses={realCourses}
+                            expandedCourses={expandedCourses}
+                            onToggleCourse={toggleCourse}
+                        />
+                    )}
 
-                        {/* Column 2: Academic Qualifications */}
-                        <div className="ts-section-card">
-                            <div className="ts-section-header">
-                                <GraduationCap size={18} />
-                                <h3>Academic Qualifications</h3>
-                            </div>
-                            <div className="ts-section-body ts-academic-body">
-                                {/* O/L Section */}
-                                <div className="ts-academic-sub">
-                                    <div className="ts-academic-sub-header">
-                                        <h4>G.C.E. O/L Examination</h4>
-                                        <span className="ts-academic-year">Year: {academicProfile.olYear} · Index: {academicProfile.olIndex}</span>
-                                    </div>
-                                    <table className="ts-mini-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Subject</th>
-                                                <th>Grade</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {academicProfile.olSubjects.map((sub, sIdx) => (
-                                                <tr key={sIdx}>
-                                                    <td>{sub.subject}</td>
-                                                    <td><span className="ts-grade-badge">{sub.grade}</span></td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
+                    {activeTab === 'requests' && (
+                        <RequestsApprovalTab studentData={studentData} />
+                    )}
 
-                                {/* A/L Section */}
-                                <div className="ts-academic-sub ts-border-top">
-                                    <div className="ts-academic-sub-header">
-                                        <h4>G.C.E. A/L Examination</h4>
-                                        <span className="ts-academic-year">Year: {academicProfile.alYear} · Index: {academicProfile.alIndex}</span>
-                                    </div>
-                                    <table className="ts-mini-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Subject</th>
-                                                <th>Grade</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {academicProfile.alSubjects.map((sub, sIdx) => (
-                                                <tr key={sIdx}>
-                                                    <td>{sub.subject}</td>
-                                                    <td><span className="ts-grade-badge">{sub.grade}</span></td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-
-                                {/* Other Qualifications */}
-                                <div className="ts-academic-sub ts-border-top">
-                                    <h4>Other Qualifications & Certifications</h4>
-                                    <p className="ts-other-qualifications">{academicProfile.otherQualifications}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Course Details Section Header */}
-                    <div className="ts-section-title-outer">
-                        <BookOpen size={20} />
-                        <h3>Course Details & Recent Activities</h3>
-                    </div>
-
-                    {/* Enrolled Courses Dashboard */}
-                    <div className="ts-courses-dashboard">
-                        {selectedStudent.courses.map((courseName, cIdx) => {
-                            const { courseData, courseResults, courseReattempts, coursePostponements, courseExamApps } = getCourseAcademicView(courseName);
-                            const isExpanded = expandedCourses[courseName];
-                            const courseTimeline = timeline.filter(e => e.course === courseName);
-
-                            return (
-                                <div key={cIdx} className="ts-course-block-new">
-                                    <button className="ts-course-header-new" onClick={() => toggleCourse(courseName)}>
-                                        <div className="ts-course-header-left">
-                                            <div className="ts-course-icon-lg-new">
-                                                <BookOpen size={20} />
-                                            </div>
-                                            <div className="ts-course-header-info-new">
-                                                <h3>{courseName}</h3>
-                                                <div className="ts-course-meta-tags">
-                                                    {courseData && (
-                                                        <>
-                                                            <span className="ts-meta-tag level">{courseData.level}</span>
-                                                            <span className="ts-meta-tag">{courseData.department}</span>
-                                                            <span className="ts-meta-tag">{courseData.duration}</span>
-                                                        </>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="ts-course-header-right">
-                                            <div className="ts-course-mini-stats">
-                                                <span title="Results"><GraduationCap size={14} /> {courseResults.length}</span>
-                                                <span title="Exam Apps"><ClipboardCheck size={14} /> {courseExamApps.length}</span>
-                                                {courseReattempts.length > 0 && <span className="warn" title="Reattempts"><RefreshCw size={14} /> {courseReattempts.length}</span>}
-                                                {coursePostponements.length > 0 && <span title="Postponements"><PauseCircle size={14} /> {coursePostponements.length}</span>}
-                                            </div>
-                                            {isExpanded ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
-                                        </div>
-                                    </button>
-
-                                    {isExpanded && (
-                                        <div className="ts-course-body-new">
-                                            {/* Coordinator / Secretary Bar */}
-                                            {courseData && (
-                                                <div className="ts-course-info-bar">
-                                                    {courseData.coordinator && (
-                                                        <div className="ts-info-chip"><Award size={14} /> Coordinator: {courseData.coordinator}</div>
-                                                    )}
-                                                    {courseData.secretary && (
-                                                        <div className="ts-info-chip"><User size={14} /> Secretary: {courseData.secretary}</div>
-                                                    )}
-                                                    <div className="ts-info-chip"><Layers size={14} /> {courseData.batches.join(', ')}</div>
-                                                </div>
-                                            )}
-
-                                            <div className="ts-course-content-grid">
-                                                {/* Left Column: Academic Progress Tables */}
-                                                <div className="ts-course-left-col">
-                                                    {courseData?.semesters && courseData.semesters.length > 0 ? (
-                                                        courseData.semesters.map((sem: any, sIdx: number) => (
-                                                            <div key={sIdx} className="ts-semester-block">
-                                                                <div className="ts-semester-title">
-                                                                    <Layers size={16} />
-                                                                    <span>Semester {sIdx + 1}</span>
-                                                                </div>
-                                                                <table className="ts-table">
-                                                                    <thead>
-                                                                        <tr>
-                                                                            <th>Subject</th>
-                                                                            <th>Credits</th>
-                                                                            <th>Result</th>
-                                                                            <th>Status</th>
-                                                                        </tr>
-                                                                    </thead>
-                                                                    <tbody>
-                                                                        {sem.subjects.map((sub: any, subIdx: number) => {
-                                                                            const result = courseResults.find(r =>
-                                                                                r.subject.toLowerCase() === sub.name.toLowerCase()
-                                                                            );
-                                                                            const reattempt = courseReattempts.find(r =>
-                                                                                r.subject.toLowerCase() === sub.name.toLowerCase()
-                                                                            );
-
-                                                                            return (
-                                                                                <tr key={subIdx}>
-                                                                                    <td className="ts-td-bold">{sub.name}</td>
-                                                                                    <td><span className="ts-credit-badge">{sub.credits}</span></td>
-                                                                                    <td>
-                                                                                        {result ? (
-                                                                                            <span className="ts-grade" style={{ background: `${getGradeColor(result.grade)}15`, color: getGradeColor(result.grade) }}>
-                                                                                                {result.grade}
-                                                                                            </span>
-                                                                                        ) : (
-                                                                                            <span className="ts-no-result">—</span>
-                                                                                        )}
-                                                                                    </td>
-                                                                                    <td>
-                                                                                        {reattempt ? (
-                                                                                            <span className="ts-status pending">
-                                                                                                <RefreshCw size={12} /> Reattempt #{reattempt.attempt}
-                                                                                            </span>
-                                                                                        ) : result ? (
-                                                                                            <span className="ts-status approved">
-                                                                                                <CheckCircle2 size={12} /> Passed
-                                                                                            </span>
-                                                                                        ) : (
-                                                                                            <span className="ts-awaiting">Awaiting</span>
-                                                                                        )}
-                                                                                    </td>
-                                                                                </tr>
-                                                                            );
-                                                                        })}
-                                                                    </tbody>
-                                                                </table>
-                                                            </div>
-                                                        ))
-                                                    ) : (
-                                                        <div className="ts-no-structure">
-                                                            <AlertCircle size={16} />
-                                                            <span>No semester structure available for this course.</span>
-                                                        </div>
-                                                    )}
-                                                </div>
-
-                                                {/* Right Column: Course timeline */}
-                                                <div className="ts-course-right-col">
-                                                    <div className="ts-timeline-header-new">
-                                                        <Activity size={16} />
-                                                        <span>Recent Course Activities</span>
-                                                    </div>
-                                                    {courseTimeline.length > 0 ? (
-                                                        <div className="ts-course-timeline">
-                                                            {courseTimeline.map((event, idx) => (
-                                                                <div key={idx} className="ts-timeline-item-new">
-                                                                    <div className={`ts-timeline-dot-new ${event.status}`}>
-                                                                        {event.icon}
-                                                                    </div>
-                                                                    <div className="ts-timeline-content-new">
-                                                                        <div className="ts-timeline-top-new">
-                                                                            <span className="ts-timeline-title-new">{event.title}</span>
-                                                                            <span className={getStatusClass(event.status)}>
-                                                                                {getStatusIcon(event.status)} {event.status}
-                                                                            </span>
-                                                                        </div>
-                                                                        <p className="ts-timeline-detail-new">{event.detail}</p>
-                                                                        <span className="ts-timeline-date-new">{event.date}</span>
-                                                                    </div>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    ) : (
-                                                        <div className="ts-empty-timeline">
-                                                            <Clock size={20} />
-                                                            <span>No activity logs for this course.</span>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        })}
-                    </div>
+                    {activeTab === 'timeline' && (
+                        <StudentTimelineTab timeline={timeline} />
+                    )}
                 </div>
-            ) : (
-                <div className="ts-empty-state">
-                    <div className="ts-empty-icon">
-                        <User size={40} />
-                    </div>
-                    <h3>Search for a Student</h3>
-                    <p>Enter a student's name, registration number, or NIC in the search bar above to view their complete academic profile.</p>
-                    <div className="ts-empty-hints">
-                        <span>Try: <strong>Hiruni Yasoda</strong></span>
-                        <span>Or: <strong>26CODL0001</strong></span>
-                    </div>
-                </div>
-            )}
+            ) : null}
 
-            {showEditModal && (
-                <div className="cm-modal-overlay" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1200 }} onClick={() => setShowEditModal(false)}>
-                    <div className="cm-modal" onClick={(e) => e.stopPropagation()}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: '1px solid #F1F5F9', paddingBottom: '16px' }}>
-                            <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#0F172A', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <GraduationCap size={24} style={{ color: '#7C3AED' }} /> Edit Student Profile
-                            </h2>
-                            <button onClick={() => setShowEditModal(false)} style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer' }}><X size={20} /></button>
-                        </div>
-
-                        <form onSubmit={handleEditFormSubmit}>
-                            {/* Section A: Account, Identity & Demographics */}
-                            <div style={{ background: '#FAFBFD', padding: '20px', borderRadius: '16px', border: '1px solid #E2E8F0', marginBottom: '24px' }}>
-                                <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#7C3AED', margin: '0 0 16px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Account, Identity & Demographics</h3>
-                                <div className="modal-grid-2col">
-                                    <div className="cm-form-group">
-                                        <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748B', marginBottom: '6px', display: 'block' }}>Student Registration ID</label>
-                                        <input type="text" value={editForm.studentNumber} onChange={(e) => setEditForm(prev => ({ ...prev, studentNumber: e.target.value }))} className="admin-input" required />
-                                    </div>
-                                    <div className="cm-form-group">
-                                        <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748B', marginBottom: '6px', display: 'block' }}>NIC Number</label>
-                                        <input type="text" value={editForm.nic} onChange={(e) => setEditForm(prev => ({ ...prev, nic: e.target.value }))} className="admin-input" required />
-                                    </div>
-                                    <div className="cm-form-group">
-                                        <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748B', marginBottom: '6px', display: 'block' }}>Full Name</label>
-                                        <input type="text" value={editForm.fullName} onChange={(e) => setEditForm(prev => ({ ...prev, fullName: e.target.value }))} className="admin-input" required />
-                                    </div>
-                                    <div className="cm-form-group">
-                                        <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748B', marginBottom: '6px', display: 'block' }}>Display Name</label>
-                                        <input type="text" value={editForm.displayName} onChange={(e) => setEditForm(prev => ({ ...prev, displayName: e.target.value }))} className="admin-input" />
-                                    </div>
-                                    <div className="cm-form-group">
-                                        <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748B', marginBottom: '6px', display: 'block' }}>Email Address</label>
-                                        <input type="email" value={editForm.email} onChange={(e) => setEditForm(prev => ({ ...prev, email: e.target.value }))} className="admin-input" required />
-                                    </div>
-                                    <div className="cm-form-group">
-                                        <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748B', marginBottom: '6px', display: 'block' }}>Phone Number</label>
-                                        <input type="text" value={editForm.phone} onChange={(e) => setEditForm(prev => ({ ...prev, phone: e.target.value }))} className="admin-input" />
-                                    </div>
-                                    <div className="cm-form-group">
-                                        <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748B', marginBottom: '6px', display: 'block' }}>WhatsApp Number</label>
-                                        <input type="text" value={editForm.whatsapp} onChange={(e) => setEditForm(prev => ({ ...prev, whatsapp: e.target.value }))} className="admin-input" />
-                                    </div>
-                                    <div className="cm-form-group">
-                                        <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748B', marginBottom: '6px', display: 'block' }}>Date of Birth</label>
-                                        <input type="date" value={editForm.dob} onChange={(e) => setEditForm(prev => ({ ...prev, dob: e.target.value }))} className="admin-input" />
-                                    </div>
-                                    <div className="cm-form-group">
-                                        <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748B', marginBottom: '6px', display: 'block' }}>User Status</label>
-                                        <select value={editForm.status} onChange={(e: any) => setEditForm(prev => ({ ...prev, status: e.target.value }))} className="admin-input">
-                                            <option value="active">Active</option>
-                                            <option value="inactive">Inactive</option>
-                                            <option value="suspended">Suspended</option>
-                                        </select>
-                                    </div>
-                                    <div className="cm-form-group">
-                                        <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748B', marginBottom: '6px', display: 'block' }}>System Role</label>
-                                        <select value={editForm.role} onChange={(e: any) => setEditForm(prev => ({ ...prev, role: e.target.value }))} className="admin-input" disabled>
-                                            <option value="student">Student</option>
-                                        </select>
-                                    </div>
-                                    <div className="cm-form-group">
-                                        <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748B', marginBottom: '6px', display: 'block' }}>Gender</label>
-                                        <select value={editForm.sex} onChange={(e) => setEditForm(prev => ({ ...prev, sex: e.target.value }))} className="admin-input">
-                                            <option value="">Select Gender</option>
-                                            <option value="Male">Male</option>
-                                            <option value="Female">Female</option>
-                                            <option value="Other">Other</option>
-                                        </select>
-                                    </div>
-                                    <div className="cm-form-group">
-                                        <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748B', marginBottom: '6px', display: 'block' }}>Civil Status</label>
-                                        <select value={editForm.civilStatus} onChange={(e) => setEditForm(prev => ({ ...prev, civilStatus: e.target.value }))} className="admin-input">
-                                            <option value="">Select Status</option>
-                                            <option value="Unmarried">Unmarried</option>
-                                            <option value="Married">Married</option>
-                                        </select>
-                                    </div>
-                                    <div className="cm-form-group" style={{ gridColumn: '1 / -1' }}>
-                                        <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748B', marginBottom: '6px', display: 'block' }}>Permanent Address</label>
-                                        <textarea value={editForm.address} onChange={(e) => setEditForm(prev => ({ ...prev, address: e.target.value }))} className="admin-input" style={{ height: '64px', resize: 'vertical' }} />
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Section B: Academic Qualifications Summary */}
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', marginBottom: '24px' }}>
-                                {/* Left Side: O/L Exam */}
-                                <div style={{ background: '#FAFBFD', padding: '20px', borderRadius: '16px', border: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', minHeight: '340px' }}>
-                                    <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#7C3AED', margin: '0 0 16px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>G.C.E. O/L Examination</h3>
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
-                                        <div className="cm-form-group">
-                                            <label style={{ fontSize: '11px', fontWeight: 600, color: '#64748B', marginBottom: '4px' }}>O/L Year</label>
-                                            <input type="text" value={editForm.olYear} onChange={(e) => setEditForm(prev => ({ ...prev, olYear: e.target.value }))} className="admin-input" style={{ height: '38px' }} />
-                                        </div>
-                                        <div className="cm-form-group">
-                                            <label style={{ fontSize: '11px', fontWeight: 600, color: '#64748B', marginBottom: '4px' }}>O/L Index</label>
-                                            <input type="text" value={editForm.olIndex} onChange={(e) => setEditForm(prev => ({ ...prev, olIndex: e.target.value }))} className="admin-input" style={{ height: '38px' }} />
-                                        </div>
-                                    </div>
-
-                                    <div className="cm-form-group" style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                                            <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748B' }}>O/L Subjects & Grades</label>
-                                            <button type="button" onClick={handleAddOLSubject} style={{ padding: '4px 8px', fontSize: '11px', background: '#F1F5F9', border: '1px solid #CBD5E1', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}><Plus size={10} /> Add Subject</button>
-                                        </div>
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1, maxHeight: '180px', overflowY: 'auto', border: '1px solid #E2E8F0', padding: '8px', borderRadius: '8px', background: '#FFFFFF' }}>
-                                            {editForm.olSubjects.map((sub, sIdx) => (
-                                                <div key={sIdx} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                                                    <input type="text" value={sub.subject} placeholder="Subject Name" onChange={(e) => handleOLSubjectChange(sIdx, 'subject', e.target.value)} className="admin-input" style={{ height: '38px', fontSize: '13px', flex: 1, width: 'auto', borderRadius: '8px', border: '1px solid #E2E8F0', padding: '0 12px', background: '#FFFFFF', color: '#1E293B' }} required />
-                                                    <select value={sub.grade} onChange={(e) => handleOLSubjectChange(sIdx, 'grade', e.target.value)} className="admin-input" style={{ height: '38px', width: '70px', fontSize: '13px', borderRadius: '8px', border: '1px solid #E2E8F0', padding: '0 8px', background: '#FFFFFF', color: '#1E293B', cursor: 'pointer' }}>
-                                                        {['A', 'B', 'C', 'S', 'W', 'F'].map(g => <option key={g} value={g}>{g}</option>)}
-                                                    </select>
-                                                    <button type="button" onClick={() => handleRemoveOLSubject(sIdx)} style={{ height: '38px', width: '38px', background: '#FEF2F2', border: '1px solid #FEE2E2', color: '#EF4444', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}><Trash2 size={14} /></button>
-                                                </div>
-                                            ))}
-                                            {editForm.olSubjects.length === 0 && <span style={{ fontSize: '11px', color: '#94A3B8', textAlign: 'center', padding: '4px' }}>No O/L subjects added.</span>}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Right Side: A/L Exam */}
-                                <div style={{ background: '#FAFBFD', padding: '20px', borderRadius: '16px', border: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', minHeight: '340px' }}>
-                                    <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#7C3AED', margin: '0 0 16px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>G.C.E. A/L Examination</h3>
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
-                                        <div className="cm-form-group">
-                                            <label style={{ fontSize: '11px', fontWeight: 600, color: '#64748B', marginBottom: '4px' }}>A/L Year</label>
-                                            <input type="text" value={editForm.alYear} onChange={(e) => setEditForm(prev => ({ ...prev, alYear: e.target.value }))} className="admin-input" style={{ height: '38px' }} />
-                                        </div>
-                                        <div className="cm-form-group">
-                                            <label style={{ fontSize: '11px', fontWeight: 600, color: '#64748B', marginBottom: '4px' }}>A/L Index</label>
-                                            <input type="text" value={editForm.alIndex} onChange={(e) => setEditForm(prev => ({ ...prev, alIndex: e.target.value }))} className="admin-input" style={{ height: '38px' }} />
-                                        </div>
-                                    </div>
-
-                                    <div className="cm-form-group" style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                                            <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748B' }}>A/L Subjects & Grades</label>
-                                            <button type="button" onClick={handleAddALSubject} style={{ padding: '4px 8px', fontSize: '11px', background: '#F1F5F9', border: '1px solid #CBD5E1', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}><Plus size={10} /> Add Subject</button>
-                                        </div>
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1, maxHeight: '180px', overflowY: 'auto', border: '1px solid #E2E8F0', padding: '8px', borderRadius: '8px', background: '#FFFFFF' }}>
-                                            {editForm.alSubjects.map((sub, sIdx) => (
-                                                <div key={sIdx} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                                                    <input type="text" value={sub.subject} placeholder="Subject Name" onChange={(e) => handleALSubjectChange(sIdx, 'subject', e.target.value)} className="admin-input" style={{ height: '38px', fontSize: '13px', flex: 1, width: 'auto', borderRadius: '8px', border: '1px solid #E2E8F0', padding: '0 12px', background: '#FFFFFF', color: '#1E293B' }} required />
-                                                    <select value={sub.grade} onChange={(e) => handleALSubjectChange(sIdx, 'grade', e.target.value)} className="admin-input" style={{ height: '38px', width: '70px', fontSize: '13px', borderRadius: '8px', border: '1px solid #E2E8F0', padding: '0 8px', background: '#FFFFFF', color: '#1E293B', cursor: 'pointer' }}>
-                                                        {['A', 'B', 'C', 'S', 'F'].map(g => <option key={g} value={g}>{g}</option>)}
-                                                    </select>
-                                                    <button type="button" onClick={() => handleRemoveALSubject(sIdx)} style={{ height: '38px', width: '38px', background: '#FEF2F2', border: '1px solid #FEE2E2', color: '#EF4444', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}><Trash2 size={14} /></button>
-                                                </div>
-                                            ))}
-                                            {editForm.alSubjects.length === 0 && <span style={{ fontSize: '11px', color: '#94A3B8', textAlign: 'center', padding: '4px' }}>No A/L subjects added.</span>}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Section C: Professional & Other Qualifications */}
-                            <div style={{ background: '#FAFBFD', padding: '20px', borderRadius: '16px', border: '1px solid #E2E8F0', marginBottom: '24px' }}>
-                                <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#7C3AED', margin: '0 0 16px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Professional & Other Qualifications</h3>
-                                <div className="cm-form-group">
-                                    <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748B', marginBottom: '6px', display: 'block' }}>Other Qualifications & Certifications</label>
-                                    <textarea value={editForm.otherQualifications} onChange={(e) => setEditForm(prev => ({ ...prev, otherQualifications: e.target.value }))} className="admin-input" style={{ height: '64px', resize: 'vertical' }} />
-                                </div>
-                            </div>
-
-                            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', borderTop: '1px solid #F1F5F9', paddingTop: '20px', marginTop: '12px' }}>
-                                <button type="button" className="admin-btn-outline" style={{ height: '42px', padding: '0 20px', borderRadius: '10px', cursor: 'pointer', fontWeight: 600 }} onClick={() => setShowEditModal(false)}>Cancel</button>
-                                <button type="submit" className="admin-btn-primary" style={{ height: '42px', padding: '0 24px', borderRadius: '10px', cursor: 'pointer', fontWeight: 600, background: 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)', border: 'none', color: '#FFFFFF' }}>Save All Changes</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
+            {/* Edit Student Modal */}
+            <EditStudentModal
+                show={showEditModal}
+                editForm={editForm}
+                setEditForm={setEditForm}
+                onClose={() => setShowEditModal(false)}
+                onSubmit={handleEditFormSubmit}
+                onAddOLSubject={handleAddOLSubject}
+                onRemoveOLSubject={handleRemoveOLSubject}
+                onOLSubjectChange={handleOLSubjectChange}
+                onAddALSubject={handleAddALSubject}
+                onRemoveALSubject={handleRemoveALSubject}
+                onALSubjectChange={handleALSubjectChange}
+            />
         </div>
     );
 };
