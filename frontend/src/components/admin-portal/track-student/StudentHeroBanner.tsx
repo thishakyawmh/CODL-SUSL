@@ -1,5 +1,5 @@
 import React from 'react';
-import { Mail, Phone, Calendar, ArrowLeft, Edit3 } from 'lucide-react';
+import { Calendar, Clock, ArrowLeft, Edit3 } from 'lucide-react';
 
 interface StudentHeroBannerProps {
     student: any;
@@ -8,6 +8,17 @@ interface StudentHeroBannerProps {
     onBack: () => void;
     onEdit: () => void;
 }
+
+const formatLastAccessed = (lastLoginVal: any) => {
+    if (!lastLoginVal) return 'N/A';
+    try {
+        const d = new Date(lastLoginVal);
+        if (isNaN(d.getTime())) return 'N/A';
+        return d.toISOString().split('T')[0];
+    } catch {
+        return 'N/A';
+    }
+};
 
 export const StudentHeroBanner: React.FC<StudentHeroBannerProps> = ({
     student,
@@ -84,7 +95,7 @@ export const StudentHeroBanner: React.FC<StudentHeroBannerProps> = ({
                     <div style={{ position: 'relative' }}>
                         <img
                             src={student.avatar}
-                            alt={student.fullName}
+                            alt={student.displayName || student.fullName}
                             style={{
                                 width: '80px',
                                 height: '80px',
@@ -107,7 +118,9 @@ export const StudentHeroBanner: React.FC<StudentHeroBannerProps> = ({
 
                     <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <h2 style={{ fontSize: '22px', fontWeight: 800, color: '#0F172A', margin: 0 }}>{student.fullName}</h2>
+                            <h2 style={{ fontSize: '22px', fontWeight: 800, color: '#0F172A', margin: 0 }}>
+                                {student.displayName || student.fullName}
+                            </h2>
                             <span style={{
                                 padding: '3px 10px',
                                 borderRadius: '12px',
@@ -121,19 +134,12 @@ export const StudentHeroBanner: React.FC<StudentHeroBannerProps> = ({
                             </span>
                         </div>
 
-                        <p style={{ color: '#64748B', fontSize: '14px', marginTop: '4px', margin: 0 }}>
-                            {student.displayName ? `Display Name: ${student.displayName} • ` : ''}NIC: {student.nic || 'N/A'}
-                        </p>
-
                         <div style={{ display: 'flex', gap: '16px', marginTop: '10px', fontSize: '13px', color: '#475569' }}>
                             <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <Mail size={14} color="#2563EB" /> {student.email}
+                                <Calendar size={14} color="#2563EB" /> Enrolled: {student.joinDate || 'N/A'}
                             </span>
                             <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <Phone size={14} color="#2563EB" /> {student.phone || 'N/A'}
-                            </span>
-                            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <Calendar size={14} color="#2563EB" /> Enrolled: {student.joinDate}
+                                <Clock size={14} color="#2563EB" /> Last Accessed: {formatLastAccessed(student.lastLogin)}
                             </span>
                         </div>
                     </div>

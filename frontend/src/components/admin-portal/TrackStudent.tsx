@@ -417,8 +417,23 @@ export const TrackStudent: React.FC = () => {
     const [realReattempts, setRealReattempts] = useState<any[]>([]);
     const [realPostponements, setRealPostponements] = useState<any[]>([]);
     const [realExamResults, setRealExamResults] = useState<any[]>([]);
-    const [realCourses, setRealCourses] = useState<any[]>([]);    const [loading, setLoading] = useState<boolean>(false);
+    const [realCourses, setRealCourses] = useState<any[]>([]); const [loading, setLoading] = useState<boolean>(false);
     const [dbError, setDbError] = useState<string | null>(null);
+    const [totalStudentCount, setTotalStudentCount] = useState<number>(0);
+
+    // Fetch total number of students in database on mount
+    useEffect(() => {
+        const fetchTotalCount = async () => {
+            try {
+                const allUsers = await userService.getAll();
+                const studentList = (allUsers || []).filter((u: any) => u.role === 'student');
+                setTotalStudentCount(studentList.length);
+            } catch (err) {
+                console.error('Failed to load total student count:', err);
+            }
+        };
+        fetchTotalCount();
+    }, []);
 
     // Fetch live search results when query changes
     useEffect(() => {
@@ -733,22 +748,6 @@ export const TrackStudent: React.FC = () => {
                     </div>
                 )}
 
-                {!loading && !dbError && (
-                    <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        fontSize: '13px',
-                        color: '#10B981',
-                        fontWeight: 600,
-                        marginTop: '12px',
-                        padding: '0 4px'
-                    }}>
-                        <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: '#10B981' }}></span>
-                        <span>Connected to Database: {realStudents.length > 0 ? `${realStudents.length} search results found.` : 'Ready to search students.'}</span>
-                    </div>
-                )}
-
                 {filteredStudents.length > 0 && searchQuery && (
                     <div className="ts-search-results">
                         {filteredStudents.map(s => (
@@ -756,7 +755,7 @@ export const TrackStudent: React.FC = () => {
                                 <img src={s.avatar} alt={s.fullName} className="ts-search-avatar" />
                                 <div className="ts-search-info">
                                     <span className="ts-search-name">{s.fullName}</span>
-                                    <span className="ts-search-id">{s.studentNumber} · {s.courses[0] || 'No course'}</span>
+                                    <span className="ts-search-id">{s.studentNumber}</span>
                                 </div>
                                 <span className={`ts-user-status ${s.status}`}>
                                     <span className="ts-dot"></span>
@@ -895,7 +894,188 @@ export const TrackStudent: React.FC = () => {
                         <StudentTimelineTab timeline={timeline} />
                     )}
                 </div>
-            ) : null}
+            ) : (
+                <div style={{
+                    marginTop: '24px',
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                    gap: '24px',
+                    alignItems: 'stretch'
+                }}>
+                    {/* KPI Metric Widget */}
+                    <div style={{
+                        background: '#FFFFFF',
+                        borderRadius: '16px',
+                        padding: '32px 24px',
+                        border: '1px solid #E2E8F0',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        textAlign: 'center',
+                        gap: '12px'
+                    }}>
+                        <div style={{
+                            width: '56px',
+                            height: '56px',
+                            borderRadius: '50%',
+                            background: '#EFF6FF',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: '#2563EB'
+                        }}>
+                            <User size={28} />
+                        </div>
+                        <span style={{ fontSize: '13px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            Total Registered Students
+                        </span>
+                        <h2 style={{ fontSize: '56px', fontWeight: 900, color: '#2563EB', margin: '4px 0', lineHeight: 1 }}>
+                            {totalStudentCount}
+                        </h2>
+                        <span style={{ fontSize: '12px', color: '#94A3B8' }}>
+                            Live Database Count
+                        </span>
+                    </div>
+
+                    {/* Search Guides / Examples */}
+                    <div style={{
+                        background: '#FFFFFF',
+                        borderRadius: '16px',
+                        padding: '28px',
+                        border: '1px solid #E2E8F0',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        gap: '20px'
+                    }}>
+                        <div>
+                            <h3 style={{ fontSize: '17px', fontWeight: 800, color: '#0F172A', margin: 0 }}>
+                                Interactive Quick Search Guide
+                            </h3>
+                            <p style={{ color: '#64748B', fontSize: '13px', margin: '6px 0 0 0', lineHeight: '1.5' }}>
+                                Find student records instantly. Click any example badge below to automatically test search query filters:
+                            </p>
+                        </div>
+
+                        <div style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '12px'
+                        }}>
+                            {/* Search Card 1 */}
+                            <div
+                                onClick={() => setSearchQuery('Saveena')}
+                                style={{
+                                    background: '#F8FAFC',
+                                    border: '1px solid #E2E8F0',
+                                    borderRadius: '12px',
+                                    padding: '12px 16px',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.15s ease',
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center'
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.borderColor = '#2563EB';
+                                    e.currentTarget.style.background = '#F0F9FF';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.borderColor = '#E2E8F0';
+                                    e.currentTarget.style.background = '#F8FAFC';
+                                }}
+                            >
+                                <div>
+                                    <span style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>
+                                        Search By Name
+                                    </span>
+                                    <span style={{ fontSize: '11px', color: '#94A3B8' }}>
+                                        Matches display or full name
+                                    </span>
+                                </div>
+                                <code style={{ background: '#EFF6FF', color: '#2563EB', padding: '4px 10px', borderRadius: '6px', fontSize: '13px', fontWeight: 700 }}>
+                                    "Saveena"
+                                </code>
+                            </div>
+
+                            {/* Search Card 2 */}
+                            <div
+                                onClick={() => setSearchQuery('26CODL0001')}
+                                style={{
+                                    background: '#F8FAFC',
+                                    border: '1px solid #E2E8F0',
+                                    borderRadius: '12px',
+                                    padding: '12px 16px',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.15s ease',
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center'
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.borderColor = '#2563EB';
+                                    e.currentTarget.style.background = '#F0F9FF';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.borderColor = '#E2E8F0';
+                                    e.currentTarget.style.background = '#F8FAFC';
+                                }}
+                            >
+                                <div>
+                                    <span style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>
+                                        Search By Reg No
+                                    </span>
+                                    <span style={{ fontSize: '11px', color: '#94A3B8' }}>
+                                        Matches unique student ID
+                                    </span>
+                                </div>
+                                <code style={{ background: '#EFF6FF', color: '#2563EB', padding: '4px 10px', borderRadius: '6px', fontSize: '13px', fontWeight: 700 }}>
+                                    "26CODL0001"
+                                </code>
+                            </div>
+
+                            {/* Search Card 3 */}
+                            <div
+                                onClick={() => setSearchQuery('200545678921')}
+                                style={{
+                                    background: '#F8FAFC',
+                                    border: '1px solid #E2E8F0',
+                                    borderRadius: '12px',
+                                    padding: '12px 16px',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.15s ease',
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center'
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.borderColor = '#2563EB';
+                                    e.currentTarget.style.background = '#F0F9FF';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.borderColor = '#E2E8F0';
+                                    e.currentTarget.style.background = '#F8FAFC';
+                                }}
+                            >
+                                <div>
+                                    <span style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>
+                                        Search By NIC
+                                    </span>
+                                    <span style={{ fontSize: '11px', color: '#94A3B8' }}>
+                                        Matches national identity
+                                    </span>
+                                </div>
+                                <code style={{ background: '#EFF6FF', color: '#2563EB', padding: '4px 10px', borderRadius: '6px', fontSize: '13px', fontWeight: 700 }}>
+                                    "200545678921"
+                                </code>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Edit Student Modal */}
             <EditStudentModal

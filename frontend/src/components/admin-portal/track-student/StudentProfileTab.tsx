@@ -1,5 +1,5 @@
 import React from 'react';
-import { User, Phone, MapPin, Award, BookOpen, Calendar, ShieldCheck, Heart } from 'lucide-react';
+import { User, Phone, MapPin, Award, BookOpen, Calendar, ShieldCheck, Heart, GraduationCap } from 'lucide-react';
 
 interface StudentProfileTabProps {
     student: any;
@@ -18,12 +18,27 @@ export const StudentProfileTab: React.FC<StudentProfileTabProps> = ({ student, p
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '14px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid #F1F5F9' }}>
                         <span style={{ color: '#64748B' }}>Full Name</span>
-                        <span style={{ fontWeight: 600, color: '#0F172A' }}>{student.fullName}</span>
+                        <span style={{ fontWeight: 600, color: '#0F172A' }}>{student.fullName || 'N/A'}</span>
                     </div>
 
                     <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid #F1F5F9' }}>
                         <span style={{ color: '#64748B' }}>Display Name</span>
                         <span style={{ fontWeight: 600, color: '#0F172A' }}>{student.displayName || 'N/A'}</span>
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid #F1F5F9' }}>
+                        <span style={{ color: '#64748B' }}>NIC</span>
+                        <span style={{ fontWeight: 600, color: '#0F172A' }}>{student.nic || 'N/A'}</span>
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid #F1F5F9' }}>
+                        <span style={{ color: '#64748B' }}>Email</span>
+                        <span style={{ fontWeight: 600, color: '#0F172A' }}>{student.email || 'N/A'}</span>
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid #F1F5F9' }}>
+                        <span style={{ color: '#64748B' }}>Phone Number</span>
+                        <span style={{ fontWeight: 600, color: '#0F172A' }}>{student.phone || 'N/A'}</span>
                     </div>
 
                     <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid #F1F5F9' }}>
@@ -110,6 +125,18 @@ export const StudentProfileTab: React.FC<StudentProfileTabProps> = ({ student, p
                     <p style={{ color: '#94A3B8', fontSize: '14px' }}>No Advanced Level results recorded.</p>
                 )}
             </div>
+
+            {/* Other Qualifications Card */}
+            {profile.otherQualifications && profile.otherQualifications.trim() !== '' && profile.otherQualifications.trim().toLowerCase() !== 'none' && (
+                <div style={{ background: '#FFFFFF', padding: '24px', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', border: '1px solid #E2E8F0' }}>
+                    <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#1E293B', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <GraduationCap size={18} color="#2563EB" /> Other Qualifications
+                    </h3>
+                    <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', padding: '14px 18px', borderRadius: '8px', fontSize: '14px', color: '#334155', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>
+                        {profile.otherQualifications}
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
