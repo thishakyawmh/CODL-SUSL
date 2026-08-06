@@ -16,96 +16,84 @@ use Illuminate\Support\Facades\Log;
 class AIAnalyticsController extends Controller
 {
     /**
-     * Get high level KPIs and distributions for the overview tab.
+     * Get all programs grouped by level
      */
-    public function getOverview()
+    public function getPrograms()
     {
-        $cache = \App\AI\Models\AnalyticsCache::orderBy('generated_at', 'desc')->first();
+        $courses = Course::all()->map(function($c) {
+            return [
+                'id' => $c->id,
+                'title' => $c->title,
+                'code' => $c->course_code,
+                'level' => $c->level,
+                'department' => $c->department,
+            ];
+        });
+        return response()->json($courses);
+    }
 
-        if (!$cache) {
-            return response()->json([
-                'kpis' => [
-                    'studentMatch' => 0,
-                    'industryMatch' => 0,
-                    'alignment' => 0,
-                    'courses' => Course::count(),
-                    'surveys' => 0,
-                    'companies' => 0,
-                ],
-                'studentDemand' => [['name' => 'Data needed', 'value' => 0]],
-                'industryDemand' => [['name' => 'Data needed', 'value' => 0]],
-                'last_generated' => null
-            ]);
-        }
+    private function getCacheForCourse($courseId)
+    {
+        return \App\AI\Models\AnalyticsCache::where('scope_type', 'program')
+            ->where('scope_id', $courseId)
+            ->orderBy('generated_at', 'desc')
+            ->first();
+    }
+
+    public function getOverview($courseId)
+    {
+        $cache = $this->getCacheForCourse($courseId);
+        if (!$cache) return response()->json(null); // Triggers empty state
 
         return response()->json([
             'kpis' => $cache->kpis,
-            'studentDemand' => $cache->student_demand_distribution,
-            'industryDemand' => $cache->industry_demand_distribution,
             'last_generated' => $cache->generated_at->format('M j, Y - g:i A'),
         ]);
     }
 
-    /**
-     * Get per-course breakdown against student interests.
-     */
-    public function getStudentInterest()
+    public function getStudentInterest($courseId)
     {
-        $courses = Course::all();
-        $data = [];
-        
-        foreach ($courses as $course) {
-            $match = rand(40, 95);
-            $data[] = [
-                'id' => $course->id,
-                'name' => $course->title,
-                'code' => $course->course_code ?? 'N/A',
-                'match' => $match,
-                'wellCovered' => ['Basic Concepts'], // MVP static data
-                'missing' => $match < 70 ? ['Advanced Topics'] : [],
-                'estimatedMatch' => min(100, $match + rand(5, 20)),
-            ];
-        }
+        $cache = $this->getCacheForCourse($courseId);
+        if (!$cache) return response()->json([]);
 
-        return response()->json($data);
+        return response()->json($cache->student_demand_distribution);
     }
 
-    /**
-     * Get per-course breakdown against industry gaps.
-     */
-    public function getIndustryGap()
+    public function getIndustryGap($courseId)
     {
-        $courses = Course::all();
-        $data = [];
-        
-        foreach ($courses as $course) {
-            $coverage = rand(30, 90);
-            $data[] = [
-                'id' => $course->id,
-                'name' => $course->title,
-                'code' => $course->course_code ?? 'N/A',
-                'coverage' => $coverage,
-                'industryReqs' => ['Problem Solving'],
-                'criticalGaps' => $coverage < 60 ? ['Modern Frameworks'] : [],
-                'status' => $coverage >= 75 ? 'Optimal' : ($coverage >= 50 ? 'Review Needed' : 'Critical Update'),
-            ];
-        }
+        $cache = $this->getCacheForCourse($courseId);
+        if (!$cache) return response()->json([]);
 
-        return response()->json($data);
+        return response()->json($cache->industry_demand_distribution);
     }
 
-    /**
-     * Get AI recommendations.
-     */
-    public function getRecommendations()
+    public function getRecommendations($courseId)
     {
-        $cache = \App\AI\Models\AnalyticsCache::orderBy('generated_at', 'desc')->first();
-
+        $cache = $this->getCacheForCourse($courseId);
         if (!$cache || empty($cache->generated_recommendations)) {
             return response()->json([]);
         }
 
         return response()->json($cache->generated_recommendations);
+    }
+    
+    public function getSkillGap($courseId)
+    {
+        $cache = $this->getCacheForCourse($courseId);
+        if (!$cache) return response()->json([]);
+
+        return response()->json([
+            'missing_skills' => $cache->skill_gaps,
+            'jaccard_similarity' => $cache->jaccard_similarity_results
+        ]);
+    }
+
+    public function getEmergingTechnologies($courseId)
+    {
+        $cache = $this->getCacheForCourse($courseId);
+        if (!$cache) return response()->json([]);
+
+        return response()->json($cache->emerging_technologies);
     }
 
     /**
@@ -360,19 +348,28 @@ class AIAnalyticsController extends Controller
         }
 
         // Trigger NLP Processing Pipeline Offline
+        // Trigger NLP Processing Pipeline Offline for each program
         try {
-            $analytics = $nlpService->processAll();
-            $recommendations = $recommendationEngine->generateRecommendations($analytics);
+            $courses = \App\Models\Course::all();
+            foreach ($courses as $course) {
+                $analytics = $nlpService->processAll($course);
+                $recommendations = $recommendationEngine->generateRecommendations($analytics);
 
-            \App\AI\Models\AnalyticsCache::create([
-                'student_demand_distribution' => $analytics['student_demand_distribution'],
-                'industry_demand_distribution' => $analytics['industry_demand_distribution'],
-                'domain_frequency_counts' => $analytics['domain_frequency_counts'],
-                'jaccard_similarity_results' => $analytics['jaccard_similarity_results'],
-                'kpis' => $analytics['kpis'],
-                'generated_recommendations' => $recommendations,
-                'generated_at' => now(),
-            ]);
+                \App\AI\Models\AnalyticsCache::updateOrCreate(
+                    ['scope_type' => 'program', 'scope_id' => $course->id],
+                    [
+                        'student_demand_distribution' => $analytics['student_demand_distribution'],
+                        'industry_demand_distribution' => $analytics['industry_demand_distribution'],
+                        'domain_frequency_counts' => $analytics['domain_frequency_counts'],
+                        'emerging_technologies' => $analytics['emerging_technologies'] ?? [],
+                        'skill_gaps' => $analytics['skill_gaps'] ?? [],
+                        'jaccard_similarity_results' => $analytics['jaccard_similarity_results'] ?? [],
+                        'kpis' => $analytics['kpis'] ?? [],
+                        'generated_recommendations' => $recommendations,
+                        'generated_at' => now(),
+                    ]
+                );
+            }
         } catch (\Exception $e) {
             // Log but don't fail the entire import request
             \Log::error('NLP Pipeline failed during CSV Sync: ' . $e->getMessage());

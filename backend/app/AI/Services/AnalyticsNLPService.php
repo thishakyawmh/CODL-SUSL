@@ -16,23 +16,54 @@ class AnalyticsNLPService
     }
 
     /**
-     * Master method to process all survey data and return structured analytics.
+     * Master method to process survey data for a specific course/program scope.
+     * Uses multi-signal semantic matching to find relevant surveys.
      */
-    public function processAll(): array
+    public function processAll(\App\Models\Course $course = null): array
     {
         $studentSurveys = StudentInterest::all();
         $industrySurveys = IndustryRequirement::all();
 
+        // If a course is provided, use multi-signal NLP to filter relevant surveys
+        if ($course) {
+            $courseText = $course->title . ' ' . $course->department . ' ' . $course->code;
+            $courseDomains = $this->extractDomains($courseText);
+            // Default to broad matching if course text is too vague
+            if (empty($courseDomains)) {
+                $courseDomains = [$course->department];
+            }
+
+            $studentSurveys = $studentSurveys->filter(function ($survey) use ($courseDomains) {
+                // Multi-signal evaluation
+                $text = $survey->primary_field . ' ' . $survey->specializations . ' ' . $survey->emerging_fields;
+                $surveyDomains = $this->extractDomains($text);
+                // Return true if there is any semantic intersection
+                return count(array_intersect($courseDomains, $surveyDomains)) > 0;
+            });
+
+            $industrySurveys = $industrySurveys->filter(function ($survey) use ($courseDomains) {
+                $text = $survey->industry_sector . ' ' . $survey->primary_academic_field . ' ' . $survey->required_skills;
+                $surveyDomains = $this->extractDomains($text);
+                return count(array_intersect($courseDomains, $surveyDomains)) > 0;
+            });
+        }
+
         $studentDomains = [];
         $industryDomains = [];
+        $emergingTechnologies = [];
+        $skillGapsList = [];
 
         // 1. Process Student Surveys
         foreach ($studentSurveys as $survey) {
-            // using primary_field as the main text to analyze for student skills
             $text = $survey->primary_field . ' ' . $survey->specializations . ' ' . $survey->emerging_fields;
             $domains = $this->extractDomains($text);
             $domains = $this->deduplicateDomains($domains);
             $studentDomains = array_merge($studentDomains, $domains);
+            
+            // Also collect raw emerging fields for the tag cloud
+            if ($survey->emerging_fields) {
+                $emergingTechnologies[] = $survey->emerging_fields;
+            }
         }
 
         // 2. Process Industry Surveys
@@ -41,6 +72,13 @@ class AnalyticsNLPService
             $domains = $this->extractDomains($text);
             $domains = $this->deduplicateDomains($domains);
             $industryDomains = array_merge($industryDomains, $domains);
+            
+            if ($survey->emerging_fields) {
+                $emergingTechnologies[] = $survey->emerging_fields;
+            }
+            if ($survey->graduate_skill_gaps) {
+                $skillGapsList = array_merge($skillGapsList, $this->extractDomains($survey->graduate_skill_gaps));
+            }
         }
 
         // 3. Count Frequencies
@@ -54,6 +92,13 @@ class AnalyticsNLPService
         $studentDistribution = $this->formatDistribution($studentFrequencies);
         $industryDistribution = $this->formatDistribution($industryFrequencies);
 
+        // 6. Format emerging technologies and skill gaps
+        $emergingTechnologiesCounts = array_count_values($emergingTechnologies);
+        arsort($emergingTechnologiesCounts);
+        
+        $skillGapsCounts = array_count_values($skillGapsList);
+        arsort($skillGapsCounts);
+
         return [
             'student_demand_distribution' => $studentDistribution,
             'industry_demand_distribution' => $industryDistribution,
@@ -61,6 +106,8 @@ class AnalyticsNLPService
                 'student' => $studentFrequencies,
                 'industry' => $industryFrequencies,
             ],
+            'emerging_technologies' => array_keys(array_slice($emergingTechnologiesCounts, 0, 10)),
+            'skill_gaps' => array_keys(array_slice($skillGapsCounts, 0, 5)),
             'jaccard_similarity_results' => $jaccardResults,
             'kpis' => [
                 'studentMatch' => $jaccardResults['overall_score'] ?? 0,
