@@ -32,6 +32,8 @@ class RecommendationEngineService
                     'type' => $rule->recommendation_type,
                     'title' => $rule->rule_name,
                     'description' => $rule->recommendation_text,
+                    'priority' => $rule->priority,
+                    'evidence_source' => $rule->evidence_source,
                     'impact' => '+15% Industry Match', // Simulated impact metric
                 ];
             }

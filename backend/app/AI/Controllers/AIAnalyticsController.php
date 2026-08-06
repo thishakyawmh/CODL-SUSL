@@ -20,7 +20,7 @@ class AIAnalyticsController extends Controller
      */
     public function getOverview()
     {
-        $cache = \App\Models\AnalyticsCache::orderBy('generated_at', 'desc')->first();
+        $cache = \App\AI\Models\AnalyticsCache::orderBy('generated_at', 'desc')->first();
 
         if (!$cache) {
             return response()->json([
@@ -99,7 +99,7 @@ class AIAnalyticsController extends Controller
      */
     public function getRecommendations()
     {
-        $cache = \App\Models\AnalyticsCache::orderBy('generated_at', 'desc')->first();
+        $cache = \App\AI\Models\AnalyticsCache::orderBy('generated_at', 'desc')->first();
 
         if (!$cache || empty($cache->generated_recommendations)) {
             return response()->json([]);
@@ -113,12 +113,12 @@ class AIAnalyticsController extends Controller
      */
     public function getSurveys()
     {
-        $studentSurveys = \App\Models\StudentInterest::orderBy('created_at', 'desc')->get()->map(function($item) {
+        $studentSurveys = \App\AI\Models\StudentInterest::orderBy('created_at', 'desc')->get()->map(function($item) {
             $item->type = 'student';
             return $item;
         });
         
-        $industrySurveys = \App\Models\IndustryRequirement::orderBy('created_at', 'desc')->get()->map(function($item) {
+        $industrySurveys = \App\AI\Models\IndustryRequirement::orderBy('created_at', 'desc')->get()->map(function($item) {
             $item->type = 'industry';
             return $item;
         });
@@ -152,7 +152,7 @@ class AIAnalyticsController extends Controller
 
         if ($request->survey_type === 'student') {
             // Note: Our current form doesn't capture all of these exactly, but maps to them
-            \App\Models\StudentInterest::create([
+            \App\AI\Models\StudentInterest::create([
                 'education_level' => $parsedData['education_level'] ?? 'Not Specified',
                 'primary_field' => $parsedData['preferred_field'] ?? 'Various',
                 'learning_preferences' => $parsedData['academic_practices'] ?? null,
@@ -160,7 +160,7 @@ class AIAnalyticsController extends Controller
                 'new_program_suggestion' => $parsedData['new_program_recommendation'] ?? null,
             ]);
         } else {
-            \App\Models\IndustryRequirement::create([
+            \App\AI\Models\IndustryRequirement::create([
                 'company_name' => $parsedData['company_name'] ?? null,
                 'industry_sector' => $parsedData['industry_sector'] ?? 'Unknown',
                 'organization_size' => $parsedData['organization_size'] ?? null,
@@ -364,7 +364,7 @@ class AIAnalyticsController extends Controller
             $analytics = $nlpService->processAll();
             $recommendations = $recommendationEngine->generateRecommendations($analytics);
 
-            \App\Models\AnalyticsCache::create([
+            \App\AI\Models\AnalyticsCache::create([
                 'student_demand_distribution' => $analytics['student_demand_distribution'],
                 'industry_demand_distribution' => $analytics['industry_demand_distribution'],
                 'domain_frequency_counts' => $analytics['domain_frequency_counts'],
