@@ -27,6 +27,8 @@ class AIAnalyticsController extends Controller
                 'code' => $c->course_code,
                 'level' => $c->level,
                 'department' => $c->department,
+                'duration' => $c->duration,
+                'max_students' => $c->max_students,
             ];
         });
         return response()->json($courses);

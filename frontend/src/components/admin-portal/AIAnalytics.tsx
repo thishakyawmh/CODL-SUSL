@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
     Sparkles, RefreshCw, BarChart2, ShieldAlert, BookOpen, FileText,
     Database, Plus, ChevronDown, CheckCircle, Download, ArrowLeft,
-    TrendingUp, AlertTriangle, Layers, Cloud, Activity
+    TrendingUp, AlertTriangle, Layers, Cloud, Activity, Calendar, Users, Filter
 } from 'lucide-react';
 import { aiAnalyticsService } from '../../services/apiService';
 import './AIAnalytics.css';
@@ -13,6 +13,8 @@ interface Course {
     code: string;
     level: string;
     department: string;
+    duration?: string;
+    max_students?: number;
 }
 
 export const AIAnalytics: React.FC = () => {
@@ -127,54 +129,72 @@ export const AIAnalytics: React.FC = () => {
    STATE A: PROGRAM HUB (LANDING PAGE)
    ========================================================= */
 const ProgramHub: React.FC<{ programs: Course[], onSelect: (c: Course) => void, onOpenSync: () => void }> = ({ programs, onSelect, onOpenSync }) => {
-    const degrees = programs.filter(p => p.level.toLowerCase().includes('degree'));
-    const diplomas = programs.filter(p => p.level.toLowerCase().includes('diploma'));
-    const certificates = programs.filter(p => p.level.toLowerCase().includes('certificate'));
+    const [filter, setFilter] = useState('All');
+
+    const filteredPrograms = programs.filter(p => {
+        if (filter === 'All') return true;
+        if (filter === 'Degree' && p.level.toLowerCase().includes('degree')) return true;
+        if (filter === 'Diploma' && p.level.toLowerCase().includes('diploma')) return true;
+        if (filter === 'Certification' && p.level.toLowerCase().includes('certificate')) return true;
+        return false;
+    });
 
     return (
-        <div>
-            <div className="admin-page-header mb-8">
-                <div>
-                    <h1 className="admin-page-title flex items-center gap-2">
-                        <Sparkles className="text-purple-400" /> AI Analytics Workspace
-                    </h1>
-                    <p className="admin-page-subtitle">Select a specific academic program to drill down into semantic alignments and AI recommendations.</p>
-                </div>
-            </div>
-
-            <div className="ai-kpi-card mb-8 border-l-4" style={{ borderLeftColor: '#7C3AED' }}>
-                <div className="flex justify-between items-center flex-wrap gap-4">
+        <div className="programs-hub-container">
+            <div className="ai-kpi-card mb-8" style={{ borderLeft: '4px solid #7C3AED' }}>
+                <div className="flex justify-between items-center flex-wrap gap-4" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
-                        <h4 className="text-lg font-bold text-slate-800 m-0">Research Data Pipeline</h4>
-                        <p className="text-sm text-slate-500 mt-1">Connect Student & Industry Google Sheets to power the AI engine.</p>
+                        <h4 style={{ fontSize: '18px', fontWeight: 'bold', color: '#1E293B', margin: 0 }}>Research Data Pipeline</h4>
+                        <p style={{ fontSize: '14px', color: '#64748B', marginTop: '4px' }}>Connect Student & Industry Google Sheets to power the AI engine.</p>
                     </div>
-                    <button className="btn btn-primary flex items-center gap-2" onClick={onOpenSync}>
+                    <button className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }} onClick={onOpenSync}>
                         <RefreshCw size={16} /> Sync Google Sheet Data
                     </button>
                 </div>
             </div>
 
-            <ProgramCategory title="Degrees" programs={degrees} onSelect={onSelect} />
-            <ProgramCategory title="Diplomas" programs={diplomas} onSelect={onSelect} />
-            <ProgramCategory title="Certificates" programs={certificates} onSelect={onSelect} />
-        </div>
-    );
-};
+            <div className="programs-header-row">
+                <h2 className="programs-title"><BookOpen size={24} /> AI Analytics Workspace</h2>
+                <div className="programs-filter-group">
+                    <span className="filter-icon"><Filter size={20} /></span>
+                    <button className={`filter-btn ${filter === 'All' ? 'active' : ''}`} onClick={() => setFilter('All')}>All</button>
+                    <button className={`filter-btn ${filter === 'Degree' ? 'active' : ''}`} onClick={() => setFilter('Degree')}>Degree</button>
+                    <button className={`filter-btn ${filter === 'Diploma' ? 'active' : ''}`} onClick={() => setFilter('Diploma')}>Diploma</button>
+                    <button className={`filter-btn ${filter === 'Certification' ? 'active' : ''}`} onClick={() => setFilter('Certification')}>Certification</button>
+                </div>
+            </div>
 
-const ProgramCategory: React.FC<{ title: string, programs: Course[], onSelect: (c: Course) => void }> = ({ title, programs, onSelect }) => {
-    if (programs.length === 0) return null;
+            <div className="programs-grid">
+                {filteredPrograms.map(p => (
+                    <div key={p.id} className="program-card">
+                        <div className="program-card-header">
+                            <div className="program-icon-box">
+                                <BookOpen size={20} strokeWidth={2} />
+                            </div>
+                            <div className="program-badge">
+                                {p.level.includes('Degree') ? 'Degree' : p.level.includes('Diploma') ? 'Diploma' : 'Certificate'}
+                            </div>
+                        </div>
 
-    return (
-        <div className="mb-8">
-            <h3 className="text-xl font-bold text-slate-700 mb-4 border-b border-slate-200 pb-2">{title}</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {programs.map(p => (
-                    <div key={p.id} className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
-                        <div className="text-xs font-mono text-purple-600 bg-purple-50 inline-block px-2 py-1 rounded mb-2">{p.code}</div>
-                        <h4 className="font-bold text-slate-800 mb-1">{p.title}</h4>
-                        <p className="text-sm text-slate-500 mb-4">{p.department}</p>
-                        <button className="btn btn-secondary w-full flex items-center justify-center gap-2" onClick={() => onSelect(p)}>
-                            Analyze Program <TrendingUp size={16} />
+                        <h4 className="program-card-title">{p.title}</h4>
+                        <div className="program-card-subtitle">{p.code} • {p.department}</div>
+
+                        <div className="program-card-meta">
+                            <div className="meta-item">
+                                <Calendar size={14} />
+                                <span>Start: Jun 24, 2026</span>
+                            </div>
+                            <div className="meta-item">
+                                <Calendar size={14} />
+                                <span>End: {p.duration || '3 Years'}</span>
+                            </div>
+                        </div>
+
+                        <button 
+                            className="program-action-btn"
+                            onClick={() => onSelect(p)}
+                        >
+                            Analyze Program
                         </button>
                     </div>
                 ))}
@@ -182,6 +202,8 @@ const ProgramCategory: React.FC<{ title: string, programs: Course[], onSelect: (
         </div>
     );
 };
+
+
 
 /* =========================================================
    STATE B: PROGRAM-SPECIFIC DASHBOARD
