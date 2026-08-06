@@ -76,7 +76,7 @@ class AnalyticsNLPService
     /**
      * Normalizes text by lowercasing and removing punctuation.
      */
-    protected function normalizeText(string $text): string
+    public function normalizeText(string $text): string
     {
         $text = strtolower($text);
         // Remove everything except letters, numbers, and spaces
@@ -105,7 +105,7 @@ class AnalyticsNLPService
     /**
      * Maps normalized text to standard domains using the synonym dictionary.
      */
-    protected function extractDomains(string $text): array
+    public function extractDomains(string $text): array
     {
         if (empty(trim($text))) {
             return [];
