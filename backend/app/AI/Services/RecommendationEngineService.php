@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Services;
+namespace App\AI\Services;
 
-use App\Models\RecommendationRule;
+use App\AI\Models\RecommendationRule;
 
 class RecommendationEngineService
 {

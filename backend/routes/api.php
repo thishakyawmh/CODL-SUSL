@@ -16,7 +16,7 @@ use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\SystemSettingController;
 use App\Http\Controllers\BackupController;
 use App\Http\Controllers\AIAnalysisController;
-use App\Http\Controllers\AIAnalyticsController;
+use App\AI\Controllers\AIAnalyticsController;
 
 /*
 |--------------------------------------------------------------------------

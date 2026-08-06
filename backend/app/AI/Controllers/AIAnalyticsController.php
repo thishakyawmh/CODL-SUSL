@@ -1,13 +1,17 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\AI\Controllers;
 
+use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\DB;
 use App\Models\Course;
-use App\Models\StudentInterest;
-use App\Models\IndustryRequirement;
+use App\AI\Models\StudentInterest;
+use App\AI\Models\IndustryRequirement;
+use App\AI\Services\AnalyticsNLPService;
+use App\AI\Services\RecommendationEngineService;
+use Illuminate\Support\Facades\Log;
 
 class AIAnalyticsController extends Controller
 {
