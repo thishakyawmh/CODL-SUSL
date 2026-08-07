@@ -1,0 +1,69 @@
+name: CODL-SUSL CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  backend-test:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: codl_susl_test
+          MYSQL_ROOT_PASSWORD: password
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, pdo_mysql, xml, bcmath
+
+      - name: Copy .env.example
+        run: php -r "file_exists('backend/.env') || copy('backend/.env.example', 'backend/.env');"
+
+      - name: Install Dependencies
+        run: |
+          cd backend
+          composer install --prefer-dist --no-progress --no-suggest
+
+      - name: Generate key
+        run: |
+          cd backend
+          php artisan key:generate
+
+      - name: Execute tests
+        run: |
+          cd backend
+          php artisan test
+
+  frontend-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Build frontend
+        run: |
+          cd frontend
+          npm run build
