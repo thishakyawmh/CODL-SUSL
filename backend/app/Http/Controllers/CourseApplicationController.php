@@ -8,6 +8,7 @@ use App\Models\CourseApplication;
 use App\Models\Course;
 use App\Models\Batch;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 
 class CourseApplicationController extends Controller
 {

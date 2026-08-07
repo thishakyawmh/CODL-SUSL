@@ -8,6 +8,8 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class RoleAuthorizationTest extends TestCase
 {
+    use RefreshDatabase;
+
     public function test_unauthenticated_user_cannot_access_protected_routes()
     {
         $response = $this->getJson('/api/me');
