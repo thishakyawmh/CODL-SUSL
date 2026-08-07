@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Services;
+namespace App\AI\Services;
 
-use App\Models\StudentInterest;
-use App\Models\IndustryRequirement;
+use App\AI\Models\StudentInterest;
+use App\AI\Models\IndustryRequirement;
 
 class AnalyticsNLPService
 {

@@ -3,7 +3,7 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use App\Models\RecommendationRule;
+use App\AI\Models\RecommendationRule;
 
 class RecommendationRuleSeeder extends Seeder
 {
