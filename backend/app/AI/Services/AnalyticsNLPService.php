@@ -28,6 +28,16 @@ class AnalyticsNLPService
         if ($course) {
             $courseText = $course->title . ' ' . $course->department . ' ' . $course->code;
             $courseDomains = $this->extractDomains($courseText);
+            
+            // Load semesters & subjects to extract domains from curriculum subjects
+            $course->load('semesters.subjects');
+            foreach ($course->semesters as $semester) {
+                foreach ($semester->subjects as $subject) {
+                    $courseDomains = array_merge($courseDomains, $this->extractDomains($subject->name));
+                }
+            }
+            $courseDomains = $this->deduplicateDomains($courseDomains);
+
             // Default to broad matching if course text is too vague
             if (empty($courseDomains)) {
                 $courseDomains = [$course->department];
