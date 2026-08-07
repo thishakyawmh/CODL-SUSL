@@ -15,6 +15,7 @@ interface Course {
     department: string;
     duration?: string;
     max_students?: number;
+    created_at?: string;
 }
 
 export const AIAnalytics: React.FC = () => {
@@ -182,7 +183,7 @@ const ProgramHub: React.FC<{ programs: Course[], onSelect: (c: Course) => void, 
                         <div className="program-card-meta">
                             <div className="meta-item">
                                 <Calendar size={14} />
-                                <span>Start: Jun 24, 2026</span>
+                                <span>Start: {p.created_at || 'Jun 24, 2026'}</span>
                             </div>
                             <div className="meta-item">
                                 <Calendar size={14} />

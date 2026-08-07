@@ -29,6 +29,7 @@ class AIAnalyticsController extends Controller
                 'department' => $c->department,
                 'duration' => $c->duration,
                 'max_students' => $c->max_students,
+                'created_at' => $c->created_at ? $c->created_at->format('M j, Y') : null,
             ];
         });
         return response()->json($courses);
