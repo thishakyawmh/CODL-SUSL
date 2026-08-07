@@ -167,8 +167,8 @@ export const courseService = {
         const response = await api.get(`/student/courses/${courseId}/materials`);
         return response.data;
     },
-    getManageCourseData: async (courseId: string) => {
-        const response = await api.get(`/manage-course/${courseId}`);
+    getManageCourseData: async (courseId: string, options?: { signal?: AbortSignal }) => {
+        const response = await api.get(`/manage-course/${courseId}`, { signal: options?.signal });
         return response.data;
     },
     getStudentExaminationsData: async (courseId: string) => {
@@ -490,8 +490,32 @@ export const aiAnalysisService = {
 };
 
 export const aiAnalyticsService = {
-    getOverview: async () => {
-        const response = await api.get('/admin/ai-analytics/overview');
+    getPrograms: async () => {
+        const response = await api.get('/admin/ai-analytics/programs');
+        return response.data;
+    },
+    getOverview: async (courseId: string) => {
+        const response = await api.get(`/admin/ai-analytics/${courseId}/overview`);
+        return response.data;
+    },
+    getStudentInterest: async (courseId: string) => {
+        const response = await api.get(`/admin/ai-analytics/${courseId}/student-demand`);
+        return response.data;
+    },
+    getIndustryGap: async (courseId: string) => {
+        const response = await api.get(`/admin/ai-analytics/${courseId}/industry-demand`);
+        return response.data;
+    },
+    getSkillGap: async (courseId: string) => {
+        const response = await api.get(`/admin/ai-analytics/${courseId}/skill-gap`);
+        return response.data;
+    },
+    getEmergingTechnologies: async (courseId: string) => {
+        const response = await api.get(`/admin/ai-analytics/${courseId}/emerging-technologies`);
+        return response.data;
+    },
+    getRecommendations: async (courseId: string) => {
+        const response = await api.get(`/admin/ai-analytics/${courseId}/recommendations`);
         return response.data;
     },
     getSurveys: async () => {
@@ -500,18 +524,6 @@ export const aiAnalyticsService = {
     },
     createSurvey: async (data: { survey_type: 'student' | 'industry'; data: any }) => {
         const response = await api.post('/admin/ai-analytics/surveys', data);
-        return response.data;
-    },
-    getStudentInterest: async () => {
-        const response = await api.get('/admin/ai-analytics/student-interest');
-        return response.data;
-    },
-    getIndustryGap: async () => {
-        const response = await api.get('/admin/ai-analytics/industry-gap');
-        return response.data;
-    },
-    getRecommendations: async () => {
-        const response = await api.get('/admin/ai-analytics/recommendations');
         return response.data;
     },
     syncGoogleSheet: async (data: { type: 'student' | 'industry'; url: string }) => {
