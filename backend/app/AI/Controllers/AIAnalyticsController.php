@@ -51,6 +51,11 @@ class AIAnalyticsController extends Controller
         return response()->json([
             'kpis' => $cache->kpis,
             'last_generated' => $cache->generated_at->format('M j, Y - g:i A'),
+            'coverage_percent' => $cache->kpis['coverage_percent'] ?? 0,
+            'missing_subjects' => $cache->kpis['missing_subjects'] ?? [],
+            'outdated_subjects' => $cache->kpis['outdated_subjects'] ?? [],
+            'low_demand_subjects' => $cache->kpis['low_demand_subjects'] ?? [],
+            'learning_preferences_data' => $cache->kpis['learning_preferences_data'] ?? null,
         ]);
     }
 
@@ -87,7 +92,12 @@ class AIAnalyticsController extends Controller
 
         return response()->json([
             'missing_skills' => $cache->skill_gaps,
-            'jaccard_similarity' => $cache->jaccard_similarity_results
+            'jaccard_similarity' => $cache->jaccard_similarity_results,
+            'coverage_percent' => $cache->kpis['coverage_percent'] ?? 0,
+            'missing_subjects' => $cache->kpis['missing_subjects'] ?? [],
+            'outdated_subjects' => $cache->kpis['outdated_subjects'] ?? [],
+            'low_demand_subjects' => $cache->kpis['low_demand_subjects'] ?? [],
+            'learning_preferences_data' => $cache->kpis['learning_preferences_data'] ?? null,
         ]);
     }
 
@@ -174,7 +184,7 @@ class AIAnalyticsController extends Controller
     /**
      * Sync data from Google Sheets CSV.
      */
-    public function syncGoogleSheet(Request $request, \App\Services\AnalyticsNLPService $nlpService, \App\Services\RecommendationEngineService $recommendationEngine)
+    public function syncGoogleSheet(Request $request, AnalyticsNLPService $nlpService, RecommendationEngineService $recommendationEngine)
     {
         $startTime = microtime(true);
         
@@ -358,6 +368,13 @@ class AIAnalyticsController extends Controller
                 $analytics = $nlpService->processAll($course);
                 $recommendations = $recommendationEngine->generateRecommendations($analytics);
 
+                $kpis = $analytics['kpis'] ?? [];
+                $kpis['coverage_percent'] = $analytics['coverage_percent'] ?? 0;
+                $kpis['missing_subjects'] = $analytics['missing_subjects'] ?? [];
+                $kpis['outdated_subjects'] = $analytics['outdated_subjects'] ?? [];
+                $kpis['low_demand_subjects'] = $analytics['low_demand_subjects'] ?? [];
+                $kpis['learning_preferences_data'] = $analytics['learning_preferences_data'] ?? null;
+
                 \App\AI\Models\AnalyticsCache::updateOrCreate(
                     ['scope_type' => 'program', 'scope_id' => $course->id],
                     [
@@ -367,7 +384,7 @@ class AIAnalyticsController extends Controller
                         'emerging_technologies' => $analytics['emerging_technologies'] ?? [],
                         'skill_gaps' => $analytics['skill_gaps'] ?? [],
                         'jaccard_similarity_results' => $analytics['jaccard_similarity_results'] ?? [],
-                        'kpis' => $analytics['kpis'] ?? [],
+                        'kpis' => $kpis,
                         'generated_recommendations' => $recommendations,
                         'generated_at' => now(),
                     ]
