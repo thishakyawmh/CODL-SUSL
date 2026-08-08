@@ -225,27 +225,27 @@ class AIAnalyticsController extends Controller
         if (count($lines) < 2) {
             return response()->json(['error' => 'CSV file is empty or only contains headers.'], 400);
         }
-
         $headers = str_getcsv(array_shift($lines));
-        $headers = array_map('trim', $headers);
+        $headers = array_map(function($h) {
+            return trim(preg_replace('/\s+/', ' ', $h));
+        }, $headers);
 
         // 4. Configurable Mapping Dictionary
         $studentHeaderMap = [
             'Timestamp' => 'survey_submitted_at',
             'Current Education Level' => 'education_level',
             'Province' => 'province',
-            'District' => 'district',
-            'Which academic field(s) are you interested in studying at university?' => 'primary_field',
-            'Secondary field of interest' => 'secondary_field',
-            'Third field of interest' => 'third_field',
-            'Specializations you want to pursue' => 'specializations',
-            'Preferred learning methods' => 'learning_preferences',
-            'Theory vs Practical (1-100)' => 'theory_practical_score',
-            'Desired university opportunities' => 'university_opportunities',
-            'Emerging fields to introduce' => 'emerging_fields',
-            'New program suggestions' => 'new_program_suggestion',
+            'Student District' => 'district',
+            'Which academic field is your primary interest for university study?' => 'primary_field',
+            'Which academic field is your Secondary interest for university study?' => 'secondary_field',
+            'Which academic field is your Third interest for university study?' => 'third_field',
+            'Specializations' => 'specializations',
+            'Teaching Methods' => 'learning_preferences',
+            'Theory vs Practical' => 'theory_practical_score',
+            'Which university opportunities are most important to you?' => 'university_opportunities',
+            'Which emerging fields do you think universities should introduce or expand?' => 'emerging_fields',
+            'If you could introduce ONE new degree program or specialization, what would it be?' => 'new_program_suggestion',
         ];
-
         $industryHeaderMap = [
             'Timestamp' => 'survey_submitted_at',
             'Organization / Company Name' => 'company_name',
