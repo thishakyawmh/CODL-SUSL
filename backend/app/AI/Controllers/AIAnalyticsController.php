@@ -198,7 +198,9 @@ class AIAnalyticsController extends Controller
 
         // 1. URL Rewriting
         // Convert /edit#gid=X or /edit?usp=sharing to /export?format=csv&gid=X
-        if (preg_match('/\/d\/([a-zA-Z0-9-_]+)/', $url, $matches)) {
+        if (str_contains($url, 'format=csv') || str_contains($url, 'output=csv')) {
+            $csvUrl = $url;
+        } elseif (preg_match('/\/d\/([a-zA-Z0-9-_]+)/', $url, $matches)) {
             $spreadsheetId = $matches[1];
             $gid = 0;
             if (preg_match('/gid=([0-9]+)/', $url, $gidMatches)) {
