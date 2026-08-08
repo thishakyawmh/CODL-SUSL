@@ -132,16 +132,17 @@ const ProgramLevelChart: React.FC<{ data: LevelData[] }> = ({ data }) => {
     const activeItem = activeIndex !== null ? data[activeIndex] : null;
 
     return (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '24px', flexWrap: 'wrap', justifyContent: 'center', padding: '10px 0' }}>
-            <div style={{ width: 180, height: 180, position: 'relative', flexShrink: 0 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', padding: '10px 0' }}>
+            {/* Enlarged Pie Chart Container */}
+            <div style={{ width: 220, height: 220, position: 'relative', flexShrink: 0 }}>
                 <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                         <Pie
                             data={data}
                             cx="50%"
                             cy="50%"
-                            innerRadius={55}
-                            outerRadius={75}
+                            innerRadius={65}
+                            outerRadius={90}
                             paddingAngle={4}
                             dataKey="count"
                             nameKey="level"
@@ -173,7 +174,7 @@ const ProgramLevelChart: React.FC<{ data: LevelData[] }> = ({ data }) => {
                     textAlign: 'center',
                     pointerEvents: 'none'
                 }}>
-                    <div style={{ fontSize: '24px', fontWeight: 800, color: '#0F172A', lineHeight: 1 }}>
+                    <div style={{ fontSize: '28px', fontWeight: 800, color: '#0F172A', lineHeight: 1 }}>
                         {activeItem ? activeItem.count : total}
                     </div>
                     <div style={{ fontSize: '10px', fontWeight: 700, color: '#64748B', marginTop: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
@@ -182,7 +183,8 @@ const ProgramLevelChart: React.FC<{ data: LevelData[] }> = ({ data }) => {
                 </div>
             </div>
 
-            <div className="doughnut-legend-grid" style={{ flex: 1, minWidth: '150px' }}>
+            {/* Legends at the Bottom */}
+            <div className="doughnut-legend-grid" style={{ width: '100%', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginTop: '10px' }}>
                 {data.map((entry, index) => {
                     const percent = total > 0 ? Math.round((entry.count / total) * 100) : 0;
                     return (
@@ -191,7 +193,8 @@ const ProgramLevelChart: React.FC<{ data: LevelData[] }> = ({ data }) => {
                             key={index} 
                             style={{ 
                                 opacity: activeIndex !== null && activeIndex !== index ? 0.4 : 1, 
-                                transition: 'opacity 0.2s' 
+                                transition: 'opacity 0.2s',
+                                justifyContent: 'center'
                             }}
                         >
                             <span className="legend-badge" style={{ backgroundColor: COLORS[index % COLORS.length] }}></span>
@@ -213,7 +216,7 @@ const GeographicHotspotsChart: React.FC<{ data: [string, number][] }> = ({ data 
 
     if (!data || data.length === 0) {
         return (
-            <div style={{ height: '240px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94A3B8' }}>
+            <div style={{ height: '330px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94A3B8' }}>
                 No regional outreach data
             </div>
         );
@@ -229,9 +232,9 @@ const GeographicHotspotsChart: React.FC<{ data: [string, number][] }> = ({ data 
     });
 
     return (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '24px', flexWrap: 'wrap', justifyContent: 'center', padding: '10px 0' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '10px 0' }}>
             {/* Interactive SVG Map of Sri Lanka */}
-            <div className="chart-container" style={{ width: '160px', height: '240px', position: 'relative', flexShrink: 0 }}>
+            <div className="chart-container" style={{ width: '220px', height: '330px', position: 'relative', flexShrink: 0 }}>
                 <svg 
                     viewBox={SriLankaMapData.viewBox} 
                     width="100%" 
@@ -306,27 +309,9 @@ const GeographicHotspotsChart: React.FC<{ data: [string, number][] }> = ({ data 
                     </div>
                 )}
             </div>
-
-            {/* Right side District Legend Checklist */}
-            <div className="doughnut-legend-grid" style={{ flex: 1, minWidth: '160px' }}>
-                {data.slice(0, 5).map(([district, count], idx) => {
-                    const ratio = count / maxCount;
-                    const lightness = 85 - (ratio * 40);
-                    const color = `hsl(262, 80%, ${lightness}%)`;
-                    return (
-                        <div className="legend-item" key={idx}>
-                            <span className="legend-badge" style={{ backgroundColor: color, border: '1px solid #7C3AED' }}></span>
-                            <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                <span style={{ fontSize: '12px', fontWeight: 600, color: '#334155', lineHeight: 1.2 }}>{district}</span>
-                                <span style={{ fontSize: '11px', color: '#64748B' }}>{count} Applicants</span>
-                              </div>
-                          </div>
-                      );
-                  })}
-              </div>
-          </div>
-      );
-  };
+        </div>
+    );
+};
 
 // ActivityFlowChart using Recharts
 const ActivityFlowChart: React.FC<{ data: any[] }> = ({ data }) => {
