@@ -9,7 +9,6 @@ use App\Models\ExamApplication;
 use App\Models\LetterRequest;
 use App\Models\PostponementRequest;
 use App\Models\ReattemptRequest;
-use App\Models\Approval;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 

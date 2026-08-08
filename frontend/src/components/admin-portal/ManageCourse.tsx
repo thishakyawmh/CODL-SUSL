@@ -891,17 +891,7 @@ export const ManageCourse: React.FC = () => {
         }
     }, [selectedBatch, batches, course, courseType]);
 
-    // Automatically synchronize any materials changes back to Database (disabled to prevent infinite loops - manual saves are handled in event handlers)
-    /*
-    useEffect(() => {
-        if (materialsSemesters && materialsSemesters.length > 0 && selectedBatch) {
-            const currentBatch = batches.find(b => b.name === selectedBatch);
-            if (currentBatch && JSON.stringify(currentBatch.materials) !== JSON.stringify(materialsSemesters)) {
-                saveMaterialsToDatabase(materialsSemesters);
-            }
-        }
-    }, [materialsSemesters, id, selectedBatch, batches]);
-    */
+
 
     // Automatically skip semester/subject view for Certificate and Advanced Certificate courses
     useEffect(() => {
