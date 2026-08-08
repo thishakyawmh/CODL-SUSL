@@ -71,32 +71,32 @@ const EnrollmentTrendChart: React.FC<{ data: MonthlyData[] }> = ({ data }) => {
                 <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                     <defs>
                         <linearGradient id="colorEnrollment" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#7C3AED" stopOpacity="0.3"/>
-                            <stop offset="95%" stopColor="#7C3AED" stopOpacity="0.0"/>
+                            <stop offset="5%" stopColor="#7C3AED" stopOpacity="0.3" />
+                            <stop offset="95%" stopColor="#7C3AED" stopOpacity="0.0" />
                         </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
-                    <XAxis 
-                        dataKey="month" 
-                        tickLine={false} 
-                        axisLine={false} 
-                        dy={10} 
+                    <XAxis
+                        dataKey="month"
+                        tickLine={false}
+                        axisLine={false}
+                        dy={10}
                         style={{ fontSize: '11px', fontWeight: 500, fill: '#94A3B8' }}
                     />
-                    <YAxis 
-                        tickLine={false} 
-                        axisLine={false} 
-                        dx={-5} 
+                    <YAxis
+                        tickLine={false}
+                        axisLine={false}
+                        dx={-5}
                         style={{ fontSize: '11px', fontWeight: 500, fill: '#94A3B8' }}
                     />
                     <ChartTooltip content={<CustomTooltip />} />
-                    <Area 
-                        type="monotone" 
-                        dataKey="count" 
-                        stroke="#7C3AED" 
-                        strokeWidth={3} 
-                        fillOpacity={1} 
-                        fill="url(#colorEnrollment)" 
+                    <Area
+                        type="monotone"
+                        dataKey="count"
+                        stroke="#7C3AED"
+                        strokeWidth={3}
+                        fillOpacity={1}
+                        fill="url(#colorEnrollment)"
                         activeDot={{ r: 6, stroke: '#FFFFFF', strokeWidth: 2, fill: '#7C3AED' }}
                     />
                 </AreaChart>
@@ -150,9 +150,9 @@ const ProgramLevelChart: React.FC<{ data: LevelData[] }> = ({ data }) => {
                             onMouseLeave={onPieLeave}
                         >
                             {data.map((entry, index) => (
-                                <Cell 
-                                    key={`cell-${index}`} 
-                                    fill={COLORS[index % COLORS.length]} 
+                                <Cell
+                                    key={`cell-${index}`}
+                                    fill={COLORS[index % COLORS.length]}
                                     style={{
                                         outline: 'none',
                                         transition: 'all 0.2s',
@@ -188,11 +188,11 @@ const ProgramLevelChart: React.FC<{ data: LevelData[] }> = ({ data }) => {
                 {data.map((entry, index) => {
                     const percent = total > 0 ? Math.round((entry.count / total) * 100) : 0;
                     return (
-                        <div 
-                            className="legend-item" 
-                            key={index} 
-                            style={{ 
-                                opacity: activeIndex !== null && activeIndex !== index ? 0.4 : 1, 
+                        <div
+                            className="legend-item"
+                            key={index}
+                            style={{
+                                opacity: activeIndex !== null && activeIndex !== index ? 0.4 : 1,
                                 transition: 'opacity 0.2s',
                                 justifyContent: 'center'
                             }}
@@ -235,16 +235,16 @@ const GeographicHotspotsChart: React.FC<{ data: [string, number][] }> = ({ data 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '10px 0' }}>
             {/* Interactive SVG Map of Sri Lanka */}
             <div className="chart-container" style={{ width: '220px', height: '330px', position: 'relative', flexShrink: 0 }}>
-                <svg 
-                    viewBox={SriLankaMapData.viewBox} 
-                    width="100%" 
+                <svg
+                    viewBox={SriLankaMapData.viewBox}
+                    width="100%"
                     height="100%"
                     style={{ maxHeight: '100%' }}
                 >
                     {SriLankaMapData.locations.map((loc: any) => {
                         const nameLower = loc.name.toLowerCase().trim();
                         const count = districtCounts[nameLower] || 0;
-                        
+
                         // Determine color intensity based on weight
                         let fillColor = '#F1F5F9'; // Default light slate
                         let strokeColor = '#CBD5E1';
@@ -296,7 +296,7 @@ const GeographicHotspotsChart: React.FC<{ data: [string, number][] }> = ({ data 
 
                 {/* Hover Tooltip */}
                 {hoveredLocation && (
-                    <div 
+                    <div
                         className="chart-tooltip"
                         style={{
                             left: `${hoveredLocation.x}px`,
@@ -349,15 +349,15 @@ const ActivityFlowChart: React.FC<{ data: any[] }> = ({ data }) => {
                 <AreaChart data={data} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
                     <defs>
                         <linearGradient id="colorActivity" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#10B981" stopOpacity={0.3}/>
-                            <stop offset="95%" stopColor="#10B981" stopOpacity={0.0}/>
+                            <stop offset="5%" stopColor="#10B981" stopOpacity={0.3} />
+                            <stop offset="95%" stopColor="#10B981" stopOpacity={0.0} />
                         </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
-                    <XAxis 
-                        dataKey="hour" 
-                        tickLine={false} 
-                        axisLine={false} 
+                    <XAxis
+                        dataKey="hour"
+                        tickLine={false}
+                        axisLine={false}
                         dy={8}
                         style={{ fontSize: '10px', fontWeight: 500, fill: '#94A3B8' }}
                         tickFormatter={(value) => {
@@ -365,20 +365,20 @@ const ActivityFlowChart: React.FC<{ data: any[] }> = ({ data }) => {
                             return hr % 4 === 0 ? value : '';
                         }}
                     />
-                    <YAxis 
-                        tickLine={false} 
-                        axisLine={false} 
+                    <YAxis
+                        tickLine={false}
+                        axisLine={false}
                         dx={-5}
                         style={{ fontSize: '10px', fontWeight: 500, fill: '#94A3B8' }}
                     />
                     <ChartTooltip content={<CustomTooltip />} />
-                    <Area 
-                        type="monotone" 
-                        dataKey="count" 
-                        stroke="#10B981" 
-                        strokeWidth={2.5} 
-                        fillOpacity={1} 
-                        fill="url(#colorActivity)" 
+                    <Area
+                        type="monotone"
+                        dataKey="count"
+                        stroke="#10B981"
+                        strokeWidth={2.5}
+                        fillOpacity={1}
+                        fill="url(#colorActivity)"
                         activeDot={{ r: 5, stroke: '#FFFFFF', strokeWidth: 1.5, fill: '#10B981' }}
                     />
                 </AreaChart>
@@ -455,7 +455,7 @@ export const AdminDashboard: React.FC = () => {
                     timestamp: log.created_at
                 }));
                 setActivityLogs(mappedLogs);
-                
+
                 const mappedCourses = (data.recentCourses || []).map((c: any) => ({
                     id: c.id.toString(),
                     title: c.title,
@@ -670,7 +670,6 @@ export const AdminDashboard: React.FC = () => {
                 <div className="admin-card">
                     <div className="admin-card-header">
                         <h2><BookOpen size={20} /> Academic Program Share</h2>
-                        <span className="admin-count-badge">Level Breakdown</span>
                     </div>
                     <ProgramLevelChart data={levelDistribution} />
                 </div>
@@ -681,7 +680,6 @@ export const AdminDashboard: React.FC = () => {
                 <div className="admin-card">
                     <div className="admin-card-header">
                         <h2><Users size={20} /> Student Demographics</h2>
-                        <span className="admin-count-badge">Age & Gender Profiling</span>
                     </div>
                     <div style={{ display: 'flex', gap: '32px', flexWrap: 'wrap', justifyContent: 'space-around', alignItems: 'center', padding: '10px 0' }}>
                         {/* Age Spread: Smooth Curve Line/Area Chart */}
@@ -691,8 +689,8 @@ export const AdminDashboard: React.FC = () => {
                                 <AreaChart data={demographics.ageSpread} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
                                     <defs>
                                         <linearGradient id="colorAge" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#7C3AED" stopOpacity={0.3}/>
-                                            <stop offset="95%" stopColor="#7C3AED" stopOpacity={0.0}/>
+                                            <stop offset="5%" stopColor="#7C3AED" stopOpacity={0.3} />
+                                            <stop offset="95%" stopColor="#7C3AED" stopOpacity={0.0} />
                                         </linearGradient>
                                     </defs>
                                     <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
@@ -750,7 +748,6 @@ export const AdminDashboard: React.FC = () => {
                 <div className="admin-card">
                     <div className="admin-card-header">
                         <h2><MapPin size={20} /> Regional Hotspots</h2>
-                        <span className="admin-count-badge">Active Districts</span>
                     </div>
                     <GeographicHotspotsChart data={topDistricts} />
                 </div>
