@@ -483,6 +483,10 @@ export const statsService = {
     getAdminStats: async () => {
         const response = await api.get('/admin/stats');
         return response.data;
+    },
+    getSystemHealthStats: async (timeframe: string) => {
+        const response = await api.get(`/admin/health-stats?timeframe=${timeframe}`);
+        return response.data;
     }
 };
 

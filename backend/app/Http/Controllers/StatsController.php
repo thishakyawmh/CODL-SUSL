@@ -330,4 +330,127 @@ class StatsController extends Controller
 
         return $stats;
     }
+
+    public function getSystemHealthStats(\Illuminate\Http\Request $request)
+    {
+        $timeframe = $request->query('timeframe', '1d'); // Default to 24 hours / 1 day
+        
+        $data = [];
+        
+        if ($timeframe === '12h') {
+            // Last 12 hours, hourly intervals
+            $start = now()->subHours(11)->startOfHour();
+            for ($i = 0; $i < 12; $i++) {
+                $time = $start->copy()->addHours($i);
+                $key = $time->format('Y-m-d H:00:00');
+                $label = $time->format('H:i');
+                $data[$key] = [
+                    'label' => $label,
+                    'count' => 0
+                ];
+            }
+            $logs = DB::table('activity_logs')
+                ->where('created_at', '>=', now()->subHours(12)->toDateTimeString())
+                ->select('created_at')
+                ->get();
+            foreach ($logs as $log) {
+                $hourKey = substr($log->created_at, 0, 14) . '00:00';
+                if (isset($data[$hourKey])) {
+                    $data[$hourKey]['count']++;
+                }
+            }
+        } elseif ($timeframe === '1d') {
+            // Last 24 hours, hourly intervals
+            $start = now()->subHours(23)->startOfHour();
+            for ($i = 0; $i < 24; $i++) {
+                $time = $start->copy()->addHours($i);
+                $key = $time->format('Y-m-d H:00:00');
+                $label = $time->format('H:i');
+                $data[$key] = [
+                    'label' => $label,
+                    'count' => 0
+                ];
+            }
+            $logs = DB::table('activity_logs')
+                ->where('created_at', '>=', now()->subHours(24)->toDateTimeString())
+                ->select('created_at')
+                ->get();
+            foreach ($logs as $log) {
+                $hourKey = substr($log->created_at, 0, 14) . '00:00';
+                if (isset($data[$hourKey])) {
+                    $data[$hourKey]['count']++;
+                }
+            }
+        } elseif ($timeframe === '1w') {
+            // Last 7 days, daily intervals
+            $start = now()->subDays(6)->startOfDay();
+            for ($i = 0; $i < 7; $i++) {
+                $time = $start->copy()->addDays($i);
+                $key = $time->format('Y-m-d');
+                $label = $time->format('d M');
+                $data[$key] = [
+                    'label' => $label,
+                    'count' => 0
+                ];
+            }
+            $logs = DB::table('activity_logs')
+                ->where('created_at', '>=', now()->subDays(7)->toDateTimeString())
+                ->select('created_at')
+                ->get();
+            foreach ($logs as $log) {
+                $dayKey = substr($log->created_at, 0, 10);
+                if (isset($data[$dayKey])) {
+                    $data[$dayKey]['count']++;
+                }
+            }
+        } elseif ($timeframe === '6m') {
+            // Last 6 months, monthly intervals
+            $start = now()->subMonths(5)->startOfMonth();
+            for ($i = 0; $i < 6; $i++) {
+                $time = $start->copy()->addMonths($i);
+                $key = $time->format('Y-m');
+                $label = $time->format('M Y');
+                $data[$key] = [
+                    'label' => $label,
+                    'count' => 0
+                ];
+            }
+            $logs = DB::table('activity_logs')
+                ->where('created_at', '>=', now()->subMonths(6)->startOfMonth()->toDateTimeString())
+                ->select('created_at')
+                ->get();
+            foreach ($logs as $log) {
+                $monthKey = substr($log->created_at, 0, 7);
+                if (isset($data[$monthKey])) {
+                    $data[$monthKey]['count']++;
+                }
+            }
+        } elseif ($timeframe === '1y') {
+            // Last 12 months, monthly intervals
+            $start = now()->subMonths(11)->startOfMonth();
+            for ($i = 0; $i < 12; $i++) {
+                $time = $start->copy()->addMonths($i);
+                $key = $time->format('Y-m');
+                $label = $time->format('M Y');
+                $data[$key] = [
+                    'label' => $label,
+                    'count' => 0
+                ];
+            }
+            $logs = DB::table('activity_logs')
+                ->where('created_at', '>=', now()->subMonths(12)->startOfMonth()->toDateTimeString())
+                ->select('created_at')
+                ->get();
+            foreach ($logs as $log) {
+                $monthKey = substr($log->created_at, 0, 7);
+                if (isset($data[$monthKey])) {
+                    $data[$monthKey]['count']++;
+                }
+            }
+        }
+
+        return response()->json([
+            'activityFlow' => array_values($data)
+        ]);
+    }
 }

@@ -59,14 +59,14 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 const EnrollmentTrendChart: React.FC<{ data: MonthlyData[] }> = ({ data }) => {
     if (!data || data.length === 0) {
         return (
-            <div style={{ height: '240px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94A3B8' }}>
+            <div style={{ height: '180px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94A3B8' }}>
                 No trend data available
             </div>
         );
     }
 
     return (
-        <div style={{ width: '100%', height: 260 }}>
+        <div style={{ width: '100%', height: 200 }}>
             <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                     <defs>
@@ -113,7 +113,7 @@ const ProgramLevelChart: React.FC<{ data: LevelData[] }> = ({ data }) => {
 
     if (total === 0) {
         return (
-            <div style={{ height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94A3B8' }}>
+            <div style={{ height: '160px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94A3B8' }}>
                 No active program distribution data
             </div>
         );
@@ -132,17 +132,17 @@ const ProgramLevelChart: React.FC<{ data: LevelData[] }> = ({ data }) => {
     const activeItem = activeIndex !== null ? data[activeIndex] : null;
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', padding: '10px 0' }}>
-            {/* Enlarged Pie Chart Container */}
-            <div style={{ width: 220, height: 220, position: 'relative', flexShrink: 0 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', padding: '6px 0' }}>
+            {/* Pie Chart Container */}
+            <div style={{ width: 180, height: 180, position: 'relative', flexShrink: 0 }}>
                 <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                         <Pie
                             data={data}
                             cx="50%"
                             cy="50%"
-                            innerRadius={65}
-                            outerRadius={90}
+                            innerRadius={52}
+                            outerRadius={75}
                             paddingAngle={4}
                             dataKey="count"
                             nameKey="level"
@@ -174,7 +174,7 @@ const ProgramLevelChart: React.FC<{ data: LevelData[] }> = ({ data }) => {
                     textAlign: 'center',
                     pointerEvents: 'none'
                 }}>
-                    <div style={{ fontSize: '28px', fontWeight: 800, color: '#0F172A', lineHeight: 1 }}>
+                    <div style={{ fontSize: '22px', fontWeight: 800, color: '#0F172A', lineHeight: 1 }}>
                         {activeItem ? activeItem.count : total}
                     </div>
                     <div style={{ fontSize: '10px', fontWeight: 700, color: '#64748B', marginTop: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
@@ -184,7 +184,7 @@ const ProgramLevelChart: React.FC<{ data: LevelData[] }> = ({ data }) => {
             </div>
 
             {/* Legends at the Bottom */}
-            <div className="doughnut-legend-grid" style={{ width: '100%', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginTop: '10px' }}>
+            <div className="doughnut-legend-grid" style={{ width: '100%', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', marginTop: '4px' }}>
                 {data.map((entry, index) => {
                     const percent = total > 0 ? Math.round((entry.count / total) * 100) : 0;
                     return (
@@ -259,36 +259,37 @@ const GeographicHotspotsChart: React.FC<{ data: [string, number][] }> = ({ data 
                         }
 
                         return (
-                            <path
-                                key={loc.id}
-                                d={loc.path}
-                                fill={fillColor}
-                                stroke={strokeColor}
-                                strokeWidth={strokeWidth}
-                                style={{
-                                    transition: 'all 0.2s',
-                                    cursor: 'pointer',
-                                    outline: 'none'
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.setAttribute('fill-opacity', '0.8');
-                                    e.currentTarget.setAttribute('stroke-width', '2.5');
+                            <g key={loc.id}>
+                                <path
+                                    d={loc.path}
+                                    fill={fillColor}
+                                    stroke={strokeColor}
+                                    strokeWidth={strokeWidth}
+                                    style={{
+                                        transition: 'all 0.2s',
+                                        cursor: 'pointer',
+                                        outline: 'none'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.setAttribute('fill-opacity', '0.8');
+                                        e.currentTarget.setAttribute('stroke-width', '2.5');
 
-                                    const svgEl = e.currentTarget.ownerSVGElement;
-                                    if (svgEl) {
-                                        const rect = svgEl.getBoundingClientRect();
-                                        const box = e.currentTarget.getBBox();
-                                        const pctX = ((box.x + box.width / 2) / 357.79) * rect.width;
-                                        const pctY = ((box.y + box.height / 2) / 661.12) * rect.height;
-                                        setHoveredLocation({ x: pctX, y: pctY, name: loc.name, count });
-                                    }
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.setAttribute('fill-opacity', '1');
-                                    e.currentTarget.setAttribute('stroke-width', strokeWidth);
-                                    setHoveredLocation(null);
-                                }}
-                            />
+                                        const svgEl = e.currentTarget.ownerSVGElement;
+                                        if (svgEl) {
+                                            const rect = svgEl.getBoundingClientRect();
+                                            const box = e.currentTarget.getBBox();
+                                            const pctX = ((box.x + box.width / 2) / 357.79) * rect.width;
+                                            const pctY = ((box.y + box.height / 2) / 661.12) * rect.height;
+                                            setHoveredLocation({ x: pctX, y: pctY, name: loc.name, count });
+                                        }
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.setAttribute('fill-opacity', '1');
+                                        e.currentTarget.setAttribute('stroke-width', strokeWidth);
+                                        setHoveredLocation(null);
+                                    }}
+                                />
+                            </g>
                         );
                     })}
                 </svg>
@@ -299,16 +300,35 @@ const GeographicHotspotsChart: React.FC<{ data: [string, number][] }> = ({ data 
                         className="chart-tooltip"
                         style={{
                             left: `${hoveredLocation.x}px`,
-                            top: `${hoveredLocation.y - 45}px`,
+                            top: `${hoveredLocation.y - 52}px`,
                             transform: 'translateX(-50%)',
                             opacity: 1,
-                            zIndex: 200
+                            zIndex: 200,
+                            minWidth: '140px',
+                            textAlign: 'center'
                         }}
                     >
-                        <strong>{hoveredLocation.name}</strong>: {hoveredLocation.count} Applicants
+                        <div style={{ fontSize: '12px', fontWeight: 800, color: '#FFFFFF', marginBottom: '3px' }}>{hoveredLocation.name}</div>
+                        <div style={{ fontSize: '11px', fontWeight: 600, color: '#CBD5E1' }}>{hoveredLocation.count} Applicant{hoveredLocation.count !== 1 ? 's' : ''}</div>
                     </div>
                 )}
             </div>
+
+            {/* District Legend List */}
+            {data.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginLeft: '16px', minWidth: '130px' }}>
+                    {data.slice(0, 8).map(([dist, count], idx) => (
+                        <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px' }}>
+                            <span style={{
+                                width: '10px', height: '10px', borderRadius: '3px', flexShrink: 0,
+                                background: `hsl(262, 80%, ${85 - ((count / maxCount) * 40)}%)`
+                            }}></span>
+                            <span style={{ fontWeight: 600, color: '#334155', flex: 1 }}>{dist}</span>
+                            <span style={{ fontWeight: 700, color: '#7C3AED', fontSize: '11px' }}>{count}</span>
+                        </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 };
@@ -608,8 +628,8 @@ export const AdminDashboard: React.FC = () => {
                 ))}
             </div>
 
-            {/* Enrollment Growth Trend (Full Width Column with Timeframe Filter) */}
-            <div className="admin-dashboard-grid" style={{ gridTemplateColumns: '1fr' }}>
+            {/* Row 1: Student Enrollment Trend (2fr) & Academic Program Share (1fr) */}
+            <div className="admin-dashboard-grid" style={{ gridTemplateColumns: '2.1fr 1fr', marginBottom: '28px' }}>
                 <div className="admin-card">
                     <div className="admin-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
                         <h2><TrendingUp size={20} /> Student Enrollment Trend</h2>
@@ -645,9 +665,18 @@ export const AdminDashboard: React.FC = () => {
                     </div>
                     <EnrollmentTrendChart data={getFilteredTrendData()} />
                 </div>
+
+                {/* Program Level Share (Doughnut Chart) */}
+                <div className="admin-card">
+                    <div className="admin-card-header">
+                        <h2><BookOpen size={20} /> Academic Program Share</h2>
+                        <span className="admin-count-badge">Level Breakdown</span>
+                    </div>
+                    <ProgramLevelChart data={levelDistribution} />
+                </div>
             </div>
 
-            {/* Student Demographics (Full Width Column with Age Curve and Gender Gauge) */}
+            {/* Row 2: Student Demographics (Full Width Column with Age Curve and Gender Gauge) */}
             <div className="admin-dashboard-grid" style={{ gridTemplateColumns: '1fr', marginBottom: '28px' }}>
                 <div className="admin-card">
                     <div className="admin-card-header">
@@ -715,63 +744,15 @@ export const AdminDashboard: React.FC = () => {
                 </div>
             </div>
 
-            {/* Interactive Slices Grid */}
-            <div className="admin-dashboard-grid slices-split">
-                {/* Program Level Share (Doughnut Chart) */}
-                <div className="admin-card">
-                    <div className="admin-card-header">
-                        <h2><BookOpen size={20} /> Academic Program Share</h2>
-                        <span className="admin-count-badge">Level Breakdown</span>
-                    </div>
-                    <ProgramLevelChart data={levelDistribution} />
-                </div>
-
-                {/* Geographic Outreach (Bar Chart) */}
+            {/* Row 3: Regional Hotspots & Recent Users */}
+            <div className="admin-dashboard-grid" style={{ gridTemplateColumns: 'auto 1fr', marginBottom: '28px' }}>
+                {/* Geographic Outreach (Map) */}
                 <div className="admin-card">
                     <div className="admin-card-header">
                         <h2><MapPin size={20} /> Regional Hotspots</h2>
                         <span className="admin-count-badge">Active Districts</span>
                     </div>
                     <GeographicHotspotsChart data={topDistricts} />
-                </div>
-            </div>
-
-            {/* Course Overview and User Overview side by side */}
-            <div className="admin-dashboard-grid">
-                {/* Course Stats */}
-                <div className="admin-card">
-                    <div className="admin-card-header">
-                        <h2><BookOpen size={20} /> Course Overview</h2>
-                        <button className="admin-link-btn" onClick={() => navigate('/admin/courses')}>Manage</button>
-                    </div>
-
-                    <div className="course-overview-list">
-                        {realCourses.slice(0, 5).map(course => (
-                            <div className="course-overview-item" key={course.id}>
-                                <div className="co-info">
-                                    <h4>{course.title}</h4>
-                                    <div className="co-meta">
-                                        <span className="co-level">{course.level}</span>
-                                        <span className="co-dot">•</span>
-                                        <span>{course.department}</span>
-                                    </div>
-                                </div>
-                                <div className="co-stats">
-                                    <div className="co-stat">
-                                        <span className="co-stat-val">{course.activeStudents}</span>
-                                        <span className="co-stat-label">Active</span>
-                                    </div>
-                                    <div className="co-stat">
-                                        <span className="co-stat-val">{course.totalStudents}</span>
-                                        <span className="co-stat-label">Total</span>
-                                    </div>
-                                    <span className={`co-intake-badge ${(course.intakeStatus || 'Open').toLowerCase().replace(' ', '-')}`}>
-                                        {course.intakeStatus}
-                                    </span>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
                 </div>
 
                 {/* Recent Users */}
@@ -804,32 +785,22 @@ export const AdminDashboard: React.FC = () => {
                 </div>
             </div>
 
-            {/* Split layout: System Audit and Activity Feed */}
-            <div className="admin-dashboard-grid">
-                {/* System Activity Flow (Time-Series Area Chart) */}
-                <div className="admin-card">
-                    <div className="admin-card-header">
-                        <h2><Activity size={20} /> System Audit & Activity Flow</h2>
-                        <span className="admin-count-badge">24-Hour Logs Volume</span>
-                    </div>
-                    <ActivityFlowChart data={activityFlow} />
-                </div>
-
-                {/* Recent Activity */}
+            {/* Row 4: Recent Activity - Full Width */}
+            <div className="admin-dashboard-grid" style={{ gridTemplateColumns: '1fr', marginBottom: '28px' }}>
                 <div className="admin-card">
                     <div className="admin-card-header">
                         <h2><Activity size={20} /> Recent Activity</h2>
                         <button className="admin-link-btn" onClick={() => navigate('/admin/activity-logs')}>View All</button>
                     </div>
 
-                    <div className="activity-feed" style={{ maxHeight: '220px' }}>
+                    <div className="activity-feed" style={{ maxHeight: '350px' }}>
                         {activityLogs.length === 0 ? (
                             <div style={{ textAlign: 'center', padding: '32px 16px', color: '#64748B' }}>
                                 <Activity size={32} style={{ margin: '0 auto 12px', opacity: 0.4 }} />
                                 <p style={{ fontWeight: 600, fontSize: '14px' }}>No recent admin activities recorded.</p>
                             </div>
                         ) : (
-                            activityLogs.slice(0, 5).map(log => (
+                            activityLogs.slice(0, 8).map(log => (
                                 <div className="activity-item" key={log.id}>
                                     <div className={`activity-icon ${log.type}`}>
                                         <Activity size={16} />

@@ -55,6 +55,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/admin/stats', [StatsController::class, 'getAdminStats']);
         Route::get('/admin/dashboard-full', [StatsController::class, 'getFullDashboardData']);
         Route::get('/admin/activity-logs', [StatsController::class, 'getActivityLogs']);
+        Route::get('/admin/health-stats', [StatsController::class, 'getSystemHealthStats']);
     });
 
     // Staff/Course Management routes

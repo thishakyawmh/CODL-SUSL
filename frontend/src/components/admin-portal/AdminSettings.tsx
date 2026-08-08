@@ -7,7 +7,10 @@ import {
     User, Upload, Camera, X, Lock, KeyRound, CheckCircle,
     Activity
 } from 'lucide-react';
-import { databaseTableService, userService, systemSettingService, backupService } from '../../services/apiService';
+import {
+    ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip
+} from 'recharts';
+import { databaseTableService, userService, systemSettingService, backupService, statsService } from '../../services/apiService';
 import { getCurrentAdminUser, getFullAvatarUrl } from '../../data/mockAdminData';
 import { toast } from '../../utils/toast';
 import './AdminSettings.css';
@@ -65,6 +68,9 @@ export const AdminSettings: React.FC = () => {
     const [loadingBackups, setLoadingBackups] = useState<boolean>(false);
     const [isRunningBackup, setIsRunningBackup] = useState<boolean>(false);
     const [cpuUsage, setCpuUsage] = useState<number>(14);
+    const [healthTimeframe, setHealthTimeframe] = useState<string>('1d');
+    const [activityFlow, setActivityFlow] = useState<any[]>([]);
+    const [loadingHealthStats, setLoadingHealthStats] = useState<boolean>(false);
 
     useEffect(() => {
         if (activeSection === 'backup') {
@@ -73,7 +79,7 @@ export const AdminSettings: React.FC = () => {
     }, [activeSection]);
 
     useEffect(() => {
-        if (activeSection !== 'maintenance') return;
+        if (activeSection !== 'health') return;
         const interval = setInterval(() => {
             setCpuUsage(prev => {
                 const diff = (Math.random() - 0.5) * 4;
@@ -83,6 +89,22 @@ export const AdminSettings: React.FC = () => {
         }, 3000);
         return () => clearInterval(interval);
     }, [activeSection]);
+
+    useEffect(() => {
+        if (activeSection !== 'health') return;
+        const fetchHealthStats = async () => {
+            setLoadingHealthStats(true);
+            try {
+                const res = await statsService.getSystemHealthStats(healthTimeframe);
+                setActivityFlow(res.activityFlow || []);
+            } catch (err) {
+                console.error("Failed to load health statistics", err);
+            } finally {
+                setLoadingHealthStats(false);
+            }
+        };
+        fetchHealthStats();
+    }, [activeSection, healthTimeframe]);
 
     const fetchBackups = async () => {
         setLoadingBackups(true);
@@ -960,6 +982,113 @@ export const AdminSettings: React.FC = () => {
                                     </div>
                                     <span style={{ fontSize: '11px', fontWeight: 700, color: '#10B981', background: '#ECFDF5', padding: '2px 8px', borderRadius: '10px' }}>HEALTHY</span>
                                 </div>
+                            </div>
+
+                            {/* System Traffic & Activity Flow Chart */}
+                            <div className="system-health-monitor" style={{ marginTop: '32px', borderTop: '1px solid #E2E8F0', paddingTop: '28px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '20px' }}>
+                                    <div>
+                                        <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#1E293B', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+                                            <Activity size={18} color="#10B981" /> System Traffic & Activity Flow
+                                        </h3>
+                                        <p style={{ fontSize: '12px', color: '#64748B', margin: '4px 0 0' }}>Log volumes over selected interval representing system usage frequency.</p>
+                                    </div>
+                                    <div style={{ display: 'flex', background: '#F1F5F9', padding: '4px', borderRadius: '8px', gap: '2px' }}>
+                                        {['12h', '1d', '1w', '6m', '1y'].map(tf => {
+                                            const labels: Record<string, string> = {
+                                                '12h': '12 Hrs', '1d': '1 Day', '1w': '1 Wk', '6m': '6 Mos', '1y': '1 Yr'
+                                            };
+                                            return (
+                                                <button
+                                                    key={tf}
+                                                    onClick={() => setHealthTimeframe(tf)}
+                                                    style={{
+                                                        border: 'none',
+                                                        background: healthTimeframe === tf ? '#10B981' : 'transparent',
+                                                        color: healthTimeframe === tf ? '#FFFFFF' : '#64748B',
+                                                        padding: '4px 10px',
+                                                        borderRadius: '6px',
+                                                        fontSize: '11px',
+                                                        fontWeight: 700,
+                                                        cursor: 'pointer',
+                                                        transition: 'all 0.15s ease'
+                                                    }}
+                                                >
+                                                    {labels[tf]}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                {loadingHealthStats ? (
+                                    <div style={{ height: '220px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#64748B' }}>
+                                        <Loader2 className="spinner animate-spin" size={24} />
+                                        <p style={{ marginTop: '8px', fontSize: '12px', fontWeight: 600 }}>Loading activity logs...</p>
+                                    </div>
+                                ) : activityFlow.length === 0 ? (
+                                    <div style={{ height: '220px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94A3B8', fontSize: '12px' }}>
+                                        No activity flow data recorded for this timeframe.
+                                    </div>
+                                ) : (
+                                    <div style={{ width: '100%', height: 240 }}>
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <AreaChart data={activityFlow} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                                                <defs>
+                                                    <linearGradient id="colorHealthActivity" x1="0" y1="0" x2="0" y2="1">
+                                                        <stop offset="5%" stopColor="#10B981" stopOpacity={0.3}/>
+                                                        <stop offset="95%" stopColor="#10B981" stopOpacity={0.0}/>
+                                                    </linearGradient>
+                                                </defs>
+                                                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
+                                                <XAxis 
+                                                    dataKey="label" 
+                                                    tickLine={false} 
+                                                    axisLine={false} 
+                                                    dy={8}
+                                                    style={{ fontSize: '10px', fontWeight: 600, fill: '#94A3B8' }}
+                                                />
+                                                <YAxis 
+                                                    tickLine={false} 
+                                                    axisLine={false} 
+                                                    style={{ fontSize: '10px', fontWeight: 600, fill: '#94A3B8' }}
+                                                />
+                                                <ChartTooltip content={
+                                                    ({ active, payload, label }: any) => {
+                                                        if (active && payload && payload.length) {
+                                                            return (
+                                                                <div style={{
+                                                                    background: 'rgba(15, 23, 42, 0.95)',
+                                                                    backdropFilter: 'blur(8px)',
+                                                                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                                                                    padding: '8px 12px',
+                                                                    borderRadius: '8px',
+                                                                    color: '#FFFFFF'
+                                                                }}>
+                                                                    <p style={{ margin: 0, fontWeight: 700, fontSize: '10px', color: '#94A3B8' }}>{label}</p>
+                                                                    <p style={{ margin: '4px 0 0', fontWeight: 800, fontSize: '13px', color: '#10B981' }}>
+                                                                        {payload[0].value} <span style={{ fontWeight: 500, fontSize: '11px', color: '#E2E8F0' }}>Actions</span>
+                                                                    </p>
+                                                                </div>
+                                                            );
+                                                        }
+                                                        return null;
+                                                    }
+                                                } />
+                                                <Area 
+                                                    type="monotone" 
+                                                    dataKey="count" 
+                                                    name="Actions" 
+                                                    stroke="#10B981" 
+                                                    strokeWidth={2.5} 
+                                                    fillOpacity={1} 
+                                                    fill="url(#colorHealthActivity)" 
+                                                    activeDot={{ r: 5, stroke: '#FFFFFF', strokeWidth: 2, fill: '#10B981' }}
+                                                />
+                                            </AreaChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
