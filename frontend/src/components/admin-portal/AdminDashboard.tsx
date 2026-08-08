@@ -7,10 +7,322 @@ import {
     FileText, AlertTriangle, MapPin, Globe, Sparkles
 } from 'lucide-react';
 import {
+    ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip,
+    PieChart, Pie, Cell, BarChart, Bar
+} from 'recharts';
+import {
     mockActivityLogs, getCurrentAdminUser
 } from '../../data/mockAdminData';
 import { statsService } from '../../services/apiService';
 import './AdminDashboard.css';
+
+// ============================================================================
+// SVG Chart Subcomponents (Option 2: Recharts Library Integration)
+// ============================================================================
+
+interface MonthlyData {
+    month: string;
+    count: number;
+}
+
+interface LevelData {
+    level: string;
+    count: number;
+}
+
+// Custom Tooltip component for Recharts Area/Bar charts
+const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+        return (
+            <div style={{
+                background: 'rgba(15, 23, 42, 0.95)',
+                backdropFilter: 'blur(8px)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                padding: '10px 14px',
+                borderRadius: '8px',
+                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                color: '#FFFFFF'
+            }}>
+                <p style={{ margin: 0, fontWeight: 700, fontSize: '11px', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{label}</p>
+                <p style={{ margin: '4px 0 0', fontWeight: 800, fontSize: '15px', color: '#FFFFFF' }}>
+                    {payload[0].value} <span style={{ fontWeight: 500, fontSize: '12px', color: '#E2E8F0' }}>{payload[0].name === 'count' ? 'Enrolled' : 'Applicants'}</span>
+                </p>
+            </div>
+        );
+    }
+    return null;
+};
+
+// EnrollmentTrendChart using Recharts
+const EnrollmentTrendChart: React.FC<{ data: MonthlyData[] }> = ({ data }) => {
+    if (!data || data.length === 0) {
+        return (
+            <div style={{ height: '240px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94A3B8' }}>
+                No trend data available
+            </div>
+        );
+    }
+
+    return (
+        <div style={{ width: '100%', height: 260 }}>
+            <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <defs>
+                        <linearGradient id="colorEnrollment" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#7C3AED" stopOpacity="0.3"/>
+                            <stop offset="95%" stopColor="#7C3AED" stopOpacity="0.0"/>
+                        </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
+                    <XAxis 
+                        dataKey="month" 
+                        tickLine={false} 
+                        axisLine={false} 
+                        dy={10} 
+                        style={{ fontSize: '11px', fontWeight: 500, fill: '#94A3B8' }}
+                    />
+                    <YAxis 
+                        tickLine={false} 
+                        axisLine={false} 
+                        dx={-5} 
+                        style={{ fontSize: '11px', fontWeight: 500, fill: '#94A3B8' }}
+                    />
+                    <ChartTooltip content={<CustomTooltip />} />
+                    <Area 
+                        type="monotone" 
+                        dataKey="count" 
+                        stroke="#7C3AED" 
+                        strokeWidth={3} 
+                        fillOpacity={1} 
+                        fill="url(#colorEnrollment)" 
+                        activeDot={{ r: 6, stroke: '#FFFFFF', strokeWidth: 2, fill: '#7C3AED' }}
+                    />
+                </AreaChart>
+            </ResponsiveContainer>
+        </div>
+    );
+};
+
+// ProgramLevelChart using Recharts
+const ProgramLevelChart: React.FC<{ data: LevelData[] }> = ({ data }) => {
+    const [activeIndex, setActiveIndex] = useState<number | null>(null);
+
+    const total = data.reduce((sum, d) => sum + d.count, 0);
+
+    if (total === 0) {
+        return (
+            <div style={{ height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94A3B8' }}>
+                No active program distribution data
+            </div>
+        );
+    }
+
+    const COLORS = ['#7C3AED', '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#64748B'];
+
+    const onPieEnter = (_: any, index: number) => {
+        setActiveIndex(index);
+    };
+
+    const onPieLeave = () => {
+        setActiveIndex(null);
+    };
+
+    const activeItem = activeIndex !== null ? data[activeIndex] : null;
+
+    return (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '24px', flexWrap: 'wrap', justifyContent: 'center', padding: '10px 0' }}>
+            <div style={{ width: 180, height: 180, position: 'relative', flexShrink: 0 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                        <Pie
+                            data={data}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={55}
+                            outerRadius={75}
+                            paddingAngle={4}
+                            dataKey="count"
+                            nameKey="level"
+                            onMouseEnter={onPieEnter}
+                            onMouseLeave={onPieLeave}
+                        >
+                            {data.map((entry, index) => (
+                                <Cell 
+                                    key={`cell-${index}`} 
+                                    fill={COLORS[index % COLORS.length]} 
+                                    style={{
+                                        outline: 'none',
+                                        transition: 'all 0.2s',
+                                        cursor: 'pointer',
+                                        transform: activeIndex === index ? 'scale(1.05)' : 'scale(1)',
+                                        transformOrigin: 'center'
+                                    }}
+                                />
+                            ))}
+                        </Pie>
+                    </PieChart>
+                </ResponsiveContainer>
+
+                <div style={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    textAlign: 'center',
+                    pointerEvents: 'none'
+                }}>
+                    <div style={{ fontSize: '24px', fontWeight: 800, color: '#0F172A', lineHeight: 1 }}>
+                        {activeItem ? activeItem.count : total}
+                    </div>
+                    <div style={{ fontSize: '10px', fontWeight: 700, color: '#64748B', marginTop: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        {activeItem ? activeItem.level : 'Students'}
+                    </div>
+                </div>
+            </div>
+
+            <div className="doughnut-legend-grid" style={{ flex: 1, minWidth: '150px' }}>
+                {data.map((entry, index) => {
+                    const percent = total > 0 ? Math.round((entry.count / total) * 100) : 0;
+                    return (
+                        <div 
+                            className="legend-item" 
+                            key={index} 
+                            style={{ 
+                                opacity: activeIndex !== null && activeIndex !== index ? 0.4 : 1, 
+                                transition: 'opacity 0.2s' 
+                            }}
+                        >
+                            <span className="legend-badge" style={{ backgroundColor: COLORS[index % COLORS.length] }}></span>
+                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                <span style={{ fontSize: '12px', fontWeight: 600, color: '#334155', lineHeight: 1.2 }}>{entry.level}</span>
+                                <span style={{ fontSize: '11px', color: '#64748B' }}>{entry.count} ({percent}%)</span>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+};
+
+// GeographicHotspotsChart using Recharts
+const GeographicHotspotsChart: React.FC<{ data: [string, number][] }> = ({ data }) => {
+    if (!data || data.length === 0) {
+        return (
+            <div style={{ height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94A3B8' }}>
+                No regional outreach data
+            </div>
+        );
+    }
+
+    const chartData = data.map(([district, count]) => ({
+        district,
+        count
+    }));
+
+    return (
+        <div style={{ width: '100%', height: 200 }}>
+            <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
+                    <XAxis 
+                        dataKey="district" 
+                        tickLine={false} 
+                        axisLine={false} 
+                        dy={8}
+                        style={{ fontSize: '10px', fontWeight: 500, fill: '#94A3B8' }}
+                        tickFormatter={(value) => value.length > 8 ? `${value.slice(0, 6)}..` : value}
+                    />
+                    <YAxis 
+                        tickLine={false} 
+                        axisLine={false} 
+                        dx={-5}
+                        style={{ fontSize: '10px', fontWeight: 500, fill: '#94A3B8' }}
+                    />
+                    <ChartTooltip content={<CustomTooltip />} />
+                    <Bar 
+                        dataKey="count" 
+                        fill="#3B82F6" 
+                        radius={[4, 4, 0, 0]}
+                        barSize={24}
+                    >
+                        {chartData.map((entry, index) => (
+                            <Cell 
+                                key={`cell-${index}`} 
+                                fill="url(#barGradient)" 
+                                style={{ cursor: 'pointer' }}
+                            />
+                        ))}
+                    </Bar>
+                    <defs>
+                        <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#3B82F6" />
+                            <stop offset="100%" stopColor="#60A5FA" />
+                        </linearGradient>
+                    </defs>
+                </BarChart>
+            </ResponsiveContainer>
+        </div>
+    );
+};
+
+// ActivityFlowChart using Recharts
+const ActivityFlowChart: React.FC<{ data: any[] }> = ({ data }) => {
+    if (!data || data.length === 0) {
+        return (
+            <div style={{ height: '220px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94A3B8' }}>
+                No activity flow data available
+            </div>
+        );
+    }
+
+    return (
+        <div style={{ width: '100%', height: 220 }}>
+            <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={data} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                    <defs>
+                        <linearGradient id="colorActivity" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#10B981" stopOpacity={0.3}/>
+                            <stop offset="95%" stopColor="#10B981" stopOpacity={0.0}/>
+                        </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
+                    <XAxis 
+                        dataKey="hour" 
+                        tickLine={false} 
+                        axisLine={false} 
+                        dy={8}
+                        style={{ fontSize: '10px', fontWeight: 500, fill: '#94A3B8' }}
+                        tickFormatter={(value) => {
+                            const hr = parseInt(value.split(':')[0]);
+                            return hr % 4 === 0 ? value : '';
+                        }}
+                    />
+                    <YAxis 
+                        tickLine={false} 
+                        axisLine={false} 
+                        dx={-5}
+                        style={{ fontSize: '10px', fontWeight: 500, fill: '#94A3B8' }}
+                    />
+                    <ChartTooltip content={<CustomTooltip />} />
+                    <Area 
+                        type="monotone" 
+                        dataKey="count" 
+                        stroke="#10B981" 
+                        strokeWidth={2.5} 
+                        fillOpacity={1} 
+                        fill="url(#colorActivity)" 
+                        activeDot={{ r: 5, stroke: '#FFFFFF', strokeWidth: 1.5, fill: '#10B981' }}
+                    />
+                </AreaChart>
+            </ResponsiveContainer>
+        </div>
+    );
+};
+
+// ============================================================================
+// Main AdminDashboard Component
+// ============================================================================
 
 export const AdminDashboard: React.FC = () => {
     const navigate = useNavigate();
@@ -28,6 +340,9 @@ export const AdminDashboard: React.FC = () => {
     });
     const [topDistricts, setTopDistricts] = useState<[string, number][]>([]);
     const [courseEnrollments, setCourseEnrollments] = useState<any[]>([]);
+    const [monthlyEnrollments, setMonthlyEnrollments] = useState<MonthlyData[]>([]);
+    const [levelDistribution, setLevelDistribution] = useState<LevelData[]>([]);
+    const [activityFlow, setActivityFlow] = useState<any[]>([]);
     const [pendingCount, setPendingCount] = useState<number>(0);
     const [activityLogs, setActivityLogs] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -84,6 +399,15 @@ export const AdminDashboard: React.FC = () => {
                 if (data.courseEnrollments) {
                     setCourseEnrollments(data.courseEnrollments);
                 }
+                if (data.monthlyEnrollments) {
+                    setMonthlyEnrollments(data.monthlyEnrollments);
+                }
+                if (data.levelDistribution) {
+                    setLevelDistribution(data.levelDistribution);
+                }
+                if (data.activityFlow) {
+                    setActivityFlow(data.activityFlow);
+                }
 
             } catch (err) {
                 console.error('Failed to load dashboard statistics:', err);
@@ -94,9 +418,6 @@ export const AdminDashboard: React.FC = () => {
 
         fetchDashboardData();
     }, [userRole, userId]);
-
-    const maxDistrictCount = topDistricts.length > 0 ? topDistricts[0][1] : 1;
-    const maxCourseEnrollment = courseEnrollments.length > 0 ? courseEnrollments[0].count : 1;
 
     const totalStudentsVal = stats.totalStudents || 0;
     const activeStudentsVal = stats.activeStudents || 0;
@@ -133,7 +454,7 @@ export const AdminDashboard: React.FC = () => {
         },
         {
             label: 'Total Users',
-            value: realUsers.length,
+            value: stats.totalUsers || 0,
             subtitle: '6 roles configured',
             icon: <TrendingUp size={22} />,
             trend: '+8%',
@@ -145,8 +466,6 @@ export const AdminDashboard: React.FC = () => {
     const getRoleLabel = (role: string) => {
         return role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
     };
-
-
 
     if (isLoading) {
         return (
@@ -166,9 +485,6 @@ export const AdminDashboard: React.FC = () => {
                 <div>
                     <h1 className="admin-page-title">Dashboard</h1>
                     <p className="admin-page-subtitle">Welcome back, {user.fullName.split(' ')[0]}. Here's what's happening today.</p>
-                </div>
-                <div className="admin-header-actions">
-                    {/* Add User button removed per user request */}
                 </div>
             </div>
 
@@ -191,90 +507,36 @@ export const AdminDashboard: React.FC = () => {
                     </div>
                 ))}
             </div>
-            {/* Two-column layout */}
-            <div className="admin-dashboard-grid">
-                {/* Full Width Column: Activity Feed */}
-                <div className="admin-card" style={{ gridColumn: 'span 2' }}>
-                    <div className="admin-card-header">
-                        <h2><Activity size={20} /> Recent Activity</h2>
-                        <button className="admin-link-btn" onClick={() => navigate('/admin/activity-logs')}>View All</button>
-                    </div>
 
-                    <div className="activity-feed">
-                        {activityLogs.length === 0 ? (
-                            <div style={{ textAlign: 'center', padding: '32px 16px', color: '#64748B' }}>
-                                <Activity size={32} style={{ margin: '0 auto 12px', opacity: 0.4 }} />
-                                <p style={{ fontWeight: 600, fontSize: '14px' }}>No recent admin activities recorded.</p>
-                            </div>
-                        ) : (
-                            activityLogs.slice(0, 5).map(log => (
-                                <div className="activity-item" key={log.id}>
-                                    <div className={`activity-icon ${log.type}`}>
-                                        <Activity size={16} />
-                                    </div>
-                                    <div className="activity-content">
-                                        <div className="activity-action">
-                                            <strong>{log.user}</strong> <span style={{ fontSize: '11px', fontWeight: 600, color: '#7C3AED', background: '#F5F3FF', border: '1px solid #DDD6FE', padding: '2px 8px', borderRadius: '12px', marginLeft: '4px', marginRight: '4px' }}>{log.role}</span> {log.action}
-                                        </div>
-                                        <div className="activity-target">{log.target}</div>
-                                        <div className="activity-time">
-                                            <Clock size={12} /> {new Date(log.timestamp).toLocaleDateString()} at {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                        </div>
-                                    </div>
-                                </div>
-                            ))
-                        )}
+            {/* Enrollment Growth Trend (Full Width Column) */}
+            <div className="admin-dashboard-grid" style={{ gridTemplateColumns: '1fr' }}>
+                <div className="admin-card">
+                    <div className="admin-card-header">
+                        <h2><TrendingUp size={20} /> Student Enrollment Trend (Trailing 12 Months)</h2>
+                        <span className="admin-count-badge">Monthly Admissions</span>
                     </div>
+                    <EnrollmentTrendChart data={monthlyEnrollments} />
                 </div>
             </div>
+
+            {/* Interactive Slices Grid */}
             <div className="admin-dashboard-grid">
-                {/* Enrollment by Program */}
+                {/* Program Level Share (Doughnut Chart) */}
                 <div className="admin-card">
                     <div className="admin-card-header">
-                        <h2><BookOpen size={20} /> Program Distribution</h2>
-                        <span className="admin-count-badge">Top 5 Programs</span>
+                        <h2><BookOpen size={20} /> Academic Program Share</h2>
+                        <span className="admin-count-badge">Level Breakdown</span>
                     </div>
-                    <div className="dashboard-stat-grid">
-                        {courseEnrollments.map((course, idx) => (
-                            <div key={idx} className="dashboard-stat-row">
-                                <div className="dashboard-stat-info">
-                                    <span className="dashboard-stat-name">{course.title}</span>
-                                    <span className="dashboard-stat-value">{course.count}</span>
-                                </div>
-                                <div className="dashboard-stat-bar-track">
-                                    <div 
-                                        className="dashboard-stat-bar fill-purple" 
-                                        style={{ width: `${(course.count / (maxCourseEnrollment || 1)) * 100}%` }}
-                                    ></div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+                    <ProgramLevelChart data={levelDistribution} />
                 </div>
 
-                {/* Geographic Outreach */}
+                {/* Geographic Outreach (Bar Chart) */}
                 <div className="admin-card">
                     <div className="admin-card-header">
-                        <h2><MapPin size={20} /> Regional Outreach</h2>
+                        <h2><MapPin size={20} /> Regional Hotspots</h2>
                         <span className="admin-count-badge">Active Districts</span>
                     </div>
-                    <div className="dashboard-stat-grid">
-                        {topDistricts.map(([district, count], idx) => (
-                            <div key={idx} className="dashboard-stat-row">
-                                <div className="dashboard-stat-info">
-                                    <span className="dashboard-stat-name">{district} District</span>
-                                    <span className="dashboard-stat-value">{count} Applicants</span>
-                                </div>
-                                <div className="dashboard-stat-bar-track">
-                                    <div 
-                                        className="dashboard-stat-bar fill-blue" 
-                                        style={{ width: `${(count / (maxDistrictCount || 1)) * 100}%` }}
-                                    ></div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-
+                    <GeographicHotspotsChart data={topDistricts} />
                 </div>
             </div>
 
@@ -288,7 +550,7 @@ export const AdminDashboard: React.FC = () => {
                     </div>
 
                     <div className="course-overview-list">
-                        {realCourses.slice(0, 4).map(course => (
+                        {realCourses.slice(0, 5).map(course => (
                             <div className="course-overview-item" key={course.id}>
                                 <div className="co-info">
                                     <h4>{course.title}</h4>
@@ -346,6 +608,51 @@ export const AdminDashboard: React.FC = () => {
                 </div>
             </div>
 
+            {/* Split layout: System Audit and Activity Feed */}
+            <div className="admin-dashboard-grid">
+                {/* System Activity Flow (Time-Series Area Chart) */}
+                <div className="admin-card">
+                    <div className="admin-card-header">
+                        <h2><Activity size={20} /> System Audit & Activity Flow</h2>
+                        <span className="admin-count-badge">24-Hour Logs Volume</span>
+                    </div>
+                    <ActivityFlowChart data={activityFlow} />
+                </div>
+
+                {/* Recent Activity */}
+                <div className="admin-card">
+                    <div className="admin-card-header">
+                        <h2><Activity size={20} /> Recent Activity</h2>
+                        <button className="admin-link-btn" onClick={() => navigate('/admin/activity-logs')}>View All</button>
+                    </div>
+
+                    <div className="activity-feed" style={{ maxHeight: '220px' }}>
+                        {activityLogs.length === 0 ? (
+                            <div style={{ textAlign: 'center', padding: '32px 16px', color: '#64748B' }}>
+                                <Activity size={32} style={{ margin: '0 auto 12px', opacity: 0.4 }} />
+                                <p style={{ fontWeight: 600, fontSize: '14px' }}>No recent admin activities recorded.</p>
+                            </div>
+                        ) : (
+                            activityLogs.slice(0, 5).map(log => (
+                                <div className="activity-item" key={log.id}>
+                                    <div className={`activity-icon ${log.type}`}>
+                                        <Activity size={16} />
+                                    </div>
+                                    <div className="activity-content">
+                                        <div className="activity-action">
+                                            <strong>{log.user}</strong> <span style={{ fontSize: '11px', fontWeight: 600, color: '#7C3AED', background: '#F5F3FF', border: '1px solid #DDD6FE', padding: '2px 8px', borderRadius: '12px', marginLeft: '4px', marginRight: '4px' }}>{log.role}</span> {log.action}
+                                        </div>
+                                        <div className="activity-target">{log.target}</div>
+                                        <div className="activity-time">
+                                            <Clock size={12} /> {new Date(log.timestamp).toLocaleDateString()} at {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        </div>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
+            </div>
         </div>
     );
 };

@@ -489,3 +489,166 @@
     .course-overview-item { flex-direction: column; align-items: flex-start; gap: 12px; }
     .co-stats { width: 100%; justify-content: flex-start; }
 }
+
+/* ==========================================
+   SVG CHART STYLES
+   ========================================== */
+
+.chart-container {
+    position: relative;
+    width: 100%;
+}
+
+.chart-tooltip {
+    position: absolute;
+    background: rgba(15, 23, 42, 0.95);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #FFFFFF;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    pointer-events: none;
+    z-index: 100;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    transition: opacity 0.15s ease, transform 0.15s ease;
+    white-space: nowrap;
+}
+
+.chart-grid-line {
+    stroke: #F1F5F9;
+    stroke-width: 1;
+}
+
+.chart-axis-line {
+    stroke: #E2E8F0;
+    stroke-width: 1;
+}
+
+.chart-axis-text {
+    font-size: 11px;
+    font-weight: 500;
+    fill: #94A3B8;
+}
+
+/* Area Chart Styles */
+.area-chart-line {
+    stroke: #7C3AED;
+    stroke-width: 3;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    animation: drawPath 1.5s ease-out forwards;
+}
+
+.area-chart-fill {
+    fill: url(#area-chart-gradient);
+    opacity: 0.15;
+    animation: fadeIn 1.5s ease-out forwards;
+}
+
+.chart-dot {
+    fill: #FFFFFF;
+    stroke: #7C3AED;
+    stroke-width: 3;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.chart-dot:hover {
+    r: 7;
+    fill: #7C3AED;
+    stroke: #FFFFFF;
+    stroke-width: 2.5;
+    filter: drop-shadow(0 4px 8px rgba(124, 58, 237, 0.4));
+}
+
+/* Doughnut Chart Styles */
+.doughnut-chart-svg {
+    transform: rotate(-90deg);
+}
+
+.doughnut-segment {
+    fill: none;
+    stroke-linecap: round;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+}
+
+.doughnut-segment:hover {
+    stroke-width: 26;
+    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.15));
+}
+
+.doughnut-center-text {
+    font-family: var(--font-family);
+    text-anchor: middle;
+}
+
+.doughnut-center-val {
+    font-size: 28px;
+    font-weight: 800;
+    fill: #0F172A;
+}
+
+.doughnut-center-lbl {
+    font-size: 12px;
+    font-weight: 600;
+    fill: #64748B;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.doughnut-legend-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #475569;
+}
+
+.legend-badge {
+    width: 12px;
+    height: 12px;
+    border-radius: 4px;
+}
+
+/* Bar Chart Styles */
+.bar-chart-rect {
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.bar-chart-rect:hover {
+    fill-opacity: 0.85;
+    filter: drop-shadow(0 4px 8px rgba(59, 130, 246, 0.3));
+}
+
+/* Animations */
+@keyframes drawPath {
+    from {
+        stroke-dasharray: 2000;
+        stroke-dashoffset: 2000;
+    }
+    to {
+        stroke-dasharray: 2000;
+        stroke-dashoffset: 0;
+    }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 0.15; }
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}

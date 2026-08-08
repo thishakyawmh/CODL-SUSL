@@ -40,7 +40,7 @@ class StatsController extends Controller
         $recentCourses = Course::with(['category', 'secretary', 'coordinator', 'batches'])
             ->withCount(['batches', 'students'])
             ->latest()
-            ->take(4)
+            ->take(5)
             ->get();
 
         $recentLogs = \App\Models\ActivityLog::with('user:id,full_name,display_name,role')
@@ -69,6 +69,69 @@ class StatsController extends Controller
                 ];
             });
 
+        // Trailing 12 months enrollment trend (database-agnostic aggregation)
+        $enrollments = DB::table('user_courses')
+            ->select('created_at')
+            ->where('created_at', '>=', now()->subMonths(11)->startOfMonth()->toDateTimeString())
+            ->get();
+
+        $monthlyData = [];
+        for ($i = 11; $i >= 0; $i--) {
+            $monthKey = now()->subMonths($i)->format('Y-m');
+            $monthName = now()->subMonths($i)->format('M');
+            $monthlyData[$monthKey] = [
+                'month' => $monthName,
+                'count' => 0,
+            ];
+        }
+
+        foreach ($enrollments as $enrollment) {
+            if ($enrollment->created_at) {
+                $monthKey = substr($enrollment->created_at, 0, 7);
+                if (isset($monthlyData[$monthKey])) {
+                    $monthlyData[$monthKey]['count']++;
+                }
+            }
+        }
+        $monthlyEnrollments = array_values($monthlyData);
+
+        // Student level distribution (Degree, Diploma, etc.)
+        $levelDistribution = Course::join('user_courses', 'courses.id', '=', 'user_courses.course_id')
+            ->select('courses.level', DB::raw('count(*) as count'))
+            ->groupBy('courses.level')
+            ->get()
+            ->map(function ($c) {
+                return [
+                    'level' => $c->level ?: 'Other',
+                    'count' => (int) $c->count,
+                ];
+            });
+
+        // Trailing 30 days hourly activity logs (database-agnostic aggregation)
+        $logs = DB::table('activity_logs')
+            ->select('created_at')
+            ->where('created_at', '>=', now()->subDays(30)->toDateTimeString())
+            ->get();
+
+        $hourlyData = [];
+        for ($i = 0; $i < 24; $i++) {
+            $hourLabel = sprintf('%02d:00', $i);
+            $hourlyData[$i] = [
+                'hour' => $hourLabel,
+                'count' => 0,
+            ];
+        }
+
+        foreach ($logs as $log) {
+            if ($log->created_at) {
+                $hour = (int) substr($log->created_at, 11, 2);
+                if (isset($hourlyData[$hour])) {
+                    $hourlyData[$hour]['count']++;
+                }
+            }
+        }
+        $activityFlow = array_values($hourlyData);
+
         return response()->json([
             'stats' => $stats,
             'recentUsers' => $recentUsers,
@@ -76,6 +139,9 @@ class StatsController extends Controller
             'recentLogs' => $recentLogs,
             'topDistricts' => $topDistricts,
             'courseEnrollments' => $courseEnrollments,
+            'monthlyEnrollments' => $monthlyEnrollments,
+            'levelDistribution' => $levelDistribution,
+            'activityFlow' => $activityFlow,
         ]);
     }
 
