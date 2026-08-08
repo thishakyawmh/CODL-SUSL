@@ -20,7 +20,7 @@ class ExamController extends Controller
             'deadline' => 'nullable|date',
             'date' => 'nullable|date',
             'fee' => 'required|numeric',
-            'type' => 'required|string',
+            'type' => 'nullable|string',
             'status' => 'required|string',
             'timetable_path' => 'nullable|string',
             'postponements' => 'nullable|array',
@@ -63,7 +63,7 @@ class ExamController extends Controller
             'deadline' => 'nullable|date',
             'date' => 'nullable|date',
             'fee' => 'required|numeric',
-            'type' => 'required|string',
+            'type' => 'nullable|string',
             'status' => 'required|string',
             'timetable_path' => 'nullable|string',
             'postponements' => 'nullable|array',
@@ -147,5 +147,24 @@ class ExamController extends Controller
         $exam->delete();
         \App\Http\Controllers\CourseController::clearManageCourseCache($courseId);
         return response()->json(['message' => 'Exam deleted successfully']);
+    }
+
+    public function uploadTimetable(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:pdf,doc,docx|max:20480', // 20MB limit
+        ]);
+
+        $file = $request->file('file');
+        $filename = 'timetable_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+        $path = $file->storeAs('timetables', $filename, 'public');
+
+        $url = asset('storage/' . $path);
+
+        return response()->json([
+            'message' => 'Timetable uploaded successfully',
+            'url' => $url,
+            'filename' => $file->getClientOriginalName(),
+        ]);
     }
 }
