@@ -15,14 +15,14 @@ class StatsController extends Controller
      */
     public function getAdminStats(Request $request)
     {
-        $stats = $this->fetchAllStats($request->user()?->role);
+        $stats = $this->fetchAllStats($request->user());
         return response()->json($stats);
     }
 
     public function getFullDashboardData(Request $request)
     {
-        $role = $request->user()?->role;
-        $stats = $this->fetchAllStats($role);
+        $user = $request->user();
+        $stats = $this->fetchAllStats($user);
 
         $recentUsers = User::latest()->take(5)->get()->map(function ($u) {
             return [
@@ -90,18 +90,36 @@ class StatsController extends Controller
 
     /**
      * Fetch all stats in a single database roundtrip using a UNION query.
-     * Instead of 10+ separate COUNT(*) queries (each ~100ms over Azure),
-     * this does ONE query (~100ms total).
+     * Filter pending requests based on the user's role and assigned courses.
      */
-    private function fetchAllStats($role = null): array
+    private function fetchAllStats($user = null): array
     {
+        $role = $user ? $user->role : null;
         $appCond = "status = 'pending'";
         $letterCond = "status = 'pending'";
         $postponeCond = "status = 'pending'";
         $examCond = "status = 'pending'";
         $reattemptCond = "status = 'pending'";
 
-        if ($role === 'director') {
+        if ($role === 'secretary') {
+            $courseIds = Course::where('secretary_id', $user->id)->pluck('id')->toArray();
+            $courseIdsStr = implode(',', !empty($courseIds) ? $courseIds : [0]);
+            
+            $appCond .= " AND approval_level = 0 AND course_id IN ({$courseIdsStr})";
+            $letterCond .= " AND approval_level = 0 AND course_id IN ({$courseIdsStr})";
+            $postponeCond .= " AND (current_step = 1 OR current_step IS NULL) AND course_id IN ({$courseIdsStr})";
+            $examCond .= " AND (current_step = 1 OR current_step IS NULL) AND course_id IN ({$courseIdsStr})";
+            $reattemptCond .= " AND (current_step = 1 OR current_step IS NULL) AND course_id IN ({$courseIdsStr})";
+        } elseif ($role === 'coordinator') {
+            $courseIds = Course::where('coordinator_id', $user->id)->pluck('id')->toArray();
+            $courseIdsStr = implode(',', !empty($courseIds) ? $courseIds : [0]);
+
+            $appCond .= " AND approval_level = 1 AND course_id IN ({$courseIdsStr})";
+            $letterCond .= " AND approval_level = 1 AND course_id IN ({$courseIdsStr})";
+            $postponeCond .= " AND current_step = 2 AND course_id IN ({$courseIdsStr})";
+            $examCond .= " AND current_step = 2 AND course_id IN ({$courseIdsStr})";
+            $reattemptCond .= " AND current_step = 2 AND course_id IN ({$courseIdsStr})";
+        } elseif ($role === 'director') {
             $appCond .= " AND approval_level = 2";
             $letterCond .= " AND approval_level = 2";
             $postponeCond .= " AND current_step = 3";

@@ -479,6 +479,10 @@ export const statsService = {
     getFullDashboardData: async () => {
         const response = await api.get('/admin/dashboard-full');
         return response.data;
+    },
+    getAdminStats: async () => {
+        const response = await api.get('/admin/stats');
+        return response.data;
     }
 };
 
