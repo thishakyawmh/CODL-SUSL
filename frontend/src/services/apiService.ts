@@ -479,6 +479,14 @@ export const statsService = {
     getFullDashboardData: async () => {
         const response = await api.get('/admin/dashboard-full');
         return response.data;
+    },
+    getAdminStats: async () => {
+        const response = await api.get('/admin/stats');
+        return response.data;
+    },
+    getSystemHealthStats: async (timeframe: string) => {
+        const response = await api.get(`/admin/health-stats?timeframe=${timeframe}`);
+        return response.data;
     }
 };
 

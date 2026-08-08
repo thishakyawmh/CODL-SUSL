@@ -343,12 +343,13 @@ class CourseController extends Controller
     public function manageCourseData(Request $request, $courseId)
     {
         $user = $request->user();
-        $userId = $user ? $user->id : 'guest';
+        $isLecturer = $user && $user->role === 'lecturer';
+        $cacheSuffix = $isLecturer ? "lecturer_{$user->id}" : "admin";
         
         $version = \Illuminate\Support\Facades\Cache::get("manage_course_version_{$courseId}", 1);
-        $cacheKey = "manage_course_data_{$courseId}_{$userId}_v{$version}";
+        $cacheKey = "manage_course_data_{$courseId}_{$cacheSuffix}_v{$version}";
         
-        $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, 120, function () use ($courseId, $user) {
+        $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, 600, function () use ($courseId, $user) {
             return $this->getManageCourseDataRaw($courseId, $user);
         });
         
@@ -364,9 +365,9 @@ class CourseController extends Controller
         
         $enrolledStudents = $this->mapEnrolledStudents($course);
         
-        $studentUsers = \App\Models\User::whereIn('role', ['student', 'applicant'])
-            ->select('id', 'student_number', 'full_name', 'display_name', 'email', 'phone', 'nic', 'address')
-            ->get();
+        // Optimized: Removed the massive query fetching all system student/applicant users.
+        // The frontend now dynamically searches student records via dynamic API requests on-demand.
+        $studentUsers = [];
             
         $lecturers = \App\Models\User::where('role', 'lecturer')
             ->select('id', 'full_name', 'email')
@@ -436,17 +437,34 @@ class CourseController extends Controller
             ->latest()
             ->get();
 
-        $batches->each(function ($batch) {
-            $batch->subjects->each(function ($subject) {
-                $instructorId = $subject->pivot->instructor_id;
-                if ($instructorId) {
-                    $instructor = \App\Models\User::select('id', 'full_name')->find($instructorId);
-                    $subject->pivot->instructor_name = $instructor ? $instructor->full_name : null;
+        // Optimized: Batched instructor name lookup to resolve N+1 queries.
+        $instructorIds = [];
+        foreach ($batches as $batch) {
+            foreach ($batch->subjects as $subject) {
+                if ($subject->pivot->instructor_id) {
+                    $instructorIds[] = $subject->pivot->instructor_id;
+                }
+            }
+        }
+
+        $instructors = [];
+        if (!empty($instructorIds)) {
+            $instructors = \App\Models\User::whereIn('id', array_unique($instructorIds))
+                ->select('id', 'full_name')
+                ->get()
+                ->keyBy('id');
+        }
+
+        foreach ($batches as $batch) {
+            foreach ($batch->subjects as $subject) {
+                $instId = $subject->pivot->instructor_id;
+                if ($instId && isset($instructors[$instId])) {
+                    $subject->pivot->instructor_name = $instructors[$instId]->full_name;
                 } else {
                     $subject->pivot->instructor_name = null;
                 }
-            });
-        });
+            }
+        }
 
         return $batches;
     }

@@ -360,21 +360,18 @@ class UserController extends Controller
         $notificationsData = [];
         foreach ($courses as $course) {
             $materials = [];
-            $enrollment = \Illuminate\Support\Facades\DB::table('user_courses')
-                ->where('user_id', $user->id)
-                ->where('course_id', $course->id)
-                ->first();
+            $batchName = $course->pivot->batch;
                 
-            if ($enrollment && $enrollment->batch) {
+            if ($batchName) {
                 $batch = \App\Models\Batch::where('course_id', $course->id)
-                    ->where('name', $enrollment->batch)
+                    ->where('name', $batchName)
                     ->first();
                 if ($batch) {
                     $materials = $batch->materials ?: [];
                 }
             }
 
-            $studentBatch = ($enrollment && $enrollment->batch) ? $enrollment->batch : 'Batch 01';
+            $studentBatch = $batchName ?: 'Batch 01';
             
             $version = \Illuminate\Support\Facades\Cache::get("manage_course_version_{$course->id}", 1);
             $cacheKey = "student_exams_data_{$course->id}_{$user->id}_v{$version}";
