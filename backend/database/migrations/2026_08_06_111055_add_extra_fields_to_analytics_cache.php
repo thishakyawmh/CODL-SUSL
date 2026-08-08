@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('analytics_cache', function (Blueprint $table) {
+        Schema::connection('analytics')->table('analytics_cache', function (Blueprint $table) {
             $table->json('emerging_technologies')->nullable();
             $table->json('skill_gaps')->nullable();
         });
@@ -22,7 +22,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('analytics_cache', function (Blueprint $table) {
+        Schema::connection('analytics')->table('analytics_cache', function (Blueprint $table) {
             $table->dropColumn(['emerging_technologies', 'skill_gaps']);
         });
     }

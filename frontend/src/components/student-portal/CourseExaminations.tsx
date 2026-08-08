@@ -257,19 +257,7 @@ export const CourseExaminations: React.FC = () => {
     }, [location, navigate]);
 
 
-    // Available static exams for demo (could be replaced by DB)
-    /* const availableStaticExams = [
-        {
-            id: 1,
-            title: 'Semester 3 End Semester Examination',
-            deadline: 'Saturday, March 7, 2026'
-        },
-        {
-            id: 2,
-            title: 'Semester 4 Mid Semester Examination',
-            deadline: 'Saturday, March 7, 2026'
-        }
-    ]; */
+
 
     const userStr = sessionStorage.getItem('user');
     let studentRegNo = 'CODL/2404';

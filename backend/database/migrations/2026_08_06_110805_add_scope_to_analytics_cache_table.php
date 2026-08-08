@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('analytics_cache', function (Blueprint $table) {
+        Schema::connection('analytics')->table('analytics_cache', function (Blueprint $table) {
             $table->string('scope_type')->default('global'); // 'global', 'program', etc.
             $table->string('scope_id')->nullable(); // Course ID, department ID, etc.
         });
@@ -22,7 +22,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('analytics_cache', function (Blueprint $table) {
+        Schema::connection('analytics')->table('analytics_cache', function (Blueprint $table) {
             $table->dropColumn(['scope_type', 'scope_id']);
         });
     }
