@@ -392,6 +392,17 @@ export const AdminDashboard: React.FC = () => {
     const [levelDistribution, setLevelDistribution] = useState<LevelData[]>([]);
     const [activityFlow, setActivityFlow] = useState<any[]>([]);
     const [selectedTimeframe, setSelectedTimeframe] = useState<string>('1y');
+    const [demographics, setDemographics] = useState<any>({
+        ageSpread: [
+            { range: '18-24', count: 0 },
+            { range: '25-34', count: 0 },
+            { range: '35+', count: 0 },
+        ],
+        genderRatio: [
+            { name: 'Male', value: 0, fill: '#3B82F6' },
+            { name: 'Female', value: 0, fill: '#EC4899' },
+        ]
+    });
     const [pendingCount, setPendingCount] = useState<number>(0);
     const [activityLogs, setActivityLogs] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -459,6 +470,9 @@ export const AdminDashboard: React.FC = () => {
                 }
                 if (data.activityFlow) {
                     setActivityFlow(data.activityFlow);
+                }
+                if (data.demographics) {
+                    setDemographics(data.demographics);
                 }
 
             } catch (err) {
@@ -630,6 +644,74 @@ export const AdminDashboard: React.FC = () => {
                         </div>
                     </div>
                     <EnrollmentTrendChart data={getFilteredTrendData()} />
+                </div>
+            </div>
+
+            {/* Student Demographics (Full Width Column with Age Curve and Gender Gauge) */}
+            <div className="admin-dashboard-grid" style={{ gridTemplateColumns: '1fr', marginBottom: '28px' }}>
+                <div className="admin-card">
+                    <div className="admin-card-header">
+                        <h2><Users size={20} /> Student Demographics</h2>
+                        <span className="admin-count-badge">Age & Gender Profiling</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: '32px', flexWrap: 'wrap', justifyContent: 'space-around', alignItems: 'center', padding: '10px 0' }}>
+                        {/* Age Spread: Smooth Curve Line/Area Chart */}
+                        <div style={{ flex: 1, minWidth: '280px', height: '220px' }}>
+                            <h4 style={{ fontSize: '13px', fontWeight: 700, color: '#475569', marginBottom: '16px', textAlign: 'center' }}>Age Distribution (Ranges)</h4>
+                            <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart data={demographics.ageSpread} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                                    <defs>
+                                        <linearGradient id="colorAge" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#7C3AED" stopOpacity={0.3}/>
+                                            <stop offset="95%" stopColor="#7C3AED" stopOpacity={0.0}/>
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
+                                    <XAxis dataKey="range" tickLine={false} axisLine={false} style={{ fontSize: '11px', fontWeight: 600, fill: '#64748B' }} />
+                                    <YAxis tickLine={false} axisLine={false} style={{ fontSize: '11px', fontWeight: 600, fill: '#64748B' }} />
+                                    <ChartTooltip content={<CustomTooltip />} />
+                                    <Area type="monotone" dataKey="count" name="Students" stroke="#7C3AED" strokeWidth={2.5} fillOpacity={1} fill="url(#colorAge)" />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        </div>
+
+                        {/* Gender Ratio: Clean Gauge */}
+                        <div style={{ width: '280px', height: '220px', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
+                            <h4 style={{ fontSize: '13px', fontWeight: 700, color: '#475569', marginBottom: '8px', textAlign: 'center' }}>Gender Distribution</h4>
+                            <div style={{ width: '100%', height: '160px', position: 'relative' }}>
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie
+                                            data={demographics.genderRatio}
+                                            cx="50%"
+                                            cy="50%"
+                                            innerRadius={50}
+                                            outerRadius={70}
+                                            paddingAngle={3}
+                                            dataKey="value"
+                                            nameKey="name"
+                                        >
+                                            {demographics.genderRatio.map((entry: any, index: number) => (
+                                                <Cell key={`cell-${index}`} fill={entry.fill} />
+                                            ))}
+                                        </Pie>
+                                    </PieChart>
+                                </ResponsiveContainer>
+                                <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center', pointerEvents: 'none' }}>
+                                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>Ratio</span>
+                                </div>
+                            </div>
+                            {/* Legend labels */}
+                            <div style={{ display: 'flex', gap: '16px', fontSize: '12px', fontWeight: 600, color: '#475569' }}>
+                                {demographics.genderRatio.map((g: any, idx: number) => (
+                                    <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: g.fill }}></span>
+                                        <span>{g.name}: {g.value}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
