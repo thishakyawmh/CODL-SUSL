@@ -69,16 +69,16 @@ class StatsController extends Controller
                 ];
             });
 
-        // Trailing 12 months enrollment trend (database-agnostic aggregation)
+        // Trailing 36 months enrollment trend (database-agnostic aggregation)
         $enrollments = DB::table('user_courses')
             ->select('created_at')
-            ->where('created_at', '>=', now()->subMonths(11)->startOfMonth()->toDateTimeString())
+            ->where('created_at', '>=', now()->subMonths(35)->startOfMonth()->toDateTimeString())
             ->get();
 
         $monthlyData = [];
-        for ($i = 11; $i >= 0; $i--) {
+        for ($i = 35; $i >= 0; $i--) {
             $monthKey = now()->subMonths($i)->format('Y-m');
-            $monthName = now()->subMonths($i)->format('M');
+            $monthName = now()->subMonths($i)->format('M Y');
             $monthlyData[$monthKey] = [
                 'month' => $monthName,
                 'count' => 0,
@@ -94,6 +94,32 @@ class StatsController extends Controller
             }
         }
         $monthlyEnrollments = array_values($monthlyData);
+
+        // Trailing 30 days daily enrollment trend
+        $dailyEnrollments = DB::table('user_courses')
+            ->select('created_at')
+            ->where('created_at', '>=', now()->subDays(29)->startOfDay()->toDateTimeString())
+            ->get();
+
+        $dailyData = [];
+        for ($i = 29; $i >= 0; $i--) {
+            $dayKey = now()->subDays($i)->format('Y-m-d');
+            $dayLabel = now()->subDays($i)->format('d M');
+            $dailyData[$dayKey] = [
+                'day' => $dayLabel,
+                'count' => 0,
+            ];
+        }
+
+        foreach ($dailyEnrollments as $enrollment) {
+            if ($enrollment->created_at) {
+                $dayKey = substr($enrollment->created_at, 0, 10);
+                if (isset($dailyData[$dayKey])) {
+                    $dailyData[$dayKey]['count']++;
+                }
+            }
+        }
+        $dailyEnrollmentsList = array_values($dailyData);
 
         // Student level distribution (Degree, Diploma, etc.)
         $levelDistribution = Course::join('user_courses', 'courses.id', '=', 'user_courses.course_id')
@@ -140,6 +166,7 @@ class StatsController extends Controller
             'topDistricts' => $topDistricts,
             'courseEnrollments' => $courseEnrollments,
             'monthlyEnrollments' => $monthlyEnrollments,
+            'dailyEnrollments' => $dailyEnrollmentsList,
             'levelDistribution' => $levelDistribution,
             'activityFlow' => $activityFlow,
         ]);

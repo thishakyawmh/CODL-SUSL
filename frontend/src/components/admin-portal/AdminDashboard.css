@@ -652,3 +652,14 @@
 @keyframes spin {
     to { transform: rotate(360deg); }
 }
+
+/* Slices Grid Split Ratio */
+.admin-dashboard-grid.slices-split {
+    grid-template-columns: 2fr 3fr;
+}
+
+@media screen and (max-width: 1200px) {
+    .admin-dashboard-grid.slices-split {
+        grid-template-columns: 1fr;
+    }
+}

@@ -10,6 +10,8 @@ import {
     ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip,
     PieChart, Pie, Cell, BarChart, Bar
 } from 'recharts';
+// @ts-ignore
+import SriLankaMapData from '@svg-maps/sri-lanka';
 import {
     mockActivityLogs, getCurrentAdminUser
 } from '../../data/mockAdminData';
@@ -205,66 +207,126 @@ const ProgramLevelChart: React.FC<{ data: LevelData[] }> = ({ data }) => {
     );
 };
 
-// GeographicHotspotsChart using Recharts
+// GeographicHotspotsChart using Interactive SVG Sri Lanka District Map
 const GeographicHotspotsChart: React.FC<{ data: [string, number][] }> = ({ data }) => {
+    const [hoveredLocation, setHoveredLocation] = useState<{ x: number, y: number, name: string, count: number } | null>(null);
+
     if (!data || data.length === 0) {
         return (
-            <div style={{ height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94A3B8' }}>
+            <div style={{ height: '240px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94A3B8' }}>
                 No regional outreach data
             </div>
         );
     }
 
-    const chartData = data.map(([district, count]) => ({
-        district,
-        count
-    }));
+    // Find max count to scale color intensity
+    const maxCount = Math.max(...data.map(d => d[1]), 1);
+
+    // Map of district counts (case-insensitive key mapping)
+    const districtCounts: Record<string, number> = {};
+    data.forEach(([dist, count]) => {
+        districtCounts[dist.toLowerCase().trim()] = count;
+    });
 
     return (
-        <div style={{ width: '100%', height: 200 }}>
-            <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
-                    <XAxis 
-                        dataKey="district" 
-                        tickLine={false} 
-                        axisLine={false} 
-                        dy={8}
-                        style={{ fontSize: '10px', fontWeight: 500, fill: '#94A3B8' }}
-                        tickFormatter={(value) => value.length > 8 ? `${value.slice(0, 6)}..` : value}
-                    />
-                    <YAxis 
-                        tickLine={false} 
-                        axisLine={false} 
-                        dx={-5}
-                        style={{ fontSize: '10px', fontWeight: 500, fill: '#94A3B8' }}
-                    />
-                    <ChartTooltip content={<CustomTooltip />} />
-                    <Bar 
-                        dataKey="count" 
-                        fill="#3B82F6" 
-                        radius={[4, 4, 0, 0]}
-                        barSize={24}
-                    >
-                        {chartData.map((entry, index) => (
-                            <Cell 
-                                key={`cell-${index}`} 
-                                fill="url(#barGradient)" 
-                                style={{ cursor: 'pointer' }}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '24px', flexWrap: 'wrap', justifyContent: 'center', padding: '10px 0' }}>
+            {/* Interactive SVG Map of Sri Lanka */}
+            <div className="chart-container" style={{ width: '160px', height: '240px', position: 'relative', flexShrink: 0 }}>
+                <svg 
+                    viewBox={SriLankaMapData.viewBox} 
+                    width="100%" 
+                    height="100%"
+                    style={{ maxHeight: '100%' }}
+                >
+                    {SriLankaMapData.locations.map((loc: any) => {
+                        const nameLower = loc.name.toLowerCase().trim();
+                        const count = districtCounts[nameLower] || 0;
+                        
+                        // Determine color intensity based on weight
+                        let fillColor = '#F1F5F9'; // Default light slate
+                        let strokeColor = '#CBD5E1';
+                        let strokeWidth = '1';
+
+                        if (count > 0) {
+                            const ratio = count / maxCount;
+                            const lightness = 85 - (ratio * 40);
+                            fillColor = `hsl(262, 80%, ${lightness}%)`;
+                            strokeColor = '#7C3AED';
+                            strokeWidth = '1.5';
+                        }
+
+                        return (
+                            <path
+                                key={loc.id}
+                                d={loc.path}
+                                fill={fillColor}
+                                stroke={strokeColor}
+                                strokeWidth={strokeWidth}
+                                style={{
+                                    transition: 'all 0.2s',
+                                    cursor: 'pointer',
+                                    outline: 'none'
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.setAttribute('fill-opacity', '0.8');
+                                    e.currentTarget.setAttribute('stroke-width', '2.5');
+
+                                    const svgEl = e.currentTarget.ownerSVGElement;
+                                    if (svgEl) {
+                                        const rect = svgEl.getBoundingClientRect();
+                                        const box = e.currentTarget.getBBox();
+                                        const pctX = ((box.x + box.width / 2) / 357.79) * rect.width;
+                                        const pctY = ((box.y + box.height / 2) / 661.12) * rect.height;
+                                        setHoveredLocation({ x: pctX, y: pctY, name: loc.name, count });
+                                    }
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.setAttribute('fill-opacity', '1');
+                                    e.currentTarget.setAttribute('stroke-width', strokeWidth);
+                                    setHoveredLocation(null);
+                                }}
                             />
-                        ))}
-                    </Bar>
-                    <defs>
-                        <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#3B82F6" />
-                            <stop offset="100%" stopColor="#60A5FA" />
-                        </linearGradient>
-                    </defs>
-                </BarChart>
-            </ResponsiveContainer>
-        </div>
-    );
-};
+                        );
+                    })}
+                </svg>
+
+                {/* Hover Tooltip */}
+                {hoveredLocation && (
+                    <div 
+                        className="chart-tooltip"
+                        style={{
+                            left: `${hoveredLocation.x}px`,
+                            top: `${hoveredLocation.y - 45}px`,
+                            transform: 'translateX(-50%)',
+                            opacity: 1,
+                            zIndex: 200
+                        }}
+                    >
+                        <strong>{hoveredLocation.name}</strong>: {hoveredLocation.count} Applicants
+                    </div>
+                )}
+            </div>
+
+            {/* Right side District Legend Checklist */}
+            <div className="doughnut-legend-grid" style={{ flex: 1, minWidth: '160px' }}>
+                {data.slice(0, 5).map(([district, count], idx) => {
+                    const ratio = count / maxCount;
+                    const lightness = 85 - (ratio * 40);
+                    const color = `hsl(262, 80%, ${lightness}%)`;
+                    return (
+                        <div className="legend-item" key={idx}>
+                            <span className="legend-badge" style={{ backgroundColor: color, border: '1px solid #7C3AED' }}></span>
+                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                <span style={{ fontSize: '12px', fontWeight: 600, color: '#334155', lineHeight: 1.2 }}>{district}</span>
+                                <span style={{ fontSize: '11px', color: '#64748B' }}>{count} Applicants</span>
+                              </div>
+                          </div>
+                      );
+                  })}
+              </div>
+          </div>
+      );
+  };
 
 // ActivityFlowChart using Recharts
 const ActivityFlowChart: React.FC<{ data: any[] }> = ({ data }) => {
@@ -341,8 +403,10 @@ export const AdminDashboard: React.FC = () => {
     const [topDistricts, setTopDistricts] = useState<[string, number][]>([]);
     const [courseEnrollments, setCourseEnrollments] = useState<any[]>([]);
     const [monthlyEnrollments, setMonthlyEnrollments] = useState<MonthlyData[]>([]);
+    const [dailyEnrollments, setDailyEnrollments] = useState<any[]>([]);
     const [levelDistribution, setLevelDistribution] = useState<LevelData[]>([]);
     const [activityFlow, setActivityFlow] = useState<any[]>([]);
+    const [selectedTimeframe, setSelectedTimeframe] = useState<string>('1y');
     const [pendingCount, setPendingCount] = useState<number>(0);
     const [activityLogs, setActivityLogs] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -401,6 +465,9 @@ export const AdminDashboard: React.FC = () => {
                 }
                 if (data.monthlyEnrollments) {
                     setMonthlyEnrollments(data.monthlyEnrollments);
+                }
+                if (data.dailyEnrollments) {
+                    setDailyEnrollments(data.dailyEnrollments);
                 }
                 if (data.levelDistribution) {
                     setLevelDistribution(data.levelDistribution);
@@ -467,6 +534,40 @@ export const AdminDashboard: React.FC = () => {
         return role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
     };
 
+    const getFilteredTrendData = () => {
+        switch (selectedTimeframe) {
+            case '1m':
+                return dailyEnrollments.map(d => ({
+                    month: d.day,
+                    count: d.count
+                }));
+            case '3m':
+                return monthlyEnrollments.slice(-3);
+            case '6m':
+                return monthlyEnrollments.slice(-6);
+            case '1y':
+                return monthlyEnrollments.slice(-12);
+            case '2y':
+                return monthlyEnrollments.slice(-24);
+            case '3y':
+                return monthlyEnrollments;
+            default:
+                return monthlyEnrollments.slice(-12);
+        }
+    };
+
+    const getTimeframeLabel = () => {
+        switch (selectedTimeframe) {
+            case '1m': return 'Daily Admissions';
+            case '3m': return 'Trailing 3 Months';
+            case '6m': return 'Trailing 6 Months';
+            case '1y': return 'Trailing 12 Months';
+            case '2y': return 'Trailing 24 Months';
+            case '3y': return 'Trailing 36 Months';
+            default: return 'Admissions Trend';
+        }
+    };
+
     if (isLoading) {
         return (
             <div className="admin-dashboard" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '450px' }}>
@@ -508,19 +609,47 @@ export const AdminDashboard: React.FC = () => {
                 ))}
             </div>
 
-            {/* Enrollment Growth Trend (Full Width Column) */}
+            {/* Enrollment Growth Trend (Full Width Column with Timeframe Filter) */}
             <div className="admin-dashboard-grid" style={{ gridTemplateColumns: '1fr' }}>
                 <div className="admin-card">
-                    <div className="admin-card-header">
-                        <h2><TrendingUp size={20} /> Student Enrollment Trend (Trailing 12 Months)</h2>
-                        <span className="admin-count-badge">Monthly Admissions</span>
+                    <div className="admin-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                        <h2><TrendingUp size={20} /> Student Enrollment Trend</h2>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+                            <span className="admin-count-badge">{getTimeframeLabel()}</span>
+                            <div style={{ display: 'flex', background: '#F1F5F9', padding: '4px', borderRadius: '8px', gap: '2px' }}>
+                                {['1m', '3m', '6m', '1y', '2y', '3y'].map(tf => {
+                                    const labels: Record<string, string> = {
+                                        '1m': '1M', '3m': '3M', '6m': '6M', '1y': '1Y', '2y': '2Y', '3y': '3Y'
+                                    };
+                                    return (
+                                        <button
+                                            key={tf}
+                                            onClick={() => setSelectedTimeframe(tf)}
+                                            style={{
+                                                border: 'none',
+                                                background: selectedTimeframe === tf ? '#7C3AED' : 'transparent',
+                                                color: selectedTimeframe === tf ? '#FFFFFF' : '#64748B',
+                                                padding: '4px 10px',
+                                                borderRadius: '6px',
+                                                fontSize: '11px',
+                                                fontWeight: 700,
+                                                cursor: 'pointer',
+                                                transition: 'all 0.15s ease'
+                                            }}
+                                        >
+                                            {labels[tf]}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
                     </div>
-                    <EnrollmentTrendChart data={monthlyEnrollments} />
+                    <EnrollmentTrendChart data={getFilteredTrendData()} />
                 </div>
             </div>
 
             {/* Interactive Slices Grid */}
-            <div className="admin-dashboard-grid">
+            <div className="admin-dashboard-grid slices-split">
                 {/* Program Level Share (Doughnut Chart) */}
                 <div className="admin-card">
                     <div className="admin-card-header">
