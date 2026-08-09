@@ -438,13 +438,17 @@ export const UserManagement: React.FC = () => {
                                                 <>
                                                     <div className="um-menu-overlay" onClick={() => setOpenMenuId(null)} />
                                                     <div className="um-dropdown-menu">
-                                                        <button onClick={() => triggerResetPassword(user)}>
-                                                            <Key size={14} /> Reset Password
-                                                        </button>
-                                                        <button onClick={() => handleChangeRoleAction(user)}>
-                                                            <Edit3 size={14} /> Change Role
-                                                        </button>
-                                                        <div className="um-menu-divider" />
+                                                        {user.role !== 'applicant' && (
+                                                            <>
+                                                                <button onClick={() => triggerResetPassword(user)}>
+                                                                    <Key size={14} /> Reset Password
+                                                                </button>
+                                                                <button onClick={() => handleChangeRoleAction(user)}>
+                                                                    <Edit3 size={14} /> Change Role
+                                                                </button>
+                                                                <div className="um-menu-divider" />
+                                                            </>
+                                                        )}
                                                         <button className="delete" onClick={() => triggerDeleteUser(user)}>
                                                             <Trash2 size={14} /> Delete Account
                                                         </button>

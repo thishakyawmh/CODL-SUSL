@@ -111,8 +111,10 @@ const TitleUpdater = () => {
       location.pathname.startsWith('/staff')
     ) {
       document.title = 'CODL | SUSL - Staff';
+    } else if (location.pathname.startsWith('/student-interests')) {
+      document.title = 'Student Academic Interest';
     } else {
-      document.title = 'Student Academic Interest Survey';
+      document.title = 'CODL | SUSL - Student';
     }
   }, [location.pathname]);
 
