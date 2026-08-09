@@ -17,6 +17,7 @@ interface Course {
     duration?: string;
     max_students?: number;
     created_at?: string;
+    batches_count?: number;
 }
 
 export const AIAnalytics: React.FC = () => {
@@ -89,12 +90,12 @@ export const AIAnalytics: React.FC = () => {
                 <div className="modal-backdrop" onClick={() => setShowSyncModal(false)}>
                     <div className="modal-content-card" onClick={e => e.stopPropagation()}>
                         <h3>Sync Google Sheets Data</h3>
-                        <p className="text-slate-500 text-sm mb-6">Connect survey data to the AI NLP pipeline.</p>
-                        <form onSubmit={handleSync} className="flex flex-col gap-4">
-                            <div>
-                                <label className="block text-sm font-semibold mb-1">Data Source Type</label>
+                        <p className="sync-modal-desc">Connect survey data to the AI NLP pipeline.</p>
+                        <form onSubmit={handleSync} className="sync-modal-form">
+                            <div className="sync-modal-form-group">
+                                <label className="sync-modal-form-label">Data Source Type</label>
                                 <select
-                                    className="form-input w-full"
+                                    className="sync-modal-form-select"
                                     value={syncType}
                                     onChange={(e) => setSyncType(e.target.value as any)}
                                 >
@@ -102,21 +103,23 @@ export const AIAnalytics: React.FC = () => {
                                     <option value="industry">Industry Gaps Audit</option>
                                 </select>
                             </div>
-                            <div>
-                                <label className="block text-sm font-semibold mb-1">Google Sheet CSV URL</label>
+                            <div className="sync-modal-form-group">
+                                <label className="sync-modal-form-label">Google Sheet CSV URL</label>
                                 <input
                                     type="url"
-                                    className="form-input w-full"
+                                    className="sync-modal-form-input"
                                     placeholder="https://docs.google.com/spreadsheets/d/.../export?format=csv"
                                     value={syncUrl}
                                     onChange={(e) => setSyncUrl(e.target.value)}
                                     required
                                 />
-                                <p className="text-xs text-slate-400 mt-1">Must be a published CSV export link.</p>
+                                <span className="sync-modal-form-tip">Must be a published CSV export link.</span>
                             </div>
-                            <div className="flex justify-end gap-2 mt-4">
-                                <button type="button" className="btn btn-secondary" onClick={() => setShowSyncModal(false)}>Cancel</button>
-                                <button type="submit" className="btn btn-primary" disabled={syncing}>
+                            <div className="sync-modal-form-actions">
+                                <button type="button" className="sync-modal-btn sync-modal-btn-secondary" onClick={() => setShowSyncModal(false)}>
+                                    Cancel
+                                </button>
+                                <button type="submit" className="sync-modal-btn sync-modal-btn-primary" disabled={syncing}>
                                     {syncing ? 'Syncing Pipeline...' : 'Run Sync & Generate Cache'}
                                 </button>
                             </div>
@@ -204,9 +207,20 @@ const ProgramHub: React.FC<{ programs: Course[], onSelect: (c: Course) => void, 
         }
     };
 
+    const formatDate = (dateString?: string) => {
+        if (!dateString) return 'Not Available';
+        try {
+            const d = new Date(dateString);
+            if (isNaN(d.getTime())) return 'Not Available';
+            return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        } catch (e) {
+            return 'Not Available';
+        }
+    };
+
     return (
         <div className="programs-hub-container" style={{ padding: '0' }}>
-            {/* Header section identical to other pages */}
+            {/* Header section identical to other pages with Sync button aligned on the right */}
             <div className="admin-page-header">
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
                     {(levelFilter !== 'all' || searchTerm !== '') && (
@@ -233,25 +247,14 @@ const ProgramHub: React.FC<{ programs: Course[], onSelect: (c: Course) => void, 
                         }
                     </p>
                 </div>
-            </div>
-
-            {/* AI Learning Roadmap Card (Redesigned Google Sheets section) */}
-            {levelFilter === 'all' && !searchTerm && (
-                <div className="ai-roadmap-card">
-                    <div className="ai-roadmap-card-content">
-                        <div className="ai-roadmap-icon-box">
-                            <Database size={24} />
-                        </div>
-                        <div className="ai-roadmap-text">
-                            <h4>AI Learning Roadmap</h4>
-                            <p>Synchronize Student Interests & Industry Gaps Google Sheets to power the AI NLP engine.</p>
-                        </div>
+                {levelFilter === 'all' && !searchTerm && (
+                    <div className="admin-header-actions" style={{ display: 'flex', alignItems: 'center' }}>
+                        <button className="btn btn-primary" onClick={onOpenSync} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                            <RefreshCw size={16} /> Sync Google Sheet Data
+                        </button>
                     </div>
-                    <button className="btn btn-primary ai-roadmap-btn" onClick={onOpenSync}>
-                        <RefreshCw size={16} /> Sync Google Sheet Data
-                    </button>
-                </div>
-            )}
+                )}
+            </div>
 
             {/* Search Input Bar consistent with Course Management search bar */}
             <div className="cm-filters">
@@ -278,7 +281,7 @@ const ProgramHub: React.FC<{ programs: Course[], onSelect: (c: Course) => void, 
                                 </div>
                                 <h3>{cat.name}</h3>
                                 <p>{cat.desc}</p>
-                               <div className="cm-category-stats">
+                                <div className="cm-category-stats">
                                     <span>{count} Course{count !== 1 ? 's' : ''}</span>
                                     <ArrowUpRight size={14} />
                                 </div>
@@ -298,9 +301,6 @@ const ProgramHub: React.FC<{ programs: Course[], onSelect: (c: Course) => void, 
                                         <span className="cmc-level" style={{ background: levelStyle.bg, color: levelStyle.text }}>
                                             {p.level}
                                         </span>
-                                        <span className="cmc-intake" style={{ background: '#D1FAE5', color: '#059669' }}>
-                                            Open
-                                        </span>
                                     </div>
 
                                     <h3 className="cmc-title" title={p.title}>{p.title}</h3>
@@ -308,27 +308,16 @@ const ProgramHub: React.FC<{ programs: Course[], onSelect: (c: Course) => void, 
 
                                     <div className="cmc-stats">
                                         <div className="cmc-stat">
-                                            <Users size={14} />
-                                            <span><strong>{p.max_students ? Math.round(p.max_students * 0.45) : 34}</strong> / {p.max_students || 120}</span>
+                                            <Calendar size={14} />
+                                            <span>{formatDate(p.created_at)}</span>
                                         </div>
                                         <div className="cmc-stat">
                                             <Calendar size={14} />
-                                            <span>{p.duration || '3 Years'}</span>
+                                            <span>{p.duration || 'Not Available'}</span>
                                         </div>
                                         <div className="cmc-stat">
                                             <Award size={14} />
-                                            <span>1 batch</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="cmc-faculty-info">
-                                        <div className="cmc-faculty-item">
-                                            <Sparkles size={13} />
-                                            <span>Secretary: <strong>Not Assigned</strong></span>
-                                        </div>
-                                        <div className="cmc-faculty-item">
-                                            <Layers size={13} />
-                                            <span>Coordinator: <strong>Not Assigned</strong></span>
+                                            <span>{p.batches_count !== undefined && p.batches_count !== null ? `${p.batches_count} batch${p.batches_count !== 1 ? 'es' : ''}` : 'Not Available'}</span>
                                         </div>
                                     </div>
 
