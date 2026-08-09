@@ -6,6 +6,7 @@ use App\AI\Models\StudentInterest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 
 class StudentInterestController extends Controller
 {
@@ -20,7 +21,7 @@ class StudentInterestController extends Controller
             'education_level' => 'required|string',
             'province' => 'required|string',
             'district' => 'required|string',
-            
+
             // Primary details
             'primary_field' => 'required|string',
             'primary_skills' => 'required|string',
@@ -41,6 +42,7 @@ class StudentInterestController extends Controller
 
             // Global questions
             'university_opportunities' => 'nullable|string',
+            'new_program_suggestion' => 'nullable|string',
         ]);
 
         try {
@@ -48,6 +50,17 @@ class StudentInterestController extends Controller
             $validated['survey_submitted_at'] = now();
 
             $studentInterest = StudentInterest::create($validated);
+
+            // Send to Google Sheets webhook asynchronously
+            $webhookUrl = env('GOOGLE_SHEET_WEBHOOK_URL');
+            if ($webhookUrl) {
+                try {
+                    Http::timeout(5)->post($webhookUrl, $validated);
+                } catch (\Exception $sheetException) {
+                    // Log error but do not disrupt student user experience
+                    Log::error('Google Sheet Sync Error: ' . $sheetException->getMessage());
+                }
+            }
 
             return response()->json([
                 'success' => true,
@@ -71,7 +84,7 @@ class StudentInterestController extends Controller
     public function getConfig()
     {
         try {
-            $configs = DB::connection('analytics')->table('survey_interests_config')->get()->map(function($c) {
+            $configs = DB::connection('analytics')->table('survey_interests_config')->get()->map(function ($c) {
                 // Split comma-separated skills into clean trimmed arrays
                 $skillsArray = array_filter(array_map('trim', explode(',', $c->skills)));
                 return [
@@ -105,7 +118,7 @@ class StudentInterestController extends Controller
 
         try {
             if (!empty($validated['id'])) {
-                DB::connection('analytics')->table('survey_interests_config' )
+                DB::connection('analytics')->table('survey_interests_config')
                     ->where('id', $validated['id'])
                     ->update([
                         'interest_field' => $validated['interest_field'],
@@ -159,7 +172,7 @@ class StudentInterestController extends Controller
     public function getTeachingMethods()
     {
         try {
-            $methods = DB::connection('analytics')->table('survey_teaching_methods')->get()->map(function($m) {
+            $methods = DB::connection('analytics')->table('survey_teaching_methods')->get()->map(function ($m) {
                 return [
                     'id' => $m->id,
                     'method_name' => $m->method_name

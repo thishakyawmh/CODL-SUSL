@@ -112,7 +112,7 @@ const TitleUpdater = () => {
     ) {
       document.title = 'CODL | SUSL - Staff';
     } else {
-      document.title = 'CODL | SUSL - Student';
+      document.title = 'Student Academic Interest Survey';
     }
   }, [location.pathname]);
 

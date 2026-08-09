@@ -170,6 +170,7 @@ export const StudentInterestForm: React.FC = () => {
         custom_education_level: '',
         province: '',
         district: '',
+        new_program_suggestion: ''
     });
 
     // Dynamic sections state
@@ -457,6 +458,9 @@ export const StudentInterestForm: React.FC = () => {
 
                 // University Opportunities
                 university_opportunities: selectedOpportunities.join(', '),
+
+                // New Program Suggestion (Optional)
+                new_program_suggestion: formData.new_program_suggestion.trim() || null,
             };
 
             await studentInterestService.submit(payload);
@@ -490,7 +494,7 @@ export const StudentInterestForm: React.FC = () => {
             <div className="student-interest-container">
                 <div className="student-interest-header-card">
                     <div className="header-text-section">
-                        <h1>Student Academic Interest Survey</h1>
+                        <h1>Student Academic Interests</h1>
                         <p>
                             Center for Open and Distance Learning <br />
                             Sabaragamuwa University of Sri Lanka
@@ -520,6 +524,7 @@ export const StudentInterestForm: React.FC = () => {
                                     custom_education_level: '',
                                     province: '',
                                     district: '',
+                                    new_program_suggestion: ''
                                 });
                                 setPrimaryInterest({ field: '', skills: [], teaching_methods: [], theory_practical: 3 });
                                 setSecondaryInterest({ field: '', skills: [], teaching_methods: [], theory_practical: 3 });
@@ -541,7 +546,7 @@ export const StudentInterestForm: React.FC = () => {
         <div className="student-interest-container">
             <div className="student-interest-header-card">
                 <div className="header-text-section">
-                    <h1>Student Academic Interest Survey</h1>
+                    <h1>Student Academic Interests</h1>
                     <p>
                         Center for Open and Distance Learning <br />
                         Sabaragamuwa University of Sri Lanka
@@ -1025,6 +1030,27 @@ export const StudentInterestForm: React.FC = () => {
                                         </div>
                                     ))}
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Part 6: New Program Suggestion */}
+                    <div className="form-section">
+                        <div className="section-header-row">
+                            <h3 className="form-section-title" style={{ borderLeftColor: '#F59E0B', marginBottom: 0 }}>
+                                If you could introduce ONE new degree program or specialization, what would it be?
+                            </h3>
+                        </div>
+                        <div className="form-grid" style={{ marginTop: '16px' }}>
+                            <div className="form-group full-width">
+                                <label htmlFor="new_program_suggestion">Your Suggestion</label>
+                                <textarea
+                                    id="new_program_suggestion"
+                                    className="form-textarea"
+                                    placeholder="Enter your program or specialization idea..."
+                                    value={formData.new_program_suggestion}
+                                    onChange={e => setFormData(prev => ({ ...prev, new_program_suggestion: e.target.value }))}
+                                />
                             </div>
                         </div>
                     </div>

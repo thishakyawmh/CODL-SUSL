@@ -162,6 +162,20 @@
   gap: var(--space-lg, 24px);
 }
 
+.form-section {
+  background-color: #fafbff;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 16px;
+  padding: 24px;
+  transition: all var(--transition-base, 0.2s);
+}
+
+.form-section:hover {
+  border-color: rgba(124, 58, 237, 0.25);
+  background-color: #fbfdff;
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.02);
+}
+
 .form-section-title {
   font-size: var(--text-lg, 16px);
   font-weight: 600;
