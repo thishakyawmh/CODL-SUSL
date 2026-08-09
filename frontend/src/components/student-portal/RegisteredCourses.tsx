@@ -193,8 +193,12 @@ export const RegisteredCourses: React.FC<RegisteredCoursesProps> = ({ onSelect }
                                     </div>
 
                                     <div className="rp-card-body">
-                                        <h3 className="rp-course-title">{courseDetails.title}</h3>
-                                        <p className="rp-course-code">{courseDetails.level} • {courseDetails.department || 'General'}</p>
+                                        <h3 className="rp-course-title">{courseDetails.title || 'Course Application'}</h3>
+                                        <p className="rp-course-code">
+                                            {courseDetails.level ? `${courseDetails.level} • ` : ''}
+                                            {courseDetails.department || 'General'}
+                                            {app.batch?.name ? ` • ${app.batch.name}` : ''}
+                                        </p>
                                     </div>
 
                                     <div className="rp-card-info-text">
