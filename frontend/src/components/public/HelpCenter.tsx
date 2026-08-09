@@ -47,7 +47,7 @@ export const HelpCenter: React.FC = () => {
         langLabel: 'Language',
         backLabel: 'Back to Login',
         backToHubLabel: 'Back to Help Center',
-        categoriesTitle: 'Guide Categories (Sinhala)',
+        categoriesTitle: 'Guide Categories',
         notesLabel: 'Important Notes',
         noResults: 'No guides match your search criteria.',
         viewGuideLabel: 'View Guide',
