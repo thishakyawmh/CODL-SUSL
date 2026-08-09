@@ -306,24 +306,18 @@ const ProgramHub: React.FC<{ programs: Course[], onSelect: (c: Course) => void, 
                                     <h3 className="cmc-title" title={p.title}>{p.title}</h3>
                                     <p className="cmc-code">{p.code} • {p.department}</p>
 
-                                    <div className="cmc-stats" style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '14px 18px', background: '#F8FAFC', borderRadius: '14px', border: '1px solid #F1F5F9', marginBottom: '20px' }}>
-                                        <div className="cmc-stat" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                            <Calendar size={14} style={{ color: '#7C3AED' }} />
-                                            <span style={{ fontSize: '13px', color: '#475569' }}>
-                                                Start Date: <strong style={{ color: '#1E293B' }}>{formatDate(p.created_at)}</strong>
-                                            </span>
+                                    <div className="cmc-stats">
+                                        <div className="cmc-stat">
+                                            <Calendar size={14} />
+                                            <span>{formatDate(p.created_at)}</span>
                                         </div>
-                                        <div className="cmc-stat" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                            <Calendar size={14} style={{ color: '#7C3AED' }} />
-                                            <span style={{ fontSize: '13px', color: '#475569' }}>
-                                                Duration: <strong style={{ color: '#1E293B' }}>{p.duration || 'Not Available'}</strong>
-                                            </span>
+                                        <div className="cmc-stat">
+                                            <Calendar size={14} />
+                                            <span>{p.duration || 'Not Available'}</span>
                                         </div>
-                                        <div className="cmc-stat" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                            <Layers size={14} style={{ color: '#7C3AED' }} />
-                                            <span style={{ fontSize: '13px', color: '#475569' }}>
-                                                Number of Batches: <strong style={{ color: '#1E293B' }}>{p.batches_count !== undefined && p.batches_count !== null ? `${p.batches_count} Batch${p.batches_count !== 1 ? 'es' : ''}` : 'Not Available'}</strong>
-                                            </span>
+                                        <div className="cmc-stat">
+                                            <Award size={14} />
+                                            <span>{p.batches_count !== undefined && p.batches_count !== null ? `${p.batches_count} batch${p.batches_count !== 1 ? 'es' : ''}` : 'Not Available'}</span>
                                         </div>
                                     </div>
 
