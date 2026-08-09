@@ -41,6 +41,7 @@ import { AIAnalytics } from './components/admin-portal/AIAnalytics';
 import { AdminAnnouncements } from './components/admin-portal/AdminAnnouncements';
 import { ActivityLogs } from './components/admin-portal/ActivityLogs';
 import { TrackStudent } from './components/admin-portal/TrackStudent';
+import { HelpCenter } from './components/public/HelpCenter';
 
 // --- Common/Services Imports ---
 import { systemSettingService } from './services/apiService';
@@ -160,6 +161,7 @@ function App() {
 
         <Route path="/login" element={<LoginPortal />} />
         <Route path="/staff/login" element={<AdminLogin />} />
+        <Route path="/help-center" element={<HelpCenter />} />
 
         {/* Applicant Dashboard Routes */}
         <Route
