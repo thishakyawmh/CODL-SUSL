@@ -132,136 +132,224 @@ export const AIAnalytics: React.FC = () => {
    STATE A: PROGRAM HUB (LANDING PAGE)
    ========================================================= */
 const ProgramHub: React.FC<{ programs: Course[], onSelect: (c: Course) => void, onOpenSync: () => void }> = ({ programs, onSelect, onOpenSync }) => {
+    const [levelFilter, setLevelFilter] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
-
-    const filteredPrograms = programs.filter(p => {
-        if (!searchTerm) return true;
-        const term = searchTerm.toLowerCase();
-        return (
-            p.title.toLowerCase().includes(term) ||
-            p.code.toLowerCase().includes(term) ||
-            p.department.toLowerCase().includes(term)
-        );
-    });
 
     const categories = [
         {
-            title: 'Degree',
-            subtitle: '4-Year Academic Programs',
-            icon: <GraduationCap size={22} />,
-            accentColor: { bg: '#EDE9FE', text: '#7C3AED' },
+            name: 'Degree',
+            desc: '4-Year Academic Programs',
+            icon: GraduationCap,
+            color: '#7C3AED',
             filter: (p: Course) => p.level.toLowerCase().includes('degree')
         },
         {
-            title: 'Higher National Diploma',
-            subtitle: 'Advanced Professional Diplomas',
-            icon: <Layers size={22} />,
-            accentColor: { bg: '#FEF3C7', text: '#D97706' },
+            name: 'Higher National Diploma',
+            desc: 'Advanced Professional Diplomas',
+            icon: Layers,
+            color: '#F59E0B',
             filter: (p: Course) => p.level.toLowerCase().includes('higher national') || p.level.toLowerCase().includes('hnd')
         },
         {
-            title: 'Diploma',
-            subtitle: '1-2 Year Specialized Courses',
-            icon: <BookOpen size={22} />,
-            accentColor: { bg: '#DBEAFE', text: '#2563EB' },
+            name: 'Diploma',
+            desc: '1-2 Year Specialized Courses',
+            icon: BookOpen,
+            color: '#3B82F6',
             filter: (p: Course) => p.level.toLowerCase().includes('diploma') && !p.level.toLowerCase().includes('higher national') && !p.level.toLowerCase().includes('hnd')
         },
         {
-            title: 'Advanced Certificate',
-            subtitle: 'Fast-track Academic Qualifications',
-            icon: <Award size={22} />,
-            accentColor: { bg: '#FCE7F3', text: '#DB2777' },
+            name: 'Advanced Certificate',
+            desc: 'Intermediate Level Certifications',
+            icon: Award,
+            color: '#EC4899',
             filter: (p: Course) => p.level.toLowerCase().includes('advanced certificate')
         },
         {
-            title: 'Certificate',
-            subtitle: 'Foundational Skills Programs',
-            icon: <FileText size={22} />,
-            accentColor: { bg: '#CCFBF1', text: '#0D9488' },
+            name: 'Certificate',
+            desc: 'Short-term Skill Programs',
+            icon: Award,
+            color: '#10B981',
             filter: (p: Course) => p.level.toLowerCase().includes('certificate') && !p.level.toLowerCase().includes('advanced')
         }
     ];
+
+    const getCount = (name: string) => {
+        const cat = categories.find(c => c.name === name);
+        if (!cat) return 0;
+        return programs.filter(cat.filter).length;
+    };
+
+    const filteredPrograms = programs.filter(p => {
+        const matchesSearch = !searchTerm ||
+            p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            p.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            p.department.toLowerCase().includes(searchTerm.toLowerCase());
+
+        if (levelFilter === 'all') {
+            return matchesSearch;
+        } else {
+            const activeCat = categories.find(c => c.name === levelFilter);
+            return matchesSearch && (activeCat ? activeCat.filter(p) : true);
+        }
+    });
+
+    const getLevelColor = (level: string) => {
+        switch (level) {
+            case 'Degree': return { bg: '#EDE9FE', text: '#7C3AED' };
+            case 'Diploma': return { bg: '#DBEAFE', text: '#2563EB' };
+            case 'Higher National Diploma': return { bg: '#FEF3C7', text: '#D97706' };
+            case 'Advanced Certificate': return { bg: '#FCE7F3', text: '#DB2777' };
+            case 'Certificate': return { bg: '#CCFBF1', text: '#0D9488' };
+            default: return { bg: '#F1F5F9', text: '#475569' };
+        }
+    };
 
     return (
         <div className="programs-hub-container" style={{ padding: '0' }}>
             {/* Header section identical to other pages */}
             <div className="admin-page-header">
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                    <h1 className="admin-page-title">AI Analytics Workspace</h1>
-                    <p className="admin-page-subtitle">Analyze curriculum alignment against student interest surveys and industry capability audits.</p>
+                    {(levelFilter !== 'all' || searchTerm !== '') && (
+                        <button
+                            className="cm-back-text-btn"
+                            onClick={() => {
+                                setLevelFilter('all');
+                                setSearchTerm('');
+                            }}
+                        >
+                            <ArrowLeft size={18} /> Back
+                        </button>
+                    )}
+                    <h1 className="admin-page-title">
+                        {(levelFilter !== 'all' || searchTerm !== '')
+                            ? (searchTerm ? `Search Results for "${searchTerm}"` : `${levelFilter} Programs`)
+                            : "AI Analytics Workspace"
+                        }
+                    </h1>
+                    <p className="admin-page-subtitle">
+                        {(levelFilter !== 'all' || searchTerm !== '')
+                            ? "Explore and analyze our educational program categories."
+                            : "Analyze curriculum alignment against student interest surveys and industry capability audits."
+                        }
+                    </p>
                 </div>
             </div>
 
-            {/* AI Learning Roadmap Card (Redesigned Google Data Sheet section) */}
-            <div className="ai-roadmap-card">
-                <div className="ai-roadmap-card-content">
-                    <div className="ai-roadmap-icon-box">
-                        <Database size={24} />
+            {/* AI Learning Roadmap Card (Redesigned Google Sheets section) */}
+            {levelFilter === 'all' && !searchTerm && (
+                <div className="ai-roadmap-card">
+                    <div className="ai-roadmap-card-content">
+                        <div className="ai-roadmap-icon-box">
+                            <Database size={24} />
+                        </div>
+                        <div className="ai-roadmap-text">
+                            <h4>AI Learning Roadmap</h4>
+                            <p>Synchronize Student Interests & Industry Gaps Google Sheets to power the AI NLP engine.</p>
+                        </div>
                     </div>
-                    <div className="ai-roadmap-text">
-                        <h4>AI Learning Roadmap</h4>
-                        <p>Synchronize Student Interests & Industry Gaps Google Sheets to power the AI NLP engine.</p>
-                    </div>
+                    <button className="btn btn-primary ai-roadmap-btn" onClick={onOpenSync}>
+                        <RefreshCw size={16} /> Sync Google Sheet Data
+                    </button>
                 </div>
-                <button className="btn btn-primary ai-roadmap-btn" onClick={onOpenSync}>
-                    <RefreshCw size={16} /> Sync Google Sheet Data
-                </button>
-            </div>
+            )}
 
             {/* Search Input Bar consistent with Course Management search bar */}
-            <div className="ai-search-container">
-                <Search size={18} />
-                <input
-                    type="text"
-                    placeholder="Search for any course, degree or code..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                />
+            <div className="cm-filters">
+                <div className="cm-search" style={{ maxWidth: '100%' }}>
+                    <Search size={18} />
+                    <input
+                        type="text"
+                        placeholder="Search for any course, degree or code..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
             </div>
 
-            {/* Qualification Cards Grid */}
-            <div className="qualification-grid">
-                {categories.map(cat => {
-                    const catPrograms = filteredPrograms.filter(cat.filter);
-                    return (
-                        <div key={cat.title} className="qualification-card">
-                            <div className="qualification-card-header">
-                                <div className="qualification-icon-box" style={{ backgroundColor: cat.accentColor.bg, color: cat.accentColor.text }}>
-                                    {cat.icon}
+            {/* Qualification Cards Grid (Initially visible when no category/search is selected) */}
+            {levelFilter === 'all' && !searchTerm ? (
+                <div className="cm-categories-grid">
+                    {categories.map(cat => {
+                        const count = getCount(cat.name);
+                        return (
+                            <div key={cat.name} className="cm-category-card" onClick={() => setLevelFilter(cat.name)}>
+                                <div className="cm-category-icon" style={{ background: `${cat.color}15`, color: cat.color }}>
+                                    <cat.icon size={28} />
                                 </div>
-                                <span className="qualification-count-badge">
-                                    {catPrograms.length} {catPrograms.length === 1 ? 'Course' : 'Courses'}
-                                </span>
+                                <h3>{cat.name}</h3>
+                                <p>{cat.desc}</p>
+                               <div className="cm-category-stats">
+                                    <span>{count} Course{count !== 1 ? 's' : ''}</span>
+                                    <ArrowUpRight size={14} />
+                                </div>
                             </div>
-                            <div className="qualification-details">
-                                <h3 className="qualification-title">{cat.title}</h3>
-                                <p className="qualification-subtitle">{cat.subtitle}</p>
-                            </div>
-                            <div className="qualification-divider"></div>
-                            <div className="qualification-programs-list">
-                                {catPrograms.length > 0 ? (
-                                    catPrograms.map(p => (
-                                        <div key={p.id} className="qualification-program-item" onClick={() => onSelect(p)}>
-                                            <div className="program-item-info">
-                                                <span className="program-item-title">{p.title}</span>
-                                                <span className="program-item-code">{p.code} • {p.department}</span>
-                                            </div>
-                                            <div className="program-item-action">
-                                                <span className="program-analyze-text">Analyze</span>
-                                                <ArrowUpRight size={16} className="program-item-arrow" />
-                                            </div>
-                                        </div>
-                                    ))
-                                ) : (
-                                    <div className="qualification-empty-state">
-                                        No courses matching query
+                        );
+                    })}
+                </div>
+            ) : (
+                /* Course Content Grid displayed when category is selected or search term is entered */
+                <>
+                    <div className="cm-grid">
+                        {filteredPrograms.map(p => {
+                            const levelStyle = getLevelColor(p.level);
+                            return (
+                                <div className="cm-course-card" key={p.id}>
+                                    <div className="cmc-header">
+                                        <span className="cmc-level" style={{ background: levelStyle.bg, color: levelStyle.text }}>
+                                            {p.level}
+                                        </span>
+                                        <span className="cmc-intake" style={{ background: '#D1FAE5', color: '#059669' }}>
+                                            Open
+                                        </span>
                                     </div>
-                                )}
-                            </div>
+
+                                    <h3 className="cmc-title" title={p.title}>{p.title}</h3>
+                                    <p className="cmc-code">{p.code} • {p.department}</p>
+
+                                    <div className="cmc-stats">
+                                        <div className="cmc-stat">
+                                            <Users size={14} />
+                                            <span><strong>{p.max_students ? Math.round(p.max_students * 0.45) : 34}</strong> / {p.max_students || 120}</span>
+                                        </div>
+                                        <div className="cmc-stat">
+                                            <Calendar size={14} />
+                                            <span>{p.duration || '3 Years'}</span>
+                                        </div>
+                                        <div className="cmc-stat">
+                                            <Award size={14} />
+                                            <span>1 batch</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="cmc-faculty-info">
+                                        <div className="cmc-faculty-item">
+                                            <Sparkles size={13} />
+                                            <span>Secretary: <strong>Not Assigned</strong></span>
+                                        </div>
+                                        <div className="cmc-faculty-item">
+                                            <Layers size={13} />
+                                            <span>Coordinator: <strong>Not Assigned</strong></span>
+                                        </div>
+                                    </div>
+
+                                    <div className="cmc-grid-actions">
+                                        <button className="cmc-btn-manage big" onClick={() => onSelect(p)}>
+                                            <Sparkles size={16} /> Analyze
+                                        </button>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    {filteredPrograms.length === 0 && (
+                        <div className="cm-empty">
+                            <BookOpen size={48} />
+                            <p>No courses match your criteria</p>
                         </div>
-                    );
-                })}
-            </div>
+                    )}
+                </>
+            )}
         </div>
     );
 };
@@ -319,9 +407,9 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
         return (
             <div style={{ animation: 'fadeIn 0.3s ease' }}>
                 <button 
-                    className="btn btn-secondary mb-6 text-sm" 
+                    className="cm-back-text-btn" 
                     onClick={onBack}
-                    style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px' }}
+                    style={{ marginBottom: '24px' }}
                 >
                     <ArrowLeft size={16} /> Back to Programs
                 </button>
@@ -341,9 +429,9 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-6" style={{ borderBottom: '1px solid #E2E8F0', paddingBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '20px' }}>
                 <div>
                     <button 
-                        className="btn btn-secondary text-sm" 
+                        className="cm-back-text-btn" 
                         onClick={onBack}
-                        style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}
+                        style={{ marginBottom: '16px' }}
                     >
                         <ArrowLeft size={16} /> Back to Programs
                     </button>
