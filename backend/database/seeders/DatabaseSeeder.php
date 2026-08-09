@@ -16,13 +16,20 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        $this->call([
-            SuperAdminSeeder::class,
-            CategorySeeder::class,
-            RecommendationRuleSeeder::class,
-            RealCoursesSeeder::class,
-        ]);
-
-        echo "Database seeded successfully with essential data!\n";
+        if (file_exists(base_path('database_backup.json'))) {
+            $this->call([
+                BackupDataSeeder::class
+            ]);
+            echo "Database successfully restored from JSON backup file!\n";
+        } else {
+            $this->call([
+                SuperAdminSeeder::class,
+                CategorySeeder::class,
+                RecommendationRuleSeeder::class,
+                RealCoursesSeeder::class,
+                SurveyInterestsConfigSeeder::class,
+            ]);
+            echo "Database seeded successfully with default/essential data!\n";
+        }
     }
 }

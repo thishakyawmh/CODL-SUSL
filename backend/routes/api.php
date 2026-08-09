@@ -17,6 +17,8 @@ use App\Http\Controllers\SystemSettingController;
 use App\Http\Controllers\BackupController;
 use App\Http\Controllers\AIAnalysisController;
 use App\AI\Controllers\AIAnalyticsController;
+use App\Http\Controllers\StudentInterestController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -34,6 +36,12 @@ Route::post('/reset-password', [AuthController::class, 'resetPassword'])->middle
 Route::get('/public/courses', [CourseController::class, 'publicIndex']);
 Route::get('/admin/system-settings', [SystemSettingController::class, 'getSettings']);
 Route::post('/public/surveys', [AIAnalyticsController::class, 'storeSurvey']); // Public survey submission
+Route::post('/student-interests', [StudentInterestController::class, 'store']);
+Route::get('/student-interests/config', [StudentInterestController::class, 'getConfig']);
+Route::get('/student-interests/teaching-methods', [StudentInterestController::class, 'getTeachingMethods']);
+
+
+
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
@@ -78,6 +86,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/admin/ai-analytics/{courseId}/emerging-technologies', [AIAnalyticsController::class, 'getEmergingTechnologies']);
         Route::get('/admin/ai-analytics/surveys', [AIAnalyticsController::class, 'getSurveys']);
         Route::post('/admin/ai-analytics/surveys', [AIAnalyticsController::class, 'storeSurvey']);
+        Route::post('/admin/student-interests/config', [StudentInterestController::class, 'storeConfig']);
+        Route::delete('/admin/student-interests/config/{id}', [StudentInterestController::class, 'deleteConfig']);
+        Route::post('/admin/student-interests/teaching-methods', [StudentInterestController::class, 'storeTeachingMethod']);
+        Route::delete('/admin/student-interests/teaching-methods/{id}', [StudentInterestController::class, 'deleteTeachingMethod']);
     });
 
     // Super Admin / Director Management routes
