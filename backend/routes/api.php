@@ -39,6 +39,7 @@ Route::post('/public/surveys', [AIAnalyticsController::class, 'storeSurvey']); /
 Route::post('/student-interests', [StudentInterestController::class, 'store']);
 Route::get('/student-interests/config', [StudentInterestController::class, 'getConfig']);
 Route::get('/student-interests/teaching-methods', [StudentInterestController::class, 'getTeachingMethods']);
+Route::get('/student-interests/university-opportunities', [StudentInterestController::class, 'getUniversityOpportunities']);
 
 
 
@@ -90,6 +91,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/admin/student-interests/config/{id}', [StudentInterestController::class, 'deleteConfig']);
         Route::post('/admin/student-interests/teaching-methods', [StudentInterestController::class, 'storeTeachingMethod']);
         Route::delete('/admin/student-interests/teaching-methods/{id}', [StudentInterestController::class, 'deleteTeachingMethod']);
+        Route::post('/admin/student-interests/university-opportunities', [StudentInterestController::class, 'storeUniversityOpportunity']);
+        Route::delete('/admin/student-interests/university-opportunities/{id}', [StudentInterestController::class, 'deleteUniversityOpportunity']);
     });
 
     // Super Admin / Director Management routes

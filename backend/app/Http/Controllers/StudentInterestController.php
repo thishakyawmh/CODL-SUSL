@@ -6,6 +6,7 @@ use App\AI\Models\StudentInterest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 
 class StudentInterestController extends Controller
 {
@@ -20,7 +21,7 @@ class StudentInterestController extends Controller
             'education_level' => 'required|string',
             'province' => 'required|string',
             'district' => 'required|string',
-            
+
             // Primary details
             'primary_field' => 'required|string',
             'primary_skills' => 'required|string',
@@ -38,6 +39,10 @@ class StudentInterestController extends Controller
             'third_skills' => 'nullable|string',
             'third_teaching_methods' => 'nullable|string',
             'third_theory_practical' => 'nullable|integer|min:1|max:5',
+
+            // Global questions
+            'university_opportunities' => 'nullable|string',
+            'new_program_suggestion' => 'nullable|string',
         ]);
 
         try {
@@ -45,6 +50,17 @@ class StudentInterestController extends Controller
             $validated['survey_submitted_at'] = now();
 
             $studentInterest = StudentInterest::create($validated);
+
+            // Send to Google Sheets webhook asynchronously
+            $webhookUrl = env('GOOGLE_SHEET_WEBHOOK_URL');
+            if ($webhookUrl) {
+                try {
+                    Http::timeout(5)->post($webhookUrl, $validated);
+                } catch (\Exception $sheetException) {
+                    // Log error but do not disrupt student user experience
+                    Log::error('Google Sheet Sync Error: ' . $sheetException->getMessage());
+                }
+            }
 
             return response()->json([
                 'success' => true,
@@ -68,7 +84,7 @@ class StudentInterestController extends Controller
     public function getConfig()
     {
         try {
-            $configs = DB::connection('analytics')->table('survey_interests_config')->get()->map(function($c) {
+            $configs = DB::connection('analytics')->table('survey_interests_config')->get()->map(function ($c) {
                 // Split comma-separated skills into clean trimmed arrays
                 $skillsArray = array_filter(array_map('trim', explode(',', $c->skills)));
                 return [
@@ -102,7 +118,7 @@ class StudentInterestController extends Controller
 
         try {
             if (!empty($validated['id'])) {
-                DB::connection('analytics')->table('survey_interests_config' )
+                DB::connection('analytics')->table('survey_interests_config')
                     ->where('id', $validated['id'])
                     ->update([
                         'interest_field' => $validated['interest_field'],
@@ -156,7 +172,7 @@ class StudentInterestController extends Controller
     public function getTeachingMethods()
     {
         try {
-            $methods = DB::connection('analytics')->table('survey_teaching_methods')->get()->map(function($m) {
+            $methods = DB::connection('analytics')->table('survey_teaching_methods')->get()->map(function ($m) {
                 return [
                     'id' => $m->id,
                     'method_name' => $m->method_name
@@ -224,6 +240,78 @@ class StudentInterestController extends Controller
             ]);
         } catch (\Exception $e) {
             Log::error('Failed to delete teaching method config: ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Get active university opportunities configuration.
+     */
+    public function getUniversityOpportunities()
+    {
+        try {
+            $opportunities = DB::connection('analytics')->table('survey_university_opportunities')->get();
+            return response()->json($opportunities);
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve university opportunities: ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Create or update a university opportunity configuration (Admin).
+     */
+    public function storeUniversityOpportunity(Request $request)
+    {
+        $validated = $request->validate([
+            'id' => 'nullable|integer',
+            'opportunity_name' => 'required|string',
+        ]);
+
+        try {
+            if (!empty($validated['id'])) {
+                DB::connection('analytics')->table('survey_university_opportunities')
+                    ->where('id', $validated['id'])
+                    ->update([
+                        'opportunity_name' => $validated['opportunity_name'],
+                        'updated_at' => now()
+                    ]);
+                $id = $validated['id'];
+            } else {
+                $id = DB::connection('analytics')->table('survey_university_opportunities')->insertGetId([
+                    'opportunity_name' => $validated['opportunity_name'],
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'id' => $id,
+                'message' => 'University opportunity configuration saved successfully.'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to save university opportunity config: ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Delete a university opportunity configuration (Admin).
+     */
+    public function deleteUniversityOpportunity($id)
+    {
+        try {
+            DB::connection('analytics')->table('survey_university_opportunities')
+                ->where('id', $id)
+                ->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'University opportunity configuration deleted successfully.'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to delete university opportunity config: ' . $e->getMessage());
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }

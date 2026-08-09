@@ -42,6 +42,7 @@ import { AdminSettings } from './components/admin-portal/AdminSettings';
 import { CreateExam } from './components/admin-portal/CreateExam';
 import { ManageExamStudents } from './components/admin-portal/ManageExamStudents';
 import { AIAnalytics } from './components/admin-portal/AIAnalytics';
+import { ManageForms } from './components/admin-portal/ManageForms';
 import { AdminAnnouncements } from './components/admin-portal/AdminAnnouncements';
 import { ActivityLogs } from './components/admin-portal/ActivityLogs';
 import { TrackStudent } from './components/admin-portal/TrackStudent';
@@ -111,7 +112,7 @@ const TitleUpdater = () => {
     ) {
       document.title = 'CODL | SUSL - Staff';
     } else {
-      document.title = 'CODL | SUSL - Student';
+      document.title = 'Student Academic Interest Survey';
     }
   }, [location.pathname]);
 
@@ -264,6 +265,7 @@ function App() {
 
           <Route path="activity-logs" element={<ActivityLogs />} />
           <Route path="ai-analytics" element={<AIAnalytics />} />
+          <Route path="ai-analytics/manage-forms" element={<ManageForms />} />
 
           <Route
             path="settings"

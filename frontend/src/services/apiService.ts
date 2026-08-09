@@ -618,6 +618,18 @@ export const studentInterestService = {
     deleteTeachingMethod: async (id: string | number) => {
         const response = await api.delete(`/admin/student-interests/teaching-methods/${id}`);
         return response.data;
+    },
+    getUniversityOpportunities: async () => {
+        const response = await api.get('/student-interests/university-opportunities');
+        return response.data;
+    },
+    saveUniversityOpportunity: async (data: any) => {
+        const response = await api.post('/admin/student-interests/university-opportunities', data);
+        return response.data;
+    },
+    deleteUniversityOpportunity: async (id: string | number) => {
+        const response = await api.delete(`/admin/student-interests/university-opportunities/${id}`);
+        return response.data;
     }
 };
 

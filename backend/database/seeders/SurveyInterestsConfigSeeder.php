@@ -146,6 +146,21 @@ class SurveyInterestsConfigSeeder extends Seeder
             ['method_name' => 'Competitions / Hackathons', 'created_at' => now(), 'updated_at' => now()],
         ]);
 
-        echo "All 19 academic interest fields and teaching methods seeded successfully!\n";
+        // Seed default university opportunities
+        DB::connection('analytics')->table('survey_university_opportunities')->delete();
+        DB::connection('analytics')->table('survey_university_opportunities')->insert([
+            ['opportunity_name' => 'Professional Certifications', 'created_at' => now(), 'updated_at' => now()],
+            ['opportunity_name' => 'Industry Internships', 'created_at' => now(), 'updated_at' => now()],
+            ['opportunity_name' => 'Research Opportunities', 'created_at' => now(), 'updated_at' => now()],
+            ['opportunity_name' => 'Startup Support', 'created_at' => now(), 'updated_at' => now()],
+            ['opportunity_name' => 'Career Guidance', 'created_at' => now(), 'updated_at' => now()],
+            ['opportunity_name' => 'International Exchange', 'created_at' => now(), 'updated_at' => now()],
+            ['opportunity_name' => 'Scholarships', 'created_at' => now(), 'updated_at' => now()],
+            ['opportunity_name' => 'Modern Laboratories', 'created_at' => now(), 'updated_at' => now()],
+            ['opportunity_name' => 'Innovation Centres', 'created_at' => now(), 'updated_at' => now()],
+            ['opportunity_name' => 'Industry Projects', 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
+        echo "All 19 academic interest fields, teaching methods, and university opportunities seeded successfully!\n";
     }
 }

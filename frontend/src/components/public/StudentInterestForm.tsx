@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { GraduationCap, CheckCircle2, AlertCircle, Loader2, Send, Plus, Trash2 } from 'lucide-react';
+import { GraduationCap, CheckCircle2, AlertCircle, Loader2, Send, Plus, Trash2, Info } from 'lucide-react';
 import { studentInterestService } from '../../services/apiService';
 import './StudentInterestForm.css';
 
@@ -143,6 +143,22 @@ export const StudentInterestForm: React.FC = () => {
 
     const [teachingMethods, setTeachingMethods] = useState<string[]>(DEFAULT_TEACHING_METHODS);
 
+    const DEFAULT_UNIVERSITY_OPPORTUNITIES = [
+        'Professional Certifications',
+        'Industry Internships',
+        'Research Opportunities',
+        'Startup Support',
+        'Career Guidance',
+        'International Exchange',
+        'Scholarships',
+        'Modern Laboratories',
+        'Innovation Centres',
+        'Industry Projects'
+    ];
+
+    const [universityOpportunities, setUniversityOpportunities] = useState<string[]>(DEFAULT_UNIVERSITY_OPPORTUNITIES);
+    const [selectedOpportunities, setSelectedOpportunities] = useState<string[]>([]);
+
     // State for configs loaded from admin backend
     const [interestConfig, setInterestConfig] = useState<InterestConfig[]>(DEFAULT_FALLBACK_CONFIG);
 
@@ -154,6 +170,7 @@ export const StudentInterestForm: React.FC = () => {
         custom_education_level: '',
         province: '',
         district: '',
+        new_program_suggestion: ''
     });
 
     // Dynamic sections state
@@ -206,19 +223,31 @@ export const StudentInterestForm: React.FC = () => {
             }
         };
 
+        const loadOpportunities = async () => {
+            try {
+                const data = await studentInterestService.getUniversityOpportunities();
+                if (data && data.length > 0) {
+                    setUniversityOpportunities(data.map((o: any) => o.opportunity_name));
+                }
+            } catch (err) {
+                console.error('Failed to load university opportunities:', err);
+            }
+        };
+
         loadConfig();
         loadTeachingMethods();
+        loadOpportunities();
     }, []);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
-        
+
         // If province changes, reset district
         if (name === 'province') {
             setFormData(prev => ({
                 ...prev,
                 province: value,
-                district: '' 
+                district: ''
             }));
         } else {
             setFormData(prev => ({
@@ -236,7 +265,7 @@ export const StudentInterestForm: React.FC = () => {
 
     // Helper to manage skill selection (Max 5)
     const handleSkillToggle = (
-        interestType: 'primary' | 'secondary' | 'ternary', 
+        interestType: 'primary' | 'secondary' | 'ternary',
         skill: string
     ) => {
         const setterMap = {
@@ -264,7 +293,7 @@ export const StudentInterestForm: React.FC = () => {
 
     // Helper to toggle teaching methods
     const handleMethodToggle = (
-        interestType: 'primary' | 'secondary' | 'ternary', 
+        interestType: 'primary' | 'secondary' | 'ternary',
         method: string
     ) => {
         const setterMap = {
@@ -285,8 +314,19 @@ export const StudentInterestForm: React.FC = () => {
         set({ ...state, teaching_methods: current });
     };
 
+    const handleOpportunityToggle = (opportunity: string) => {
+        const current = [...selectedOpportunities];
+        const index = current.indexOf(opportunity);
+        if (index > -1) {
+            current.splice(index, 1);
+        } else {
+            current.push(opportunity);
+        }
+        setSelectedOpportunities(current);
+    };
+
     const handleSliderChange = (
-        interestType: 'primary' | 'secondary' | 'ternary', 
+        interestType: 'primary' | 'secondary' | 'ternary',
         value: number
     ) => {
         const setterMap = {
@@ -317,8 +357,8 @@ export const StudentInterestForm: React.FC = () => {
         }
 
         // Determine final education level text
-        const finalEducationLevel = formData.education_level === 'Other' 
-            ? formData.custom_education_level.trim() 
+        const finalEducationLevel = formData.education_level === 'Other'
+            ? formData.custom_education_level.trim()
             : formData.education_level;
 
         if (formData.education_level === 'Other' && !finalEducationLevel) {
@@ -382,6 +422,13 @@ export const StudentInterestForm: React.FC = () => {
             }
         }
 
+        // University Opportunities validation
+        if (selectedOpportunities.length === 0) {
+            setErrorMsg('Please select at least one university opportunity that is important to you.');
+            setIsLoading(false);
+            return;
+        }
+
         try {
             // Prepare payload
             const payload = {
@@ -408,6 +455,12 @@ export const StudentInterestForm: React.FC = () => {
                 third_skills: showTernary ? ternaryInterest.skills.join(', ') : null,
                 third_teaching_methods: showTernary ? ternaryInterest.teaching_methods.join(', ') : null,
                 third_theory_practical: showTernary ? ternaryInterest.theory_practical : null,
+
+                // University Opportunities
+                university_opportunities: selectedOpportunities.join(', '),
+
+                // New Program Suggestion (Optional)
+                new_program_suggestion: formData.new_program_suggestion.trim() || null,
             };
 
             await studentInterestService.submit(payload);
@@ -415,7 +468,7 @@ export const StudentInterestForm: React.FC = () => {
         } catch (err: any) {
             console.error('Submission failed:', err);
             setErrorMsg(
-                err.response?.data?.message || 
+                err.response?.data?.message ||
                 'Failed to record your response. Please try again later.'
             );
         } finally {
@@ -441,8 +494,11 @@ export const StudentInterestForm: React.FC = () => {
             <div className="student-interest-container">
                 <div className="student-interest-header-card">
                     <div className="header-text-section">
-                        <h1>Student Academic Interest Survey</h1>
-                        <p>Center for Open and Distance Learning (CODL) — Sabaragamuwa University of Sri Lanka</p>
+                        <h1>Student Academic Interests</h1>
+                        <p>
+                            Center for Open and Distance Learning <br />
+                            Sabaragamuwa University of Sri Lanka
+                        </p>
                     </div>
                     <div className="banner-image-placeholder">
                         <img src={bannerImgUrl} alt="Student Interest Survey Banner" />
@@ -457,8 +513,8 @@ export const StudentInterestForm: React.FC = () => {
                         <p>
                             Thank you! Your academic interests, preferred skills, and learning practices have been submitted successfully.
                         </p>
-                        <button 
-                            className="back-btn" 
+                        <button
+                            className="back-btn"
                             onClick={() => {
                                 setIsSubmitted(false);
                                 setFormData({
@@ -468,10 +524,12 @@ export const StudentInterestForm: React.FC = () => {
                                     custom_education_level: '',
                                     province: '',
                                     district: '',
+                                    new_program_suggestion: ''
                                 });
                                 setPrimaryInterest({ field: '', skills: [], teaching_methods: [], theory_practical: 3 });
                                 setSecondaryInterest({ field: '', skills: [], teaching_methods: [], theory_practical: 3 });
                                 setTernaryInterest({ field: '', skills: [], teaching_methods: [], theory_practical: 3 });
+                                setSelectedOpportunities([]);
                                 setShowSecondary(false);
                                 setShowTernary(false);
                             }}
@@ -488,22 +546,33 @@ export const StudentInterestForm: React.FC = () => {
         <div className="student-interest-container">
             <div className="student-interest-header-card">
                 <div className="header-text-section">
-                    <h1>Student Academic Interest Survey</h1>
-                    <p>Center for Open and Distance Learning (CODL) — Sabaragamuwa University of Sri Lanka</p>
+                    <h1>Student Academic Interests</h1>
+                    <p>
+                        Center for Open and Distance Learning <br />
+                        Sabaragamuwa University of Sri Lanka
+                    </p>
                 </div>
                 <div className="banner-image-placeholder">
                     <img src={bannerImgUrl} alt="Student Interest Survey Banner" />
                 </div>
             </div>
-            
+
+            <div className="student-interest-description-card">
+                <div className="description-text-container">
+                    <p className="description-main-text">
+                        This 3–5 minute survey explores students’ academic interests, learning preferences, and career goals to help improve future degree programs and teaching methods. Your responses are confidential.
+                    </p>
+                </div>
+            </div>
+
             <div className="student-interest-card">
                 <form onSubmit={handleSubmit} className="interest-form">
-                    
+
                     {/* Part 1: Profile & Contact */}
                     <div className="form-section">
                         <h3 className="form-section-title">Profile & Contact Details</h3>
                         <div className="form-grid">
-                            
+
                             {/* Education level */}
                             <div className="form-group">
                                 <label htmlFor="education_level">Current Education Level</label>
@@ -616,7 +685,7 @@ export const StudentInterestForm: React.FC = () => {
                                 Primary Academic Interest *
                             </h3>
                         </div>
-                        
+
                         <div className="form-grid">
                             <div className="form-group full-width">
                                 <label htmlFor="primary_field">Select Primary Academic Interest Area *</label>
@@ -689,9 +758,9 @@ export const StudentInterestForm: React.FC = () => {
                                                     <span className="balance-number">{val}</span>
                                                     <span className="balance-label">{
                                                         val === 1 ? 'Theoretical' :
-                                                        val === 2 ? 'Mostly Theory' :
-                                                        val === 3 ? 'Balanced' :
-                                                        val === 4 ? 'Mostly Practical' : 'Practical'
+                                                            val === 2 ? 'Mostly Theory' :
+                                                                val === 3 ? 'Balanced' :
+                                                                    val === 4 ? 'Mostly Practical' : 'Practical'
                                                     }</span>
                                                 </button>
                                             ))}
@@ -709,8 +778,8 @@ export const StudentInterestForm: React.FC = () => {
                                 <h3 className="form-section-title" style={{ borderLeftColor: '#F59E0B', marginBottom: 0 }}>
                                     Secondary Academic Interest
                                 </h3>
-                                <button 
-                                    type="button" 
+                                <button
+                                    type="button"
                                     className="remove-interest-btn"
                                     onClick={() => {
                                         setShowSecondary(false);
@@ -796,9 +865,9 @@ export const StudentInterestForm: React.FC = () => {
                                                         <span className="balance-number">{val}</span>
                                                         <span className="balance-label">{
                                                             val === 1 ? 'Theoretical' :
-                                                            val === 2 ? 'Mostly Theory' :
-                                                            val === 3 ? 'Balanced' :
-                                                            val === 4 ? 'Mostly Practical' : 'Practical'
+                                                                val === 2 ? 'Mostly Theory' :
+                                                                    val === 3 ? 'Balanced' :
+                                                                        val === 4 ? 'Mostly Practical' : 'Practical'
                                                         }</span>
                                                     </button>
                                                 ))}
@@ -817,8 +886,8 @@ export const StudentInterestForm: React.FC = () => {
                                 <h3 className="form-section-title" style={{ borderLeftColor: '#3B82F6', marginBottom: 0 }}>
                                     Ternary Academic Interest
                                 </h3>
-                                <button 
-                                    type="button" 
+                                <button
+                                    type="button"
                                     className="remove-interest-btn"
                                     onClick={() => {
                                         setShowTernary(false);
@@ -901,9 +970,9 @@ export const StudentInterestForm: React.FC = () => {
                                                         <span className="balance-number">{val}</span>
                                                         <span className="balance-label">{
                                                             val === 1 ? 'Theoretical' :
-                                                            val === 2 ? 'Mostly Theory' :
-                                                            val === 3 ? 'Balanced' :
-                                                            val === 4 ? 'Mostly Practical' : 'Practical'
+                                                                val === 2 ? 'Mostly Theory' :
+                                                                    val === 3 ? 'Balanced' :
+                                                                        val === 4 ? 'Mostly Practical' : 'Practical'
                                                         }</span>
                                                     </button>
                                                 ))}
@@ -938,6 +1007,53 @@ export const StudentInterestForm: React.FC = () => {
                             )}
                         </div>
                     )}
+
+                    {/* Part 5: University Opportunities */}
+                    <div className="form-section">
+                        <div className="section-header-row">
+                            <h3 className="form-section-title" style={{ borderLeftColor: '#10B981', marginBottom: 0 }}>
+                                Which university opportunities are most important to you? *
+                            </h3>
+                        </div>
+
+                        <div className="form-grid" style={{ marginTop: '16px' }}>
+                            <div className="form-group full-width">
+                                <label>Select the opportunities that interest you the most *</label>
+                                <div className="choice-grid">
+                                    {universityOpportunities.map(opp => (
+                                        <div
+                                            key={opp}
+                                            className={`choice-chip ${selectedOpportunities.includes(opp) ? 'active' : ''}`}
+                                            onClick={() => handleOpportunityToggle(opp)}
+                                        >
+                                            {opp}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Part 6: New Program Suggestion */}
+                    <div className="form-section">
+                        <div className="section-header-row">
+                            <h3 className="form-section-title" style={{ borderLeftColor: '#F59E0B', marginBottom: 0 }}>
+                                If you could introduce ONE new degree program or specialization, what would it be?
+                            </h3>
+                        </div>
+                        <div className="form-grid" style={{ marginTop: '16px' }}>
+                            <div className="form-group full-width">
+                                <label htmlFor="new_program_suggestion">Your Suggestion</label>
+                                <textarea
+                                    id="new_program_suggestion"
+                                    className="form-textarea"
+                                    placeholder="Enter your program or specialization idea..."
+                                    value={formData.new_program_suggestion}
+                                    onChange={e => setFormData(prev => ({ ...prev, new_program_suggestion: e.target.value }))}
+                                />
+                            </div>
+                        </div>
+                    </div>
 
                     {/* Error Alerts */}
                     {errorMsg && (
