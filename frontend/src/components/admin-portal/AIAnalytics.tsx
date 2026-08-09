@@ -5,7 +5,7 @@ import {
     TrendingUp, AlertTriangle, Layers, Cloud, Activity, Calendar, Users, Filter,
     GraduationCap, Award, ArrowUpRight, Search
 } from 'lucide-react';
-import { aiAnalyticsService } from '../../services/apiService';
+import { aiAnalyticsService, studentInterestService } from '../../services/apiService';
 import './AIAnalytics.css';
 
 interface Course {
@@ -29,6 +29,73 @@ export const AIAnalytics: React.FC = () => {
     const [syncing, setSyncing] = useState(false);
     const [syncUrl, setSyncUrl] = useState('');
     const [syncType, setSyncType] = useState<'student' | 'industry'>('student');
+
+    // Manage configurations states
+    const [showManageConfigModal, setShowManageConfigModal] = useState(false);
+    const [configs, setConfigs] = useState<any[]>([]);
+    const [configsLoading, setConfigsLoading] = useState(false);
+    const [isEditingConfig, setIsEditingConfig] = useState(false);
+    const [configForm, setConfigForm] = useState({
+        id: undefined as number | undefined,
+        interest_field: '',
+        skills: ''
+    });
+
+    const fetchConfigs = async () => {
+        setConfigsLoading(true);
+        try {
+            const data = await studentInterestService.getConfig();
+            setConfigs(data);
+        } catch (err) {
+            console.error('Failed to load configurations:', err);
+        } finally {
+            setConfigsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (showManageConfigModal) {
+            fetchConfigs();
+        }
+    }, [showManageConfigModal]);
+
+    const handleSaveConfig = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!configForm.interest_field.trim() || !configForm.skills.trim()) {
+            alert('Please fill out all fields.');
+            return;
+        }
+
+        const skillsArray = configForm.skills
+            .split(',')
+            .map(s => s.trim())
+            .filter(s => s.length > 0);
+
+        try {
+            await studentInterestService.saveConfig({
+                id: configForm.id,
+                interest_field: configForm.interest_field.trim(),
+                skills: skillsArray
+            });
+            alert('Academic field saved successfully.');
+            setIsEditingConfig(false);
+            setConfigForm({ id: undefined, interest_field: '', skills: '' });
+            fetchConfigs();
+        } catch (err: any) {
+            alert('Failed to save config: ' + (err.response?.data?.message || err.message));
+        }
+    };
+
+    const handleDeleteConfig = async (id: number) => {
+        if (!window.confirm('Are you sure you want to delete this academic interest area?')) return;
+        try {
+            await studentInterestService.deleteConfig(id);
+            alert('Academic interest area deleted successfully.');
+            fetchConfigs();
+        } catch (err: any) {
+            alert('Failed to delete config: ' + (err.response?.data?.message || err.message));
+        }
+    };
 
     useEffect(() => {
         fetchPrograms();
@@ -82,6 +149,7 @@ export const AIAnalytics: React.FC = () => {
                     programs={programs}
                     onSelect={setSelectedCourse}
                     onOpenSync={() => setShowSyncModal(true)}
+                    onOpenManageForms={() => setShowManageConfigModal(true)}
                 />
             )}
 
@@ -127,6 +195,115 @@ export const AIAnalytics: React.FC = () => {
                     </div>
                 </div>
             )}
+
+            {/* Manage Forms Modal */}
+            {showManageConfigModal && (
+                <div className="modal-backdrop" onClick={() => {
+                    if (!isEditingConfig) setShowManageConfigModal(false);
+                }}>
+                    <div className="modal-content-card" style={{ maxWidth: '750px', width: '90%' }} onClick={e => e.stopPropagation()}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px' }}>
+                            <h3 style={{ margin: 0 }}>Manage Form Categories</h3>
+                            {!isEditingConfig && (
+                                <button className="btn btn-primary" style={{ padding: '6px 12px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }} onClick={() => {
+                                    setIsEditingConfig(true);
+                                    setConfigForm({ id: undefined, interest_field: '', skills: '' });
+                                }}>
+                                    <Plus size={14} /> Add Category
+                                </button>
+                            )}
+                        </div>
+
+                        {configsLoading ? (
+                            <div className="text-center py-6">Loading Form Configuration...</div>
+                        ) : isEditingConfig ? (
+                            <form onSubmit={handleSaveConfig} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                    <label style={{ fontSize: '13px', fontWeight: 600 }}>Academic Interest Area Name</label>
+                                    <input 
+                                        type="text" 
+                                        className="sync-modal-form-input" 
+                                        placeholder="e.g. Information Technology" 
+                                        value={configForm.interest_field}
+                                        onChange={e => setConfigForm(prev => ({ ...prev, interest_field: e.target.value }))}
+                                        required
+                                    />
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                    <label style={{ fontSize: '13px', fontWeight: 600 }}>Associated Skills (Comma-separated)</label>
+                                    <textarea 
+                                        rows={4}
+                                        className="sync-modal-form-input" 
+                                        style={{ height: 'auto', resize: 'vertical' }}
+                                        placeholder="e.g. React, Node.js, Python, CSS, HTML" 
+                                        value={configForm.skills}
+                                        onChange={e => setConfigForm(prev => ({ ...prev, skills: e.target.value }))}
+                                        required
+                                    />
+                                    <span style={{ fontSize: '11px', color: '#94a3b8' }}>Type skills separated by commas. These will display as selectable options on the student interest form.</span>
+                                </div>
+                                <div className="sync-modal-form-actions" style={{ marginTop: '12px' }}>
+                                    <button type="button" className="sync-modal-btn sync-modal-btn-secondary" onClick={() => setIsEditingConfig(false)}>
+                                        Back to List
+                                    </button>
+                                    <button type="submit" className="sync-modal-btn sync-modal-btn-primary">
+                                        Save Configuration
+                                    </button>
+                                </div>
+                            </form>
+                        ) : (
+                            <div style={{ maxHeight: '400px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', paddingRight: '8px' }}>
+                                {configs.length === 0 ? (
+                                    <div className="text-center py-6 text-slate-400">No configurations defined. Click "Add Category" to get started.</div>
+                                ) : (
+                                    configs.map(config => (
+                                        <div key={config.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '16px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', gap: '16px' }}>
+                                            <div style={{ flex: 1 }}>
+                                                <h4 style={{ margin: '0 0 8px 0', fontSize: '14px', fontWeight: 700, color: '#1E293B' }}>{config.interest_field}</h4>
+                                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                                    {config.skills.map((skill: string) => (
+                                                        <span key={skill} style={{ fontSize: '11px', padding: '2px 8px', background: '#EDE9FE', color: '#7C3AED', borderRadius: '100px', fontWeight: 500 }}>
+                                                            {skill}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <div style={{ display: 'flex', gap: '8px' }}>
+                                                <button 
+                                                    className="btn btn-secondary" 
+                                                    style={{ padding: '6px 10px', fontSize: '12px', background: '#FFF' }}
+                                                    onClick={() => {
+                                                        setIsEditingConfig(true);
+                                                        setConfigForm({
+                                                            id: config.id,
+                                                            interest_field: config.interest_field,
+                                                            skills: config.skills.join(', ')
+                                                        });
+                                                    }}
+                                                >
+                                                    Edit
+                                                </button>
+                                                <button 
+                                                    className="btn" 
+                                                    style={{ padding: '6px 10px', fontSize: '12px', color: '#EF4444', backgroundColor: '#FEE2E2', border: '1px solid rgba(239, 68, 68, 0.2)' }}
+                                                    onClick={() => handleDeleteConfig(config.id)}
+                                                >
+                                                    Delete
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                                <div className="sync-modal-form-actions" style={{ borderTop: '1px solid #e2e8f0', paddingTop: '12px', marginTop: '12px' }}>
+                                    <button type="button" className="sync-modal-btn sync-modal-btn-secondary" onClick={() => setShowManageConfigModal(false)}>
+                                        Close Management Panel
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
@@ -134,7 +311,12 @@ export const AIAnalytics: React.FC = () => {
 /* =========================================================
    STATE A: PROGRAM HUB (LANDING PAGE)
    ========================================================= */
-const ProgramHub: React.FC<{ programs: Course[], onSelect: (c: Course) => void, onOpenSync: () => void }> = ({ programs, onSelect, onOpenSync }) => {
+const ProgramHub: React.FC<{ 
+    programs: Course[], 
+    onSelect: (c: Course) => void, 
+    onOpenSync: () => void,
+    onOpenManageForms: () => void 
+}> = ({ programs, onSelect, onOpenSync, onOpenManageForms }) => {
     const [levelFilter, setLevelFilter] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -248,7 +430,10 @@ const ProgramHub: React.FC<{ programs: Course[], onSelect: (c: Course) => void, 
                     </p>
                 </div>
                 {levelFilter === 'all' && !searchTerm && (
-                    <div className="admin-header-actions" style={{ display: 'flex', alignItems: 'center' }}>
+                    <div className="admin-header-actions" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <button className="btn btn-secondary" onClick={onOpenManageForms} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                            <Database size={16} /> Manage Forms
+                        </button>
                         <button className="btn btn-primary" onClick={onOpenSync} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
                             <RefreshCw size={16} /> Sync Google Sheet Data
                         </button>

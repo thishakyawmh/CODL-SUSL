@@ -25,6 +25,8 @@ import { ApplicantDashboard } from './components/student-portal/ApplicantDashboa
 import { ApplicantTrackStatus } from './components/student-portal/ApplicantTrackStatus';
 import { NewCourseApplication } from './components/student-portal/NewCourseApplication';
 import ExaminationResults from './components/student-portal/ExaminationResults';
+import { StudentInterestForm } from './components/public/StudentInterestForm';
+
 
 // --- Admin Portal Imports ---
 import { AdminSidebar } from './components/admin-portal/AdminSidebar';
@@ -161,7 +163,9 @@ function App() {
         <Route path="/" element={<Navigate to="/login" replace />} />
 
         <Route path="/login" element={<LoginPortal />} />
+        <Route path="/student-interests" element={<StudentInterestForm />} />
         <Route path="/staff/login" element={<AdminLogin />} />
+
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
 
