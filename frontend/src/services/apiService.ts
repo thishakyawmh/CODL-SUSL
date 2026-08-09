@@ -543,7 +543,10 @@ export const aiAnalyticsService = {
         return response.data;
     },
     syncGoogleSheet: async (data: { type: 'student' | 'industry'; url: string }) => {
-        const response = await api.post('/admin/ai-analytics/sync-sheet', data);
+        const response = await api.post('/admin/ai-analytics/sync-sheet', {
+            type: data.type,
+            sheet_url: data.url
+        });
         return response.data;
     }
 };
