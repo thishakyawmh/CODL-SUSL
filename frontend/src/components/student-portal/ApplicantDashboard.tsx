@@ -77,6 +77,10 @@ export const ApplicantDashboard: React.FC = () => {
                             src={user.avatar ? getFullAvatarUrl(user.avatar) : `https://ui-avatars.com/api/?name=${encodeURIComponent(user.display_name || user.displayName || user.full_name)}&background=7C3AED&color=fff`}
                             alt="Profile"
                             className="avatar"
+                            onError={(e) => {
+                                e.currentTarget.onerror = null;
+                                e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.display_name || user.displayName || user.full_name)}&background=7C3AED&color=fff`;
+                            }}
                         />
                         <span className="user-name">{user.display_name || user.displayName || user.full_name}</span>
                     </div>
