@@ -90,12 +90,12 @@ export const AIAnalytics: React.FC = () => {
                 <div className="modal-backdrop" onClick={() => setShowSyncModal(false)}>
                     <div className="modal-content-card" onClick={e => e.stopPropagation()}>
                         <h3>Sync Google Sheets Data</h3>
-                        <p className="text-slate-500 text-sm mb-6">Connect survey data to the AI NLP pipeline.</p>
-                        <form onSubmit={handleSync} className="flex flex-col gap-4">
-                            <div>
-                                <label className="block text-sm font-semibold mb-1">Data Source Type</label>
+                        <p className="sync-modal-desc">Connect survey data to the AI NLP pipeline.</p>
+                        <form onSubmit={handleSync} className="sync-modal-form">
+                            <div className="sync-modal-form-group">
+                                <label className="sync-modal-form-label">Data Source Type</label>
                                 <select
-                                    className="form-input w-full"
+                                    className="sync-modal-form-select"
                                     value={syncType}
                                     onChange={(e) => setSyncType(e.target.value as any)}
                                 >
@@ -103,21 +103,23 @@ export const AIAnalytics: React.FC = () => {
                                     <option value="industry">Industry Gaps Audit</option>
                                 </select>
                             </div>
-                            <div>
-                                <label className="block text-sm font-semibold mb-1">Google Sheet CSV URL</label>
+                            <div className="sync-modal-form-group">
+                                <label className="sync-modal-form-label">Google Sheet CSV URL</label>
                                 <input
                                     type="url"
-                                    className="form-input w-full"
+                                    className="sync-modal-form-input"
                                     placeholder="https://docs.google.com/spreadsheets/d/.../export?format=csv"
                                     value={syncUrl}
                                     onChange={(e) => setSyncUrl(e.target.value)}
                                     required
                                 />
-                                <p className="text-xs text-slate-400 mt-1">Must be a published CSV export link.</p>
+                                <span className="sync-modal-form-tip">Must be a published CSV export link.</span>
                             </div>
-                            <div className="flex justify-end gap-2 mt-4">
-                                <button type="button" className="btn btn-secondary" onClick={() => setShowSyncModal(false)}>Cancel</button>
-                                <button type="submit" className="btn btn-primary" disabled={syncing}>
+                            <div className="sync-modal-form-actions">
+                                <button type="button" className="sync-modal-btn sync-modal-btn-secondary" onClick={() => setShowSyncModal(false)}>
+                                    Cancel
+                                </button>
+                                <button type="submit" className="sync-modal-btn sync-modal-btn-primary" disabled={syncing}>
                                     {syncing ? 'Syncing Pipeline...' : 'Run Sync & Generate Cache'}
                                 </button>
                             </div>
