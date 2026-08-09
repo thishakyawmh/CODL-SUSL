@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { MessageCircle, Phone, Mail, X } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { MessageCircle, Phone, Mail, X, HelpCircle } from 'lucide-react';
 import './SupportBubble.css';
 
 export const SupportBubble: React.FC = () => {
@@ -16,20 +17,27 @@ export const SupportBubble: React.FC = () => {
                         </button>
                     </div>
                     <div className="support-options">
-                        <a href="tel:+94112345678" className="support-option">
+                        <a href="tel:0452280179" className="support-option">
                             <span className="support-icon phone-icon"><Phone size={18} /></span>
                             <div className="support-text">
                                 <strong>Call Us</strong>
-                                <span>+94 11 234 5678</span>
+                                <span>045-2280179</span>
                             </div>
                         </a>
-                        <a href="mailto:support@codl.lk" className="support-option">
+                        <a href="mailto:info@codl.sab.ac.lk" className="support-option">
                             <span className="support-icon mail-icon"><Mail size={18} /></span>
                             <div className="support-text">
                                 <strong>Email Us</strong>
-                                <span>support@codl.lk</span>
+                                <span>info@codl.sab.ac.lk</span>
                             </div>
                         </a>
+                        <Link to="/help-center" className="support-option" onClick={() => setIsOpen(false)}>
+                            <span className="support-icon help-icon"><HelpCircle size={18} /></span>
+                            <div className="support-text">
+                                <strong>Help Center</strong>
+                                <span>Guides & Support</span>
+                            </div>
+                        </Link>
                     </div>
                 </div>
             )}
