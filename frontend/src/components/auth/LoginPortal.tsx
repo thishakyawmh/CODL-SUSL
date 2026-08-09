@@ -223,7 +223,12 @@ export const LoginPortal: React.FC = () => {
                 </div>
 
                 <div className="pane-footer">
-                    <p>© {new Date().getFullYear()} CODL. All rights reserved.</p>
+                    <div className="pane-footer-content">
+                        <p style={{ margin: 0 }}>© {new Date().getFullYear()} CODL. All rights reserved.</p>
+                        <div className="pane-footer-links">
+                            <span onClick={() => navigate('/staff/login')} className="pane-footer-link">Staff Login</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -357,7 +362,13 @@ export const LoginPortal: React.FC = () => {
                                             <input type="checkbox" />
                                             <span>Remember me</span>
                                         </label>
-                                        <a href="#" className="forgot-password">Forgot Password?</a>
+                                         <span 
+                                             className="forgot-password" 
+                                             onClick={() => navigate('/forgot-password')}
+                                             style={{ cursor: 'pointer' }}
+                                         >
+                                             Forgot Password?
+                                         </span>
                                     </div>
 
                                     <button type="submit" className="btn-primary auth-submit-btn" disabled={isLoading}>

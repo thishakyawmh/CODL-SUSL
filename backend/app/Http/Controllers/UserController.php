@@ -355,6 +355,7 @@ class UserController extends Controller
 
         $pendingApplications = \App\Models\CourseApplication::where('applicant_email', $user->email)
             ->where('status', 'pending')
+            ->with(['course', 'batch'])
             ->get();
 
         $notificationsData = [];

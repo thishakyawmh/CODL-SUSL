@@ -1,11 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowRight, MapPin, Phone, Mail, ShieldCheck, Eye, EyeOff } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Eye, EyeOff, ShieldCheck, ChevronRight, MapPin, Phone, Mail } from 'lucide-react';
 import { authService } from '../../services/apiService';
-import './LoginPortal.css'; // Reusing existing styles for consistency
+import './LoginPortal.css'; // Reusing premium login portal styles
 
-export const AdminLogin: React.FC = () => {
+export const ResetPassword: React.FC = () => {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+
+    const email = searchParams.get('email') || searchParams.get('amp;email') || '';
+    const token = searchParams.get('token') || '';
+
+    const [password, setPassword] = useState('');
+    const [passwordConfirmation, setPasswordConfirmation] = useState('');
+
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+    const [isLoading, setIsLoading] = useState(false);
+    const [message, setMessage] = useState('');
+    const [error, setError] = useState('');
 
     const getBranding = () => {
         const cached = localStorage.getItem('systemSettings');
@@ -35,51 +49,38 @@ export const AdminLogin: React.FC = () => {
     const branding = getBranding();
 
     useEffect(() => {
-        const token = sessionStorage.getItem('token');
-        const adminRole = sessionStorage.getItem('adminRole');
-        if (token && adminRole) {
-            if (['secretary', 'coordinator', 'lecturer'].includes(adminRole)) {
-                navigate('/admin/courses', { replace: true });
-            } else {
-                navigate('/admin/dashboard', { replace: true });
-            }
+        if (!email || !token) {
+            setError('Invalid or missing password reset link parameter.');
         }
-    }, [navigate]);
+    }, [email, token]);
 
-    const [loginId, setLoginId] = useState('');
-    const [password, setPassword] = useState('');
-    const [showPassword, setShowPassword] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState('');
-
-    const handleLogin = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
         setError('');
+        setMessage('');
+
+        if (password !== passwordConfirmation) {
+            setError('Passwords do not match.');
+            setIsLoading(false);
+            return;
+        }
 
         try {
-            const data = await authService.login({ login: loginId, password });
+            const data = await authService.resetPassword({
+                email,
+                token,
+                password,
+                password_confirmation: passwordConfirmation
+            });
+            setMessage(data.message || 'Your password has been successfully reset.');
 
-            // Only staff/admin roles can log in from the staff portal
-            const studentRoles = ['student', 'applicant'];
-            if (studentRoles.includes(data.user.role)) {
-                // Immediately revoke the session — this portal is not for students
-                try { await authService.logout(); } catch (_) { }
-                setError('This portal is for staff only. Please use the Student Portal to sign in.');
-                setIsLoading(false);
-                return;
-            }
-
-            sessionStorage.setItem('token', data.access_token);
-            sessionStorage.setItem('user', JSON.stringify(data.user));
-            sessionStorage.setItem('adminRole', data.user.role);
-            if (['secretary', 'coordinator', 'lecturer'].includes(data.user.role)) {
-                navigate('/admin/courses');
-            } else {
-                navigate('/admin/dashboard');
-            }
+            // Redirect to login after 3 seconds
+            setTimeout(() => {
+                navigate('/login');
+            }, 3000);
         } catch (err: any) {
-            setError(err.response?.data?.message || 'Invalid login credentials. Please try again.');
+            setError(err.response?.data?.message || 'Failed to reset password. Link may be expired or invalid.');
         } finally {
             setIsLoading(false);
         }
@@ -135,62 +136,72 @@ export const AdminLogin: React.FC = () => {
                 </div>
             </div>
 
-            {/* Right Side - Staff Authentication Form */}
+            {/* Right Side - Reset Password Form */}
             <div className="login-right-pane">
+                <div className="mobile-header-banner">
+                    <div className="mobile-branding-header">
+                        <img src={branding.logo} alt="Logo" className="mobile-branding-logo" />
+                        <div className="mobile-branding-title-group">
+                            <h1 className="mobile-branding-institution">{branding.institution}</h1>
+                            <p className="mobile-branding-university">{branding.university}</p>
+                        </div>
+                    </div>
+                </div>
+
                 <div className="login-form-container">
                     <div className="welcome-header">
-                        <h2 className="welcome-title">Welcome to CODL</h2>
-                        <p className="welcome-subtitle">Administrative & Staff Workspace Login</p>
+                        <h2 className="welcome-title">Reset Password</h2>
+                        <p className="welcome-subtitle">Set your new password to secure your account</p>
                     </div>
 
                     <div className="auth-view-container fade-in-up" style={{ marginTop: '20px' }}>
                         <div className="auth-card existing-student-card">
-                            <div className="card-top-indicator"></div>
+                            <div className="card-top-indicator" style={{ background: '#7C3AED' }}></div>
                             <div className="auth-card-header">
                                 <div className="icon-wrapper purple-icon">
                                     <ShieldCheck size={20} />
                                 </div>
                                 <div className="header-text">
-                                    <h3>Staff Portal Login</h3>
-                                    <p>Administrative & Staff Workspace Access</p>
+                                    <h3>New Password</h3>
+                                    <p>Enter and confirm your new password below</p>
                                 </div>
                             </div>
 
-                            <form className="auth-form" onSubmit={handleLogin}>
+                            <form className="auth-form" onSubmit={handleSubmit}>
                                 {error && (
-                                    <div className="error-banner" style={{
-                                        padding: '12px',
-                                        background: '#FEF2F2',
-                                        color: '#DC2626',
-                                        borderRadius: '8px',
-                                        fontSize: '14px',
-                                        marginBottom: '20px',
-                                        border: '1px solid #FEE2E2'
-                                    }}>
+                                    <div style={{ color: '#DC2626', background: '#FEF2F2', padding: '10px', borderRadius: '8px', marginBottom: '15px', fontSize: '14px', border: '1px solid #FEE2E2' }}>
                                         {error}
                                     </div>
                                 )}
 
-                                <div className="form-group">
-                                    <label>Registration Number</label>
+                                {message && (
+                                    <div style={{ color: '#16A34A', background: '#DCFCE7', padding: '10px', borderRadius: '8px', marginBottom: '15px', fontSize: '14px', border: '1px solid #BBF7D0' }}>
+                                        {message} <br />
+                                        <span style={{ fontSize: '12px', opacity: 0.8 }}>Redirecting you to the login screen...</span>
+                                    </div>
+                                )}
+
+                                <div className="form-group" style={{ marginBottom: '10px' }}>
+                                    <label>Email Address</label>
                                     <input
-                                        type="text"
-                                        value={loginId}
-                                        onChange={(e) => setLoginId(e.target.value)}
-                                        required
-                                        disabled={isLoading}
+                                        type="email"
+                                        value={email}
+                                        disabled
+                                        style={{ background: '#F1F5F9', color: '#64748B', cursor: 'not-allowed' }}
                                     />
                                 </div>
 
-                                <div className="form-group">
-                                    <label>Password</label>
+                                <div className="form-group" style={{ marginBottom: '15px' }}>
+                                    <label>New Password</label>
                                     <div className="password-input-wrapper">
                                         <input
                                             type={showPassword ? "text" : "password"}
                                             value={password}
                                             onChange={(e) => setPassword(e.target.value)}
+                                            placeholder="Min. 8 characters"
                                             required
-                                            disabled={isLoading}
+                                            minLength={8}
+                                            disabled={isLoading || !token}
                                         />
                                         <button
                                             type="button"
@@ -203,19 +214,33 @@ export const AdminLogin: React.FC = () => {
                                     </div>
                                 </div>
 
-                                <div className="form-options">
-                                    <label className="remember-me">
-                                        <input type="checkbox" />
-                                        <span>Remember me</span>
-                                    </label>
+                                <div className="form-group" style={{ marginBottom: '20px' }}>
+                                    <label>Confirm Password</label>
+                                    <div className="password-input-wrapper">
+                                        <input
+                                            type={showConfirmPassword ? "text" : "password"}
+                                            value={passwordConfirmation}
+                                            onChange={(e) => setPasswordConfirmation(e.target.value)}
+                                            placeholder="Confirm your new password"
+                                            required
+                                            disabled={isLoading || !token}
+                                        />
+                                        <button
+                                            type="button"
+                                            className="password-toggle-btn"
+                                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                            tabIndex={-1}
+                                        >
+                                            {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                        </button>
+                                    </div>
                                 </div>
 
-                                <button type="submit" className="btn-primary auth-submit-btn" disabled={isLoading}>
-                                    {isLoading ? 'Authenticating...' : 'Sign In'} <ArrowRight size={18} />
+                                <button type="submit" className="btn-primary auth-submit-btn" disabled={isLoading || !token} style={{ marginTop: '10px' }}>
+                                    {isLoading ? 'Resetting Password...' : 'Save & Continue'} <ChevronRight size={18} />
                                 </button>
                             </form>
                         </div>
-
                     </div>
                 </div>
             </div>

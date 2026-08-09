@@ -130,6 +130,31 @@
     border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+.pane-footer-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.pane-footer-links {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.pane-footer-link {
+    color: rgba(255, 255, 255, 0.5);
+    text-decoration: none;
+    cursor: pointer;
+    transition: color 0.15s ease;
+}
+
+.pane-footer-link:hover {
+    color: #FFFFFF;
+}
+
 /* Right Pane Styling (Forms) */
 .login-right-pane {
     flex: 1;
