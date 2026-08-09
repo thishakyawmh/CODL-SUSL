@@ -45,15 +45,34 @@ return [
         ],
 
         'analytics' => [
-            'driver' => 'sqlite',
+            'driver' => env('DB_ANALYTICS_CONNECTION', 'sqlite'),
             'url' => env('DB_ANALYTICS_URL'),
-            'database' => env('DB_ANALYTICS_DATABASE', database_path('analytics.sqlite')),
+            'host' => env('DB_ANALYTICS_HOST', env('DB_HOST', '127.0.0.1')),
+            'port' => env('DB_ANALYTICS_PORT', env('DB_PORT', '3306')),
+            'database' => env('DB_ANALYTICS_CONNECTION') === 'mysql'
+                ? env('DB_ANALYTICS_DATABASE', 'analytics')
+                : env('DB_ANALYTICS_DATABASE', database_path('analytics.sqlite')),
+            'username' => env('DB_ANALYTICS_USERNAME', env('DB_USERNAME', 'root')),
+            'password' => env('DB_ANALYTICS_PASSWORD', env('DB_PASSWORD', '')),
             'prefix' => '',
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
             'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
             'busy_timeout' => null,
             'journal_mode' => null,
             'synchronous' => null,
             'transaction_mode' => 'DEFERRED',
+            'options' => extension_loaded('pdo_mysql') ? (
+                [
+                    PDO::ATTR_PERSISTENT => true,
+                    PDO::ATTR_EMULATE_PREPARES => true,
+                ] + (
+                    (env('MYSQL_ATTR_SSL_CA') || file_exists(base_path('DigiCertGlobalRootG2.crt.pem'))) ? [
+                        PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA') ?: base_path('DigiCertGlobalRootG2.crt.pem'),
+                        PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => env('DB_SSL_VERIFY', true),
+                    ] : []
+                )
+            ) : [],
         ],
 
         'mysql' => [
