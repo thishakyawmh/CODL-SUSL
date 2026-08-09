@@ -68,6 +68,19 @@ export const LetterRequest: React.FC = () => {
         if (profileData.sex === 'Male') setStatusPrefix('Mr');
         else if (profileData.sex === 'Female') setStatusPrefix('Ms');
 
+        if (profileData.fullName) {
+            const parts = profileData.fullName.trim().split(/\s+/);
+            if (parts.length > 1) {
+                const initials = parts.slice(0, parts.length - 1)
+                    .map((part: string) => part[0].toUpperCase() + '.')
+                    .join('');
+                const surname = parts[parts.length - 1];
+                setNameWithInitials(`${initials} ${surname}`);
+            } else {
+                setNameWithInitials(profileData.fullName);
+            }
+        }
+
         const loadData = async () => {
             try {
                 const courses = await courseService.getStudentCourses();

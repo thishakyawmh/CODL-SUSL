@@ -28,7 +28,7 @@ interface DBUserType {
     fullName: string;
     email: string;
     nic: string;
-    role: 'super_admin' | 'admin' | 'director' | 'coordinator' | 'secretary' | 'lecturer' | 'student';
+    role: 'super_admin' | 'admin' | 'director' | 'coordinator' | 'secretary' | 'lecturer' | 'student' | 'applicant';
     status: 'active' | 'inactive' | 'suspended';
     avatar: string;
     phone: string;
