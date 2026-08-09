@@ -241,18 +241,25 @@ class AIAnalyticsController extends Controller
         // 4. Configurable Mapping Dictionary
         $studentHeaderMap = [
             'Timestamp' => 'survey_submitted_at',
-            'Current Education Level' => 'education_level',
+            'Email' => 'email',
+            'WhatsApp' => 'whatsapp',
+            'Education Level' => 'education_level',
             'Province' => 'province',
-            'Student District' => 'district',
-            'Which academic field is your primary interest for university study?' => 'primary_field',
-            'Which academic field is your Secondary interest for university study?' => 'secondary_field',
-            'Which academic field is your Third interest for university study?' => 'third_field',
-            'Specializations' => 'specializations',
-            'Teaching Methods' => 'learning_preferences',
-            'Theory vs Practical' => 'theory_practical_score',
-            'Which university opportunities are most important to you?' => 'university_opportunities',
-            'Which emerging fields do you think universities should introduce or expand?' => 'emerging_fields',
-            'If you could introduce ONE new degree program or specialization, what would it be?' => 'new_program_suggestion',
+            'District' => 'district',
+            'Primary Interest' => 'primary_interest',
+            'Primary Skills' => 'primary_skills',
+            'Primary Teaching Methods' => 'primary_learning_methods',
+            'Primary Learning Balance' => 'primary_learning_balance',
+            'Secondary Interest' => 'secondary_interest',
+            'Secondary Skills' => 'secondary_skills',
+            'Secondary Teaching Methods' => 'secondary_learning_methods',
+            'Secondary Learning Balance' => 'secondary_learning_balance',
+            'Ternary Interest' => 'ternary_interest',
+            'Ternary Skills' => 'ternary_skills',
+            'Ternary Teaching Methods' => 'ternary_learning_methods',
+            'Ternary Learning Balance' => 'ternary_learning_balance',
+            'University Opportunities' => 'university_opportunities',
+            'New Program Suggestion' => 'new_program_suggestion',
         ];
 
         $industryHeaderMap = [
@@ -275,7 +282,7 @@ class AIAnalyticsController extends Controller
         ];
 
         $mapToUse = $type === 'student' ? $studentHeaderMap : $industryHeaderMap;
-        $requiredColumns = $type === 'student' ? ['education_level', 'primary_field'] : ['industry_sector', 'primary_academic_field'];
+        $requiredColumns = $type === 'student' ? ['education_level', 'primary_interest'] : ['industry_sector', 'primary_academic_field'];
         
         $mappedIndexes = [];
         

@@ -45,7 +45,15 @@ class AnalyticsNLPService
 
             $studentSurveys = $studentSurveys->filter(function ($survey) use ($courseDomains) {
                 // Multi-signal evaluation
-                $text = $survey->primary_field . ' ' . $survey->specializations . ' ' . $survey->emerging_fields;
+                $text = implode(' ', [
+                    $survey->primary_interest,
+                    $survey->primary_skills,
+                    $survey->secondary_interest,
+                    $survey->secondary_skills,
+                    $survey->ternary_interest,
+                    $survey->ternary_skills,
+                    $survey->new_program_suggestion
+                ]);
                 $surveyDomains = $this->extractDomains($text);
                 // Return true if there is any semantic intersection
                 return count(array_intersect($courseDomains, $surveyDomains)) > 0;
@@ -69,26 +77,58 @@ class AnalyticsNLPService
         $academicPractices = [];
         $certImportances = [];
 
+        // Helper to convert balance input (text or number) to a 1-5 score
+        $parseBalance = function ($balance) {
+            if (is_numeric($balance)) {
+                return (float) $balance;
+            }
+            $b = strtolower(trim($balance));
+            if (empty($b)) return 3.0;
+            if (str_contains($b, 'balanced')) return 3.0;
+            if (str_contains($b, 'practical oriented') || str_contains($b, 'mostly practical')) return 4.0;
+            if (str_contains($b, 'theory oriented') || str_contains($b, 'mostly theory')) return 2.0;
+            if (str_contains($b, 'practical')) return 5.0;
+            if (str_contains($b, 'theory')) return 1.0;
+            return 3.0;
+        };
+
         // 1. Process Student Surveys
         foreach ($studentSurveys as $survey) {
-            $text = $survey->primary_field . ' ' . $survey->specializations . ' ' . $survey->emerging_fields;
+            $text = implode(' ', [
+                $survey->primary_interest,
+                $survey->primary_skills,
+                $survey->secondary_interest,
+                $survey->secondary_skills,
+                $survey->ternary_interest,
+                $survey->ternary_skills,
+                $survey->new_program_suggestion
+            ]);
             $domains = $this->extractDomains($text);
             $domains = $this->deduplicateDomains($domains);
             $studentDomains = array_merge($studentDomains, $domains);
             
-            // Also collect raw emerging fields for the tag cloud
-            if ($survey->emerging_fields) {
-                $emergingTechnologies[] = $survey->emerging_fields;
+            // Collect raw skills as emerging fields or suggestions
+            if ($survey->new_program_suggestion) {
+                $emergingTechnologies[] = $survey->new_program_suggestion;
             }
 
-            // Extract theory practical score
-            if (isset($survey->theory_practical_score)) {
-                $theoryPracticalScores[] = $survey->theory_practical_score;
+            // Extract theory practical scores from balances
+            $surveyScores = [];
+            if ($survey->primary_learning_balance) $surveyScores[] = $parseBalance($survey->primary_learning_balance);
+            if ($survey->secondary_learning_balance) $surveyScores[] = $parseBalance($survey->secondary_learning_balance);
+            if ($survey->ternary_learning_balance) $surveyScores[] = $parseBalance($survey->ternary_learning_balance);
+            if (count($surveyScores) > 0) {
+                $theoryPracticalScores[] = array_sum($surveyScores) / count($surveyScores);
             }
 
-            // Extract learning preferences
-            if ($survey->learning_preferences) {
-                $prefs = array_map('trim', explode(',', $survey->learning_preferences));
+            // Extract learning preferences from all methods
+            $prefsText = implode(',', array_filter([
+                $survey->primary_learning_methods,
+                $survey->secondary_learning_methods,
+                $survey->ternary_learning_methods
+            ]));
+            if ($prefsText) {
+                $prefs = array_map('trim', explode(',', $prefsText));
                 foreach ($prefs as $p) {
                     if ($p) $learningPreferences[] = $p;
                 }
