@@ -204,9 +204,20 @@ const ProgramHub: React.FC<{ programs: Course[], onSelect: (c: Course) => void, 
         }
     };
 
+    const formatDate = (dateString?: string) => {
+        if (!dateString) return 'Not Available';
+        try {
+            const d = new Date(dateString);
+            if (isNaN(d.getTime())) return 'Not Available';
+            return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        } catch (e) {
+            return 'Not Available';
+        }
+    };
+
     return (
         <div className="programs-hub-container" style={{ padding: '0' }}>
-            {/* Header section identical to other pages */}
+            {/* Header section identical to other pages with Sync button aligned on the right */}
             <div className="admin-page-header">
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
                     {(levelFilter !== 'all' || searchTerm !== '') && (
@@ -233,25 +244,14 @@ const ProgramHub: React.FC<{ programs: Course[], onSelect: (c: Course) => void, 
                         }
                     </p>
                 </div>
-            </div>
-
-            {/* AI Learning Roadmap Card (Redesigned Google Sheets section) */}
-            {levelFilter === 'all' && !searchTerm && (
-                <div className="ai-roadmap-card">
-                    <div className="ai-roadmap-card-content">
-                        <div className="ai-roadmap-icon-box">
-                            <Database size={24} />
-                        </div>
-                        <div className="ai-roadmap-text">
-                            <h4>AI Learning Roadmap</h4>
-                            <p>Synchronize Student Interests & Industry Gaps Google Sheets to power the AI NLP engine.</p>
-                        </div>
+                {levelFilter === 'all' && !searchTerm && (
+                    <div className="admin-header-actions" style={{ display: 'flex', alignItems: 'center' }}>
+                        <button className="btn btn-primary" onClick={onOpenSync} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                            <RefreshCw size={16} /> Sync Google Sheet Data
+                        </button>
                     </div>
-                    <button className="btn btn-primary ai-roadmap-btn" onClick={onOpenSync}>
-                        <RefreshCw size={16} /> Sync Google Sheet Data
-                    </button>
-                </div>
-            )}
+                )}
+            </div>
 
             {/* Search Input Bar consistent with Course Management search bar */}
             <div className="cm-filters">
@@ -278,7 +278,7 @@ const ProgramHub: React.FC<{ programs: Course[], onSelect: (c: Course) => void, 
                                 </div>
                                 <h3>{cat.name}</h3>
                                 <p>{cat.desc}</p>
-                               <div className="cm-category-stats">
+                                <div className="cm-category-stats">
                                     <span>{count} Course{count !== 1 ? 's' : ''}</span>
                                     <ArrowUpRight size={14} />
                                 </div>
@@ -298,37 +298,23 @@ const ProgramHub: React.FC<{ programs: Course[], onSelect: (c: Course) => void, 
                                         <span className="cmc-level" style={{ background: levelStyle.bg, color: levelStyle.text }}>
                                             {p.level}
                                         </span>
-                                        <span className="cmc-intake" style={{ background: '#D1FAE5', color: '#059669' }}>
-                                            Open
-                                        </span>
                                     </div>
 
                                     <h3 className="cmc-title" title={p.title}>{p.title}</h3>
                                     <p className="cmc-code">{p.code} • {p.department}</p>
 
-                                    <div className="cmc-stats">
-                                        <div className="cmc-stat">
-                                            <Users size={14} />
-                                            <span><strong>{p.max_students ? Math.round(p.max_students * 0.45) : 34}</strong> / {p.max_students || 120}</span>
+                                    <div className="cmc-stats" style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '14px 18px', background: '#F8FAFC', borderRadius: '14px', border: '1px solid #F1F5F9', marginBottom: '20px' }}>
+                                        <div className="cmc-stat" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <Calendar size={14} style={{ color: '#7C3AED' }} />
+                                            <span style={{ fontSize: '13px', color: '#475569' }}>
+                                                Start Date: <strong style={{ color: '#1E293B' }}>{formatDate(p.created_at)}</strong>
+                                            </span>
                                         </div>
-                                        <div className="cmc-stat">
-                                            <Calendar size={14} />
-                                            <span>{p.duration || '3 Years'}</span>
-                                        </div>
-                                        <div className="cmc-stat">
-                                            <Award size={14} />
-                                            <span>1 batch</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="cmc-faculty-info">
-                                        <div className="cmc-faculty-item">
-                                            <Sparkles size={13} />
-                                            <span>Secretary: <strong>Not Assigned</strong></span>
-                                        </div>
-                                        <div className="cmc-faculty-item">
-                                            <Layers size={13} />
-                                            <span>Coordinator: <strong>Not Assigned</strong></span>
+                                        <div className="cmc-stat" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <Calendar size={14} style={{ color: '#7C3AED' }} />
+                                            <span style={{ fontSize: '13px', color: '#475569' }}>
+                                                Duration: <strong style={{ color: '#1E293B' }}>{p.duration || 'Not Available'}</strong>
+                                            </span>
                                         </div>
                                     </div>
 
