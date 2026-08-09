@@ -79,7 +79,10 @@ export const PendingStatusModal: React.FC<PendingStatusModalProps> = ({ isOpen, 
                 <div className="pending-modal-header">
                     <div>
                         <h2 className="pending-modal-title">Track Application Status</h2>
-                        <p className="pending-modal-subtitle">{courseDetails.title}</p>
+                        <p className="pending-modal-subtitle">
+                            {courseDetails.title || 'Course Application'}
+                            {course.batch?.name ? ` - ${course.batch.name}` : ''}
+                        </p>
                     </div>
                     <button className="close-modal-btn" onClick={onClose}>
                         <X size={20} />

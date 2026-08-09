@@ -16,17 +16,6 @@ export const AcademicProgressTab: React.FC<AcademicProgressTabProps> = ({
     expandedCourses,
     onToggleCourse,
 }) => {
-    const getGradePoints = (grade: string): number => {
-        const map: Record<string, number> = {
-            'A+': 4.0, 'A': 4.0, 'A-': 3.7,
-            'B+': 3.3, 'B': 3.0, 'B-': 2.7,
-            'C+': 2.3, 'C': 2.0, 'C-': 1.7,
-            'D+': 1.3, 'D': 1.0, 'D-': 0.7,
-            'E': 0.0, 'F': 0.0
-        };
-        return map[grade] ?? 0;
-    };
-
     const getGradeColor = (grade: string) => {
         if (grade.startsWith('A')) return '#10B981';
         if (grade.startsWith('B')) return '#3B82F6';
@@ -41,12 +30,6 @@ export const AcademicProgressTab: React.FC<AcademicProgressTabProps> = ({
                     const isExpanded = !!expandedCourses[courseName];
                     const courseData = realCourses.find(c => c.title === courseName);
                     const courseResults = studentData?.results.filter((r: any) => r.course === courseName) || [];
-
-                    let coursePoints = 0;
-                    courseResults.forEach((r: any) => {
-                        coursePoints += getGradePoints(r.grade);
-                    });
-                    const courseGpa = courseResults.length > 0 ? (coursePoints / courseResults.length).toFixed(2) : 'N/A';
 
                     return (
                         <div key={idx} style={{ background: '#FFFFFF', borderRadius: '12px', border: '1px solid #E2E8F0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
@@ -79,9 +62,6 @@ export const AcademicProgressTab: React.FC<AcademicProgressTabProps> = ({
                                 </div>
 
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                                    <span style={{ fontSize: '13px', fontWeight: 700, color: '#166534', background: '#DCFCE7', padding: '4px 12px', borderRadius: '20px' }}>
-                                        GPA: {courseGpa}
-                                    </span>
                                     <span style={{ fontSize: '13px', color: '#64748B', fontWeight: 600 }}>
                                         {courseResults.length} Grade Records
                                     </span>

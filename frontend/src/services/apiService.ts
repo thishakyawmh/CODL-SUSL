@@ -65,6 +65,14 @@ export const authService = {
     googleLogin: async (credential: string) => {
         const response = await api.post('/auth/google', { credential });
         return response.data;
+    },
+    forgotPassword: async (email: string) => {
+        const response = await api.post('/forgot-password', { email });
+        return response.data;
+    },
+    resetPassword: async (data: any) => {
+        const response = await api.post('/reset-password', data);
+        return response.data;
     }
 };
 
@@ -479,6 +487,14 @@ export const statsService = {
     getFullDashboardData: async () => {
         const response = await api.get('/admin/dashboard-full');
         return response.data;
+    },
+    getAdminStats: async () => {
+        const response = await api.get('/admin/stats');
+        return response.data;
+    },
+    getSystemHealthStats: async (timeframe: string) => {
+        const response = await api.get(`/admin/health-stats?timeframe=${timeframe}`);
+        return response.data;
     }
 };
 
@@ -527,9 +543,95 @@ export const aiAnalyticsService = {
         return response.data;
     },
     syncGoogleSheet: async (data: { type: 'student' | 'industry'; url: string }) => {
-        const response = await api.post('/admin/ai-analytics/sync-sheet', data);
+        const response = await api.post('/admin/ai-analytics/sync-sheet', {
+            type: data.type,
+            sheet_url: data.url
+        });
+        return response.data;
+    }
+};
+
+export const curriculumAlignmentService = {
+    extractCourseSkills: async (courseId: string | number) => {
+        const response = await api.post('/admin/skills/extract', { course_id: courseId });
+        return response.data;
+    },
+    getSkills: async (params?: any) => {
+        const response = await api.get('/admin/skills', { params });
+        return response.data;
+    },
+    updateSkillCategory: async (id: string | number, category: string) => {
+        const response = await api.put(`/admin/skills/${id}/category`, { category });
+        return response.data;
+    },
+    submitIndustrySurvey: async (data: any) => {
+        const response = await api.post('/public/survey/industry', data);
+        return response.data;
+    },
+    getIndustrySurveyStats: async (isAdmin = false) => {
+        const response = await api.get(isAdmin ? '/admin/survey/industry-stats' : '/public/survey/industry-stats');
+        return response.data;
+    },
+    submitStudentSurvey: async (data: any) => {
+        const response = await api.post('/public/survey/student', data);
+        return response.data;
+    },
+    getStudentSurveyStats: async (isAdmin = false) => {
+        const response = await api.get(isAdmin ? '/admin/survey/student-stats' : '/public/survey/student-stats');
+        return response.data;
+    },
+    getAiInsights: async (courseId: string | number) => {
+        const response = await api.get(`/admin/courses/${courseId}/ai-insights`);
+        return response.data;
+    },
+    generateAiRecommendations: async (courseId: string | number) => {
+        const response = await api.post(`/admin/courses/${courseId}/ai-recommendations`);
+        return response.data;
+    }
+};
+
+export const studentInterestService = {
+    submit: async (data: any) => {
+        const response = await api.post('/student-interests', data);
+        return response.data;
+    },
+    getConfig: async () => {
+        const response = await api.get('/student-interests/config');
+        return response.data;
+    },
+    saveConfig: async (data: any) => {
+        const response = await api.post('/admin/student-interests/config', data);
+        return response.data;
+    },
+    deleteConfig: async (id: string | number) => {
+        const response = await api.delete(`/admin/student-interests/config/${id}`);
+        return response.data;
+    },
+    getTeachingMethods: async () => {
+        const response = await api.get('/student-interests/teaching-methods');
+        return response.data;
+    },
+    saveTeachingMethod: async (data: any) => {
+        const response = await api.post('/admin/student-interests/teaching-methods', data);
+        return response.data;
+    },
+    deleteTeachingMethod: async (id: string | number) => {
+        const response = await api.delete(`/admin/student-interests/teaching-methods/${id}`);
+        return response.data;
+    },
+    getUniversityOpportunities: async () => {
+        const response = await api.get('/student-interests/university-opportunities');
+        return response.data;
+    },
+    saveUniversityOpportunity: async (data: any) => {
+        const response = await api.post('/admin/student-interests/university-opportunities', data);
+        return response.data;
+    },
+    deleteUniversityOpportunity: async (id: string | number) => {
+        const response = await api.delete(`/admin/student-interests/university-opportunities/${id}`);
         return response.data;
     }
 };
 
 export default api;
+

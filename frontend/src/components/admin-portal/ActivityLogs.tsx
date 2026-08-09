@@ -47,16 +47,18 @@ export const ActivityLogs: React.FC = () => {
             case 'coordinator': return { bg: '#FEF3C7', text: '#D97706', border: '#FCD34D' };
             case 'secretary': return { bg: '#DBEAFE', text: '#2563EB', border: '#93C5FD' };
             case 'lecturer': return { bg: '#E0F2FE', text: '#0369A1', border: '#7DD3FC' };
+            case 'student': return { bg: '#D1FAE5', text: '#059669', border: '#6EE7B7' };
+            case 'applicant': return { bg: '#FFE4E6', text: '#E11D48', border: '#FDA4AF' };
             default: return { bg: '#F1F5F9', text: '#475569', border: '#CBD5E1' };
         }
     };
 
     const filteredLogs = logs.filter(log => {
-        const matchesSearch = 
+        const matchesSearch =
             log.user.toLowerCase().includes(searchTerm.toLowerCase()) ||
             log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
             log.target.toLowerCase().includes(searchTerm.toLowerCase());
-        
+
         const matchesRole = roleFilter === 'all' || log.role === roleFilter;
 
         return matchesSearch && matchesRole;
@@ -77,8 +79,8 @@ export const ActivityLogs: React.FC = () => {
         <div className="rm-container">
             {/* Header */}
             <div className="admin-page-header" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                <button 
-                    className="cm-back-text-btn" 
+                <button
+                    className="cm-back-text-btn"
                     style={{ marginBottom: '16px', marginLeft: '-16px', display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', color: '#7C3AED', fontWeight: 600, cursor: 'pointer' }}
                     onClick={() => navigate('/admin/dashboard')}
                 >
@@ -112,8 +114,8 @@ export const ActivityLogs: React.FC = () => {
                 {/* Search */}
                 <div style={{ flex: 1, minWidth: '260px', position: 'relative' }}>
                     <Search size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }} />
-                    <input 
-                        type="text" 
+                    <input
+                        type="text"
                         placeholder="Search logs by staff name, action, or target details..."
                         value={searchTerm}
                         onChange={e => setSearchTerm(e.target.value)}
@@ -161,6 +163,8 @@ export const ActivityLogs: React.FC = () => {
                         <option value="coordinator">Course Coordinator</option>
                         <option value="secretary">Course Secretary</option>
                         <option value="lecturer">Lecturer</option>
+                        <option value="student">Student</option>
+                        <option value="applicant">Applicant</option>
                     </select>
                 </div>
             </div>
@@ -184,7 +188,7 @@ export const ActivityLogs: React.FC = () => {
                         {filteredLogs.map((log, index) => {
                             const badge = getRoleColor(log.role);
                             return (
-                                <div 
+                                <div
                                     key={log.id}
                                     style={{
                                         display: 'flex',

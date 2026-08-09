@@ -17,7 +17,8 @@ import {
     reattemptRequestService,
     postponementRequestService,
     examResultService,
-    courseService
+    courseService,
+    statsService
 } from '../../services/apiService';
 import './TrackStudent.css';
 
@@ -27,7 +28,7 @@ interface DBUserType {
     fullName: string;
     email: string;
     nic: string;
-    role: 'super_admin' | 'admin' | 'director' | 'coordinator' | 'secretary' | 'lecturer' | 'student';
+    role: 'super_admin' | 'admin' | 'director' | 'coordinator' | 'secretary' | 'lecturer' | 'student' | 'applicant';
     status: 'active' | 'inactive' | 'suspended';
     avatar: string;
     phone: string;
@@ -425,9 +426,8 @@ export const TrackStudent: React.FC = () => {
     useEffect(() => {
         const fetchTotalCount = async () => {
             try {
-                const allUsers = await userService.getAll();
-                const studentList = (allUsers || []).filter((u: any) => u.role === 'student');
-                setTotalStudentCount(studentList.length);
+                const response = await statsService.getAdminStats();
+                setTotalStudentCount(response.totalStudents || 0);
             } catch (err) {
                 console.error('Failed to load total student count:', err);
             }

@@ -126,7 +126,12 @@ export const AdminLogin: React.FC = () => {
                 </div>
 
                 <div className="pane-footer">
-                    <p>© {new Date().getFullYear()} CODL. All rights reserved.</p>
+                    <div className="pane-footer-content">
+                        <p style={{ margin: 0 }}>© {new Date().getFullYear()} CODL. All rights reserved.</p>
+                        <div className="pane-footer-links">
+                            <span onClick={() => navigate('/login')} className="pane-footer-link">Student Login</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -203,7 +208,6 @@ export const AdminLogin: React.FC = () => {
                                         <input type="checkbox" />
                                         <span>Remember me</span>
                                     </label>
-                                    <a href="#" className="forgot-password">Forgot Password?</a>
                                 </div>
 
                                 <button type="submit" className="btn-primary auth-submit-btn" disabled={isLoading}>

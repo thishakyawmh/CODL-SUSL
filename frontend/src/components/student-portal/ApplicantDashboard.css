@@ -583,6 +583,17 @@
         display: none;
     }
 
+    .user-profile-summary {
+        background-color: transparent !important;
+        padding: 0 !important;
+        gap: 0 !important;
+    }
+
+    .avatar {
+        color: transparent !important;
+        text-indent: -10000px !important;
+    }
+
     .workspace-main {
         padding: 32px 20px;
     }

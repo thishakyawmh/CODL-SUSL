@@ -28,6 +28,11 @@ export const NewCourseApplication: React.FC = () => {
     const [realCourses, setRealCourses] = useState<Course[]>([]);
     const [selectedBatch, setSelectedBatch] = useState<any>(null);
     const [myApplications, setMyApplications] = useState<any[]>([]);
+    const [isAgreed, setIsAgreed] = useState(false);
+
+    React.useEffect(() => {
+        setIsAgreed(false);
+    }, [selectedCourse]);
 
     const isStudentLayout = !window.location.pathname.includes('/applicant-dashboard');
     const hasGlobalApplication = outletContext?.hasApplication !== undefined
@@ -182,6 +187,11 @@ export const NewCourseApplication: React.FC = () => {
     const handleSubmitApplication = async (e: React.FormEvent) => {
         e.preventDefault();
 
+        if (!isAgreed) {
+            setSubmitError("You must agree to the terms and conditions before submitting the application.");
+            return;
+        }
+
         const cannotApply = isStudentLayout
             ? hasAppliedForCourse(selectedCourse?.id || '')
             : hasGlobalApplication;
@@ -328,9 +338,9 @@ export const NewCourseApplication: React.FC = () => {
                                     <div className="form-group full-width">
                                         <label>Course Type</label>
                                         <div className="radio-group form-radio-group">
-                                            <label><input type="radio" checked={selectedCourse.level === 'Degree'} readOnly disabled /> Degree</label>
-                                            <label><input type="radio" checked={selectedCourse.level === 'Diploma'} readOnly disabled /> Diploma</label>
-                                            <label><input type="radio" checked={selectedCourse.level === 'Certificate'} readOnly disabled /> Certificate</label>
+                                            <label><input type="radio" checked={selectedCourse.level?.toLowerCase().includes('degree') || false} readOnly disabled /> Degree</label>
+                                            <label><input type="radio" checked={selectedCourse.level?.toLowerCase().includes('diploma') || false} readOnly disabled /> Diploma</label>
+                                            <label><input type="radio" checked={selectedCourse.level?.toLowerCase().includes('certificate') || false} readOnly disabled /> Certificate</label>
                                         </div>
                                     </div>
 
@@ -546,12 +556,10 @@ export const NewCourseApplication: React.FC = () => {
 
                             <div className="certification-box form-section-panel" style={{ padding: '32px 40px' }}>
                                 <h4 className="panel-heading" style={{ color: 'var(--primary-dark)', borderBottomColor: 'var(--border-light)' }}><ShieldCheck size={20} style={{ marginRight: '12px', color: 'var(--primary-color)' }} /> 5. Certification & Agreement</h4>
-                                <p>I certify that the above particulars furnished by me are true and correct to the best of my knowledge. In case, if any of the particulars is found incorrect/false, I understand that the University has the sole authority to cancel my registration.</p>
-                                <p>I affirm that I will adhere to the both rules and regulations those currently effective and those amended from time to time with regard to students of the University.</p>
-                                <p>The Unit has decided that your course/registration/lecture fee is not re-fundable or not transferable to any other course or any another person. Further the course fee is only applicable for the batch to which it levied.</p>
+                                <p>I certify that the information provided in this application is accurate and complete. I understand that any false statements may lead to the cancellation of my admission. By submitting this form, I agree to comply with the institution's policies and consent to the processing of my personal data.</p>
 
                                 <label className="checkbox-label">
-                                    <input type="checkbox" required />
+                                    <input type="checkbox" checked={isAgreed} onChange={(e) => setIsAgreed(e.target.checked)} required />
                                     <span>I agree to the above terms and conditions</span>
                                 </label>
                             </div>

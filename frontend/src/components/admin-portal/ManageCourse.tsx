@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import axios from 'axios';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
     ArrowLeft, Save, Plus, Trash2, Edit2, Check,
@@ -64,6 +65,8 @@ interface Exam {
 
 interface EnrolledStudent {
     id: string;
+    real_id?: number;
+    student_number?: string;
     name: string;
     displayName?: string;
     email: string;
@@ -112,7 +115,13 @@ export const ManageCourse: React.FC = () => {
 
     const loadAllCourseData = async (showLoading = true, signal?: AbortSignal) => {
         if (!id) return;
-        if (showLoading) setIsLoadingData(true);
+        let isCancelled = false;
+        if (showLoading) {
+            setIsLoadingData(true);
+            setIsLoadingCourse(true);
+            setIsLoadingStudents(true);
+            setCourse(null);
+        }
         try {
             const data = await courseService.getManageCourseData(id, { signal });
 
@@ -390,13 +399,19 @@ export const ManageCourse: React.FC = () => {
             setWaitlistPostponements(mappedPostponements);
             setWaitlistReattempts(mappedReattempts);
 
-        } catch (err) {
+        } catch (err: any) {
+            if (axios.isCancel(err)) {
+                isCancelled = true;
+                return;
+            }
             console.error("Failed to fetch consolidated course data:", err);
             toast.error("Failed to load course details from database.");
         } finally {
-            setIsLoadingData(false);
-            setIsLoadingCourse(false);
-            setIsLoadingStudents(false);
+            if (!isCancelled) {
+                setIsLoadingData(false);
+                setIsLoadingCourse(false);
+                setIsLoadingStudents(false);
+            }
         }
     };
 
@@ -891,17 +906,7 @@ export const ManageCourse: React.FC = () => {
         }
     }, [selectedBatch, batches, course, courseType]);
 
-    // Automatically synchronize any materials changes back to Database (disabled to prevent infinite loops - manual saves are handled in event handlers)
-    /*
-    useEffect(() => {
-        if (materialsSemesters && materialsSemesters.length > 0 && selectedBatch) {
-            const currentBatch = batches.find(b => b.name === selectedBatch);
-            if (currentBatch && JSON.stringify(currentBatch.materials) !== JSON.stringify(materialsSemesters)) {
-                saveMaterialsToDatabase(materialsSemesters);
-            }
-        }
-    }, [materialsSemesters, id, selectedBatch, batches]);
-    */
+
 
     // Automatically skip semester/subject view for Certificate and Advanced Certificate courses
     useEffect(() => {
@@ -926,58 +931,6 @@ export const ManageCourse: React.FC = () => {
     const [enrollmentRequests, setEnrollmentRequests] = useState<any[]>([]);
     const [approvalRequests, setApprovalRequests] = useState<any[]>([]);
     const [isLoadingApprovals, setIsLoadingApprovals] = useState(false);
-
-    useEffect(() => {
-        if (realStudents.length > 0 && approvalRequests.length > 0) {
-            let updated = false;
-            const enriched = approvalRequests.map(req => {
-                const matched = realStudents.find((s: any) => {
-                    const reqHasNo = req.studentNumber && req.studentNumber !== 'CODL/2404';
-                    const sHasNo = s.student_number && s.student_number !== 'CODL/2404';
-                    if (reqHasNo && sHasNo) {
-                        return s.student_number === req.studentNumber;
-                    }
-                    if (req.email && s.email) {
-                        return s.email === req.email;
-                    }
-                    return s.full_name?.toLowerCase() === req.name?.toLowerCase() ||
-                           s.name?.toLowerCase() === req.name?.toLowerCase();
-                });
-                if (matched) {
-                    const newPhone = matched.phone || matched.mobilePhone || req.phone;
-                    const newNic = matched.nic || req.nic;
-                    const newAddress = matched.address || req.address;
-                    const newEmail = matched.email || req.email;
-                    const newName = matched.display_name || matched.displayName || matched.full_name || matched.name || req.name;
-                    const newStudentNumber = matched.student_number || req.studentNumber;
-
-                    if (
-                        newPhone !== req.phone ||
-                        newNic !== req.nic ||
-                        newAddress !== req.address ||
-                        newEmail !== req.email ||
-                        newName !== req.name ||
-                        newStudentNumber !== req.studentNumber
-                    ) {
-                        updated = true;
-                        return {
-                            ...req,
-                            name: newName,
-                            studentNumber: newStudentNumber,
-                            email: newEmail,
-                            phone: newPhone,
-                            nic: newNic,
-                            address: newAddress
-                        };
-                    }
-                }
-                return req;
-            });
-            if (updated) {
-                setApprovalRequests(enriched);
-            }
-        }
-    }, [realStudents]);
     const handleActionRequest = async (requestId: string, action: 'approved' | 'rejected', type: 'approval' | 'enrollment', reason?: string) => {
         if (type === 'enrollment') {
             try {
@@ -1342,23 +1295,13 @@ export const ManageCourse: React.FC = () => {
         };
 
         const getStudentDetails = (studentNumber: string) => {
-            const enrolled = enrolledStudents.find(s => s.id === studentNumber);
+            const enrolled = enrolledStudents.find(s => s.id === studentNumber || String(s.real_id) === studentNumber);
             if (enrolled) return {
                 id: studentNumber,
                 name: enrolled.name,
                 displayName: enrolled.displayName || enrolled.name,
                 email: enrolled.email
             };
-
-            const real = realStudents.find(s => s.student_number === studentNumber || String(s.id) === studentNumber);
-            if (real) {
-                return {
-                    id: studentNumber,
-                    name: real.full_name || real.name || 'Student',
-                    displayName: real.display_name || real.fullName || real.name || 'Student',
-                    email: real.email || ''
-                };
-            }
 
             return {
                 id: studentNumber,
@@ -1671,10 +1614,10 @@ export const ManageCourse: React.FC = () => {
 
         // 2. Map studentId to user_id
         const mappedGrades = importedResults.map(r => {
-            const studentUser = realStudents.find(
-                s => s.student_number === r.studentId || String(s.id) === r.studentId || s.email === r.studentId
+            const studentUser = enrolledStudents.find(
+                s => s.student_number === r.studentId || String(s.id) === r.studentId || String(s.real_id) === r.studentId || s.email === r.studentId
             );
-            const userId = studentUser ? studentUser.id : (Number(r.studentId) || null);
+            const userId = studentUser ? (studentUser.real_id || studentUser.id) : (Number(r.studentId) || null);
             return {
                 user_id: userId ? Number(userId) : null,
                 grade: r.grade,
@@ -1732,25 +1675,20 @@ export const ManageCourse: React.FC = () => {
         }
     };
 
-    const handleIdChange = (val: string) => {
+    const handleIdChange = async (val: string) => {
         setEnrollForm({ ...enrollForm, id: val, name: '', displayName: '', email: '' });
 
-        const allStudents = realStudents;
-
         if (!val) {
-            setIdSuggestions(allStudents);
-            setShowSuggestions(true);
+            setIdSuggestions([]);
+            setShowSuggestions(false);
         } else {
-            const matches = allStudents.filter(u => {
-                const sNumber = u.student_number || u.studentNumber || '';
-                const fName = u.full_name || u.fullName || '';
-                const email = u.email || '';
-                return sNumber.toLowerCase().includes(val.toLowerCase()) ||
-                    fName.toLowerCase().includes(val.toLowerCase()) ||
-                    email.toLowerCase().includes(val.toLowerCase());
-            });
-            setIdSuggestions(matches);
-            setShowSuggestions(true);
+            try {
+                const results = await userService.searchStudents(val);
+                setIdSuggestions(results || []);
+                setShowSuggestions(true);
+            } catch (err) {
+                console.error("Failed to query student suggestions:", err);
+            }
         }
     };
 
@@ -2200,12 +2138,12 @@ export const ManageCourse: React.FC = () => {
             return;
         }
 
-        const matchedRealStudent = realStudents.find(
-            rs => rs.student_number === waitlistForm.studentRegNo || rs.id?.toString() === waitlistForm.studentRegNo
+        const matchedRealStudent = enrolledStudents.find(
+            rs => rs.student_number === waitlistForm.studentRegNo || rs.id?.toString() === waitlistForm.studentRegNo || rs.real_id?.toString() === waitlistForm.studentRegNo
         );
 
         if (!matchedRealStudent) {
-            toast.error('Could not map the selected registration number to a database student.');
+            toast.error('Could not map the selected registration number to an enrolled student.');
             return;
         }
 
@@ -2214,7 +2152,7 @@ export const ManageCourse: React.FC = () => {
             return;
         }
 
-        const userId = matchedRealStudent.id;
+        const userId = matchedRealStudent.real_id || matchedRealStudent.id;
         const status = waitlistForm.approved ? 'approved' : 'pending';
 
         const findSubjectIdInCourse = (subjectLabel: string) => {

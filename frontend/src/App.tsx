@@ -14,6 +14,8 @@ import { ExamApplicationForm } from './components/student-portal/ExamApplication
 import { ExamApplicationSuccess } from './components/student-portal/ExamApplicationSuccess';
 import { CourseAnnouncements } from './components/student-portal/CourseAnnouncements';
 import { LoginPortal } from './components/auth/LoginPortal';
+import { ForgotPassword } from './components/auth/ForgotPassword';
+import { ResetPassword } from './components/auth/ResetPassword';
 import { Profile } from './components/student-portal/Profile';
 import { LetterRequest } from './components/student-portal/LetterRequest';
 import { Settings } from './components/student-portal/Settings';
@@ -23,6 +25,8 @@ import { ApplicantDashboard } from './components/student-portal/ApplicantDashboa
 import { ApplicantTrackStatus } from './components/student-portal/ApplicantTrackStatus';
 import { NewCourseApplication } from './components/student-portal/NewCourseApplication';
 import ExaminationResults from './components/student-portal/ExaminationResults';
+import { StudentInterestForm } from './components/public/StudentInterestForm';
+
 
 // --- Admin Portal Imports ---
 import { AdminSidebar } from './components/admin-portal/AdminSidebar';
@@ -38,9 +42,11 @@ import { AdminSettings } from './components/admin-portal/AdminSettings';
 import { CreateExam } from './components/admin-portal/CreateExam';
 import { ManageExamStudents } from './components/admin-portal/ManageExamStudents';
 import { AIAnalytics } from './components/admin-portal/AIAnalytics';
+import { ManageForms } from './components/admin-portal/ManageForms';
 import { AdminAnnouncements } from './components/admin-portal/AdminAnnouncements';
 import { ActivityLogs } from './components/admin-portal/ActivityLogs';
 import { TrackStudent } from './components/admin-portal/TrackStudent';
+import { HelpCenter } from './components/public/HelpCenter';
 
 // --- Common/Services Imports ---
 import { systemSettingService } from './services/apiService';
@@ -105,6 +111,8 @@ const TitleUpdater = () => {
       location.pathname.startsWith('/staff')
     ) {
       document.title = 'CODL | SUSL - Staff';
+    } else if (location.pathname.startsWith('/student-interests')) {
+      document.title = 'Student Academic Interest';
     } else {
       document.title = 'CODL | SUSL - Student';
     }
@@ -159,7 +167,13 @@ function App() {
         <Route path="/" element={<Navigate to="/login" replace />} />
 
         <Route path="/login" element={<LoginPortal />} />
+        <Route path="/student-interests" element={<StudentInterestForm />} />
         <Route path="/staff/login" element={<AdminLogin />} />
+        <Route path="/help-center" element={<HelpCenter />} />
+        <Route path="/help-center/:guideId" element={<HelpCenter />} />
+
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
 
         {/* Applicant Dashboard Routes */}
         <Route
@@ -253,6 +267,7 @@ function App() {
 
           <Route path="activity-logs" element={<ActivityLogs />} />
           <Route path="ai-analytics" element={<AIAnalytics />} />
+          <Route path="ai-analytics/manage-forms" element={<ManageForms />} />
 
           <Route
             path="settings"
