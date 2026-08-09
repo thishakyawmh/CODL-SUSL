@@ -1,6 +1,6 @@
 /* ============================================================
    STUDENT INTEREST FORM STYLING
-   Center for Open and Distance Learning (CODL) - SUSL
+   Center for Open and Distance Learning - SUSL
    ============================================================ */
 
 .student-interest-container {
@@ -16,15 +16,18 @@
   width: 90%;
   max-width: 850px;
   margin: var(--space-xl, 32px) auto 0 auto;
-  background: var(--white, #ffffff);
+  background: linear-gradient(135deg, #ffffff 0%, #faf8ff 50%, #f5f3ff 100%);
   border: 1px solid var(--border-color, #e2e8f0);
+  border-left: 4px solid var(--primary-color, #7c3aed);
   border-radius: var(--card-radius, 20px);
-  box-shadow: var(--shadow-card, 0 4px 6px rgba(0, 0, 0, 0.05));
-  padding: var(--space-xl, 32px);
+  box-shadow: 0 4px 20px rgba(124, 58, 237, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+  padding: var(--space-xl, 36px) var(--space-xl, 32px);
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-xl, 32px);
+  overflow: hidden;
+  position: relative;
 }
 
 .header-text-section {
@@ -32,22 +35,37 @@
 }
 
 .header-text-section h1 {
-  font-size: var(--text-4xl, 26px);
-  font-weight: 700;
+  font-size: 28px;
+  font-weight: 800;
   color: var(--text-dark, #1e293b);
-  margin-bottom: var(--space-sm, 8px);
-  line-height: var(--leading-tight);
+  margin-bottom: 16px;
+  line-height: 1.25;
+  letter-spacing: -0.3px;
+  position: relative;
+  display: inline-block;
+}
+
+.header-text-section h1::after {
+  content: '';
+  display: block;
+  width: 50%;
+  height: 3px;
+  background: linear-gradient(90deg, #7c3aed 0%, #a78bfa 60%, transparent 100%);
+  border-radius: 4px;
+  margin-top: 12px;
 }
 
 .header-text-section p {
   color: var(--text-secondary, #64748b);
-  font-size: var(--text-md, 14px);
-  line-height: var(--leading-normal);
+  font-size: 14.5px;
+  line-height: 1.65;
+  font-weight: 500;
+  letter-spacing: 0.1px;
 }
 
 .banner-image-placeholder {
-  width: 380px;
-  height: 160px;
+  width: 290px;
+  height: 175px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -58,12 +76,50 @@
   width: 100%;
   height: 100%;
   object-fit: contain;
+  transform: scale(1.08);
+  transform-origin: center;
+}
+
+.student-interest-description-card {
+  width: 90%;
+  max-width: 850px;
+  margin: var(--space-md, 16px) auto 0 auto;
+  background: linear-gradient(135deg, #ffffff 0%, #f5f3ff 100%);
+  border: 1px solid rgba(124, 58, 237, 0.15);
+  border-radius: var(--card-radius, 20px);
+  padding: 20px 24px;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  box-shadow: 0 4px 15px rgba(124, 58, 237, 0.02);
+}
+
+.description-icon-container {
+  background: rgba(124, 58, 237, 0.08);
+  border-radius: 10px;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-color, #7c3aed);
+}
+
+.description-text-container {
+  flex: 1;
+}
+
+.description-main-text {
+  margin: 0;
+  font-size: var(--text-md, 14.5px);
+  line-height: var(--leading-relaxed, 1.6);
+  color: var(--text-secondary, #475569);
+  text-align: justify;
 }
 
 .student-interest-card {
   width: 90%;
   max-width: 850px;
-  margin: var(--space-lg, 24px) auto var(--space-xl, 32px) auto;
+  margin: var(--space-md, 16px) auto var(--space-xl, 32px) auto;
   background: var(--white, #ffffff);
   border: 1px solid var(--border-color, #e2e8f0);
   border-radius: var(--card-radius, 20px);
@@ -371,6 +427,7 @@
     opacity: 0;
     transform: scale(0.92);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
@@ -384,6 +441,7 @@
     text-align: center;
     gap: var(--space-md, 16px);
   }
+
   .banner-image-placeholder {
     width: 100%;
     height: 150px;
@@ -494,11 +552,10 @@
     grid-template-columns: 1fr;
     gap: 6px;
   }
+
   .balance-option {
     flex-direction: row;
     justify-content: space-between;
     padding: 12px 16px;
   }
 }
-
-
