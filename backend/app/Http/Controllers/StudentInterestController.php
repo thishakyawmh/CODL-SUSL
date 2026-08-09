@@ -149,4 +149,82 @@ class StudentInterestController extends Controller
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
+
+    /**
+     * Get active dynamic configuration of teaching methods.
+     */
+    public function getTeachingMethods()
+    {
+        try {
+            $methods = DB::connection('analytics')->table('survey_teaching_methods')->get()->map(function($m) {
+                return [
+                    'id' => $m->id,
+                    'method_name' => $m->method_name
+                ];
+            });
+
+            return response()->json($methods);
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve teaching methods config: ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Create or update teaching method configuration (Admin).
+     */
+    public function storeTeachingMethod(Request $request)
+    {
+        $validated = $request->validate([
+            'id' => 'nullable|integer',
+            'method_name' => 'required|string',
+        ]);
+
+        try {
+            if (!empty($validated['id'])) {
+                DB::connection('analytics')->table('survey_teaching_methods')
+                    ->where('id', $validated['id'])
+                    ->update([
+                        'method_name' => $validated['method_name'],
+                        'updated_at' => now()
+                    ]);
+                $id = $validated['id'];
+            } else {
+                $id = DB::connection('analytics')->table('survey_teaching_methods')->insertGetId([
+                    'method_name' => $validated['method_name'],
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'id' => $id,
+                'message' => 'Teaching method configuration saved successfully.'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to save teaching method config: ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Delete a teaching method configuration (Admin).
+     */
+    public function deleteTeachingMethod($id)
+    {
+        try {
+            DB::connection('analytics')->table('survey_teaching_methods')
+                ->where('id', $id)
+                ->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Teaching method configuration deleted successfully.'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to delete teaching method config: ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
 }

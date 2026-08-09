@@ -9,6 +9,104 @@ interface InterestConfig {
     skills: string[];
 }
 
+const DEFAULT_FALLBACK_CONFIG: InterestConfig[] = [
+    {
+        id: 1,
+        interest_field: 'Computing & Information Technology',
+        skills: ['Artificial Intelligence', 'Machine Learning', 'Data Science', 'Software Engineering', 'Cyber Security', 'Cloud Computing', 'DevOps', 'Networking', 'Database Systems', 'Mobile App Development', 'Web Development', 'UI/UX Design', 'Game Development', 'Internet of Things (IoT)', 'Blockchain', 'Robotics', 'Digital Forensics', 'Project Management']
+    },
+    {
+        id: 2,
+        interest_field: 'Engineering & Technology',
+        skills: ['Civil Engineering', 'Mechanical Engineering', 'Electrical Engineering', 'Electronic Engineering', 'Mechatronics', 'Chemical Engineering', 'Biomedical Engineering', 'Aerospace Engineering', 'Environmental Engineering', 'Industrial Engineering', 'Renewable Energy Engineering', 'Robotics']
+    },
+    {
+        id: 3,
+        interest_field: 'Business & Management',
+        skills: ['Human Resource Management', 'Entrepreneurship', 'International Business', 'Supply Chain Management', 'Business Analytics', 'Digital Marketing', 'Project Management', 'Finance', 'Banking', 'E-Commerce']
+    },
+    {
+        id: 4,
+        interest_field: 'Accounting & Finance',
+        skills: ['Financial Technology (FinTech)', 'Investment Banking & Wealth Management', 'Forensic Accounting & Fraud Examination', 'Corporate Finance & Valuation', 'International Financial Reporting (IFRS)', 'Tax Strategy & Advisory', 'Audit & Assurance', 'Sustainable Finance & ESG Reporting', 'Risk Management']
+    },
+    {
+        id: 5,
+        interest_field: 'Marketing',
+        skills: ['Digital & Social Media Marketing', 'Brand Management', 'Consumer Behavior Analytics', 'Content Marketing', 'Influencer & Affiliate Marketing', 'SEO & SEM Strategies', 'Public Relations (PR)', 'Neuromarketing', 'Growth Hacking', 'E-commerce Marketing']
+    },
+    {
+        id: 6,
+        interest_field: 'Economics',
+        skills: ['Behavioral Economics', 'Development Economics', 'Data Analytics & Econometrics', 'International Trade & Globalization', 'Public Policy Economics', 'Financial Economics', 'Environmental & Resource Economics', 'Macroeconomic Strategy & Policy', 'Labor & Health Economics']
+    },
+    {
+        id: 7,
+        interest_field: 'Mathematics & Statistics',
+        skills: ['Applied Mathematics', 'Data Science & Statistics', 'Actuarial Science', 'Financial Mathematics', 'Operations Research', 'Cryptography & Security', 'Mathematical Modeling', 'Quantitative Finance', 'Pure Mathematics']
+    },
+    {
+        id: 8,
+        interest_field: 'Medicine & Health Sciences',
+        skills: ['Medicine', 'Pharmacy', 'Nursing', 'Physiotherapy', 'Medical Laboratory Science', 'Public Health', 'Nutrition', 'Psychology']
+    },
+    {
+        id: 9,
+        interest_field: 'Science',
+        skills: ['Physics', 'Chemistry', 'Biology', 'Biotechnology', 'Environmental Science', 'Food Science', 'Nanotechnology', 'Astronomy']
+    },
+    {
+        id: 10,
+        interest_field: 'Agriculture',
+        skills: ['Precision Agriculture / Smart Farming', 'Agribusiness Management', 'Food Technology & Safety', 'Horticulture', 'Sustainable Agriculture', 'Agricultural Engineering', 'Plant Biotechnology', 'Agri-informatics', 'Aquaculture & Fisheries', 'Climate-Smart Agriculture']
+    },
+    {
+        id: 11,
+        interest_field: 'Law',
+        skills: ['Corporate & Commercial Law', 'Cyber Law & Digital Rights', 'Intellectual Property (IP) Law', 'International Law', 'Human Rights Law', 'Environmental & Climate Law', 'Criminal Law & Justice', 'Family Law', 'Space & Aviation Law', 'AI & Technology Law', 'Alternative Dispute Resolution (ADR)']
+    },
+    {
+        id: 12,
+        interest_field: 'Education',
+        skills: ['EdTech (Educational Technology)', 'Early Childhood Education', 'Special Education & Inclusion', 'Curriculum & Instructional Design', 'Educational Leadership & Management', 'TESOL (Teaching English as a Second Language)', 'STEM/STEAM Education', 'Adult & Continuing Education']
+    },
+    {
+        id: 13,
+        interest_field: 'Social Sciences',
+        skills: ['Psychology (Clinical & Behavioral)', 'Sociology & Criminology', 'International Relations & Diplomacy', 'Political Science', 'Behavioral Economics', 'Anthropology', 'Gender Studies', 'Public Policy & Administration', 'Urban & Community Studies']
+    },
+    {
+        id: 14,
+        interest_field: 'Arts & Humanities',
+        skills: ['Digital Arts & Animation', 'Graphic Design', 'Performing Arts (Music/Dance/Drama)', 'Fine Arts', 'Creative Writing', 'Film & Media Production', 'Game Art & Design', 'Fashion Design', 'Interior Design']
+    },
+    {
+        id: 15,
+        interest_field: 'Architecture',
+        skills: ['Sustainable & Green Architecture', 'Urban Design & Planning', 'Landscape Architecture', 'Interior Architecture', 'Parametric & Computational Design', 'Smart City Planning', 'Architectural Conservation', 'BIM (Building Information Modeling)']
+    },
+    {
+        id: 16,
+        interest_field: 'Environmental Studies',
+        skills: ['Climate Change & Adaptation Strategy', 'Sustainable Resource Management', 'Renewable Energy & Clean Tech', 'Environmental Policy & Governance', 'Biodiversity & Conservation Biology', 'Environmental Impact Assessment (EIA)', 'Disaster Risk Reduction & Management', 'Urban Ecology & Sustainability', 'Circular Economy & Waste Management']
+    },
+    {
+        id: 17,
+        interest_field: 'Hospitality & Tourism',
+        skills: ['Hotel & Resort Management', 'Sustainable Tourism / Ecotourism', 'Event & Experience Management', 'Culinary Arts & Management', 'Aviation & Cruise Management', 'Travel Tech & Digital Tourism', 'Luxury Brand Management', 'Food & Beverage Operations']
+    },
+    {
+        id: 18,
+        interest_field: 'Media & Communication',
+        skills: ['Digital Journalism & New Media', 'Strategic Communication & Public Relations (PR)', 'Media Production & Broadcasting', 'Social Media Strategy & Content Creation', 'Film & Cinema Studies', 'Advertising & Brand Communication', 'Corporate & Organizational Communication', 'Media Analytics & Audience Research', 'Interactive Media & Game Journalism']
+    },
+    {
+        id: 19,
+        interest_field: 'Psychology',
+        skills: ['Counseling Psychology', 'Cognitive & Behavioral Neuroscience', 'Industrial & Organizational (I/O) Psychology', 'Educational & School Psychology', 'Child & Adolescent Psychology', 'Forensic & Criminal Psychology', 'Health & Sports Psychology', 'Media & Cyberpsychology', 'Social & Personality Psychology']
+    }
+];
+
 export const StudentInterestForm: React.FC = () => {
     // Determine backend URL dynamically
     const backendUrl = (import.meta.env.VITE_API_URL || 'http://localhost:8000/api').replace(/\/api$/, '');
@@ -29,16 +127,24 @@ export const StudentInterestForm: React.FC = () => {
 
     const provinces = Object.keys(provinceDistricts);
 
-    const teachingMethodsOptions = [
-        'Fully Online lectures',
-        'Physical classes/lectures',
-        'Hybrid mode (Both)',
-        'Practical labs & workshops',
-        'Industry guest talks/seminars'
+    const DEFAULT_TEACHING_METHODS = [
+        'Practical Labs',
+        'Workshops',
+        'Group Projects',
+        'Individual Projects',
+        'Industry Training',
+        'Research Projects',
+        'Field Visits',
+        'Guest Lectures',
+        'Traditional Lectures',
+        'Online Learning',
+        'Competitions / Hackathons'
     ];
 
+    const [teachingMethods, setTeachingMethods] = useState<string[]>(DEFAULT_TEACHING_METHODS);
+
     // State for configs loaded from admin backend
-    const [interestConfig, setInterestConfig] = useState<InterestConfig[]>([]);
+    const [interestConfig, setInterestConfig] = useState<InterestConfig[]>(DEFAULT_FALLBACK_CONFIG);
 
     // State for profile data
     const [formData, setFormData] = useState({
@@ -88,7 +194,20 @@ export const StudentInterestForm: React.FC = () => {
                 console.error('Failed to load academic interest configs:', err);
             }
         };
+
+        const loadTeachingMethods = async () => {
+            try {
+                const data = await studentInterestService.getTeachingMethods();
+                if (data && data.length > 0) {
+                    setTeachingMethods(data.map((m: any) => m.method_name));
+                }
+            } catch (err) {
+                console.error('Failed to load teaching methods:', err);
+            }
+        };
+
         loadConfig();
+        loadTeachingMethods();
     }, []);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -544,7 +663,7 @@ export const StudentInterestForm: React.FC = () => {
                                     <div className="form-group full-width">
                                         <label>Suggested Teaching Methods for this academic area *</label>
                                         <div className="choice-grid">
-                                            {teachingMethodsOptions.map(method => (
+                                            {teachingMethods.map(method => (
                                                 <div
                                                     key={method}
                                                     className={`choice-chip ${primaryInterest.teaching_methods.includes(method) ? 'active' : ''}`}
@@ -556,28 +675,26 @@ export const StudentInterestForm: React.FC = () => {
                                         </div>
                                     </div>
 
-                                    {/* Theory vs Practical */}
+                                    {/* Preferred Learning Balance */}
                                     <div className="form-group full-width slider-container">
-                                        <label>
-                                            Preferred Learning Balance (Theory vs. Practical focus) * : <strong>{
-                                                primaryInterest.theory_practical === 1 ? '100% Theoretical' : 
-                                                primaryInterest.theory_practical === 5 ? '100% Practical/Applied' : 
-                                                primaryInterest.theory_practical === 3 ? 'Balanced Hybrid' : 
-                                                primaryInterest.theory_practical === 2 ? 'More Theoretical' : 'More Practical'
-                                            }</strong>
-                                        </label>
-                                        <input
-                                            type="range"
-                                            min="1"
-                                            max="5"
-                                            value={primaryInterest.theory_practical}
-                                            onChange={(e) => handleSliderChange('primary', parseInt(e.target.value))}
-                                            className="form-range"
-                                        />
-                                        <div className="slider-labels">
-                                            <span>Theoretical Core</span>
-                                            <span>Balanced</span>
-                                            <span>Applied / Practical</span>
+                                        <label>Preferred Learning Balance *</label>
+                                        <div className="learning-balance-selector">
+                                            {[1, 2, 3, 4, 5].map((val) => (
+                                                <button
+                                                    key={val}
+                                                    type="button"
+                                                    className={`balance-option ${primaryInterest.theory_practical === val ? 'active' : ''}`}
+                                                    onClick={() => handleSliderChange('primary', val)}
+                                                >
+                                                    <span className="balance-number">{val}</span>
+                                                    <span className="balance-label">{
+                                                        val === 1 ? 'Theoretical' :
+                                                        val === 2 ? 'Mostly Theory' :
+                                                        val === 3 ? 'Balanced' :
+                                                        val === 4 ? 'Mostly Practical' : 'Practical'
+                                                    }</span>
+                                                </button>
+                                            ))}
                                         </div>
                                     </div>
                                 </>
@@ -653,7 +770,7 @@ export const StudentInterestForm: React.FC = () => {
                                         <div className="form-group full-width">
                                             <label>Suggested Teaching Methods for this academic area *</label>
                                             <div className="choice-grid">
-                                                {teachingMethodsOptions.map(method => (
+                                                {teachingMethods.map(method => (
                                                     <div
                                                         key={method}
                                                         className={`choice-chip ${secondaryInterest.teaching_methods.includes(method) ? 'active' : ''}`}
@@ -665,28 +782,26 @@ export const StudentInterestForm: React.FC = () => {
                                             </div>
                                         </div>
 
-                                        {/* Theory vs Practical */}
+                                        {/* Preferred Learning Balance */}
                                         <div className="form-group full-width slider-container">
-                                            <label>
-                                                Preferred Learning Balance (Theory vs. Practical focus) * : <strong>{
-                                                    secondaryInterest.theory_practical === 1 ? '100% Theoretical' : 
-                                                    secondaryInterest.theory_practical === 5 ? '100% Practical/Applied' : 
-                                                    secondaryInterest.theory_practical === 3 ? 'Balanced Hybrid' : 
-                                                    secondaryInterest.theory_practical === 2 ? 'More Theoretical' : 'More Practical'
-                                                }</strong>
-                                            </label>
-                                            <input
-                                                type="range"
-                                                min="1"
-                                                max="5"
-                                                value={secondaryInterest.theory_practical}
-                                                onChange={(e) => handleSliderChange('secondary', parseInt(e.target.value))}
-                                                className="form-range"
-                                            />
-                                            <div className="slider-labels">
-                                                <span>Theoretical Core</span>
-                                                <span>Balanced</span>
-                                                <span>Applied / Practical</span>
+                                            <label>Preferred Learning Balance *</label>
+                                            <div className="learning-balance-selector">
+                                                {[1, 2, 3, 4, 5].map((val) => (
+                                                    <button
+                                                        key={val}
+                                                        type="button"
+                                                        className={`balance-option ${secondaryInterest.theory_practical === val ? 'active' : ''}`}
+                                                        onClick={() => handleSliderChange('secondary', val)}
+                                                    >
+                                                        <span className="balance-number">{val}</span>
+                                                        <span className="balance-label">{
+                                                            val === 1 ? 'Theoretical' :
+                                                            val === 2 ? 'Mostly Theory' :
+                                                            val === 3 ? 'Balanced' :
+                                                            val === 4 ? 'Mostly Practical' : 'Practical'
+                                                        }</span>
+                                                    </button>
+                                                ))}
                                             </div>
                                         </div>
                                     </>
@@ -760,7 +875,7 @@ export const StudentInterestForm: React.FC = () => {
                                         <div className="form-group full-width">
                                             <label>Suggested Teaching Methods for this academic area *</label>
                                             <div className="choice-grid">
-                                                {teachingMethodsOptions.map(method => (
+                                                {teachingMethods.map(method => (
                                                     <div
                                                         key={method}
                                                         className={`choice-chip ${ternaryInterest.teaching_methods.includes(method) ? 'active' : ''}`}
@@ -774,26 +889,24 @@ export const StudentInterestForm: React.FC = () => {
 
                                         {/* Theory vs Practical */}
                                         <div className="form-group full-width slider-container">
-                                            <label>
-                                                Preferred Learning Balance (Theory vs. Practical focus) * : <strong>{
-                                                    ternaryInterest.theory_practical === 1 ? '100% Theoretical' : 
-                                                    ternaryInterest.theory_practical === 5 ? '100% Practical/Applied' : 
-                                                    ternaryInterest.theory_practical === 3 ? 'Balanced Hybrid' : 
-                                                    ternaryInterest.theory_practical === 2 ? 'More Theoretical' : 'More Practical'
-                                                }</strong>
-                                            </label>
-                                            <input
-                                                type="range"
-                                                min="1"
-                                                max="5"
-                                                value={ternaryInterest.theory_practical}
-                                                onChange={(e) => handleSliderChange('ternary', parseInt(e.target.value))}
-                                                className="form-range"
-                                            />
-                                            <div className="slider-labels">
-                                                <span>Theoretical Core</span>
-                                                <span>Balanced</span>
-                                                <span>Applied / Practical</span>
+                                            <label>Preferred Learning Balance *</label>
+                                            <div className="learning-balance-selector">
+                                                {[1, 2, 3, 4, 5].map((val) => (
+                                                    <button
+                                                        key={val}
+                                                        type="button"
+                                                        className={`balance-option ${ternaryInterest.theory_practical === val ? 'active' : ''}`}
+                                                        onClick={() => handleSliderChange('ternary', val)}
+                                                    >
+                                                        <span className="balance-number">{val}</span>
+                                                        <span className="balance-label">{
+                                                            val === 1 ? 'Theoretical' :
+                                                            val === 2 ? 'Mostly Theory' :
+                                                            val === 3 ? 'Balanced' :
+                                                            val === 4 ? 'Mostly Practical' : 'Practical'
+                                                        }</span>
+                                                    </button>
+                                                ))}
                                             </div>
                                         </div>
                                     </>

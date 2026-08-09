@@ -67,9 +67,9 @@ return [
                     PDO::ATTR_PERSISTENT => true,
                     PDO::ATTR_EMULATE_PREPARES => true,
                 ] + (
-                    (env('MYSQL_ATTR_SSL_CA') || file_exists(base_path('DigiCertGlobalRootG2.crt.pem'))) ? [
+                    (env('DB_SSL_VERIFY', true) && (env('MYSQL_ATTR_SSL_CA') || file_exists(base_path('DigiCertGlobalRootG2.crt.pem')))) ? [
                         PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA') ?: base_path('DigiCertGlobalRootG2.crt.pem'),
-                        PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => env('DB_SSL_VERIFY', true),
+                        PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => true,
                     ] : []
                 )
             ) : [],
@@ -99,9 +99,9 @@ return [
                     PDO::ATTR_EMULATE_PREPARES => true,
                 ] + (
                     // SSL settings for Azure MySQL
-                    (env('MYSQL_ATTR_SSL_CA') || file_exists(base_path('DigiCertGlobalRootG2.crt.pem'))) ? [
+                    (env('DB_SSL_VERIFY', true) && (env('MYSQL_ATTR_SSL_CA') || file_exists(base_path('DigiCertGlobalRootG2.crt.pem')))) ? [
                         PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA') ?: base_path('DigiCertGlobalRootG2.crt.pem'),
-                        PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => env('DB_SSL_VERIFY', true),
+                        PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => true,
                     ] : []
                 )
             ) : [],

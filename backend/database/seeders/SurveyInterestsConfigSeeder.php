@@ -16,120 +16,136 @@ class SurveyInterestsConfigSeeder extends Seeder
         DB::connection('analytics')->table('survey_interests_config')->insert([
             [
                 'interest_field' => 'Computing & Information Technology',
-                'skills' => 'Software Development, Web Development, Cloud Computing, Cyber Security, Artificial Intelligence, Database Management, Mobile Apps, Networking',
+                'skills' => 'Artificial Intelligence, Machine Learning, Data Science, Software Engineering, Cyber Security, Cloud Computing, DevOps, Networking, Database Systems, Mobile App Development, Web Development, UI/UX Design, Game Development, Internet of Things (IoT), Blockchain, Robotics, Digital Forensics, Project Management',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
                 'interest_field' => 'Engineering & Technology',
-                'skills' => 'AutoCAD, Robotics, Circuit Design, Mechanical Design, Project Planning, MATLAB, Civil Engineering, Embedded Systems',
+                'skills' => 'Civil Engineering, Mechanical Engineering, Electrical Engineering, Electronic Engineering, Mechatronics, Chemical Engineering, Biomedical Engineering, Aerospace Engineering, Environmental Engineering, Industrial Engineering, Renewable Energy Engineering, Robotics',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
                 'interest_field' => 'Business & Management',
-                'skills' => 'Project Management, Strategic Planning, Operations Management, Entrepreneurship, Human Resources, Leadership, Business Communication, Supply Chain',
+                'skills' => 'Human Resource Management, Entrepreneurship, International Business, Supply Chain Management, Business Analytics, Digital Marketing, Project Management, Finance, Banking, E-Commerce',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
                 'interest_field' => 'Accounting & Finance',
-                'skills' => 'Financial Analysis, Tax Preparation, Auditing, Excel Modeling, Corporate Finance, Bookkeeping, Investment Analysis',
+                'skills' => 'Financial Technology (FinTech), Investment Banking & Wealth Management, Forensic Accounting & Fraud Examination, Corporate Finance & Valuation, International Financial Reporting (IFRS), Tax Strategy & Advisory, Audit & Assurance, Sustainable Finance & ESG Reporting, Risk Management',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
                 'interest_field' => 'Marketing',
-                'skills' => 'Digital Marketing, SEO & SEM, Content Creation, Social Media Management, Market Research, Branding, Copywriting, Advertising',
+                'skills' => 'Digital & Social Media Marketing, Brand Management, Consumer Behavior Analytics, Content Marketing, Influencer & Affiliate Marketing, SEO & SEM Strategies, Public Relations (PR), Neuromarketing, Growth Hacking, E-commerce Marketing',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
                 'interest_field' => 'Economics',
-                'skills' => 'Data Analysis, Econometrics, Financial Markets, Policy Analysis, Macroeconomics, Microeconomics, Game Theory',
+                'skills' => 'Behavioral Economics, Development Economics, Data Analytics & Econometrics, International Trade & Globalization, Public Policy Economics, Financial Economics, Environmental & Resource Economics, Macroeconomic Strategy & Policy, Labor & Health Economics',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
                 'interest_field' => 'Mathematics & Statistics',
-                'skills' => 'Statistical Analysis, Calculus, Probability, Linear Algebra, Data Modeling, Quantitative Research, R/SAS Programming',
+                'skills' => 'Applied Mathematics, Data Science & Statistics, Actuarial Science, Financial Mathematics, Operations Research, Cryptography & Security, Mathematical Modeling, Quantitative Finance, Pure Mathematics',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
                 'interest_field' => 'Medicine & Health Sciences',
-                'skills' => 'Clinical Research, First Aid, Anatomy & Physiology, Patient Care, Medical Diagnostics, Health Administration, Public Health, Pharmacology',
+                'skills' => 'Medicine, Pharmacy, Nursing, Physiotherapy, Medical Laboratory Science, Public Health, Nutrition, Psychology',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
                 'interest_field' => 'Science',
-                'skills' => 'Scientific Research, Laboratory Techniques, Physics, Chemistry, Biology, Environmental Science, Genetics, Data Interpretation',
+                'skills' => 'Physics, Chemistry, Biology, Biotechnology, Environmental Science, Food Science, Nanotechnology, Astronomy',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
                 'interest_field' => 'Agriculture',
-                'skills' => 'Crop Cultivation, Soil Science, Agribusiness, Sustainable Farming, Pest Control, Irrigation Systems, Horticulture',
+                'skills' => 'Precision Agriculture / Smart Farming, Agribusiness Management, Food Technology & Safety, Horticulture, Sustainable Agriculture, Agricultural Engineering, Plant Biotechnology, Agri-informatics, Aquaculture & Fisheries, Climate-Smart Agriculture',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
                 'interest_field' => 'Law',
-                'skills' => 'Legal Research, Case Analysis, Contract Drafting, Corporate Law, Litigation, Public Speaking, Analytical Reasoning',
+                'skills' => 'Corporate & Commercial Law, Cyber Law & Digital Rights, Intellectual Property (IP) Law, International Law, Human Rights Law, Environmental & Climate Law, Criminal Law & Justice, Family Law, Space & Aviation Law, AI & Technology Law, Alternative Dispute Resolution (ADR)',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
                 'interest_field' => 'Education',
-                'skills' => 'Lesson Planning, Classroom Management, Curriculum Design, Educational Technology, Special Education, Tutoring, Assessment Methods',
+                'skills' => 'EdTech (Educational Technology), Early Childhood Education, Special Education & Inclusion, Curriculum & Instructional Design, Educational Leadership & Management, TESOL (Teaching English as a Second Language), STEM/STEAM Education, Adult & Continuing Education',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
                 'interest_field' => 'Social Sciences',
-                'skills' => 'Sociological Analysis, Research Methods, Qualitative Analysis, Anthropological Research, Policy Evaluation, Community Engagement',
+                'skills' => 'Psychology (Clinical & Behavioral), Sociology & Criminology, International Relations & Diplomacy, Political Science, Behavioral Economics, Anthropology, Gender Studies, Public Policy & Administration, Urban & Community Studies',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
                 'interest_field' => 'Arts & Humanities',
-                'skills' => 'Creative Writing, Graphic Design, History Analysis, Philosophy, Fine Arts, Cultural Studies, Photography',
+                'skills' => 'Digital Arts & Animation, Graphic Design, Performing Arts (Music/Dance/Drama), Fine Arts, Creative Writing, Film & Media Production, Game Art & Design, Fashion Design, Interior Design',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
                 'interest_field' => 'Architecture',
-                'skills' => '3D Modeling, Revit/AutoCAD, Architectural Design, Urban Planning, Building Materials, Interior Design, Sustainable Architecture',
+                'skills' => 'Sustainable & Green Architecture, Urban Design & Planning, Landscape Architecture, Interior Architecture, Parametric & Computational Design, Smart City Planning, Architectural Conservation, BIM (Building Information Modeling)',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
                 'interest_field' => 'Environmental Studies',
-                'skills' => 'Climate Change Analysis, GIS Mapping, Sustainability Planning, Conservation Biology, Waste Management, Environmental Impact Assessment',
+                'skills' => 'Climate Change & Adaptation Strategy, Sustainable Resource Management, Renewable Energy & Clean Tech, Environmental Policy & Governance, Biodiversity & Conservation Biology, Environmental Impact Assessment (EIA), Disaster Risk Reduction & Management, Urban Ecology & Sustainability, Circular Economy & Waste Management',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
                 'interest_field' => 'Hospitality & Tourism',
-                'skills' => 'Customer Service, Hotel Management, Event Planning, Tourism Operations, Food & Beverage Service, Tourism Marketing',
+                'skills' => 'Hotel & Resort Management, Sustainable Tourism / Ecotourism, Event & Experience Management, Culinary Arts & Management, Aviation & Cruise Management, Travel Tech & Digital Tourism, Luxury Brand Management, Food & Beverage Operations',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
                 'interest_field' => 'Media & Communication',
-                'skills' => 'Public Relations, Journalism, Video Editing, Broadcasting, Strategic Communication, Social Media, Scriptwriting',
+                'skills' => 'Digital Journalism & New Media, Strategic Communication & Public Relations (PR), Media Production & Broadcasting, Social Media Strategy & Content Creation, Film & Cinema Studies, Advertising & Brand Communication, Corporate & Organizational Communication, Media Analytics & Audience Research, Interactive Media & Game Journalism',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
                 'interest_field' => 'Psychology',
-                'skills' => 'Counseling Techniques, Cognitive Behavior, Behavioral Research, Psychological Assessment, Mental Health Support, Developmental Psychology',
+                'skills' => 'Counseling Psychology, Cognitive & Behavioral Neuroscience, Industrial & Organizational (I/O) Psychology, Educational & School Psychology, Child & Adolescent Psychology, Forensic & Criminal Psychology, Health & Sports Psychology, Media & Cyberpsychology, Social & Personality Psychology',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
         ]);
 
-        echo "All 19 academic interest fields seeded successfully into survey_interests_config!\n";
+        // Seed default teaching methods
+        DB::connection('analytics')->table('survey_teaching_methods')->delete();
+        DB::connection('analytics')->table('survey_teaching_methods')->insert([
+            ['method_name' => 'Practical Labs', 'created_at' => now(), 'updated_at' => now()],
+            ['method_name' => 'Workshops', 'created_at' => now(), 'updated_at' => now()],
+            ['method_name' => 'Group Projects', 'created_at' => now(), 'updated_at' => now()],
+            ['method_name' => 'Individual Projects', 'created_at' => now(), 'updated_at' => now()],
+            ['method_name' => 'Industry Training', 'created_at' => now(), 'updated_at' => now()],
+            ['method_name' => 'Research Projects', 'created_at' => now(), 'updated_at' => now()],
+            ['method_name' => 'Field Visits', 'created_at' => now(), 'updated_at' => now()],
+            ['method_name' => 'Guest Lectures', 'created_at' => now(), 'updated_at' => now()],
+            ['method_name' => 'Traditional Lectures', 'created_at' => now(), 'updated_at' => now()],
+            ['method_name' => 'Online Learning', 'created_at' => now(), 'updated_at' => now()],
+            ['method_name' => 'Competitions / Hackathons', 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
+        echo "All 19 academic interest fields and teaching methods seeded successfully!\n";
     }
 }

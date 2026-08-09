@@ -32,6 +32,9 @@ export const AIAnalytics: React.FC = () => {
 
     // Manage configurations states
     const [showManageConfigModal, setShowManageConfigModal] = useState(false);
+    const [manageTab, setManageTab] = useState<'interests' | 'methods'>('interests');
+    
+    // Academic fields states
     const [configs, setConfigs] = useState<any[]>([]);
     const [configsLoading, setConfigsLoading] = useState(false);
     const [isEditingConfig, setIsEditingConfig] = useState(false);
@@ -39,6 +42,15 @@ export const AIAnalytics: React.FC = () => {
         id: undefined as number | undefined,
         interest_field: '',
         skills: ''
+    });
+
+    // Teaching methods states
+    const [teachingMethodsList, setTeachingMethodsList] = useState<any[]>([]);
+    const [methodsLoading, setMethodsLoading] = useState(false);
+    const [isEditingMethod, setIsEditingMethod] = useState(false);
+    const [methodForm, setMethodForm] = useState({
+        id: undefined as number | undefined,
+        method_name: ''
     });
 
     const fetchConfigs = async () => {
@@ -53,11 +65,27 @@ export const AIAnalytics: React.FC = () => {
         }
     };
 
+    const fetchTeachingMethods = async () => {
+        setMethodsLoading(true);
+        try {
+            const data = await studentInterestService.getTeachingMethods();
+            setTeachingMethodsList(data);
+        } catch (err) {
+            console.error('Failed to load teaching methods:', err);
+        } finally {
+            setMethodsLoading(false);
+        }
+    };
+
     useEffect(() => {
         if (showManageConfigModal) {
-            fetchConfigs();
+            if (manageTab === 'interests') {
+                fetchConfigs();
+            } else {
+                fetchTeachingMethods();
+            }
         }
-    }, [showManageConfigModal]);
+    }, [showManageConfigModal, manageTab]);
 
     const handleSaveConfig = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -94,6 +122,38 @@ export const AIAnalytics: React.FC = () => {
             fetchConfigs();
         } catch (err: any) {
             alert('Failed to delete config: ' + (err.response?.data?.message || err.message));
+        }
+    };
+
+    const handleSaveMethod = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!methodForm.method_name.trim()) {
+            alert('Please enter a teaching method name.');
+            return;
+        }
+
+        try {
+            await studentInterestService.saveTeachingMethod({
+                id: methodForm.id,
+                method_name: methodForm.method_name.trim()
+            });
+            alert('Teaching method saved successfully.');
+            setIsEditingMethod(false);
+            setMethodForm({ id: undefined, method_name: '' });
+            fetchTeachingMethods();
+        } catch (err: any) {
+            alert('Failed to save teaching method: ' + (err.response?.data?.message || err.message));
+        }
+    };
+
+    const handleDeleteMethod = async (id: number) => {
+        if (!window.confirm('Are you sure you want to delete this teaching method?')) return;
+        try {
+            await studentInterestService.deleteTeachingMethod(id);
+            alert('Teaching method deleted successfully.');
+            fetchTeachingMethods();
+        } catch (err: any) {
+            alert('Failed to delete teaching method: ' + (err.response?.data?.message || err.message));
         }
     };
 
@@ -199,107 +259,225 @@ export const AIAnalytics: React.FC = () => {
             {/* Manage Forms Modal */}
             {showManageConfigModal && (
                 <div className="modal-backdrop" onClick={() => {
-                    if (!isEditingConfig) setShowManageConfigModal(false);
+                    if (!isEditingConfig && !isEditingMethod) setShowManageConfigModal(false);
                 }}>
                     <div className="modal-content-card" style={{ maxWidth: '750px', width: '90%' }} onClick={e => e.stopPropagation()}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px' }}>
-                            <h3 style={{ margin: 0 }}>Manage Form Categories</h3>
-                            {!isEditingConfig && (
+                            <h3 style={{ margin: 0 }}>
+                                {manageTab === 'interests' ? 'Manage Academic Fields' : 'Manage Teaching Methods'}
+                            </h3>
+                            {!isEditingConfig && !isEditingMethod && (
                                 <button className="btn btn-primary" style={{ padding: '6px 12px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }} onClick={() => {
-                                    setIsEditingConfig(true);
-                                    setConfigForm({ id: undefined, interest_field: '', skills: '' });
+                                    if (manageTab === 'interests') {
+                                        setIsEditingConfig(true);
+                                        setConfigForm({ id: undefined, interest_field: '', skills: '' });
+                                    } else {
+                                        setIsEditingMethod(true);
+                                        setMethodForm({ id: undefined, method_name: '' });
+                                    }
                                 }}>
-                                    <Plus size={14} /> Add Category
+                                    <Plus size={14} /> Add {manageTab === 'interests' ? 'Category' : 'Method'}
                                 </button>
                             )}
                         </div>
 
-                        {configsLoading ? (
-                            <div className="text-center py-6">Loading Form Configuration...</div>
-                        ) : isEditingConfig ? (
-                            <form onSubmit={handleSaveConfig} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                    <label style={{ fontSize: '13px', fontWeight: 600 }}>Academic Interest Area Name</label>
-                                    <input 
-                                        type="text" 
-                                        className="sync-modal-form-input" 
-                                        placeholder="e.g. Information Technology" 
-                                        value={configForm.interest_field}
-                                        onChange={e => setConfigForm(prev => ({ ...prev, interest_field: e.target.value }))}
-                                        required
-                                    />
-                                </div>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                    <label style={{ fontSize: '13px', fontWeight: 600 }}>Associated Skills (Comma-separated)</label>
-                                    <textarea 
-                                        rows={4}
-                                        className="sync-modal-form-input" 
-                                        style={{ height: 'auto', resize: 'vertical' }}
-                                        placeholder="e.g. React, Node.js, Python, CSS, HTML" 
-                                        value={configForm.skills}
-                                        onChange={e => setConfigForm(prev => ({ ...prev, skills: e.target.value }))}
-                                        required
-                                    />
-                                    <span style={{ fontSize: '11px', color: '#94a3b8' }}>Type skills separated by commas. These will display as selectable options on the student interest form.</span>
-                                </div>
-                                <div className="sync-modal-form-actions" style={{ marginTop: '12px' }}>
-                                    <button type="button" className="sync-modal-btn sync-modal-btn-secondary" onClick={() => setIsEditingConfig(false)}>
-                                        Back to List
-                                    </button>
-                                    <button type="submit" className="sync-modal-btn sync-modal-btn-primary">
-                                        Save Configuration
-                                    </button>
-                                </div>
-                            </form>
-                        ) : (
-                            <div style={{ maxHeight: '400px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', paddingRight: '8px' }}>
-                                {configs.length === 0 ? (
-                                    <div className="text-center py-6 text-slate-400">No configurations defined. Click "Add Category" to get started.</div>
-                                ) : (
-                                    configs.map(config => (
-                                        <div key={config.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '16px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', gap: '16px' }}>
-                                            <div style={{ flex: 1 }}>
-                                                <h4 style={{ margin: '0 0 8px 0', fontSize: '14px', fontWeight: 700, color: '#1E293B' }}>{config.interest_field}</h4>
-                                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                                                    {config.skills.map((skill: string) => (
-                                                        <span key={skill} style={{ fontSize: '11px', padding: '2px 8px', background: '#EDE9FE', color: '#7C3AED', borderRadius: '100px', fontWeight: 500 }}>
-                                                            {skill}
-                                                        </span>
-                                                    ))}
+                        {/* Tab Headers */}
+                        {!isEditingConfig && !isEditingMethod && (
+                            <div className="manage-tabs" style={{ display: 'flex', gap: '16px', borderBottom: '1px solid #e2e8f0', marginBottom: '20px' }}>
+                                <button 
+                                    className={`manage-tab-btn ${manageTab === 'interests' ? 'active' : ''}`}
+                                    style={{
+                                        padding: '10px 16px',
+                                        fontSize: '14px',
+                                        fontWeight: 600,
+                                        border: 'none',
+                                        borderBottom: manageTab === 'interests' ? '2.5px solid #7c3aed' : '2.5px solid transparent',
+                                        backgroundColor: 'transparent',
+                                        color: manageTab === 'interests' ? '#7c3aed' : '#64748b',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s'
+                                    }}
+                                    onClick={() => setManageTab('interests')}
+                                >
+                                    Interest Areas & Skills
+                                </button>
+                                <button 
+                                    className={`manage-tab-btn ${manageTab === 'methods' ? 'active' : ''}`}
+                                    style={{
+                                        padding: '10px 16px',
+                                        fontSize: '14px',
+                                        fontWeight: 600,
+                                        border: 'none',
+                                        borderBottom: manageTab === 'methods' ? '2.5px solid #7c3aed' : '2.5px solid transparent',
+                                        backgroundColor: 'transparent',
+                                        color: manageTab === 'methods' ? '#7c3aed' : '#64748b',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s'
+                                    }}
+                                    onClick={() => setManageTab('methods')}
+                                >
+                                    Suggested Teaching Methods
+                                </button>
+                            </div>
+                        )}
+
+                        {/* TAB 1: ACADEMIC FIELDS & SKILLS */}
+                        {manageTab === 'interests' && (
+                            configsLoading ? (
+                                <div className="text-center py-6">Loading Form Configuration...</div>
+                            ) : isEditingConfig ? (
+                                <form onSubmit={handleSaveConfig} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                        <label style={{ fontSize: '13px', fontWeight: 600 }}>Academic Interest Area Name</label>
+                                        <input 
+                                            type="text" 
+                                            className="sync-modal-form-input" 
+                                            placeholder="e.g. Information Technology" 
+                                            value={configForm.interest_field}
+                                            onChange={e => setConfigForm(prev => ({ ...prev, interest_field: e.target.value }))}
+                                            required
+                                        />
+                                    </div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                        <label style={{ fontSize: '13px', fontWeight: 600 }}>Associated Skills (Comma-separated)</label>
+                                        <textarea 
+                                            rows={4}
+                                            className="sync-modal-form-input" 
+                                            style={{ height: 'auto', resize: 'vertical' }}
+                                            placeholder="e.g. React, Node.js, Python, CSS, HTML" 
+                                            value={configForm.skills}
+                                            onChange={e => setConfigForm(prev => ({ ...prev, skills: e.target.value }))}
+                                            required
+                                        />
+                                        <span style={{ fontSize: '11px', color: '#94a3b8' }}>Type skills separated by commas. These will display as selectable options on the student interest form.</span>
+                                    </div>
+                                    <div className="sync-modal-form-actions" style={{ marginTop: '12px' }}>
+                                        <button type="button" className="sync-modal-btn sync-modal-btn-secondary" onClick={() => setIsEditingConfig(false)}>
+                                            Back to List
+                                        </button>
+                                        <button type="submit" className="sync-modal-btn sync-modal-btn-primary">
+                                            Save Configuration
+                                        </button>
+                                    </div>
+                                </form>
+                            ) : (
+                                <div style={{ maxHeight: '400px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', paddingRight: '8px' }}>
+                                    {configs.length === 0 ? (
+                                        <div className="text-center py-6 text-slate-400">No configurations defined. Click "Add Category" to get started.</div>
+                                    ) : (
+                                        configs.map(config => (
+                                            <div key={config.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '16px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', gap: '16px' }}>
+                                                <div style={{ flex: 1 }}>
+                                                    <h4 style={{ margin: '0 0 8px 0', fontSize: '14px', fontWeight: 700, color: '#1E293B' }}>{config.interest_field}</h4>
+                                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                                        {config.skills.map((skill: string) => (
+                                                            <span key={skill} style={{ fontSize: '11px', padding: '2px 8px', background: '#EDE9FE', color: '#7C3AED', borderRadius: '100px', fontWeight: 500 }}>
+                                                                {skill}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                                <div style={{ display: 'flex', gap: '8px' }}>
+                                                    <button 
+                                                        className="btn btn-secondary" 
+                                                        style={{ padding: '6px 10px', fontSize: '12px', background: '#FFF' }}
+                                                        onClick={() => {
+                                                            setIsEditingConfig(true);
+                                                            setConfigForm({
+                                                                id: config.id,
+                                                                interest_field: config.interest_field,
+                                                                skills: config.skills.join(', ')
+                                                            });
+                                                        }}
+                                                    >
+                                                        Edit
+                                                    </button>
+                                                    <button 
+                                                        className="btn" 
+                                                        style={{ padding: '6px 10px', fontSize: '12px', color: '#EF4444', backgroundColor: '#FEE2E2', border: '1px solid rgba(239, 68, 68, 0.2)' }}
+                                                        onClick={() => handleDeleteConfig(config.id)}
+                                                    >
+                                                        Delete
+                                                    </button>
                                                 </div>
                                             </div>
-                                            <div style={{ display: 'flex', gap: '8px' }}>
-                                                <button 
-                                                    className="btn btn-secondary" 
-                                                    style={{ padding: '6px 10px', fontSize: '12px', background: '#FFF' }}
-                                                    onClick={() => {
-                                                        setIsEditingConfig(true);
-                                                        setConfigForm({
-                                                            id: config.id,
-                                                            interest_field: config.interest_field,
-                                                            skills: config.skills.join(', ')
-                                                        });
-                                                    }}
-                                                >
-                                                    Edit
-                                                </button>
-                                                <button 
-                                                    className="btn" 
-                                                    style={{ padding: '6px 10px', fontSize: '12px', color: '#EF4444', backgroundColor: '#FEE2E2', border: '1px solid rgba(239, 68, 68, 0.2)' }}
-                                                    onClick={() => handleDeleteConfig(config.id)}
-                                                >
-                                                    Delete
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ))
-                                )}
-                                <div className="sync-modal-form-actions" style={{ borderTop: '1px solid #e2e8f0', paddingTop: '12px', marginTop: '12px' }}>
-                                    <button type="button" className="sync-modal-btn sync-modal-btn-secondary" onClick={() => setShowManageConfigModal(false)}>
-                                        Close Management Panel
-                                    </button>
+                                        ))
+                                    )}
+                                    <div className="sync-modal-form-actions" style={{ borderTop: '1px solid #e2e8f0', paddingTop: '12px', marginTop: '12px' }}>
+                                        <button type="button" className="sync-modal-btn sync-modal-btn-secondary" onClick={() => setShowManageConfigModal(false)}>
+                                            Close Management Panel
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
+                            )
+                        )}
+
+                        {/* TAB 2: TEACHING METHODS */}
+                        {manageTab === 'methods' && (
+                            methodsLoading ? (
+                                <div className="text-center py-6">Loading Teaching Methods...</div>
+                            ) : isEditingMethod ? (
+                                <form onSubmit={handleSaveMethod} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                        <label style={{ fontSize: '13px', fontWeight: 600 }}>Teaching Method Name</label>
+                                        <input 
+                                            type="text" 
+                                            className="sync-modal-form-input" 
+                                            placeholder="e.g. Practical Labs" 
+                                            value={methodForm.method_name}
+                                            onChange={e => setMethodForm(prev => ({ ...prev, method_name: e.target.value }))}
+                                            required
+                                        />
+                                    </div>
+                                    <div className="sync-modal-form-actions" style={{ marginTop: '12px' }}>
+                                        <button type="button" className="sync-modal-btn sync-modal-btn-secondary" onClick={() => setIsEditingMethod(false)}>
+                                            Back to List
+                                        </button>
+                                        <button type="submit" className="sync-modal-btn sync-modal-btn-primary">
+                                            Save Method
+                                        </button>
+                                    </div>
+                                </form>
+                            ) : (
+                                <div style={{ maxHeight: '400px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', paddingRight: '8px' }}>
+                                    {teachingMethodsList.length === 0 ? (
+                                        <div className="text-center py-6 text-slate-400">No teaching methods defined. Click "Add Method" to get started.</div>
+                                    ) : (
+                                        teachingMethodsList.map(method => (
+                                            <div key={method.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', gap: '16px' }}>
+                                                <span style={{ fontSize: '14px', fontWeight: 600, color: '#1E293B' }}>{method.method_name}</span>
+                                                <div style={{ display: 'flex', gap: '8px' }}>
+                                                    <button 
+                                                        className="btn btn-secondary" 
+                                                        style={{ padding: '6px 10px', fontSize: '12px', background: '#FFF' }}
+                                                        onClick={() => {
+                                                            setIsEditingMethod(true);
+                                                            setMethodForm({
+                                                                id: method.id,
+                                                                method_name: method.method_name
+                                                            });
+                                                        }}
+                                                    >
+                                                        Edit
+                                                    </button>
+                                                    <button 
+                                                        className="btn" 
+                                                        style={{ padding: '6px 10px', fontSize: '12px', color: '#EF4444', backgroundColor: '#FEE2E2', border: '1px solid rgba(239, 68, 68, 0.2)' }}
+                                                        onClick={() => handleDeleteMethod(method.id)}
+                                                    >
+                                                        Delete
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                    <div className="sync-modal-form-actions" style={{ borderTop: '1px solid #e2e8f0', paddingTop: '12px', marginTop: '12px' }}>
+                                        <button type="button" className="sync-modal-btn sync-modal-btn-secondary" onClick={() => setShowManageConfigModal(false)}>
+                                            Close Management Panel
+                                        </button>
+                                    </div>
+                                </div>
+                            )
                         )}
                     </div>
                 </div>
