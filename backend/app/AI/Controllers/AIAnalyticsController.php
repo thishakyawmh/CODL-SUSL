@@ -20,7 +20,7 @@ class AIAnalyticsController extends Controller
      */
     public function getPrograms()
     {
-        $courses = Course::all()->map(function($c) {
+        $courses = Course::withCount('batches')->get()->map(function($c) {
             return [
                 'id' => $c->id,
                 'title' => $c->title,
@@ -29,9 +29,11 @@ class AIAnalyticsController extends Controller
                 'department' => $c->department,
                 'duration' => $c->duration,
                 'max_students' => $c->max_students,
+                'created_at' => $c->created_at ? $c->created_at->format('M j, Y') : null,
+                'batches_count' => $c->batches_count,
             ];
         });
-        return response()->json($courses);
+        return response()->json($courses); 
     }
 
     private function getCacheForCourse($courseId)
@@ -50,6 +52,11 @@ class AIAnalyticsController extends Controller
         return response()->json([
             'kpis' => $cache->kpis,
             'last_generated' => $cache->generated_at->format('M j, Y - g:i A'),
+            'coverage_percent' => $cache->kpis['coverage_percent'] ?? 0,
+            'missing_subjects' => $cache->kpis['missing_subjects'] ?? [],
+            'outdated_subjects' => $cache->kpis['outdated_subjects'] ?? [],
+            'low_demand_subjects' => $cache->kpis['low_demand_subjects'] ?? [],
+            'learning_preferences_data' => $cache->kpis['learning_preferences_data'] ?? null,
         ]);
     }
 
@@ -86,7 +93,12 @@ class AIAnalyticsController extends Controller
 
         return response()->json([
             'missing_skills' => $cache->skill_gaps,
-            'jaccard_similarity' => $cache->jaccard_similarity_results
+            'jaccard_similarity' => $cache->jaccard_similarity_results,
+            'coverage_percent' => $cache->kpis['coverage_percent'] ?? 0,
+            'missing_subjects' => $cache->kpis['missing_subjects'] ?? [],
+            'outdated_subjects' => $cache->kpis['outdated_subjects'] ?? [],
+            'low_demand_subjects' => $cache->kpis['low_demand_subjects'] ?? [],
+            'learning_preferences_data' => $cache->kpis['learning_preferences_data'] ?? null,
         ]);
     }
 
@@ -173,10 +185,14 @@ class AIAnalyticsController extends Controller
     /**
      * Sync data from Google Sheets CSV.
      */
-    public function syncGoogleSheet(Request $request, \App\Services\AnalyticsNLPService $nlpService, \App\Services\RecommendationEngineService $recommendationEngine)
+    public function syncGoogleSheet(Request $request, AnalyticsNLPService $nlpService, RecommendationEngineService $recommendationEngine)
     {
         $startTime = microtime(true);
         
+        if (!$request->has('sheet_url') && $request->has('url')) {
+            $request->merge(['sheet_url' => $request->input('url')]);
+        }
+
         $request->validate([
             'type' => 'required|in:student,industry',
             'sheet_url' => 'required|url'
@@ -187,7 +203,9 @@ class AIAnalyticsController extends Controller
 
         // 1. URL Rewriting
         // Convert /edit#gid=X or /edit?usp=sharing to /export?format=csv&gid=X
-        if (preg_match('/\/d\/([a-zA-Z0-9-_]+)/', $url, $matches)) {
+        if (str_contains($url, 'format=csv') || str_contains($url, 'output=csv')) {
+            $csvUrl = $url;
+        } elseif (preg_match('/\/d\/([a-zA-Z0-9-_]+)/', $url, $matches)) {
             $spreadsheetId = $matches[1];
             $gid = 0;
             if (preg_match('/gid=([0-9]+)/', $url, $gidMatches)) {
@@ -216,23 +234,25 @@ class AIAnalyticsController extends Controller
         }
 
         $headers = str_getcsv(array_shift($lines));
-        $headers = array_map('trim', $headers);
+        $headers = array_map(function($h) {
+            return trim(preg_replace('/\s+/', ' ', $h));
+        }, $headers);
 
         // 4. Configurable Mapping Dictionary
         $studentHeaderMap = [
             'Timestamp' => 'survey_submitted_at',
             'Current Education Level' => 'education_level',
             'Province' => 'province',
-            'District' => 'district',
-            'Which academic field(s) are you interested in studying at university?' => 'primary_field',
-            'Secondary field of interest' => 'secondary_field',
-            'Third field of interest' => 'third_field',
-            'Specializations you want to pursue' => 'specializations',
-            'Preferred learning methods' => 'learning_preferences',
-            'Theory vs Practical (1-100)' => 'theory_practical_score',
-            'Desired university opportunities' => 'university_opportunities',
-            'Emerging fields to introduce' => 'emerging_fields',
-            'New program suggestions' => 'new_program_suggestion',
+            'Student District' => 'district',
+            'Which academic field is your primary interest for university study?' => 'primary_field',
+            'Which academic field is your Secondary interest for university study?' => 'secondary_field',
+            'Which academic field is your Third interest for university study?' => 'third_field',
+            'Specializations' => 'specializations',
+            'Teaching Methods' => 'learning_preferences',
+            'Theory vs Practical' => 'theory_practical_score',
+            'Which university opportunities are most important to you?' => 'university_opportunities',
+            'Which emerging fields do you think universities should introduce or expand?' => 'emerging_fields',
+            'If you could introduce ONE new degree program or specialization, what would it be?' => 'new_program_suggestion',
         ];
 
         $industryHeaderMap = [
@@ -308,9 +328,9 @@ class AIAnalyticsController extends Controller
             DB::connection('analytics')->transaction(function () use ($lines, $mappedIndexes, $type, &$rowsImported, &$rowsIgnored) {
                 
                 if ($type === 'student') {
-                    StudentInterest::truncate();
+                    StudentInterest::query()->delete();
                 } else {
-                    IndustryRequirement::truncate();
+                    IndustryRequirement::query()->delete();
                 }
 
                 $insertData = [];
@@ -327,7 +347,15 @@ class AIAnalyticsController extends Controller
 
                     $record = [];
                     foreach ($mappedIndexes as $dbColumn => $index) {
-                        $record[$dbColumn] = $row[$index] ?? null;
+                        $val = $row[$index] ?? null;
+                        if ($dbColumn === 'survey_submitted_at' && $val) {
+                            try {
+                                $val = \Carbon\Carbon::parse($val)->toDateTimeString();
+                            } catch (\Exception $e) {
+                                $val = null;
+                            }
+                        }
+                        $record[$dbColumn] = $val;
                     }
                     
                     $record['created_at'] = now();
@@ -357,6 +385,13 @@ class AIAnalyticsController extends Controller
                 $analytics = $nlpService->processAll($course);
                 $recommendations = $recommendationEngine->generateRecommendations($analytics);
 
+                $kpis = $analytics['kpis'] ?? [];
+                $kpis['coverage_percent'] = $analytics['coverage_percent'] ?? 0;
+                $kpis['missing_subjects'] = $analytics['missing_subjects'] ?? [];
+                $kpis['outdated_subjects'] = $analytics['outdated_subjects'] ?? [];
+                $kpis['low_demand_subjects'] = $analytics['low_demand_subjects'] ?? [];
+                $kpis['learning_preferences_data'] = $analytics['learning_preferences_data'] ?? null;
+
                 \App\AI\Models\AnalyticsCache::updateOrCreate(
                     ['scope_type' => 'program', 'scope_id' => $course->id],
                     [
@@ -366,7 +401,7 @@ class AIAnalyticsController extends Controller
                         'emerging_technologies' => $analytics['emerging_technologies'] ?? [],
                         'skill_gaps' => $analytics['skill_gaps'] ?? [],
                         'jaccard_similarity_results' => $analytics['jaccard_similarity_results'] ?? [],
-                        'kpis' => $analytics['kpis'] ?? [],
+                        'kpis' => $kpis,
                         'generated_recommendations' => $recommendations,
                         'generated_at' => now(),
                     ]

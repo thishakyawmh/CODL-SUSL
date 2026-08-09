@@ -14,6 +14,8 @@ import { ExamApplicationForm } from './components/student-portal/ExamApplication
 import { ExamApplicationSuccess } from './components/student-portal/ExamApplicationSuccess';
 import { CourseAnnouncements } from './components/student-portal/CourseAnnouncements';
 import { LoginPortal } from './components/auth/LoginPortal';
+import { ForgotPassword } from './components/auth/ForgotPassword';
+import { ResetPassword } from './components/auth/ResetPassword';
 import { Profile } from './components/student-portal/Profile';
 import { LetterRequest } from './components/student-portal/LetterRequest';
 import { Settings } from './components/student-portal/Settings';
@@ -160,6 +162,8 @@ function App() {
 
         <Route path="/login" element={<LoginPortal />} />
         <Route path="/staff/login" element={<AdminLogin />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
 
         {/* Applicant Dashboard Routes */}
         <Route

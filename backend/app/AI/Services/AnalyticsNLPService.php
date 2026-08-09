@@ -28,6 +28,16 @@ class AnalyticsNLPService
         if ($course) {
             $courseText = $course->title . ' ' . $course->department . ' ' . $course->code;
             $courseDomains = $this->extractDomains($courseText);
+            
+            // Load semesters & subjects to extract domains from curriculum subjects
+            $course->load('semesters.subjects');
+            foreach ($course->semesters as $semester) {
+                foreach ($semester->subjects as $subject) {
+                    $courseDomains = array_merge($courseDomains, $this->extractDomains($subject->name));
+                }
+            }
+            $courseDomains = $this->deduplicateDomains($courseDomains);
+
             // Default to broad matching if course text is too vague
             if (empty($courseDomains)) {
                 $courseDomains = [$course->department];
@@ -53,6 +63,12 @@ class AnalyticsNLPService
         $emergingTechnologies = [];
         $skillGapsList = [];
 
+        // Learning preferences containers
+        $theoryPracticalScores = [];
+        $learningPreferences = [];
+        $academicPractices = [];
+        $certImportances = [];
+
         // 1. Process Student Surveys
         foreach ($studentSurveys as $survey) {
             $text = $survey->primary_field . ' ' . $survey->specializations . ' ' . $survey->emerging_fields;
@@ -63,6 +79,19 @@ class AnalyticsNLPService
             // Also collect raw emerging fields for the tag cloud
             if ($survey->emerging_fields) {
                 $emergingTechnologies[] = $survey->emerging_fields;
+            }
+
+            // Extract theory practical score
+            if (isset($survey->theory_practical_score)) {
+                $theoryPracticalScores[] = $survey->theory_practical_score;
+            }
+
+            // Extract learning preferences
+            if ($survey->learning_preferences) {
+                $prefs = array_map('trim', explode(',', $survey->learning_preferences));
+                foreach ($prefs as $p) {
+                    if ($p) $learningPreferences[] = $p;
+                }
             }
         }
 
@@ -78,6 +107,19 @@ class AnalyticsNLPService
             }
             if ($survey->graduate_skill_gaps) {
                 $skillGapsList = array_merge($skillGapsList, $this->extractDomains($survey->graduate_skill_gaps));
+            }
+
+            // Extract academic practices
+            if ($survey->academic_practices) {
+                $practices = array_map('trim', explode(',', $survey->academic_practices));
+                foreach ($practices as $p) {
+                    if ($p) $academicPractices[] = $p;
+                }
+            }
+
+            // Extract certification importance
+            if (isset($survey->certification_importance)) {
+                $certImportances[] = $survey->certification_importance;
             }
         }
 
@@ -99,6 +141,119 @@ class AnalyticsNLPService
         $skillGapsCounts = array_count_values($skillGapsList);
         arsort($skillGapsCounts);
 
+        // 7. Process Learning Preferences Aggregates
+        $avgTheoryPractical = count($theoryPracticalScores) > 0 ? array_sum($theoryPracticalScores) / count($theoryPracticalScores) : 3.0;
+        $studentPracticalPercent = round(($avgTheoryPractical / 5) * 100);
+        $studentTheoryPercent = 100 - $studentPracticalPercent;
+
+        $studentPrefsCounts = array_count_values($learningPreferences);
+        arsort($studentPrefsCounts);
+        $studentPrefsFormatted = [];
+        $totalPrefs = array_sum($studentPrefsCounts) ?: 1;
+        foreach (array_slice($studentPrefsCounts, 0, 5) as $name => $count) {
+            $studentPrefsFormatted[] = ['name' => $name, 'value' => round(($count / $totalPrefs) * 100)];
+        }
+
+        $industryPracticesCounts = array_count_values($academicPractices);
+        arsort($industryPracticesCounts);
+        $industryPracticesFormatted = [];
+        $totalPractices = array_sum($industryPracticesCounts) ?: 1;
+        foreach (array_slice($industryPracticesCounts, 0, 5) as $name => $count) {
+            $industryPracticesFormatted[] = ['name' => $name, 'value' => round(($count / $totalPractices) * 100)];
+        }
+
+        $avgCertImportance = count($certImportances) > 0 ? array_sum($certImportances) / count($certImportances) : 3.0;
+        $certImportancePercent = round(($avgCertImportance / 5) * 100);
+
+        // 8. Dynamic Curriculum Coverage & Gaps Analysis
+        $curriculumDomains = [];
+        $curriculumSubjects = [];
+        $coveragePercent = 0;
+        $missingSubjects = [];
+        $outdatedSubjects = [];
+        $lowDemandSubjects = [];
+
+        if ($course) {
+            $course->load('semesters.subjects');
+            foreach ($course->semesters as $semester) {
+                foreach ($semester->subjects as $subject) {
+                    $curriculumSubjects[] = [
+                        'id' => $subject->id,
+                        'code' => $subject->code,
+                        'name' => $subject->name,
+                        'credits' => $subject->credits
+                    ];
+                    $subjectDomains = $this->extractDomains($subject->name);
+                    $curriculumDomains = array_merge($curriculumDomains, $subjectDomains);
+                }
+            }
+            $curriculumDomains = $this->deduplicateDomains($curriculumDomains);
+
+            // Calculate Jaccard / Coverage against survey domains
+            $targetDomains = array_unique(array_merge(array_keys($studentFrequencies), array_keys($industryFrequencies)));
+            if (count($targetDomains) > 0) {
+                $coveredDomains = array_intersect($curriculumDomains, $targetDomains);
+                $coveragePercent = round((count($coveredDomains) / count($targetDomains)) * 100);
+            } else {
+                $coveragePercent = count($curriculumSubjects) > 0 ? 100 : 0;
+            }
+
+            // Identify Missing Subjects: High-demand domains not present in the curriculum
+            $totalResponses = $studentSurveys->count() + $industrySurveys->count();
+            $highDemandDomains = [];
+            foreach ($studentFrequencies as $domain => $count) {
+                if ($totalResponses > 0 && ($count / $totalResponses) >= 0.15) {
+                    $highDemandDomains[] = $domain;
+                }
+            }
+            foreach ($industryFrequencies as $domain => $count) {
+                if ($totalResponses > 0 && ($count / $totalResponses) >= 0.15) {
+                    $highDemandDomains[] = $domain;
+                }
+            }
+            $highDemandDomains = array_unique($highDemandDomains);
+            $missingSubjects = array_values(array_diff($highDemandDomains, $curriculumDomains));
+
+            // Identify Outdated Subjects (Legacy Tech) & Low-Demand Subjects
+            $legacyKeywords = ['visual basic', 'flash', 'silverlight', 'cobol', 'dreamweaver', 'pascal', 'fortran'];
+            foreach ($curriculumSubjects as $subject) {
+                $subLower = strtolower($subject['name']);
+                $isLegacy = false;
+                foreach ($legacyKeywords as $kw) {
+                    if (str_contains($subLower, $kw)) {
+                        $isLegacy = true;
+                        break;
+                    }
+                }
+
+                $subDomains = $this->extractDomains($subject['name']);
+                $isLowDemand = false;
+                if (!empty($subDomains)) {
+                    $combinedDemand = 0;
+                    foreach ($subDomains as $sd) {
+                        $combinedDemand += ($studentFrequencies[$sd] ?? 0) + ($industryFrequencies[$sd] ?? 0);
+                    }
+                    if ($totalResponses > 0 && ($combinedDemand / $totalResponses) < 0.05) {
+                        $isLowDemand = true;
+                    }
+                }
+
+                if ($isLegacy) {
+                    $outdatedSubjects[] = [
+                        'code' => $subject['code'],
+                        'name' => $subject['name'],
+                        'reason' => 'Legacy technology detected.'
+                    ];
+                } elseif ($isLowDemand && count($curriculumSubjects) > 3) {
+                    $lowDemandSubjects[] = [
+                        'code' => $subject['code'],
+                        'name' => $subject['name'],
+                        'reason' => 'Low survey interest (<5%).'
+                    ];
+                }
+            }
+        }
+
         return [
             'student_demand_distribution' => $studentDistribution,
             'industry_demand_distribution' => $industryDistribution,
@@ -109,13 +264,29 @@ class AnalyticsNLPService
             'emerging_technologies' => array_keys(array_slice($emergingTechnologiesCounts, 0, 10)),
             'skill_gaps' => array_keys(array_slice($skillGapsCounts, 0, 5)),
             'jaccard_similarity_results' => $jaccardResults,
+            
+            // Newly introduced dynamic curriculum metrics
+            'coverage_percent' => $coveragePercent,
+            'missing_subjects' => $missingSubjects,
+            'outdated_subjects' => $outdatedSubjects,
+            'low_demand_subjects' => $lowDemandSubjects,
+            
+            // Teaching & learning preferences metrics
+            'learning_preferences_data' => [
+                'student_theory_percent' => $studentTheoryPercent,
+                'student_practical_percent' => $studentPracticalPercent,
+                'student_methods' => $studentPrefsFormatted,
+                'industry_practices' => $industryPracticesFormatted,
+                'certification_importance' => $certImportancePercent
+            ],
+
             'kpis' => [
                 'studentMatch' => $jaccardResults['overall_score'] ?? 0,
                 'industryMatch' => $jaccardResults['overall_score'] ?? 0,
-                'alignment' => $jaccardResults['overall_score'] ?? 0,
+                'alignment' => $coveragePercent, // Align alignment score to actual coverage percentage!
                 'surveys' => $studentSurveys->count() + $industrySurveys->count(),
                 'companies' => IndustryRequirement::distinct('company_name')->count(),
-                'courses' => \App\Models\Course::count(), // Fast count from main DB
+                'courses' => \App\Models\Course::count(),
             ]
         ];
     }
