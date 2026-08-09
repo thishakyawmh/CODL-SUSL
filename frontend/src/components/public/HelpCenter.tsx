@@ -260,10 +260,12 @@ export const HelpCenter: React.FC = () => {
                             <option value="si">සිංහල</option>
                         </select>
                     </div>
-                    {/* Always display standard navigation actions in the header */}
-                    <Link to="/login" className="hc-back-btn">
-                        <ArrowLeft size={16} /> {branding.backLabel}
-                    </Link>
+                    {/* Always display standard navigation actions in the header, but hide Back to Login on guide detail pages */}
+                    {!currentGuide && (
+                        <Link to="/login" className="hc-back-btn">
+                            <ArrowLeft size={16} /> {branding.backLabel}
+                        </Link>
+                    )}
                 </div>
             </div>
 
