@@ -56,6 +56,7 @@ export const UserManagement: React.FC = () => {
         { key: 'secretary', label: 'Course Secretary', plural: 'Course Secretaries', color: '#0891B2' },
         { key: 'lecturer', label: 'Lecturer', plural: 'Lecturers', color: '#4F46E5' },
         { key: 'student', label: 'Student', plural: 'Students', color: '#059669' },
+        { key: 'applicant', label: 'Applicant', plural: 'Applicants', color: '#EA580C' },
     ];
 
     useEffect(() => {
@@ -118,6 +119,8 @@ export const UserManagement: React.FC = () => {
                 return `CODL/LC${nextNum}`;
             case 'student':
                 return `${yearDigits}CODL${nextNum}`;
+            case 'applicant':
+                return `CODL/AP${nextNum}`;
             default:
                 return `CODL/UN${nextNum}`; // Unknown
         }
@@ -395,7 +398,7 @@ export const UserManagement: React.FC = () => {
                                         <td className="um-last-login">
                                             {new Date(user.lastLogin).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                                         </td>
-                                        <td style={{ position: 'relative' }}>
+                                        <td style={{ position: 'relative', zIndex: openMenuId === user.id ? 50 : undefined }}>
                                             <div className="um-actions">
                                                 <button className="um-action-btn" title="View Details" onClick={() => { setSelectedUser(user); setShowDetailModal(true); }}>
                                                     <Eye size={15} />
@@ -636,7 +639,6 @@ export const UserManagement: React.FC = () => {
                                                 value={editFormData.phone}
                                                 onChange={handleEditChange}
                                                 className="admin-input"
-                                                required
                                             />
                                         </div>
                                         <div className="um-detail-item edit-field">
@@ -647,7 +649,6 @@ export const UserManagement: React.FC = () => {
                                                 value={editFormData.nic}
                                                 onChange={handleEditChange}
                                                 className="admin-input"
-                                                required
                                             />
                                         </div>
                                     </div>
@@ -681,11 +682,11 @@ export const UserManagement: React.FC = () => {
                                         </div>
                                         <div className="um-detail-item">
                                             <span className="um-dl"><Phone size={14} /> Phone</span>
-                                            <span className="um-dv">{selectedUser.phone}</span>
+                                            <span className="um-dv">{selectedUser.phone || <span className="um-not-provided">Not Provided</span>}</span>
                                         </div>
                                         <div className="um-detail-item">
                                             <span className="um-dl"><Shield size={14} /> NIC</span>
-                                            <span className="um-dv">{selectedUser.nic}</span>
+                                            <span className="um-dv">{selectedUser.nic || <span className="um-not-provided">Not Provided</span>}</span>
                                         </div>
                                         <div className="um-detail-item">
                                             <span className="um-dl"><Calendar size={14} /> Joined</span>
@@ -707,30 +708,6 @@ export const UserManagement: React.FC = () => {
                                                         <span>{course}</span>
                                                     </div>
                                                 ))}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {selectedUser.role === 'student' && (
-                                        <div className="um-performance-summary">
-                                            <h4>Performance Summary</h4>
-                                            <div className="um-perf-grid">
-                                                <div className="um-perf-card">
-                                                    <span className="um-perf-val">3.42</span>
-                                                    <span className="um-perf-label">Current GPA</span>
-                                                </div>
-                                                <div className="um-perf-card">
-                                                    <span className="um-perf-val">28</span>
-                                                    <span className="um-perf-label">Credits Earned</span>
-                                                </div>
-                                                <div className="um-perf-card">
-                                                    <span className="um-perf-val">92%</span>
-                                                    <span className="um-perf-label">Attendance</span>
-                                                </div>
-                                                <div className="um-perf-card">
-                                                    <span className="um-perf-val">0</span>
-                                                    <span className="um-perf-label">Warnings</span>
-                                                </div>
                                             </div>
                                         </div>
                                     )}
