@@ -38,6 +38,9 @@ class StudentInterestController extends Controller
             'third_skills' => 'nullable|string',
             'third_teaching_methods' => 'nullable|string',
             'third_theory_practical' => 'nullable|integer|min:1|max:5',
+
+            // Global questions
+            'university_opportunities' => 'nullable|string',
         ]);
 
         try {
@@ -224,6 +227,78 @@ class StudentInterestController extends Controller
             ]);
         } catch (\Exception $e) {
             Log::error('Failed to delete teaching method config: ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Get active university opportunities configuration.
+     */
+    public function getUniversityOpportunities()
+    {
+        try {
+            $opportunities = DB::connection('analytics')->table('survey_university_opportunities')->get();
+            return response()->json($opportunities);
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve university opportunities: ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Create or update a university opportunity configuration (Admin).
+     */
+    public function storeUniversityOpportunity(Request $request)
+    {
+        $validated = $request->validate([
+            'id' => 'nullable|integer',
+            'opportunity_name' => 'required|string',
+        ]);
+
+        try {
+            if (!empty($validated['id'])) {
+                DB::connection('analytics')->table('survey_university_opportunities')
+                    ->where('id', $validated['id'])
+                    ->update([
+                        'opportunity_name' => $validated['opportunity_name'],
+                        'updated_at' => now()
+                    ]);
+                $id = $validated['id'];
+            } else {
+                $id = DB::connection('analytics')->table('survey_university_opportunities')->insertGetId([
+                    'opportunity_name' => $validated['opportunity_name'],
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'id' => $id,
+                'message' => 'University opportunity configuration saved successfully.'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to save university opportunity config: ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Delete a university opportunity configuration (Admin).
+     */
+    public function deleteUniversityOpportunity($id)
+    {
+        try {
+            DB::connection('analytics')->table('survey_university_opportunities')
+                ->where('id', $id)
+                ->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'University opportunity configuration deleted successfully.'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to delete university opportunity config: ' . $e->getMessage());
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }

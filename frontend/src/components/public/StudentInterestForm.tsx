@@ -143,6 +143,22 @@ export const StudentInterestForm: React.FC = () => {
 
     const [teachingMethods, setTeachingMethods] = useState<string[]>(DEFAULT_TEACHING_METHODS);
 
+    const DEFAULT_UNIVERSITY_OPPORTUNITIES = [
+        'Professional Certifications',
+        'Industry Internships',
+        'Research Opportunities',
+        'Startup Support',
+        'Career Guidance',
+        'International Exchange',
+        'Scholarships',
+        'Modern Laboratories',
+        'Innovation Centres',
+        'Industry Projects'
+    ];
+
+    const [universityOpportunities, setUniversityOpportunities] = useState<string[]>(DEFAULT_UNIVERSITY_OPPORTUNITIES);
+    const [selectedOpportunities, setSelectedOpportunities] = useState<string[]>([]);
+
     // State for configs loaded from admin backend
     const [interestConfig, setInterestConfig] = useState<InterestConfig[]>(DEFAULT_FALLBACK_CONFIG);
 
@@ -206,8 +222,20 @@ export const StudentInterestForm: React.FC = () => {
             }
         };
 
+        const loadOpportunities = async () => {
+            try {
+                const data = await studentInterestService.getUniversityOpportunities();
+                if (data && data.length > 0) {
+                    setUniversityOpportunities(data.map((o: any) => o.opportunity_name));
+                }
+            } catch (err) {
+                console.error('Failed to load university opportunities:', err);
+            }
+        };
+
         loadConfig();
         loadTeachingMethods();
+        loadOpportunities();
     }, []);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -283,6 +311,17 @@ export const StudentInterestForm: React.FC = () => {
             current.push(method);
         }
         set({ ...state, teaching_methods: current });
+    };
+
+    const handleOpportunityToggle = (opportunity: string) => {
+        const current = [...selectedOpportunities];
+        const index = current.indexOf(opportunity);
+        if (index > -1) {
+            current.splice(index, 1);
+        } else {
+            current.push(opportunity);
+        }
+        setSelectedOpportunities(current);
     };
 
     const handleSliderChange = (
@@ -382,6 +421,13 @@ export const StudentInterestForm: React.FC = () => {
             }
         }
 
+        // University Opportunities validation
+        if (selectedOpportunities.length === 0) {
+            setErrorMsg('Please select at least one university opportunity that is important to you.');
+            setIsLoading(false);
+            return;
+        }
+
         try {
             // Prepare payload
             const payload = {
@@ -408,6 +454,9 @@ export const StudentInterestForm: React.FC = () => {
                 third_skills: showTernary ? ternaryInterest.skills.join(', ') : null,
                 third_teaching_methods: showTernary ? ternaryInterest.teaching_methods.join(', ') : null,
                 third_theory_practical: showTernary ? ternaryInterest.theory_practical : null,
+
+                // University Opportunities
+                university_opportunities: selectedOpportunities.join(', '),
             };
 
             await studentInterestService.submit(payload);
@@ -472,6 +521,7 @@ export const StudentInterestForm: React.FC = () => {
                                 setPrimaryInterest({ field: '', skills: [], teaching_methods: [], theory_practical: 3 });
                                 setSecondaryInterest({ field: '', skills: [], teaching_methods: [], theory_practical: 3 });
                                 setTernaryInterest({ field: '', skills: [], teaching_methods: [], theory_practical: 3 });
+                                setSelectedOpportunities([]);
                                 setShowSecondary(false);
                                 setShowTernary(false);
                             }}
@@ -938,6 +988,32 @@ export const StudentInterestForm: React.FC = () => {
                             )}
                         </div>
                     )}
+
+                    {/* Part 5: University Opportunities */}
+                    <div className="form-section">
+                        <div className="section-header-row">
+                            <h3 className="form-section-title" style={{ borderLeftColor: '#10B981', marginBottom: 0 }}>
+                                Which university opportunities are most important to you? *
+                            </h3>
+                        </div>
+                        
+                        <div className="form-grid" style={{ marginTop: '16px' }}>
+                            <div className="form-group full-width">
+                                <label>Select the opportunities that interest you the most *</label>
+                                <div className="choice-grid">
+                                    {universityOpportunities.map(opp => (
+                                        <div
+                                            key={opp}
+                                            className={`choice-chip ${selectedOpportunities.includes(opp) ? 'active' : ''}`}
+                                            onClick={() => handleOpportunityToggle(opp)}
+                                        >
+                                            {opp}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
                     {/* Error Alerts */}
                     {errorMsg && (
