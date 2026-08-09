@@ -17,6 +17,7 @@ interface Course {
     duration?: string;
     max_students?: number;
     created_at?: string;
+    batches_count?: number;
 }
 
 export const AIAnalytics: React.FC = () => {
@@ -314,6 +315,12 @@ const ProgramHub: React.FC<{ programs: Course[], onSelect: (c: Course) => void, 
                                             <Calendar size={14} style={{ color: '#7C3AED' }} />
                                             <span style={{ fontSize: '13px', color: '#475569' }}>
                                                 Duration: <strong style={{ color: '#1E293B' }}>{p.duration || 'Not Available'}</strong>
+                                            </span>
+                                        </div>
+                                        <div className="cmc-stat" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <Layers size={14} style={{ color: '#7C3AED' }} />
+                                            <span style={{ fontSize: '13px', color: '#475569' }}>
+                                                Number of Batches: <strong style={{ color: '#1E293B' }}>{p.batches_count !== undefined && p.batches_count !== null ? `${p.batches_count} Batch${p.batches_count !== 1 ? 'es' : ''}` : 'Not Available'}</strong>
                                             </span>
                                         </div>
                                     </div>

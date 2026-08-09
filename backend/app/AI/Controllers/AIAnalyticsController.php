@@ -20,7 +20,7 @@ class AIAnalyticsController extends Controller
      */
     public function getPrograms()
     {
-        $courses = Course::all()->map(function($c) {
+        $courses = Course::withCount('batches')->get()->map(function($c) {
             return [
                 'id' => $c->id,
                 'title' => $c->title,
@@ -30,6 +30,7 @@ class AIAnalyticsController extends Controller
                 'duration' => $c->duration,
                 'max_students' => $c->max_students,
                 'created_at' => $c->created_at ? $c->created_at->format('M j, Y') : null,
+                'batches_count' => $c->batches_count,
             ];
         });
         return response()->json($courses); 
