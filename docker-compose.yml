@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: codl_backend
+    restart: unless-stopped
+    environment:
+      APP_ENV: production
+      APP_DEBUG: 'false'
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_DATABASE: codl_susl
+      DB_USERNAME: codluser
+      DB_PASSWORD: codlsecretpassword
+    volumes:
+      - ./backend/storage:/var/www/html/storage
+    depends_on:
+      - db
+      - redis
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: codl_frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+  db:
+    image: mysql:8.0
+    container_name: codl_db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: codl_susl
+      MYSQL_USER: codluser
+      MYSQL_PASSWORD: codlsecretpassword
+      MYSQL_ROOT_PASSWORD: codlrootpassword
+    volumes:
+      - dbdata:/var/lib/mysql
+
+  redis:
+    image: redis:alpine
+    container_name: codl_redis
+    restart: unless-stopped
+
+volumes:
+  dbdata:

@@ -256,76 +256,85 @@ class CourseController extends Controller
 
     public function enrollStudent(Request $request, $id)
     {
-        $validated = $request->validate([
-            'student_id' => 'required|string',
-            'batch' => 'nullable|string',
-        ]);
-        
-        $course = Course::findOrFail($id);
-        
-        $user = \App\Models\User::where('student_number', $validated['student_id'])
-            ->orWhere('id', $validated['student_id'])
-            ->orWhere('email', $validated['student_id'])
-            ->firstOrFail();
+        return DB::transaction(function () use ($request, $id) {
+            $validated = $request->validate([
+                'student_id' => 'required|string',
+                'batch' => 'nullable|string',
+            ]);
             
-        $course->students()->syncWithoutDetaching([$user->id => ['batch' => $validated['batch']]]);
-        self::clearManageCourseCache($id);
+            $course = Course::findOrFail($id);
+            
+            $user = \App\Models\User::where('student_number', $validated['student_id'])
+                ->orWhere('id', $validated['student_id'])
+                ->orWhere('email', $validated['student_id'])
+                ->firstOrFail();
+                
+            $course->students()->syncWithoutDetaching([$user->id => ['batch' => $validated['batch']]]);
+            self::clearManageCourseCache($id);
 
-        // Log admin activity
-        $admin = $request->user();
-        if ($admin) {
-            \App\Models\ActivityLog::log(
-                $admin->id,
-                "Enrolled student {$user->full_name}",
-                "Student: " . ($user->student_number ?: $user->id) . " in course {$course->code} (" . ($validated['batch'] ?: 'No Batch') . ")",
-                'user'
-            );
-        }
-        
-        return response()->json([
-            'message' => 'Student enrolled successfully',
-            'student' => [
-                'id' => $user->student_number ?? (string)$user->id,
-                'name' => $user->full_name,
-                'displayName' => $user->display_name,
-                'email' => $user->email,
-                'phone' => $user->phone ?? '077 123 4567',
-                'enrollmentDate' => now()->toDateString(),
-                'status' => ucfirst($user->status) ?: 'Active',
-                'payment' => 'Verified',
-                'batch' => $validated['batch'],
-            ]
-        ]);
+            // Log admin activity
+            $admin = $request->user();
+            if ($admin) {
+                \App\Models\ActivityLog::log(
+                    $admin->id,
+                    "Enrolled student {$user->full_name}",
+                    "Student: " . ($user->student_number ?: $user->id) . " in course {$course->code} (" . ($validated['batch'] ?: 'No Batch') . ")",
+                    'user'
+                );
+            }
+            
+            return response()->json([
+                'message' => 'Student enrolled successfully',
+                'student' => [
+                    'id' => $user->student_number ?? (string)$user->id,
+                    'name' => $user->full_name,
+                    'displayName' => $user->display_name,
+                    'email' => $user->email,
+                    'phone' => $user->phone ?? '077 123 4567',
+                    'enrollmentDate' => now()->toDateString(),
+                    'status' => ucfirst($user->status) ?: 'Active',
+                    'payment' => 'Verified',
+                    'batch' => $validated['batch'],
+                ]
+            ]);
+        });
     }
 
     public function unenrollStudent(Request $request, $id, $studentId)
     {
-        $course = Course::findOrFail($id);
-        $user = \App\Models\User::where('student_number', $studentId)
-            ->orWhere('id', $studentId)
-            ->firstOrFail();
-            
-        $course->students()->detach($user->id);
-        self::clearManageCourseCache($id);
+        return DB::transaction(function () use ($request, $id, $studentId) {
+            $course = Course::findOrFail($id);
+            $user = \App\Models\User::where('student_number', $studentId)
+                ->orWhere('id', $studentId)
+                ->firstOrFail();
+                
+            $course->students()->detach($user->id);
+            self::clearManageCourseCache($id);
 
-        // Log admin activity
-        $admin = $request->user();
-        if ($admin) {
-            \App\Models\ActivityLog::log(
-                $admin->id,
-                "Unenrolled student {$user->full_name}",
-                "Student: " . ($user->student_number ?: $user->id) . " from course {$course->code}",
-                'user'
-            );
-        }
-        
-        return response()->json(['message' => 'Student suspended/unenrolled successfully']);
+            // Log admin activity
+            $admin = $request->user();
+            if ($admin) {
+                \App\Models\ActivityLog::log(
+                    $admin->id,
+                    "Unenrolled student {$user->full_name}",
+                    "Student: " . ($user->student_number ?: $user->id) . " from course {$course->code}",
+                    'user'
+                );
+            }
+            
+            return response()->json(['message' => 'Student suspended/unenrolled successfully']);
+        });
     }
 
     public static function clearManageCourseCache($courseId)
     {
         try {
-            \Illuminate\Support\Facades\Cache::increment("manage_course_version_{$courseId}");
+            $version = \Illuminate\Support\Facades\Cache::get("manage_course_version_{$courseId}");
+            if ($version === null || $version === false) {
+                \Illuminate\Support\Facades\Cache::put("manage_course_version_{$courseId}", time(), 120);
+            } else {
+                \Illuminate\Support\Facades\Cache::put("manage_course_version_{$courseId}", (int)$version + 1, 120);
+            }
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Cache::put("manage_course_version_{$courseId}", time(), 120);
         }
@@ -334,12 +343,13 @@ class CourseController extends Controller
     public function manageCourseData(Request $request, $courseId)
     {
         $user = $request->user();
-        $userId = $user ? $user->id : 'guest';
+        $isLecturer = $user && $user->role === 'lecturer';
+        $cacheSuffix = $isLecturer ? "lecturer_{$user->id}" : "admin";
         
         $version = \Illuminate\Support\Facades\Cache::get("manage_course_version_{$courseId}", 1);
-        $cacheKey = "manage_course_data_{$courseId}_{$userId}_v{$version}";
+        $cacheKey = "manage_course_data_{$courseId}_{$cacheSuffix}_v{$version}";
         
-        $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, 120, function () use ($courseId, $user) {
+        $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, 600, function () use ($courseId, $user) {
             return $this->getManageCourseDataRaw($courseId, $user);
         });
         
@@ -355,9 +365,9 @@ class CourseController extends Controller
         
         $enrolledStudents = $this->mapEnrolledStudents($course);
         
-        $studentUsers = \App\Models\User::whereIn('role', ['student', 'pro_student', 'applicant'])
-            ->select('id', 'student_number', 'full_name', 'display_name', 'email', 'phone', 'nic', 'address')
-            ->get();
+        // Optimized: Removed the massive query fetching all system student/applicant users.
+        // The frontend now dynamically searches student records via dynamic API requests on-demand.
+        $studentUsers = [];
             
         $lecturers = \App\Models\User::where('role', 'lecturer')
             ->select('id', 'full_name', 'email')
@@ -427,17 +437,34 @@ class CourseController extends Controller
             ->latest()
             ->get();
 
-        $batches->each(function ($batch) {
-            $batch->subjects->each(function ($subject) {
-                $instructorId = $subject->pivot->instructor_id;
-                if ($instructorId) {
-                    $instructor = \App\Models\User::select('id', 'full_name')->find($instructorId);
-                    $subject->pivot->instructor_name = $instructor ? $instructor->full_name : null;
+        // Optimized: Batched instructor name lookup to resolve N+1 queries.
+        $instructorIds = [];
+        foreach ($batches as $batch) {
+            foreach ($batch->subjects as $subject) {
+                if ($subject->pivot->instructor_id) {
+                    $instructorIds[] = $subject->pivot->instructor_id;
+                }
+            }
+        }
+
+        $instructors = [];
+        if (!empty($instructorIds)) {
+            $instructors = \App\Models\User::whereIn('id', array_unique($instructorIds))
+                ->select('id', 'full_name')
+                ->get()
+                ->keyBy('id');
+        }
+
+        foreach ($batches as $batch) {
+            foreach ($batch->subjects as $subject) {
+                $instId = $subject->pivot->instructor_id;
+                if ($instId && isset($instructors[$instId])) {
+                    $subject->pivot->instructor_name = $instructors[$instId]->full_name;
                 } else {
                     $subject->pivot->instructor_name = null;
                 }
-            });
-        });
+            }
+        }
 
         return $batches;
     }

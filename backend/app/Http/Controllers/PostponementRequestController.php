@@ -23,7 +23,8 @@ class PostponementRequestController extends Controller
             'medical_cert' => 'boolean',
             'batch' => 'nullable|string',
             'exams' => 'nullable|array',
-            'status' => 'nullable|string|in:pending,approved,rejected',
+            'status' => 'nullable|string|in:pending,approved,rejected,assigned',
+            'assigned_exam_id' => 'nullable|exists:exams,id',
         ]);
 
         if (!isset($validated['user_id'])) {
@@ -58,6 +59,7 @@ class PostponementRequestController extends Controller
             'stages' => 'nullable|array',
             'current_step' => 'nullable|integer',
             'rejection_reason' => 'nullable|string',
+            'assigned_exam_id' => 'nullable|exists:exams,id',
         ]);
 
         $postponement->update($validated);

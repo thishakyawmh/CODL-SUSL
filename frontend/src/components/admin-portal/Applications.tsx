@@ -1405,7 +1405,7 @@ export const Applications: React.FC = () => {
                         { name: 'Degree', desc: '4-Year Academic Programs', icon: BookOpen, color: '#7C3AED', count: mockAdminCourses.filter(c => c.level === 'Degree').length },
                         { name: 'Higher National Diploma', desc: 'Advanced Professional Diplomas', icon: Layers, color: '#F59E0B', count: mockAdminCourses.filter(c => c.level === 'Higher National Diploma').length },
                         { name: 'Diploma', desc: '1-2 Year Specialized Courses', icon: BookOpen, color: '#3B82F6', count: mockAdminCourses.filter(c => c.level === 'Diploma').length },
-                        { name: 'Advance Certificate', desc: 'Intermediate Level Certifications', icon: Award, color: '#EC4899', count: mockAdminCourses.filter(c => c.level === 'Advance Certificate').length },
+                        { name: 'Advanced Certificate', desc: 'Intermediate Level Certifications', icon: Award, color: '#EC4899', count: mockAdminCourses.filter(c => c.level === 'Advanced Certificate').length },
                         { name: 'Certificate', desc: 'Short-term Skill Programs', icon: Award, color: '#10B981', count: mockAdminCourses.filter(c => c.level === 'Certificate').length },
                     ].map(type => (
                         <div key={type.name} className="cm-category-card" onClick={() => setLevelFilter(type.name)}>

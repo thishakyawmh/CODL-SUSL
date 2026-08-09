@@ -137,7 +137,7 @@ export const ManageExamStudents: React.FC = () => {
             const autoPost = mappedPost
                 .filter((p: any) => p.assigned_exam_id === examId?.toString())
                 .map((p: any) => p.id);
-            if (autoPost.length > 0) setSelectedPostponements(autoPost);
+            setSelectedPostponements(autoPost);
         } catch (err) {
             console.error('Failed to load postponements:', err);
             toast.error('Failed to load postponements.');
@@ -182,7 +182,7 @@ export const ManageExamStudents: React.FC = () => {
             const autoReat = mappedReat
                 .filter((r: any) => r.assigned_exam_id === examId?.toString())
                 .map((r: any) => r.id);
-            if (autoReat.length > 0) setSelectedReattempts(autoReat);
+            setSelectedReattempts(autoReat);
         } catch (err) {
             console.error('Failed to load reattempts:', err);
             toast.error('Failed to load reattempts.');

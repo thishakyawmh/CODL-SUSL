@@ -1,0 +1,52 @@
+{
+    "sectors": [
+        {
+            "name": "Artificial Intelligence & Machine Learning",
+            "demand_percentage": 94,
+            "technologies": ["Python", "TensorFlow", "PyTorch", "Scikit-Learn", "Keras", "NLP", "LLMs", "Hugging Face"],
+            "keywords": ["ai", "artificial intelligence", "machine learning", "deep learning", "neural network", "nlp", "natural language processing", "computer vision", "opencv", "data modeling", "predictive modeling"],
+            "description": "Exponential job growth driven by generative AI, large language models (LLMs), automation, and intelligent agents.",
+            "required_topics": ["Neural Networks & Deep Learning", "Supervised & Unsupervised Learning", "Natural Language Processing (NLP)", "Computer Vision & Image Processing", "Machine Learning Model Deployment (MLOps)", "Feature Engineering & Data Preprocessing"]
+        },
+        {
+            "name": "Cloud Engineering & DevOps",
+            "demand_percentage": 89,
+            "technologies": ["AWS", "Azure", "Google Cloud", "Docker", "Kubernetes", "CI/CD", "Terraform", "Git", "Ansible", "Linux"],
+            "keywords": ["cloud", "devops", "aws", "azure", "docker", "kubernetes", "ci/cd", "deployment", "infrastructure", "gcp", "serverless", "linux", "git", "containerization"],
+            "description": "Widespread shift from on-premise setups to multi-cloud hosting, containerization, and infrastructure-as-code automation.",
+            "required_topics": ["Containerization with Docker", "Orchestration with Kubernetes", "CI/CD Pipeline Automation", "Infrastructure as Code (IaC)", "Cloud Architecture & Virtualization", "Linux System Administration"]
+        },
+        {
+            "name": "Cybersecurity & Data Privacy",
+            "demand_percentage": 87,
+            "technologies": ["Ethical Hacking", "Cryptography", "Network Security", "OWASP", "SIEM", "Penetration Testing", "Linux Security", "IAM"],
+            "keywords": ["cybersecurity", "security", "cryptography", "hacking", "network security", "privacy", "information security", "firewall", "vpn", "owasp", "encryption", "threat"],
+            "description": "Critical emphasis on protecting organizational digital assets, securing web APIs, and complying with global privacy laws.",
+            "required_topics": ["Symmetric & Asymmetric Encryption", "Vulnerability & Threat Modeling", "Web Application Security (OWASP Top 10)", "Network Protocols, Firewalls & VPNs", "Identity & Access Management (IAM)", "Incident Response & Ethical Hacking"]
+        },
+        {
+            "name": "Web & Full-Stack Development",
+            "demand_percentage": 85,
+            "technologies": ["React", "Node.js", "Express", "Laravel", "PHP", "TypeScript", "Next.js", "Vue", "JavaScript", "HTML/CSS"],
+            "keywords": ["web development", "full stack", "frontend", "backend", "react", "laravel", "software engineering", "javascript", "php", "html", "css", "typescript", "express", "node", "next.js", "vue", "restful api", "mvc"],
+            "description": "Strong industry demand for modern reactive frontends (React/TypeScript) paired with high-performance backends (Laravel/Node.js).",
+            "required_topics": ["RESTful API Design & Integration", "Component-Based Architecture", "State Management (Redux/Zustand)", "MVC Design Patterns", "Database Integration & ORMs", "Responsive Web Design"]
+        },
+        {
+            "name": "Data Science & Big Data",
+            "demand_percentage": 82,
+            "technologies": ["SQL", "NoSQL", "Pandas", "Spark", "Hadoop", "PowerBI", "Tableau", "R", "Data Warehousing", "MongoDB"],
+            "keywords": ["data science", "big data", "analytics", "data analysis", "sql", "nosql", "pandas", "spark", "visualization", "powerbi", "tableau", "mongodb", "postgresql", "mysql", "database systems"],
+            "description": "Crucial for transforming massive unstructured datasets into actionable business intelligence and automated dashboard reports.",
+            "required_topics": ["Advanced SQL Queries", "Data Wrangling & Cleaning", "Statistical Analysis & Modeling", "Big Data Processing (Spark/Hadoop)", "Business Intelligence & Visualization", "Data Warehousing & ETL Pipelines"]
+        },
+        {
+            "name": "Mobile Application Development",
+            "demand_percentage": 78,
+            "technologies": ["Flutter", "React Native", "Swift", "Kotlin", "Android", "iOS", "Dart"],
+            "keywords": ["mobile", "android", "ios", "flutter", "react native", "swift", "kotlin", "dart", "mobile app", "cross-platform"],
+            "description": "High demand for cross-platform app developers (Flutter/React Native) to launch rapid feature updates across iOS and Android.",
+            "required_topics": ["Cross-Platform App Development", "Native API Integrations", "Mobile UX/UI Design Principles", "App Store & Play Store Deployment", "Local Storage & State Management"]
+        }
+    ]
+}

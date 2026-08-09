@@ -1,0 +1,330 @@
+/* ==========================================
+   ROLE MANAGEMENT STYLES
+   ========================================== */
+
+.rm-container {
+    padding: 32px 36px;
+    overflow-y: auto;
+    height: 100vh;
+    background: #F8FAFC;
+}
+
+.rm-info-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 16px 20px;
+    background: #EDE9FE;
+    border-radius: 14px;
+    margin-bottom: 28px;
+    color: #5B21B6;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.rm-info-banner svg { flex-shrink: 0; margin-top: 2px; }
+.rm-info-banner p { margin: 0; }
+.rm-info-banner strong { color: #3B0764; }
+
+/* Roles Grid */
+.rm-roles-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 32px;
+}
+
+.rm-role-card {
+    background: #FFFFFF;
+    border-radius: 16px;
+    border: 1px solid rgba(0, 0, 0, 0.04);
+    border-top: 3px solid transparent;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    overflow: hidden;
+    transition: all 0.25s ease;
+}
+
+.rm-role-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.rm-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 24px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.rm-card-top:hover { background: #FAFBFC; }
+
+.rm-card-info {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.rm-role-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+}
+
+.rm-card-info h3 {
+    font-size: 16px;
+    font-weight: 700;
+    margin: 0 0 2px 0;
+}
+
+.rm-user-count {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: #94A3B8;
+}
+
+.rm-expand-icon {
+    color: #94A3B8;
+    transition: transform 0.25s ease;
+}
+
+.rm-expand-icon.rotated {
+    transform: rotate(180deg);
+}
+
+/* Permissions Table */
+.rm-card-permissions {
+    border-top: 1px solid #F1F5F9;
+    animation: permSlideDown 0.3s ease;
+}
+
+@keyframes permSlideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.rm-perm-table-wrapper {
+    overflow-x: auto;
+}
+
+.rm-perm-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.rm-perm-table thead {
+    background: #F8FAFC;
+}
+
+.rm-perm-table th {
+    padding: 12px 16px;
+    text-align: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: #64748B;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.rm-perm-table th:first-child {
+    text-align: left;
+    padding-left: 24px;
+}
+
+.rm-perm-table td {
+    padding: 12px 16px;
+    text-align: center;
+    font-size: 13px;
+    border-bottom: 1px solid #F8FAFC;
+}
+
+.rm-perm-table td:first-child {
+    text-align: left;
+    padding-left: 24px;
+}
+
+.rm-perm-table tbody tr:hover {
+    background: #FAFBFC;
+}
+
+.rm-module-name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+    color: #334155;
+    font-size: 13px;
+}
+
+.rm-module-icon {
+    flex-shrink: 0;
+}
+
+.rm-module-icon.unlocked { color: #059669; }
+.rm-module-icon.locked { color: #CBD5E1; }
+
+.rm-perm-check {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.rm-perm-check.yes { color: #059669; }
+.rm-perm-check.no { color: #E2E8F0; }
+
+/* Card Footer */
+.rm-card-footer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 24px;
+    border-top: 1px solid #F1F5F9;
+    background: #FAFBFC;
+}
+
+.rm-card-footer.locked {
+    color: #94A3B8;
+    font-size: 13px;
+}
+
+.rm-edit-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 18px;
+    border-radius: 8px;
+    border: 1px solid #7C3AED;
+    background: transparent;
+    color: #7C3AED;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: var(--font-family);
+}
+
+.rm-edit-btn:hover {
+    background: #7C3AED;
+    color: #FFFFFF;
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+}
+
+/* Access Matrix */
+.rm-matrix-card {
+    background: #FFFFFF;
+    border-radius: 18px;
+    border: 1px solid rgba(0, 0, 0, 0.04);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    overflow: hidden;
+}
+
+.rm-matrix-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid #F1F5F9;
+}
+
+.rm-matrix-header h2 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 17px;
+    font-weight: 700;
+    color: #1E293B;
+    margin: 0;
+}
+
+.rm-matrix-wrapper {
+    overflow-x: auto;
+}
+
+.rm-matrix-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.rm-matrix-table thead {
+    background: #F8FAFC;
+    border-bottom: 1px solid #E2E8F0;
+}
+
+.rm-matrix-table th {
+    padding: 14px 12px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+}
+
+.rm-matrix-table th:first-child {
+    text-align: left;
+    padding-left: 24px;
+    color: #475569;
+}
+
+.rm-matrix-table td {
+    padding: 14px 12px;
+    text-align: center;
+    border-bottom: 1px solid #F1F5F9;
+}
+
+.rm-matrix-table td:first-child {
+    text-align: left;
+    padding-left: 24px;
+}
+
+.rm-module-name-matrix {
+    font-size: 13px;
+    font-weight: 500;
+    color: #334155;
+}
+
+.rm-matrix-table tbody tr:hover {
+    background: #FAFBFC;
+}
+
+/* Access Badges */
+.rm-access-badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 20px;
+    white-space: nowrap;
+}
+
+.rm-access-badge.full {
+    background: #D1FAE5;
+    color: #059669;
+}
+
+.rm-access-badge.partial {
+    background: #FEF3C7;
+    color: #D97706;
+}
+
+.rm-access-badge.view {
+    background: #DBEAFE;
+    color: #2563EB;
+}
+
+.rm-access-badge.none {
+    background: #F1F5F9;
+    color: #CBD5E1;
+}
+
+/* Responsive */
+@media screen and (max-width: 1024px) {
+    .rm-container { padding: 20px 16px; }
+}
+
+@media screen and (max-width: 768px) {
+    .rm-card-top { padding: 14px 16px; }
+    .rm-perm-table th, .rm-perm-table td { padding: 10px 8px; }
+}

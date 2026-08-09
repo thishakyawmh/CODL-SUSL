@@ -120,33 +120,29 @@ class AuthController extends Controller
 
         $credential = $request->credential;
 
-        // Parse JWT token from Google
-        $parts = explode('.', $credential);
-        if (count($parts) !== 3) {
-            return response()->json(['message' => 'Invalid Google credential token.'], 400);
-        }
+        // Validate Google ID token cryptographically using Google's tokeninfo API
+        try {
+            $googleResponse = \Illuminate\Support\Facades\Http::timeout(10)->get('https://oauth2.googleapis.com/tokeninfo', [
+                'id_token' => $credential,
+            ]);
 
-        $payload = json_decode(base64_decode(strtr($parts[1], '-_', '+/')), true);
+            if (!$googleResponse->successful()) {
+                return response()->json(['message' => 'Invalid or expired Google authentication token.'], 401);
+            }
 
-        if (!$payload) {
-            return response()->json(['message' => 'Failed to parse Google identity information.'], 400);
-        }
-
-        // Validate basic parameters (expiration, issuer)
-        if (isset($payload['exp']) && $payload['exp'] < time()) {
-            return response()->json(['message' => 'Google credential has expired.'], 400);
-        }
-
-        if (isset($payload['iss']) && !in_array($payload['iss'], ['accounts.google.com', 'https://accounts.google.com'])) {
-            return response()->json(['message' => 'Invalid Google credential issuer.'], 400);
+            $payload = $googleResponse->json();
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Google OAuth token verification failed: ' . $e->getMessage());
+            return response()->json(['message' => 'Failed to verify Google credential.'], 500);
         }
 
         $email = $payload['email'] ?? null;
         $name = $payload['name'] ?? 'Google User';
         $avatar = $payload['picture'] ?? null;
+        $emailVerified = $payload['email_verified'] ?? false;
 
-        if (!$email) {
-            return response()->json(['message' => 'Google credential does not contain email.'], 400);
+        if (!$email || ($emailVerified !== true && $emailVerified !== 'true')) {
+            return response()->json(['message' => 'Google identity does not contain a verified email address.'], 400);
         }
 
         // Check if user exists by email

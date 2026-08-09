@@ -14,7 +14,8 @@ import {
     letterRequestService,
     postponementRequestService,
     examApplicationService,
-    reattemptRequestService
+    reattemptRequestService,
+    statsService
 } from '../../services/apiService';
 import { toast } from '../../utils/toast';
 import './CourseManagement.css';
@@ -37,6 +38,8 @@ export const CourseManagement: React.FC = () => {
         message: string;
         onConfirm: () => void;
     }>({ show: false, title: '', message: '', onConfirm: () => { } });
+
+    const [isConfirmLoading, setIsConfirmLoading] = useState(false);
 
     const showConfirm = (title: string, message: string, onConfirm: () => void) => {
         setConfirmModal({ show: true, title, message, onConfirm });
@@ -101,168 +104,8 @@ export const CourseManagement: React.FC = () => {
 
         const fetchPendingApprovals = async () => {
             try {
-                // Determine assigned course IDs for filtering
-                let assignedCourseIds: string[] = [];
-                let localCourses = [...mockAdminCourses, ...realCourses];
-
-                if (userRole === 'secretary') {
-                    const adminName = currentUser.fullName.toLowerCase();
-                    const filtered = localCourses.filter(course => {
-                        if (course.id.startsWith('CRS-')) {
-                            const sec = course.secretary?.toLowerCase() || '';
-                            return sec !== '' && (sec.includes(adminName) || adminName.includes(sec.replace(/^(mr\.|mrs\.|ms\.)\s+/i, '')));
-                        } else {
-                            return course.secretary_id?.toString() === currentUser.id?.toString() ||
-                                (course.secretary?.toLowerCase() || '').includes(adminName);
-                        }
-                    });
-                    assignedCourseIds = filtered.map(c => c.id.toString());
-                } else if (userRole === 'coordinator') {
-                    const adminName = currentUser.fullName.toLowerCase();
-                    const filtered = localCourses.filter(course => {
-                        if (course.id.startsWith('CRS-')) {
-                            const coord = course.coordinator?.toLowerCase() || '';
-                            return coord !== '' && (coord.includes(adminName) || adminName.includes(coord.replace(/^(dr\.|mr\.|mrs\.|ms\.)\s+/i, '')));
-                        } else {
-                            return course.coordinator_id?.toString() === currentUser.id?.toString() ||
-                                (course.coordinator?.toLowerCase() || '').includes(adminName);
-                        }
-                    });
-                    assignedCourseIds = filtered.map(c => c.id.toString());
-                }
-
-                const [
-                    courseApps,
-                    letterReqs,
-                    postponementReqs,
-                    examApps,
-                    reattemptReqs
-                ] = await Promise.all([
-                    courseApplicationService.getAll().catch(() => []),
-                    letterRequestService.getAll().catch(() => []),
-                    postponementRequestService.getAll().catch(() => []),
-                    examApplicationService.getAll().catch(() => []),
-                    reattemptRequestService.getAll().catch(() => [])
-                ]);
-
-                let totalPending = 0;
-
-                if (userRole === 'secretary') {
-                    const pendingCourseApps = courseApps.filter((app: any) =>
-                        app.status === 'pending' &&
-                        app.approval_level === 0 &&
-                        assignedCourseIds.includes(app.course_id?.toString())
-                    ).length;
-
-                    const pendingLetterReqs = letterReqs.filter((req: any) =>
-                        req.status === 'pending' &&
-                        req.approval_level === 0 &&
-                        assignedCourseIds.includes(req.course_id?.toString())
-                    ).length;
-
-                    const pendingPostponements = postponementReqs.filter((req: any) =>
-                        req.status === 'pending' &&
-                        (req.current_step === 1 || !req.current_step) &&
-                        assignedCourseIds.includes(req.course_id?.toString())
-                    ).length;
-
-                    const pendingExamApps = examApps.filter((req: any) =>
-                        req.status === 'pending' &&
-                        (req.current_step === 1 || !req.current_step) &&
-                        assignedCourseIds.includes(req.course_id?.toString())
-                    ).length;
-
-                    const pendingReattempts = reattemptReqs.filter((req: any) =>
-                        req.status === 'pending' &&
-                        (req.current_step === 1 || !req.current_step) &&
-                        assignedCourseIds.includes(req.course_id?.toString())
-                    ).length;
-
-                    totalPending = pendingCourseApps + pendingLetterReqs + pendingPostponements + pendingExamApps + pendingReattempts;
-                } else if (userRole === 'coordinator') {
-                    const pendingCourseApps = courseApps.filter((app: any) =>
-                        app.status === 'pending' &&
-                        app.approval_level === 1 &&
-                        assignedCourseIds.includes(app.course_id?.toString())
-                    ).length;
-
-                    const pendingLetterReqs = letterReqs.filter((req: any) =>
-                        req.status === 'pending' &&
-                        req.approval_level === 1 &&
-                        assignedCourseIds.includes(req.course_id?.toString())
-                    ).length;
-
-                    const pendingPostponements = postponementReqs.filter((req: any) =>
-                        req.status === 'pending' &&
-                        req.current_step === 2 &&
-                        assignedCourseIds.includes(req.course_id?.toString())
-                    ).length;
-
-                    const pendingExamApps = examApps.filter((req: any) =>
-                        req.status === 'pending' &&
-                        req.current_step === 2 &&
-                        assignedCourseIds.includes(req.course_id?.toString())
-                    ).length;
-
-                    const pendingReattempts = reattemptReqs.filter((req: any) =>
-                        req.status === 'pending' &&
-                        req.current_step === 2 &&
-                        assignedCourseIds.includes(req.course_id?.toString())
-                    ).length;
-
-                    totalPending = pendingCourseApps + pendingLetterReqs + pendingPostponements + pendingExamApps + pendingReattempts;
-                } else if (userRole === 'director') {
-                    const pendingCourseApps = courseApps.filter((app: any) =>
-                        app.status === 'pending' &&
-                        app.approval_level === 2
-                    ).length;
-
-                    const pendingLetterReqs = letterReqs.filter((req: any) =>
-                        req.status === 'pending' &&
-                        req.approval_level === 2
-                    ).length;
-
-                    const pendingPostponements = postponementReqs.filter((req: any) =>
-                        req.status === 'pending' &&
-                        req.current_step === 3
-                    ).length;
-
-                    const pendingExamApps = examApps.filter((req: any) =>
-                        req.status === 'pending' &&
-                        req.current_step === 3
-                    ).length;
-
-                    const pendingReattempts = reattemptReqs.filter((req: any) =>
-                        req.status === 'pending' &&
-                        req.current_step === 3
-                    ).length;
-
-                    totalPending = pendingCourseApps + pendingLetterReqs + pendingPostponements + pendingExamApps + pendingReattempts;
-                } else if (userRole === 'super_admin') {
-                    const pendingCourseApps = courseApps.filter((app: any) =>
-                        app.status === 'pending'
-                    ).length;
-
-                    const pendingLetterReqs = letterReqs.filter((req: any) =>
-                        req.status === 'pending'
-                    ).length;
-
-                    const pendingPostponements = postponementReqs.filter((req: any) =>
-                        req.status === 'pending'
-                    ).length;
-
-                    const pendingExamApps = examApps.filter((req: any) =>
-                        req.status === 'pending'
-                    ).length;
-
-                    const pendingReattempts = reattemptReqs.filter((req: any) =>
-                        req.status === 'pending'
-                    ).length;
-
-                    totalPending = pendingCourseApps + pendingLetterReqs + pendingPostponements + pendingExamApps + pendingReattempts;
-                }
-
-                setPendingApprovalsCount(totalPending);
+                const response = await statsService.getAdminStats();
+                setPendingApprovalsCount(response.totalPendingApprovals || 0);
             } catch (err) {
                 console.error('Failed to calculate pending approvals:', err);
             }
@@ -337,7 +180,7 @@ export const CourseManagement: React.FC = () => {
             case 'Degree': return { bg: '#EDE9FE', text: '#7C3AED' };
             case 'Diploma': return { bg: '#DBEAFE', text: '#2563EB' };
             case 'Higher National Diploma': return { bg: '#FEF3C7', text: '#D97706' };
-            case 'Advance Certificate': return { bg: '#FCE7F3', text: '#DB2777' };
+            case 'Advanced Certificate': return { bg: '#FCE7F3', text: '#DB2777' };
             case 'Certificate': return { bg: '#CCFBF1', text: '#0D9488' };
             default: return { bg: '#F1F5F9', text: '#475569' };
         }
@@ -472,7 +315,7 @@ export const CourseManagement: React.FC = () => {
                             { name: 'Degree', desc: '4-Year Academic Programs', icon: BookOpen, color: '#7C3AED', count: allCourses.filter(c => c.level === 'Degree').length },
                             { name: 'Higher National Diploma', desc: 'Advanced Professional Diplomas', icon: Layers, color: '#F59E0B', count: allCourses.filter(c => c.level === 'Higher National Diploma').length },
                             { name: 'Diploma', desc: '1-2 Year Specialized Courses', icon: BookOpen, color: '#3B82F6', count: allCourses.filter(c => c.level === 'Diploma').length },
-                            { name: 'Advance Certificate', desc: 'Intermediate Level Certifications', icon: Award, color: '#EC4899', count: allCourses.filter(c => c.level === 'Advance Certificate').length },
+                            { name: 'Advanced Certificate', desc: 'Intermediate Level Certifications', icon: Award, color: '#EC4899', count: allCourses.filter(c => c.level === 'Advanced Certificate').length },
                             { name: 'Certificate', desc: 'Short-term Skill Programs', icon: Award, color: '#10B981', count: allCourses.filter(c => c.level === 'Certificate').length },
                         ].filter(type => {
                             if (['secretary', 'coordinator', 'lecturer'].includes(userRole)) {
@@ -606,17 +449,64 @@ export const CourseManagement: React.FC = () => {
             )}
 
             {confirmModal.show && (
-                <div className="cm-modal-overlay" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setConfirmModal(prev => ({ ...prev, show: false }))}>
+                <div 
+                    className="cm-modal-overlay" 
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }} 
+                    onClick={() => {
+                        if (!isConfirmLoading) {
+                            setConfirmModal(prev => ({ ...prev, show: false }));
+                        }
+                    }}
+                >
                     <div className="cm-modal" style={{ maxWidth: '400px', width: '90%', padding: '24px', background: '#FFFFFF', borderRadius: '16px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }} onClick={(e) => e.stopPropagation()}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                             <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#0F172A', margin: 0 }}>{confirmModal.title}</h2>
                             <p style={{ color: '#64748B', fontSize: '14px', lineHeight: 1.5, margin: 0 }}>{confirmModal.message}</p>
                             <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '8px' }}>
-                                <button className="admin-btn-outline" style={{ height: '38px', padding: '0 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, border: '1px solid #E2E8F0', background: '#FFFFFF', color: '#475569' }} onClick={() => setConfirmModal(prev => ({ ...prev, show: false }))}>Cancel</button>
-                                <button className="admin-btn-primary" style={{ height: '38px', padding: '0 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, background: '#EF4444', color: '#FFFFFF', border: 'none' }} onClick={() => {
-                                    confirmModal.onConfirm();
-                                    setConfirmModal(prev => ({ ...prev, show: false }));
-                                }}>Confirm</button>
+                                <button 
+                                    className="admin-btn-outline" 
+                                    style={{ height: '38px', padding: '0 16px', borderRadius: '8px', cursor: isConfirmLoading ? 'not-allowed' : 'pointer', fontWeight: 600, border: '1px solid #E2E8F0', background: '#FFFFFF', color: '#475569' }} 
+                                    disabled={isConfirmLoading}
+                                    onClick={() => setConfirmModal(prev => ({ ...prev, show: false }))}
+                                >
+                                    Cancel
+                                </button>
+                                <button 
+                                    className="admin-btn-primary" 
+                                    style={{ 
+                                        height: '38px', 
+                                        padding: '0 16px', 
+                                        borderRadius: '8px', 
+                                        cursor: isConfirmLoading ? 'not-allowed' : 'pointer', 
+                                        fontWeight: 600, 
+                                        background: '#EF4444', 
+                                        color: '#FFFFFF', 
+                                        border: 'none',
+                                        opacity: isConfirmLoading ? 0.7 : 1,
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '8px'
+                                    }} 
+                                    disabled={isConfirmLoading}
+                                    onClick={async () => {
+                                        setIsConfirmLoading(true);
+                                        try {
+                                            await confirmModal.onConfirm();
+                                        } catch (err) {
+                                            console.error('Action failed:', err);
+                                        } finally {
+                                            setIsConfirmLoading(false);
+                                            setConfirmModal(prev => ({ ...prev, show: false }));
+                                        }
+                                    }}
+                                >
+                                    {isConfirmLoading ? (
+                                        <>
+                                            <div style={{ width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }} />
+                                            Deleting...
+                                        </>
+                                    ) : 'Confirm'}
+                                </button>
                             </div>
                         </div>
                     </div>

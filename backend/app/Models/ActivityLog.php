@@ -15,11 +15,17 @@ class ActivityLog extends Model
 
     public static function log($userId, $action, $target, $type)
     {
-        return self::create([
-            'user_id' => $userId,
-            'action' => $action,
-            'target' => $target,
-            'type' => $type,
-        ]);
+        try {
+            if (\Illuminate\Support\Facades\Schema::hasTable('activity_logs')) {
+                return self::create([
+                    'user_id' => $userId,
+                    'action' => $action,
+                    'target' => $target,
+                    'type' => $type,
+                ]);
+            }
+        } catch (\Throwable $e) {
+        }
+        return null;
     }
 }

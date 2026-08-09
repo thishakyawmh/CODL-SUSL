@@ -135,6 +135,7 @@ export const Profile: React.FC = () => {
         try {
             const payload = {
                 full_name: tempData.fullName,
+                email: tempData.email,
                 display_name: tempData.displayName,
                 phone: tempData.mobilePhone,
                 dob: tempData.dob || null,

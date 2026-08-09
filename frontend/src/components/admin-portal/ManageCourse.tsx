@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import axios from 'axios';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
     ArrowLeft, Save, Plus, Trash2, Edit2, Check,
@@ -64,6 +65,8 @@ interface Exam {
 
 interface EnrolledStudent {
     id: string;
+    real_id?: number;
+    student_number?: string;
     name: string;
     displayName?: string;
     email: string;
@@ -110,11 +113,17 @@ export const ManageCourse: React.FC = () => {
     const [isLoadingData, setIsLoadingData] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
 
-    const loadAllCourseData = async (showLoading = true) => {
+    const loadAllCourseData = async (showLoading = true, signal?: AbortSignal) => {
         if (!id) return;
-        if (showLoading) setIsLoadingData(true);
+        let isCancelled = false;
+        if (showLoading) {
+            setIsLoadingData(true);
+            setIsLoadingCourse(true);
+            setIsLoadingStudents(true);
+            setCourse(null);
+        }
         try {
-            const data = await courseService.getManageCourseData(id);
+            const data = await courseService.getManageCourseData(id, { signal });
 
             // 1. Course details
             if (data.course) {
@@ -390,13 +399,19 @@ export const ManageCourse: React.FC = () => {
             setWaitlistPostponements(mappedPostponements);
             setWaitlistReattempts(mappedReattempts);
 
-        } catch (err) {
+        } catch (err: any) {
+            if (axios.isCancel(err)) {
+                isCancelled = true;
+                return;
+            }
             console.error("Failed to fetch consolidated course data:", err);
             toast.error("Failed to load course details from database.");
         } finally {
-            setIsLoadingData(false);
-            setIsLoadingCourse(false);
-            setIsLoadingStudents(false);
+            if (!isCancelled) {
+                setIsLoadingData(false);
+                setIsLoadingCourse(false);
+                setIsLoadingStudents(false);
+            }
         }
     };
 
@@ -414,13 +429,17 @@ export const ManageCourse: React.FC = () => {
     };
 
     useEffect(() => {
+        const controller = new AbortController();
         if (id) {
-            loadAllCourseData(true);
+            loadAllCourseData(true, controller.signal);
         }
+        return () => {
+            controller.abort();
+        };
     }, [id]);
 
     // Form State (Details)
-    const [courseType, setCourseType] = useState<'Degree' | 'Higher National Diploma' | 'Diploma' | 'Advance Certificate' | 'Certificate'>('Degree');
+    const [courseType, setCourseType] = useState<'Degree' | 'Higher National Diploma' | 'Diploma' | 'Advanced Certificate' | 'Certificate'>('Degree');
     const [commonData, setCommonData] = useState({
         name: '',
         code: '',
@@ -680,6 +699,8 @@ export const ManageCourse: React.FC = () => {
         onConfirm: () => void;
     }>({ show: false, title: '', message: '', onConfirm: () => { } });
 
+    const [isConfirmLoading, setIsConfirmLoading] = useState(false);
+
     const showConfirm = (title: string, message: string, onConfirm: () => void) => {
         setConfirmModal({ show: true, title, message, onConfirm });
     };
@@ -815,7 +836,7 @@ export const ManageCourse: React.FC = () => {
         } else {
             // Generate empty structure
             let generated: any[] = [];
-            if (['Certificate', 'Advance Certificate'].includes(courseType)) {
+            if (['Certificate', 'Advanced Certificate'].includes(courseType)) {
                 generated = [
                     {
                         id: 1,
@@ -885,20 +906,12 @@ export const ManageCourse: React.FC = () => {
         }
     }, [selectedBatch, batches, course, courseType]);
 
-    // Automatically synchronize any materials changes back to Database
-    useEffect(() => {
-        if (materialsSemesters && materialsSemesters.length > 0 && selectedBatch) {
-            const currentBatch = batches.find(b => b.name === selectedBatch);
-            if (currentBatch && JSON.stringify(currentBatch.materials) !== JSON.stringify(materialsSemesters)) {
-                saveMaterialsToDatabase(materialsSemesters);
-            }
-        }
-    }, [materialsSemesters, id, selectedBatch, batches]);
 
-    // Automatically skip semester/subject view for Certificate and Advance Certificate courses
+
+    // Automatically skip semester/subject view for Certificate and Advanced Certificate courses
     useEffect(() => {
         if (activeSection === 'materials') {
-            if (['Certificate', 'Advance Certificate'].includes(courseType)) {
+            if (['Certificate', 'Advanced Certificate'].includes(courseType)) {
                 setMaterialsSelectedSemesterId(1);
                 setMaterialsSelectedModuleId('materials');
                 setMaterialsViewState('resources');
@@ -918,52 +931,6 @@ export const ManageCourse: React.FC = () => {
     const [enrollmentRequests, setEnrollmentRequests] = useState<any[]>([]);
     const [approvalRequests, setApprovalRequests] = useState<any[]>([]);
     const [isLoadingApprovals, setIsLoadingApprovals] = useState(false);
-
-    useEffect(() => {
-        if (realStudents.length > 0 && approvalRequests.length > 0) {
-            let updated = false;
-            const enriched = approvalRequests.map(req => {
-                const matched = realStudents.find((s: any) =>
-                    s.student_number === req.studentNumber ||
-                    s.email === req.email ||
-                    s.full_name?.toLowerCase() === req.name?.toLowerCase() ||
-                    s.name?.toLowerCase() === req.name?.toLowerCase()
-                );
-                if (matched) {
-                    const newPhone = matched.phone || matched.mobilePhone || req.phone;
-                    const newNic = matched.nic || req.nic;
-                    const newAddress = matched.address || req.address;
-                    const newEmail = matched.email || req.email;
-                    const newName = matched.display_name || matched.displayName || matched.full_name || matched.name || req.name;
-                    const newStudentNumber = matched.student_number || req.studentNumber;
-
-                    if (
-                        newPhone !== req.phone ||
-                        newNic !== req.nic ||
-                        newAddress !== req.address ||
-                        newEmail !== req.email ||
-                        newName !== req.name ||
-                        newStudentNumber !== req.studentNumber
-                    ) {
-                        updated = true;
-                        return {
-                            ...req,
-                            name: newName,
-                            studentNumber: newStudentNumber,
-                            email: newEmail,
-                            phone: newPhone,
-                            nic: newNic,
-                            address: newAddress
-                        };
-                    }
-                }
-                return req;
-            });
-            if (updated) {
-                setApprovalRequests(enriched);
-            }
-        }
-    }, [realStudents]);
     const handleActionRequest = async (requestId: string, action: 'approved' | 'rejected', type: 'approval' | 'enrollment', reason?: string) => {
         if (type === 'enrollment') {
             try {
@@ -1222,6 +1189,99 @@ export const ManageCourse: React.FC = () => {
         }
     };
 
+    const handleCsvUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const text = e.target?.result as string;
+            if (!text) return;
+
+            const lines = text.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+            if (lines.length < 1) {
+                toast.error("CSV file is empty.");
+                return;
+            }
+
+            const parseCSVLine = (line: string) => {
+                const result = [];
+                let current = '';
+                let inQuotes = false;
+                for (let i = 0; i < line.length; i++) {
+                    const char = line[i];
+                    if (char === '"' || char === "'") {
+                        inQuotes = !inQuotes;
+                    } else if (char === ',' && !inQuotes) {
+                        result.push(current.trim());
+                        current = '';
+                    } else {
+                        current += char;
+                    }
+                }
+                result.push(current.trim());
+                return result;
+            };
+
+            const parsedRows = lines.map(parseCSVLine);
+            const headers = parsedRows[0].map(h => h.toLowerCase());
+
+            let regNoIndex = headers.findIndex(h => h.includes('reg') || h.includes('index') || h.includes('id') || h.includes('student') || h.includes('number'));
+            let gradeIndex = headers.findIndex(h => h.includes('grade') || h.includes('result') || h.includes('marks') || h.includes('score'));
+
+            if (regNoIndex === -1) regNoIndex = 0;
+            if (gradeIndex === -1) gradeIndex = regNoIndex === 0 ? 1 : 0;
+
+            const hasHeader = parsedRows[0].some(cell => 
+                cell.toLowerCase().includes('reg') || 
+                cell.toLowerCase().includes('id') || 
+                cell.toLowerCase().includes('grade') || 
+                cell.toLowerCase().includes('result') ||
+                cell.toLowerCase().includes('student')
+            );
+            
+            const dataRows = hasHeader ? parsedRows.slice(1) : parsedRows;
+
+            if (!importedResults) {
+                toast.error("No student list loaded to map results to.");
+                return;
+            }
+
+            let mappedCount = 0;
+            const updatedResults = importedResults.map(existing => {
+                const matchingRow = dataRows.find(row => {
+                    const csvRegNo = row[regNoIndex];
+                    if (!csvRegNo || !existing.studentId) return false;
+                    
+                    const cleanCsv = csvRegNo.toLowerCase().replace(/[^a-z0-9]/g, '');
+                    const cleanExisting = existing.studentId.toLowerCase().replace(/[^a-z0-9]/g, '');
+                    
+                    return cleanCsv === cleanExisting || cleanCsv.includes(cleanExisting) || cleanExisting.includes(cleanCsv);
+                });
+
+                if (matchingRow) {
+                    const rawGrade = matchingRow[gradeIndex] || 'N/A';
+                    let formattedGrade = rawGrade.trim().toUpperCase();
+                    if (formattedGrade === 'NA' || formattedGrade === 'PENDING') formattedGrade = 'N/A';
+                    
+                    mappedCount++;
+                    return {
+                        ...existing,
+                        grade: formattedGrade,
+                        marks: mapGradeToMarks(formattedGrade)
+                    };
+                }
+                return existing;
+            });
+
+            setImportedResults(updatedResults);
+            toast.success(`Successfully mapped ${mappedCount} student results from CSV!`);
+            
+            if (csvInputRef.current) csvInputRef.current.value = '';
+        };
+        reader.readAsText(file);
+    };
+
     const getEligibleStudentsForResults = () => {
         if (!selectedExamForResult || !selectedSubjectForResult) {
             return [];
@@ -1235,23 +1295,13 @@ export const ManageCourse: React.FC = () => {
         };
 
         const getStudentDetails = (studentNumber: string) => {
-            const enrolled = enrolledStudents.find(s => s.id === studentNumber);
+            const enrolled = enrolledStudents.find(s => s.id === studentNumber || String(s.real_id) === studentNumber);
             if (enrolled) return {
                 id: studentNumber,
                 name: enrolled.name,
                 displayName: enrolled.displayName || enrolled.name,
                 email: enrolled.email
             };
-
-            const real = realStudents.find(s => s.student_number === studentNumber || String(s.id) === studentNumber);
-            if (real) {
-                return {
-                    id: studentNumber,
-                    name: real.full_name || real.name || 'Student',
-                    displayName: real.display_name || real.fullName || real.name || 'Student',
-                    email: real.email || ''
-                };
-            }
 
             return {
                 id: studentNumber,
@@ -1297,7 +1347,7 @@ export const ManageCourse: React.FC = () => {
                     const matchesSubject = subjects.length === 0 || subjects.some((s: string) => isForSubject(s, selectedSubjectForResult));
                     if (matchesSubject) {
                         postponementIds.add(req.studentNumber);
-                        studentNotes.set(req.studentNumber, req.reason || "");
+                        studentNotes.set(req.studentNumber, "");
                         studentAttempts.set(req.studentNumber, Number(req.raw?.attempt || req.attempt || 1));
                     }
                 }
@@ -1564,10 +1614,10 @@ export const ManageCourse: React.FC = () => {
 
         // 2. Map studentId to user_id
         const mappedGrades = importedResults.map(r => {
-            const studentUser = realStudents.find(
-                s => s.student_number === r.studentId || String(s.id) === r.studentId || s.email === r.studentId
+            const studentUser = enrolledStudents.find(
+                s => s.student_number === r.studentId || String(s.id) === r.studentId || String(s.real_id) === r.studentId || s.email === r.studentId
             );
-            const userId = studentUser ? studentUser.id : (Number(r.studentId) || null);
+            const userId = studentUser ? (studentUser.real_id || studentUser.id) : (Number(r.studentId) || null);
             return {
                 user_id: userId ? Number(userId) : null,
                 grade: r.grade,
@@ -1625,25 +1675,20 @@ export const ManageCourse: React.FC = () => {
         }
     };
 
-    const handleIdChange = (val: string) => {
+    const handleIdChange = async (val: string) => {
         setEnrollForm({ ...enrollForm, id: val, name: '', displayName: '', email: '' });
 
-        const allStudents = realStudents;
-
         if (!val) {
-            setIdSuggestions(allStudents);
-            setShowSuggestions(true);
+            setIdSuggestions([]);
+            setShowSuggestions(false);
         } else {
-            const matches = allStudents.filter(u => {
-                const sNumber = u.student_number || u.studentNumber || '';
-                const fName = u.full_name || u.fullName || '';
-                const email = u.email || '';
-                return sNumber.toLowerCase().includes(val.toLowerCase()) ||
-                    fName.toLowerCase().includes(val.toLowerCase()) ||
-                    email.toLowerCase().includes(val.toLowerCase());
-            });
-            setIdSuggestions(matches);
-            setShowSuggestions(true);
+            try {
+                const results = await userService.searchStudents(val);
+                setIdSuggestions(results || []);
+                setShowSuggestions(true);
+            } catch (err) {
+                console.error("Failed to query student suggestions:", err);
+            }
         }
     };
 
@@ -1906,7 +1951,7 @@ export const ManageCourse: React.FC = () => {
             setSelectedExamForResult(null);
             setImportedResults(null);
         } else if (activeSection === 'materials' && materialsViewState === 'resources') {
-            if (['Certificate', 'Advance Certificate'].includes(courseType)) {
+            if (['Certificate', 'Advanced Certificate'].includes(courseType)) {
                 if (userRole === 'lecturer') {
                     setSelectedBatch(null);
                 } else {
@@ -2093,12 +2138,12 @@ export const ManageCourse: React.FC = () => {
             return;
         }
 
-        const matchedRealStudent = realStudents.find(
-            rs => rs.student_number === waitlistForm.studentRegNo || rs.id?.toString() === waitlistForm.studentRegNo
+        const matchedRealStudent = enrolledStudents.find(
+            rs => rs.student_number === waitlistForm.studentRegNo || rs.id?.toString() === waitlistForm.studentRegNo || rs.real_id?.toString() === waitlistForm.studentRegNo
         );
 
         if (!matchedRealStudent) {
-            toast.error('Could not map the selected registration number to a database student.');
+            toast.error('Could not map the selected registration number to an enrolled student.');
             return;
         }
 
@@ -2107,7 +2152,7 @@ export const ManageCourse: React.FC = () => {
             return;
         }
 
-        const userId = matchedRealStudent.id;
+        const userId = matchedRealStudent.real_id || matchedRealStudent.id;
         const status = waitlistForm.approved ? 'approved' : 'pending';
 
         const findSubjectIdInCourse = (subjectLabel: string) => {
@@ -2147,8 +2192,9 @@ export const ManageCourse: React.FC = () => {
                     exam_title: examText,
                     reason: waitlistForm.reason,
                     batch: waitlistForm.originBatch,
-                    status,
-                    exams: waitlistForm.selectedSubjects
+                    status: isEdit && editingWaitlistRecord?.status === 'assigned' ? 'assigned' : status,
+                    exams: waitlistForm.selectedSubjects,
+                    assigned_exam_id: isEdit && editingWaitlistRecord?.assigned_exam_id ? editingWaitlistRecord.assigned_exam_id : null
                 };
 
                 if (isEdit && editingWaitlistRecord) {
@@ -2178,7 +2224,8 @@ export const ManageCourse: React.FC = () => {
                         exam_title: examText,
                         reason: waitlistForm.reason,
                         batch: waitlistForm.originBatch,
-                        status
+                        status: isEdit && editingWaitlistRecord?.status === 'assigned' ? 'assigned' : status,
+                        assigned_exam_id: isEdit && editingWaitlistRecord?.assigned_exam_id ? editingWaitlistRecord.assigned_exam_id : null
                     };
                     await reattemptRequestService.update(editingWaitlistRecord.id, payload);
                     toast.success('Reattempt request updated successfully');
@@ -2199,7 +2246,8 @@ export const ManageCourse: React.FC = () => {
                             exam_title: examText,
                             reason: waitlistForm.reason,
                             batch: waitlistForm.originBatch,
-                            status
+                            status: status,
+                            assigned_exam_id: null
                         };
                         await reattemptRequestService.create(payload);
                     }
@@ -2284,12 +2332,12 @@ export const ManageCourse: React.FC = () => {
         .sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true, sensitivity: 'base' }));
 
     const filteredWaitlistPostponements = waitlistPostponements.filter(p =>
-        p.status?.toString().toLowerCase() !== 'assigned' &&
+        (!p.raw?.assigned_exam_id) &&
         p.status?.toString().toLowerCase() !== 'rejected' &&
         (!selectedBatch || p.batch?.toString().trim().toLowerCase() === selectedBatch.toString().trim().toLowerCase())
     );
     const filteredWaitlistReattempts = waitlistReattempts.filter(r =>
-        r.status?.toString().toLowerCase() !== 'assigned' &&
+        (!r.raw?.assigned_exam_id) &&
         r.status?.toString().toLowerCase() !== 'rejected' &&
         (!selectedBatch || r.batch?.toString().trim().toLowerCase() === selectedBatch.toString().trim().toLowerCase())
     );
@@ -2904,7 +2952,7 @@ export const ManageCourse: React.FC = () => {
                                                     <option value="Close">Close</option>
                                                 </select>
                                             </div>
-                                            {['Certificate', 'Advance Certificate'].includes(courseType) && (
+                                            {['Certificate', 'Advanced Certificate'].includes(courseType) && (
                                                 <div className="cm-form-group">
                                                     <label>Lecturer / Instructor</label>
                                                     <select
@@ -2932,7 +2980,7 @@ export const ManageCourse: React.FC = () => {
                                     </div>
 
                                     {/* Section 2: Academic Structure */}
-                                    {!['Certificate', 'Advance Certificate'].includes(courseType) && (
+                                    {!['Certificate', 'Advanced Certificate'].includes(courseType) && (
                                         <div className="form-section-card no-shadow">
                                             <div className="section-header">
                                                 <Layers size={18} />
@@ -3386,7 +3434,7 @@ export const ManageCourse: React.FC = () => {
                                                 }
                                                 return exam.status;
                                             })();
-                                            const getExamStatus = () => (resolvedStatus === 'Results Released' ? { color: '#10B981', bg: '#ECFDF5' } : (resolvedStatus === 'Result Updated' ? { color: '#D97706', bg: '#FEF3C7' } : { color: '#EF4444', bg: '#FEF2F2' }));
+                                            const getExamStatus = () => (resolvedStatus === 'Results Released' ? { color: '#10B981', bg: '#ECFDF5' } : (resolvedStatus === 'Result Updated' ? { color: '#D97706', bg: '#FEF3C7' } : { color: '#EF4444', bg: '#FEF3C7' }));
                                             const status = getExamStatus();
 
                                             return (
@@ -3709,6 +3757,36 @@ export const ManageCourse: React.FC = () => {
                                                                                             animation: isRefreshing ? 'spin 1s linear infinite' : 'none'
                                                                                         }}
                                                                                     />
+                                                                                </button>
+                                                                                <input
+                                                                                    type="file"
+                                                                                    ref={csvInputRef}
+                                                                                    accept=".csv"
+                                                                                    onChange={handleCsvUpload}
+                                                                                    style={{ display: 'none' }}
+                                                                                />
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => csvInputRef.current?.click()}
+                                                                                    style={{
+                                                                                        padding: '6px 14px',
+                                                                                        fontSize: '12px',
+                                                                                        height: '34px',
+                                                                                        borderRadius: '8px',
+                                                                                        background: '#EFF6FF',
+                                                                                        color: '#1D4ED8',
+                                                                                        border: '1px solid #BFDBFE',
+                                                                                        fontWeight: 700,
+                                                                                        cursor: 'pointer',
+                                                                                        display: 'inline-flex',
+                                                                                        alignItems: 'center',
+                                                                                        gap: '6px',
+                                                                                        transition: 'all 0.15s ease'
+                                                                                    }}
+                                                                                    onMouseEnter={(e) => { e.currentTarget.style.background = '#DBEAFE'; }}
+                                                                                    onMouseLeave={(e) => { e.currentTarget.style.background = '#EFF6FF'; }}
+                                                                                >
+                                                                                    <Upload size={14} /> Upload CSV
                                                                                 </button>
                                                                                 <span style={{ background: '#E0F2FE', color: '#0369A1', padding: '4px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 700 }}>
                                                                                     {count} Registered
@@ -4060,9 +4138,11 @@ export const ManageCourse: React.FC = () => {
                                                                 <Calendar size={24} />
                                                             </div>
                                                             <button
-                                                                onClick={(e) => {
+                                                                onClick={async (e) => {
                                                                     e.stopPropagation();
-                                                                    setMaterialsSemesters(prev => prev.map(s => s.id === sem.id ? { ...s, visible: !s.visible } : s));
+                                                                    const updatedSemesters = materialsSemesters.map(s => s.id === sem.id ? { ...s, visible: !s.visible } : s);
+                                                                    setMaterialsSemesters(updatedSemesters);
+                                                                    await saveMaterialsToDatabase(updatedSemesters);
                                                                 }}
                                                                 style={{ background: 'none', border: 'none', color: sem.visible ? '#10B981' : '#94A3B8', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 600 }}
                                                                 title={sem.visible ? 'Hide from students' : 'Show to students'}
@@ -4125,7 +4205,7 @@ export const ManageCourse: React.FC = () => {
                                 {materialsViewState === 'resources' && materialsActiveModule && (
                                     <div className="resources-view">
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                                            <span className="section-label" style={{ margin: 0 }}>{['Certificate', 'Advance Certificate'].includes(courseType) ? 'Course Materials' : `Materials for ${materialsActiveModule.title}`}</span>
+                                            <span className="section-label" style={{ margin: 0 }}>{['Certificate', 'Advanced Certificate'].includes(courseType) ? 'Course Materials' : `Materials for ${materialsActiveModule.title}`}</span>
                                             <div style={{ display: 'flex', gap: '12px' }}>
                                                 <button className="admin-btn-primary" style={{ background: '#FFF1F2', color: '#E11D48', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }} onClick={() => setShowVideoModal(true)}>
                                                     <Video size={16} /> Add Video
@@ -6269,7 +6349,15 @@ export const ManageCourse: React.FC = () => {
             })()}
 
             {confirmModal.show && (
-                <div className="cm-modal-overlay" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setConfirmModal(prev => ({ ...prev, show: false }))}>
+                <div 
+                    className="cm-modal-overlay" 
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }} 
+                    onClick={() => {
+                        if (!isConfirmLoading) {
+                            setConfirmModal(prev => ({ ...prev, show: false }));
+                        }
+                    }}
+                >
                     <div className="cm-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px', borderRadius: '16px', background: '#FFFFFF', padding: '24px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
                         <div className="cm-modal-header" style={{ borderBottom: 'none', padding: 0, marginBottom: '12px' }}>
                             <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#0F172A', margin: 0 }}>{confirmModal.title}</h2>
@@ -6278,16 +6366,49 @@ export const ManageCourse: React.FC = () => {
                             <p style={{ color: '#64748B', fontSize: '14px', lineHeight: 1.5, margin: 0 }}>{confirmModal.message}</p>
                         </div>
                         <div className="cm-modal-footer" style={{ borderTop: 'none', padding: 0, display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-                            <button className="admin-btn-outline" style={{ height: '38px', padding: '0 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, border: '1px solid #E2E8F0', background: '#FFFFFF', color: '#475569' }} onClick={() => setConfirmModal(prev => ({ ...prev, show: false }))}>Cancel</button>
+                            <button 
+                                className="admin-btn-outline" 
+                                style={{ height: '38px', padding: '0 16px', borderRadius: '8px', cursor: isConfirmLoading ? 'not-allowed' : 'pointer', fontWeight: 600, border: '1px solid #E2E8F0', background: '#FFFFFF', color: '#475569' }} 
+                                disabled={isConfirmLoading}
+                                onClick={() => setConfirmModal(prev => ({ ...prev, show: false }))}
+                            >
+                                Cancel
+                            </button>
                             <button
                                 className="admin-btn-primary"
-                                style={{ height: '38px', padding: '0 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, border: 'none', background: '#EF4444', color: '#FFFFFF' }}
-                                onClick={() => {
-                                    confirmModal.onConfirm();
-                                    setConfirmModal(prev => ({ ...prev, show: false }));
+                                style={{ 
+                                    height: '38px', 
+                                    padding: '0 16px', 
+                                    borderRadius: '8px', 
+                                    cursor: isConfirmLoading ? 'not-allowed' : 'pointer', 
+                                    fontWeight: 600, 
+                                    border: 'none', 
+                                    background: '#EF4444', 
+                                    color: '#FFFFFF',
+                                    opacity: isConfirmLoading ? 0.7 : 1,
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '8px'
+                                }}
+                                disabled={isConfirmLoading}
+                                onClick={async () => {
+                                    setIsConfirmLoading(true);
+                                    try {
+                                        await confirmModal.onConfirm();
+                                    } catch (err) {
+                                        console.error('Action failed:', err);
+                                    } finally {
+                                        setIsConfirmLoading(false);
+                                        setConfirmModal(prev => ({ ...prev, show: false }));
+                                    }
                                 }}
                             >
-                                Confirm
+                                {isConfirmLoading ? (
+                                    <>
+                                        <div style={{ width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }} />
+                                        Deleting...
+                                    </>
+                                ) : 'Confirm'}
                             </button>
                         </div>
                     </div>

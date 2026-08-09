@@ -22,7 +22,7 @@ const FACULTY_OPTIONS = [
 ];
 
 interface Subject {
-    code: string;
+    code?: string;
     name: string;
     credits: string;
 }
@@ -56,7 +56,7 @@ export const CreateCourse: React.FC = () => {
         }
     }, [isEdit, userRole, navigate]);
 
-    const [courseType, setCourseType] = useState<'Degree' | 'Higher National Diploma' | 'Diploma' | 'Advance Certificate' | 'Certificate'>('Degree');
+    const [courseType, setCourseType] = useState<'Degree' | 'Higher National Diploma' | 'Diploma' | 'Advanced Certificate' | 'Certificate'>('Degree');
     const [categories, setCategories] = useState<Category[]>([]);
     const [instructors, setInstructors] = useState<RemoteUser[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -266,14 +266,14 @@ export const CreateCourse: React.FC = () => {
                 payload.semesters = semesters.map((sem, idx) => ({
                     name: `Semester ${idx + 1}`,
                     subjects: sem.subjects.filter(s => s.name).map(s => ({
-                        code: s.code,
+                        code: s.code || '',
                         name: s.name,
                         credits: s.credits
                     }))
                 }));
             } else if (courseType === 'Diploma') {
                 payload.subjects = diplomaSubjects.filter(s => s.name).map(s => ({
-                    code: s.code,
+                    code: s.code || '',
                     name: s.name,
                     credits: s.credits
                 }));
@@ -379,7 +379,7 @@ export const CreateCourse: React.FC = () => {
                                 <option value="Degree">Degree Program</option>
                                 <option value="Higher National Diploma">Higher National Diploma (HND)</option>
                                 <option value="Diploma">Diploma Program</option>
-                                <option value="Advance Certificate">Advance Certificate</option>
+                                <option value="Advanced Certificate">Advanced Certificate</option>
                                 <option value="Certificate">Certificate Program</option>
                             </select>
                         </div>
@@ -508,7 +508,7 @@ export const CreateCourse: React.FC = () => {
                 </div>
 
                 {/* Section 3: Academic Structure (Dynamic) */}
-                {!['Certificate', 'Advance Certificate'].includes(courseType) && (
+                {!['Certificate', 'Advanced Certificate'].includes(courseType) && (
                     <div className="form-section-card">
                         <div className="section-header">
                             <Layers size={20} />

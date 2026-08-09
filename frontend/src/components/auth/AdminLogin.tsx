@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, MapPin, Phone, Mail, ShieldCheck } from 'lucide-react';
+import { ArrowRight, MapPin, Phone, Mail, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 import { authService } from '../../services/apiService';
 import './LoginPortal.css'; // Reusing existing styles for consistency
 
@@ -20,7 +20,7 @@ export const AdminLogin: React.FC = () => {
                     phone: parsed.contact_phone || '045-2280179',
                     address: parsed.address || 'Sabaragamuwa University of Sri Lanka, P.O. Box 02, Belihuloya, 70140, Sri Lanka.',
                 };
-            } catch (e) {}
+            } catch (e) { }
         }
         return {
             logo: '/images/logo.png',
@@ -33,7 +33,7 @@ export const AdminLogin: React.FC = () => {
     };
 
     const branding = getBranding();
-    
+
     useEffect(() => {
         const token = sessionStorage.getItem('token');
         const adminRole = sessionStorage.getItem('adminRole');
@@ -48,6 +48,7 @@ export const AdminLogin: React.FC = () => {
 
     const [loginId, setLoginId] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
 
@@ -63,7 +64,7 @@ export const AdminLogin: React.FC = () => {
             const studentRoles = ['student', 'applicant'];
             if (studentRoles.includes(data.user.role)) {
                 // Immediately revoke the session — this portal is not for students
-                try { await authService.logout(); } catch (_) {}
+                try { await authService.logout(); } catch (_) { }
                 setError('This portal is for staff only. Please use the Student Portal to sign in.');
                 setIsLoading(false);
                 return;
@@ -149,14 +150,14 @@ export const AdminLogin: React.FC = () => {
                                     <p>Administrative & Staff Workspace Access</p>
                                 </div>
                             </div>
-                            
+
                             <form className="auth-form" onSubmit={handleLogin}>
                                 {error && (
-                                    <div className="error-banner" style={{ 
-                                        padding: '12px', 
-                                        background: '#FEF2F2', 
-                                        color: '#DC2626', 
-                                        borderRadius: '8px', 
+                                    <div className="error-banner" style={{
+                                        padding: '12px',
+                                        background: '#FEF2F2',
+                                        color: '#DC2626',
+                                        borderRadius: '8px',
                                         fontSize: '14px',
                                         marginBottom: '20px',
                                         border: '1px solid #FEE2E2'
@@ -178,13 +179,23 @@ export const AdminLogin: React.FC = () => {
 
                                 <div className="form-group">
                                     <label>Password</label>
-                                    <input
-                                        type="password"
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                        required
-                                        disabled={isLoading}
-                                    />
+                                    <div className="password-input-wrapper">
+                                        <input
+                                            type={showPassword ? "text" : "password"}
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                            required
+                                            disabled={isLoading}
+                                        />
+                                        <button
+                                            type="button"
+                                            className="password-toggle-btn"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            tabIndex={-1}
+                                        >
+                                            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <div className="form-options">
@@ -200,7 +211,7 @@ export const AdminLogin: React.FC = () => {
                                 </button>
                             </form>
                         </div>
-                        
+
                     </div>
                 </div>
             </div>

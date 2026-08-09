@@ -8,7 +8,7 @@ interface GlobalAnn {
     title: string;
     date: string;
     desc: string;
-    type?: 'Important' | 'Update' | 'General';
+    type?: 'Important' | 'Update' | 'General' | 'Notice';
 }
 
 export const Announcements: React.FC = () => {
@@ -71,11 +71,13 @@ export const Announcements: React.FC = () => {
     };
 
     const activeAnn = announcements[currentIndex];
-    const type = activeAnn?.type || 'General';
-    const typeClass = type.toLowerCase();
+    const rawType = activeAnn?.type || 'General';
+    const type = rawType;
+    const typeClass = rawType === 'Notice' ? 'update' : (rawType === 'Update' ? 'general' : (rawType === 'Important' ? 'important' : 'general'));
 
     const getIcon = (annType?: string) => {
         if (annType === 'Important') return <Bell size={18} />;
+        if (annType === 'Notice') return <Info size={18} />;
         if (annType === 'Update') return <MessageSquare size={18} />;
         return <Info size={18} />;
     };
