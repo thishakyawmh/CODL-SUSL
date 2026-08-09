@@ -38,6 +38,10 @@ export const UserManagement: React.FC = () => {
     const [isEditMode, setIsEditMode] = useState(false);
     const [editFormData, setEditFormData] = useState<User | null>(null);
     const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+    const [showResetConfirmModal, setShowResetConfirmModal] = useState(false);
+    const [userToReset, setUserToReset] = useState<User | null>(null);
+    const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+    const [userToDelete, setUserToDelete] = useState<User | null>(null);
 
     const [newUser, setNewUser] = useState({
         fullName: '',
@@ -188,38 +192,55 @@ export const UserManagement: React.FC = () => {
         }
     };
 
-    const handleResetPassword = async (user: User) => {
+    const triggerResetPassword = (user: User) => {
         if (user.role === 'super_admin') {
             toast.error('Super Administrators cannot be modified.');
             return;
         }
-        if (window.confirm(`Reset password for ${user.fullName} to default (NIC: ${user.nic})?`)) {
-            try {
-                await userService.resetPassword(user.id);
-                toast.success('Password reset successfully!');
-            } catch (err: any) {
-                toast.error(err.response?.data?.message || 'Failed to reset password');
-            }
-        }
+        setUserToReset(user);
+        setShowResetConfirmModal(true);
         setOpenMenuId(null);
     };
 
-    const handleDeleteUser = async (user: User) => {
+    const handleConfirmResetPassword = async () => {
+        if (!userToReset) return;
+        setIsLoading(true);
+        try {
+            await userService.resetPassword(userToReset.id);
+            toast.success('Password reset successfully!');
+            setShowResetConfirmModal(false);
+            setUserToReset(null);
+        } catch (err: any) {
+            toast.error(err.response?.data?.message || 'Failed to reset password');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const triggerDeleteUser = (user: User) => {
         if (user.role === 'super_admin') {
             toast.error('Super Administrators cannot be deleted.');
             return;
         }
-        if (window.confirm(`Are you sure you want to delete account for ${user.fullName}? This action cannot be undone.`)) {
-            try {
-                await userService.delete(user.id);
-                // Update local state immediately for instant feedback
-                setUsers(prev => prev.filter(u => u.id !== user.id));
-                toast.success('User deleted successfully');
-            } catch (err) {
-                console.error('Delete failed:', err);
-                toast.error('Failed to delete user. Please try again.');
-            }
-            setOpenMenuId(null);
+        setUserToDelete(user);
+        setShowDeleteConfirmModal(true);
+        setOpenMenuId(null);
+    };
+
+    const handleConfirmDeleteUser = async () => {
+        if (!userToDelete) return;
+        setIsLoading(true);
+        try {
+            await userService.delete(userToDelete.id);
+            setUsers(prev => prev.filter(u => u.id !== userToDelete.id));
+            toast.success('User deleted successfully');
+            setShowDeleteConfirmModal(false);
+            setUserToDelete(null);
+        } catch (err: any) {
+            console.error('Delete failed:', err);
+            toast.error(err.response?.data?.message || 'Failed to delete user. Please try again.');
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -417,14 +438,14 @@ export const UserManagement: React.FC = () => {
                                                 <>
                                                     <div className="um-menu-overlay" onClick={() => setOpenMenuId(null)} />
                                                     <div className="um-dropdown-menu">
-                                                        <button onClick={() => handleResetPassword(user)}>
+                                                        <button onClick={() => triggerResetPassword(user)}>
                                                             <Key size={14} /> Reset Password
                                                         </button>
                                                         <button onClick={() => handleChangeRoleAction(user)}>
                                                             <Edit3 size={14} /> Change Role
                                                         </button>
                                                         <div className="um-menu-divider" />
-                                                        <button className="delete" onClick={() => handleDeleteUser(user)}>
+                                                        <button className="delete" onClick={() => triggerDeleteUser(user)}>
                                                             <Trash2 size={14} /> Delete Account
                                                         </button>
                                                     </div>
@@ -723,6 +744,90 @@ export const UserManagement: React.FC = () => {
                                 </button>
                             </div>
                         )}
+                    </div>
+                </div>
+            )}
+
+            {/* Reset Password Confirmation Modal */}
+            {showResetConfirmModal && userToReset && (
+                <div className="um-modal-overlay" onClick={() => { setShowResetConfirmModal(false); setUserToReset(null); }}>
+                    <div className="um-modal" style={{ maxWidth: '480px' }} onClick={(e) => e.stopPropagation()}>
+                        <div className="um-modal-header" style={{ padding: '20px 24px' }}>
+                            <div>
+                                <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#1E293B', fontSize: '18px', fontWeight: 700 }}>
+                                    <Key size={20} style={{ color: '#7C3AED' }} /> Confirm Reset Password
+                                </h2>
+                                <p style={{ fontSize: '13px', color: '#64748B', marginTop: '4px', margin: 0 }}>
+                                    Are you sure you want to reset this user's password?
+                                </p>
+                            </div>
+                            <button className="um-modal-close" onClick={() => { setShowResetConfirmModal(false); setUserToReset(null); }}>
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="um-modal-body" style={{ padding: '20px 24px' }}>
+                            <div className="um-info-banner" style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', color: '#475569', display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-start', margin: 0 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <AlertCircle size={16} style={{ color: '#F59E0B' }} />
+                                    <span style={{ fontWeight: 600 }}>Account Details</span>
+                                </div>
+                                <div style={{ paddingLeft: '24px', fontSize: '13px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                    <span><strong>Name:</strong> {userToReset.fullName}</span>
+                                    <span><strong>Registration ID:</strong> {userToReset.studentNumber || 'N/A'}</span>
+                                    <span><strong>Default Password (NIC):</strong> {userToReset.nic || <span style={{ fontStyle: 'italic', color: '#94A3B8' }}>Not Provided</span>}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="um-modal-footer-integrated" style={{ padding: '16px 24px' }}>
+                            <button type="button" className="um-btn-cancel" style={{ height: '40px', minWidth: '100px', padding: '0 20px' }} onClick={() => { setShowResetConfirmModal(false); setUserToReset(null); }} disabled={isLoading}>
+                                Cancel
+                            </button>
+                            <button type="button" className="um-btn-create" style={{ height: '40px', minWidth: '160px', padding: '0 20px', background: 'linear-gradient(135deg, #7C3AED, #6D28D9)' }} onClick={handleConfirmResetPassword} disabled={isLoading}>
+                                {isLoading ? 'Resetting...' : 'Reset Password'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Account Confirmation Modal */}
+            {showDeleteConfirmModal && userToDelete && (
+                <div className="um-modal-overlay" onClick={() => { setShowDeleteConfirmModal(false); setUserToDelete(null); }}>
+                    <div className="um-modal" style={{ maxWidth: '480px' }} onClick={(e) => e.stopPropagation()}>
+                        <div className="um-modal-header" style={{ padding: '20px 24px' }}>
+                            <div>
+                                <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#1E293B', fontSize: '18px', fontWeight: 700 }}>
+                                    <Trash2 size={20} style={{ color: '#EF4444' }} /> Confirm Delete Account
+                                </h2>
+                                <p style={{ fontSize: '13px', color: '#64748B', marginTop: '4px', margin: 0 }}>
+                                    Are you sure you want to delete this account? <strong>This action cannot be undone.</strong>
+                                </p>
+                            </div>
+                            <button className="um-modal-close" onClick={() => { setShowDeleteConfirmModal(false); setUserToDelete(null); }}>
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="um-modal-body" style={{ padding: '20px 24px' }}>
+                            <div className="um-info-banner" style={{ background: '#FEF2F2', border: '1px solid #FEE2E2', color: '#991B1B', display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-start', margin: 0 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <AlertCircle size={16} style={{ color: '#EF4444' }} />
+                                    <span style={{ fontWeight: 600 }}>Account Details</span>
+                                </div>
+                                <div style={{ paddingLeft: '24px', fontSize: '13px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                    <span><strong>Name:</strong> {userToDelete.fullName}</span>
+                                    <span><strong>Registration ID:</strong> {userToDelete.studentNumber || 'N/A'}</span>
+                                    <span><strong>Role:</strong> {userToDelete.role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="um-modal-footer-integrated" style={{ padding: '16px 24px' }}>
+                            <button type="button" className="um-btn-cancel" style={{ height: '40px', minWidth: '100px', padding: '0 20px' }} onClick={() => { setShowDeleteConfirmModal(false); setUserToDelete(null); }} disabled={isLoading}>
+                                Cancel
+                            </button>
+                            <button type="button" className="um-btn-create" style={{ height: '40px', minWidth: '160px', padding: '0 20px', background: 'linear-gradient(135deg, #EF4444, #DC2626)', boxShadow: '0 6px 16px rgba(239, 68, 68, 0.25)' }} onClick={handleConfirmDeleteUser} disabled={isLoading}>
+                                {isLoading ? 'Deleting...' : 'Delete Account'}
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
