@@ -162,6 +162,7 @@ function App() {
         <Route path="/login" element={<LoginPortal />} />
         <Route path="/staff/login" element={<AdminLogin />} />
         <Route path="/help-center" element={<HelpCenter />} />
+        <Route path="/help-center/:guideId" element={<HelpCenter />} />
 
         {/* Applicant Dashboard Routes */}
         <Route

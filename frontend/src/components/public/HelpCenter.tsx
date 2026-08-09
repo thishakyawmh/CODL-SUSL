@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import {
-    ArrowLeft, Search, HelpCircle, BookOpen, FileText, Calendar,
-    RefreshCw, Mail, UserPlus, ChevronDown, ChevronUp, AlertTriangle, Info, CheckCircle
+    ArrowLeft, ArrowRight, Search, HelpCircle, BookOpen, FileText, Calendar,
+    RefreshCw, Mail, UserPlus, AlertTriangle, Info, CheckCircle
 } from 'lucide-react';
 import './HelpCenter.css';
 
@@ -29,9 +29,19 @@ interface Guide {
 }
 
 export const HelpCenter: React.FC = () => {
-    const [lang, setLang] = useState<'en' | 'si'>('en');
+    const { guideId } = useParams<{ guideId?: string }>();
+
+    // Persist language state dynamically using sessionStorage
+    const [lang, setLang] = useState<'en' | 'si'>(() => {
+        return (sessionStorage.getItem('help_lang') as 'en' | 'si') || 'en';
+    });
+
     const [searchTerm, setSearchTerm] = useState('');
-    const [expandedGuideId, setExpandedGuideId] = useState<string | null>(null);
+
+    const handleLangChange = (newLang: 'en' | 'si') => {
+        setLang(newLang);
+        sessionStorage.setItem('help_lang', newLang);
+    };
 
     const branding = {
         logo: '/images/logo.png',
@@ -44,17 +54,19 @@ export const HelpCenter: React.FC = () => {
         searchPlaceholder: lang === 'en' ? 'Search for guides, processes...' : 'මාර්ගෝපදේශ, ක්‍රියාවලීන් සොයන්න...',
         langLabel: lang === 'en' ? 'Language' : 'භාෂාව',
         backLabel: lang === 'en' ? 'Back to Login' : 'නැවත පුරනය වීමට',
+        backToHubLabel: lang === 'en' ? 'Back to Help Center' : 'නැවත උපකාරක මධ්‍යස්ථානයට',
         categoriesTitle: lang === 'en' ? 'Guide Categories' : 'මාර්ගෝපදේශ කාණ්ඩ',
         stepLabel: lang === 'en' ? 'Step' : 'පියවර',
         notesLabel: lang === 'en' ? 'Important Notes' : 'වැදගත් සටහන්',
         tipsLabel: lang === 'en' ? 'Helpful Tips' : 'ප්‍රයෝජනවත් උපදෙස්',
-        warningsLabel: lang === 'en' ? 'Critical Warnings' : 'අත්‍යවශ්‍ය අවවාද',
-        noResults: lang === 'en' ? 'No guides match your search criteria.' : 'ඔබ සෙවූ තොරතුරු වලට ගැළපෙන උපදෙස් හමුනොවීය.'
+        warningsLabel: lang === 'en' ? 'Critical Warnings' : 'अත්‍යවශ්‍ය අවවාද',
+        noResults: lang === 'en' ? 'No guides match your search criteria.' : 'ඔබ සෙවූ තොරතුරු වලට ගැළපෙන උපදෙස් හමුනොවීය.',
+        viewGuideLabel: lang === 'en' ? 'View Guide' : 'මාර්ගෝපදේශය බලන්න'
     };
 
     const guides: Guide[] = [
         {
-            id: 'account',
+            id: 'create-account',
             title: lang === 'en' ? 'Create an Account' : 'ගිණුමක් සාදන්න',
             desc: lang === 'en' ? 'Setup and activate your new applicant workspace' : 'ඔබගේ අයදුම්කරුගේ නව ගිණුම සකසා සක්‍රිය කරන්න',
             icon: UserPlus,
@@ -82,7 +94,7 @@ export const HelpCenter: React.FC = () => {
             }
         },
         {
-            id: 'register',
+            id: 'course-registration',
             title: lang === 'en' ? 'Register for a Course' : 'පාඨමාලාවක් සඳහා ලියාපදිංචි වන්න',
             desc: lang === 'en' ? 'Search and apply for available academic programs' : 'පවතින අධ්‍යයන පාඨමාලා සඳහා අයදුම් කරන්න',
             icon: BookOpen,
@@ -108,7 +120,7 @@ export const HelpCenter: React.FC = () => {
             }
         },
         {
-            id: 'exam',
+            id: 'exam-application',
             title: lang === 'en' ? 'Apply for an Examination' : 'විභාගයක් සඳහා අයදුම් කරන්න',
             desc: lang === 'en' ? 'Register for end-of-semester subject evaluations' : 'වාර අවසාන විභාග ඇගයීම් සඳහා අයදුම් කරන්න',
             icon: FileText,
@@ -136,7 +148,7 @@ export const HelpCenter: React.FC = () => {
             }
         },
         {
-            id: 'postponement',
+            id: 'postponement-request',
             title: lang === 'en' ? 'Submit a Postponement Request' : 'කල් දැමීමේ ඉල්ලීමක් ඉදිරිපත් කරන්න',
             desc: lang === 'en' ? 'Request exam deferrals due to medical or personal emergencies' : 'හදිසි අවස්ථාවන් හේතුවෙන් විභාග කල් දැමීම සඳහා අයදුම් කරන්න',
             icon: Calendar,
@@ -164,7 +176,7 @@ export const HelpCenter: React.FC = () => {
             }
         },
         {
-            id: 'reattempt',
+            id: 'reattempt-request',
             title: lang === 'en' ? 'Submit a Reattempt Request' : 'නැවත පෙනී සිටීමේ ඉල්ලීමක් ඉදිරිපත් කරන්න',
             desc: lang === 'en' ? 'Re-register for repeat exams or semester completions' : 'අසමත් වූ විෂයයන් සඳහා නැවත විභාග අයදුම් කරන්න',
             icon: RefreshCw,
@@ -190,7 +202,7 @@ export const HelpCenter: React.FC = () => {
             }
         },
         {
-            id: 'letters',
+            id: 'letter-request',
             title: lang === 'en' ? 'Request Official Letters' : 'නිල ලිපි ඉල්ලා සිටින්න',
             desc: lang === 'en' ? 'Apply for status, visa, or examination verification letters' : 'ශිෂ්‍යභාවය තහවුරු කිරීමේ හෝ වීසා සහාය ලිපි ලබාගන්න',
             icon: Mail,
@@ -216,20 +228,17 @@ export const HelpCenter: React.FC = () => {
         }
     ];
 
+    const currentGuide = guideId ? guides.find(g => g.id === guideId) : null;
+
     const filteredGuides = guides.filter(g => {
         return !searchTerm ||
             g.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            g.desc.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            g.content.intro.toLowerCase().includes(searchTerm.toLowerCase());
+            g.desc.toLowerCase().includes(searchTerm.toLowerCase());
     });
-
-    const toggleGuide = (id: string) => {
-        setExpandedGuideId(expandedGuideId === id ? null : id);
-    };
 
     return (
         <div className="help-center-page">
-            {/* Header Layout matches application system layout */}
+            {/* Header Layout matches application layout */}
             <div className="help-center-header">
                 <div className="hc-branding">
                     <img src={branding.logo} alt="Logo" className="hc-logo" />
@@ -244,130 +253,151 @@ export const HelpCenter: React.FC = () => {
                         <label>{branding.langLabel}:</label>
                         <select 
                             value={lang} 
-                            onChange={(e) => setLang(e.target.value as 'en' | 'si')}
+                            onChange={(e) => handleLangChange(e.target.value as 'en' | 'si')}
                             className="hc-lang-select"
                         >
                             <option value="en">English</option>
                             <option value="si">සිංහල</option>
                         </select>
                     </div>
+                    {/* Always display standard navigation actions in the header */}
                     <Link to="/login" className="hc-back-btn">
                         <ArrowLeft size={16} /> {branding.backLabel}
                     </Link>
                 </div>
             </div>
 
-            {/* Hero Section */}
-            <div className="help-center-hero">
-                <h1>{branding.title}</h1>
-                <p>{branding.subtitle}</p>
+            {currentGuide ? (
+                /* =========================================================
+                   STATE B: GUIDE DETAIL PAGE
+                   ========================================================= */
+                <div className="hc-detail-wrapper fade-in-up">
+                    <Link to="/help-center" className="hc-back-btn" style={{ marginBottom: '24px' }}>
+                        <ArrowLeft size={16} /> {branding.backToHubLabel}
+                    </Link>
 
-                <div className="hc-search-bar">
-                    <Search size={18} />
-                    <input 
-                        type="text" 
-                        placeholder={branding.searchPlaceholder}
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
+                    <div className="hc-detail-card" style={{ borderTop: `6px solid ${currentGuide.color}` }}>
+                        <div className="hc-detail-header">
+                            <div className="hc-card-icon big" style={{ background: `${currentGuide.color}15`, color: currentGuide.color }}>
+                                <currentGuide.icon size={28} />
+                            </div>
+                            <div>
+                                <h1>{currentGuide.title}</h1>
+                                <p className="hc-detail-desc">{currentGuide.desc}</p>
+                            </div>
+                        </div>
+
+                        <div className="hc-detail-content">
+                            <p className="hc-intro-text">{currentGuide.content.intro}</p>
+
+                            <div className="hc-steps-section">
+                                <h5>{branding.stepLabel}s</h5>
+                                <div className="hc-steps-list">
+                                    {currentGuide.content.steps.map(step => (
+                                        <div key={step.number} className="hc-step-item">
+                                            <div className="hc-step-badge">{step.number}</div>
+                                            <p className="hc-step-text">{step.text}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {currentGuide.content.notes && currentGuide.content.notes.length > 0 && (
+                                <div className="hc-info-box note">
+                                    <div className="hc-info-box-header">
+                                        <Info size={16} />
+                                        <h6>{branding.notesLabel}</h6>
+                                    </div>
+                                    <ul>
+                                        {currentGuide.content.notes.map((n, i) => <li key={i}>{n}</li>)}
+                                    </ul>
+                                </div>
+                            )}
+
+                            {currentGuide.content.tips && currentGuide.content.tips.length > 0 && (
+                                <div className="hc-info-box tip">
+                                    <div className="hc-info-box-header">
+                                        <CheckCircle size={16} />
+                                        <h6>{branding.tipsLabel}</h6>
+                                    </div>
+                                    <ul>
+                                        {currentGuide.content.tips.map((t, i) => <li key={i}>{t}</li>)}
+                                    </ul>
+                                </div>
+                            )}
+
+                            {currentGuide.content.warnings && currentGuide.content.warnings.length > 0 && (
+                                <div className="hc-info-box warning">
+                                    <div className="hc-info-box-header">
+                                        <AlertTriangle size={16} />
+                                        <h6>{branding.warningsLabel}</h6>
+                                    </div>
+                                    <ul>
+                                        {currentGuide.content.warnings.map((w, i) => <li key={i}>{w}</li>)}
+                                    </ul>
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </div>
-            </div>
+            ) : (
+                /* =========================================================
+                   STATE A: HELP CENTER LANDING HUB
+                   ========================================================= */
+                <>
+                    {/* Hero Section */}
+                    <div className="help-center-hero">
+                        <h1>{branding.title}</h1>
+                        <p>{branding.subtitle}</p>
 
-            {/* Categories & Expandable Guide Section */}
-            <div className="help-center-content">
-                <h3>{branding.categoriesTitle}</h3>
+                        <div className="hc-search-bar">
+                            <Search size={18} />
+                            <input 
+                                type="text" 
+                                placeholder={branding.searchPlaceholder}
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
+                    </div>
 
-                <div className="hc-categories-grid">
-                    {filteredGuides.map(guide => {
-                        const IconComponent = guide.icon;
-                        const isExpanded = expandedGuideId === guide.id;
+                    {/* Guide categories displayed as home page grid cards only */}
+                    <div className="help-center-content">
+                        <h3>{branding.categoriesTitle}</h3>
 
-                        return (
-                            <div 
-                                key={guide.id} 
-                                className={`hc-guide-card ${isExpanded ? 'active' : ''}`}
-                                style={{ borderLeft: `5px solid ${guide.color}` }}
-                            >
-                                <div className="hc-card-header-row" onClick={() => toggleGuide(guide.id)}>
-                                    <div className="hc-card-title-group">
+                        <div className="hc-categories-grid">
+                            {filteredGuides.map(guide => {
+                                const IconComponent = guide.icon;
+                                return (
+                                    <Link 
+                                        key={guide.id} 
+                                        to={`/help-center/${guide.id}`}
+                                        className="hc-category-link-card"
+                                        style={{ borderLeft: `5px solid ${guide.color}` }}
+                                    >
                                         <div className="hc-card-icon" style={{ background: `${guide.color}15`, color: guide.color }}>
                                             <IconComponent size={24} />
                                         </div>
-                                        <div>
-                                            <h4>{guide.title}</h4>
-                                            <p className="hc-card-desc">{guide.desc}</p>
+                                        <h4>{guide.title}</h4>
+                                        <p>{guide.desc}</p>
+                                        <div className="hc-card-action-row">
+                                            <span>{branding.viewGuideLabel}</span>
+                                            <ArrowRight size={16} />
                                         </div>
-                                    </div>
-                                    <button className="hc-card-toggle-btn">
-                                        {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                                    </button>
-                                </div>
+                                    </Link>
+                                );
+                            })}
+                        </div>
 
-                                {isExpanded && (
-                                    <div className="hc-card-expanded-content fade-in-down">
-                                        <p className="hc-intro-text">{guide.content.intro}</p>
-
-                                        <div className="hc-steps-section">
-                                            <h5>{branding.stepLabel}s</h5>
-                                            <div className="hc-steps-list">
-                                                {guide.content.steps.map(step => (
-                                                    <div key={step.number} className="hc-step-item">
-                                                        <div className="hc-step-badge">{step.number}</div>
-                                                        <p className="hc-step-text">{step.text}</p>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-
-                                        {guide.content.notes && guide.content.notes.length > 0 && (
-                                            <div className="hc-info-box note">
-                                                <div className="hc-info-box-header">
-                                                    <Info size={16} />
-                                                    <h6>{branding.notesLabel}</h6>
-                                                </div>
-                                                <ul>
-                                                    {guide.content.notes.map((n, i) => <li key={i}>{n}</li>)}
-                                                </ul>
-                                            </div>
-                                        )}
-
-                                        {guide.content.tips && guide.content.tips.length > 0 && (
-                                            <div className="hc-info-box tip">
-                                                <div className="hc-info-box-header">
-                                                    <CheckCircle size={16} />
-                                                    <h6>{branding.tipsLabel}</h6>
-                                                </div>
-                                                <ul>
-                                                    {guide.content.tips.map((t, i) => <li key={i}>{t}</li>)}
-                                                </ul>
-                                            </div>
-                                        )}
-
-                                        {guide.content.warnings && guide.content.warnings.length > 0 && (
-                                            <div className="hc-info-box warning">
-                                                <div className="hc-info-box-header">
-                                                    <AlertTriangle size={16} />
-                                                    <h6>{branding.warningsLabel}</h6>
-                                                </div>
-                                                <ul>
-                                                    {guide.content.warnings.map((w, i) => <li key={i}>{w}</li>)}
-                                                </ul>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
+                        {filteredGuides.length === 0 && (
+                            <div className="hc-empty-state">
+                                <HelpCircle size={48} />
+                                <p>{branding.noResults}</p>
                             </div>
-                        );
-                    })}
-                </div>
-
-                {filteredGuides.length === 0 && (
-                    <div className="hc-empty-state">
-                        <HelpCircle size={48} />
-                        <p>{branding.noResults}</p>
+                        )}
                     </div>
-                )}
-            </div>
+                </>
+            )}
         </div>
     );
 };
