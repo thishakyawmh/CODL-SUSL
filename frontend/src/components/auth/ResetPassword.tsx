@@ -7,16 +7,16 @@ import './LoginPortal.css'; // Reusing premium login portal styles
 export const ResetPassword: React.FC = () => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
-    
+
     const email = searchParams.get('email') || searchParams.get('amp;email') || '';
     const token = searchParams.get('token') || '';
 
     const [password, setPassword] = useState('');
     const [passwordConfirmation, setPasswordConfirmation] = useState('');
-    
+
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    
+
     const [isLoading, setIsLoading] = useState(false);
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
@@ -74,7 +74,7 @@ export const ResetPassword: React.FC = () => {
                 password_confirmation: passwordConfirmation
             });
             setMessage(data.message || 'Your password has been successfully reset.');
-            
+
             // Redirect to login after 3 seconds
             setTimeout(() => {
                 navigate('/login');
@@ -131,8 +131,6 @@ export const ResetPassword: React.FC = () => {
                         <p style={{ margin: 0 }}>© {new Date().getFullYear()} CODL. All rights reserved.</p>
                         <div className="pane-footer-links">
                             <span onClick={() => navigate('/login')} className="pane-footer-link">Student Login</span>
-                            <span style={{ color: 'rgba(255, 255, 255, 0.2)' }}>|</span>
-                            <span onClick={() => navigate('/staff/login')} className="pane-footer-link">Staff Login</span>
                         </div>
                     </div>
                 </div>
