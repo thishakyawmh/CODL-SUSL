@@ -165,7 +165,7 @@ export function IndustryAnalysisForm() {
             {/* Top Header Card */}
             <div className="industry-analysis-header-card">
                 <div className="header-text-section">
-                    <h1>Industry Requirements Survey</h1>
+                    <h1>Industry Requirements</h1>
                     <div className="header-subtitle-container">
                         <img src="/images/logo.png" className="header-uni-logo" alt="SUSL Logo" />
                         <div className="subtitle-text">
@@ -191,7 +191,7 @@ export function IndustryAnalysisForm() {
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="interest-form">
-                
+
                 {/* Part 1: Company Profile */}
                 <div className="form-section">
                     <div className="section-header-row">

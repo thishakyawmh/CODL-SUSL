@@ -84,29 +84,28 @@ class StudentInterestController extends Controller
             // Set timestamp of submission
             $validated['survey_submitted_at'] = now();
 
-            // Remove token so it doesn't get inserted into student_interests table
+            // Remove token so it doesn't get sent to Google Sheets
             unset($validated['recaptcha_token']);
 
-            $studentInterest = StudentInterest::create($validated);
-
-            // Send to Google Sheets webhook asynchronously
+            // Send to Google Sheets webhook asynchronously using validated payload keys
             $webhookUrl = env('GOOGLE_SHEET_WEBHOOK_URL');
             if ($webhookUrl) {
                 try {
-                    Http::timeout(5)->post($webhookUrl, $modelData);
+                    Http::timeout(5)->post($webhookUrl, $validated);
                 } catch (\Exception $sheetException) {
                     // Log error but do not disrupt student user experience
                     Log::error('Google Sheet Sync Error: ' . $sheetException->getMessage());
                 }
             }
 
+            // We bypass saving directly to the local database here to prevent database/schema mismatch issues.
+            // Data is synced to the database when the admin imports the Google Sheets CSV via the AI dashboard.
             return response()->json([
                 'success' => true,
-                'message' => 'Student academic interests recorded successfully.',
-                'data' => $studentInterest
+                'message' => 'Student academic interests recorded successfully.'
             ], 201);
         } catch (\Exception $e) {
-            Log::error('Failed to save student interest: ' . $e->getMessage());
+            Log::error('Failed to submit student interest: ' . $e->getMessage());
 
             return response()->json([
                 'success' => false,
