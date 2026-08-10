@@ -26,6 +26,7 @@ import { ApplicantTrackStatus } from './components/student-portal/ApplicantTrack
 import { NewCourseApplication } from './components/student-portal/NewCourseApplication';
 import ExaminationResults from './components/student-portal/ExaminationResults';
 import { StudentInterestForm } from './components/public/StudentInterestForm';
+import { IndustryAnalysisForm } from './components/public/IndustryAnalysisForm';
 
 
 // --- Admin Portal Imports ---
@@ -113,6 +114,8 @@ const TitleUpdater = () => {
       document.title = 'CODL | SUSL - Staff';
     } else if (location.pathname.startsWith('/student-interests')) {
       document.title = 'Student Academic Interest';
+    } else if (location.pathname.startsWith('/industry-analysis')) {
+      document.title = 'Industry Requirements Survey';
     } else {
       document.title = 'CODL | SUSL - Student';
     }
@@ -168,6 +171,7 @@ function App() {
 
         <Route path="/login" element={<LoginPortal />} />
         <Route path="/student-interests" element={<StudentInterestForm />} />
+        <Route path="/industry-analysis" element={<IndustryAnalysisForm />} />
         <Route path="/staff/login" element={<AdminLogin />} />
         <Route path="/help-center" element={<HelpCenter />} />
         <Route path="/help-center/:guideId" element={<HelpCenter />} />

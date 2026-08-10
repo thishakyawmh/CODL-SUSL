@@ -633,5 +633,12 @@ export const studentInterestService = {
     }
 };
 
+export const industryAnalysisService = {
+    submit: async (data: any) => {
+        const response = await api.post('/industry-analysis', data);
+        return response.data;
+    }
+};
+
 export default api;
 

@@ -35,11 +35,12 @@ Route::post('/reset-password', [AuthController::class, 'resetPassword'])->middle
 // Public: Available courses for applicants (with batches)
 Route::get('/public/courses', [CourseController::class, 'publicIndex']);
 Route::get('/admin/system-settings', [SystemSettingController::class, 'getSettings']);
-Route::post('/public/surveys', [AIAnalyticsController::class, 'storeSurvey']); // Public survey submission
-Route::post('/student-interests', [StudentInterestController::class, 'store']);
-Route::get('/student-interests/config', [StudentInterestController::class, 'getConfig']);
-Route::get('/student-interests/teaching-methods', [StudentInterestController::class, 'getTeachingMethods']);
-Route::get('/student-interests/university-opportunities', [StudentInterestController::class, 'getUniversityOpportunities']);
+Route::post('/public/surveys', [AIAnalyticsController::class, 'storeSurvey'])->middleware('throttle:submissions'); // Public survey submission
+Route::post('/student-interests', [StudentInterestController::class, 'store'])->middleware('throttle:submissions');
+Route::post('/industry-analysis', [StudentInterestController::class, 'storeIndustry'])->middleware('throttle:submissions');
+Route::get('/student-interests/config', [StudentInterestController::class, 'getConfig'])->middleware('throttle:survey-configs');
+Route::get('/student-interests/teaching-methods', [StudentInterestController::class, 'getTeachingMethods'])->middleware('throttle:survey-configs');
+Route::get('/student-interests/university-opportunities', [StudentInterestController::class, 'getUniversityOpportunities'])->middleware('throttle:survey-configs');
 
 
 
