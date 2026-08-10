@@ -93,7 +93,7 @@ class StudentInterestController extends Controller
             $webhookUrl = env('GOOGLE_SHEET_WEBHOOK_URL');
             if ($webhookUrl) {
                 try {
-                    Http::timeout(5)->post($webhookUrl, $validated);
+                    Http::timeout(5)->post($webhookUrl, $modelData);
                 } catch (\Exception $sheetException) {
                     // Log error but do not disrupt student user experience
                     Log::error('Google Sheet Sync Error: ' . $sheetException->getMessage());
