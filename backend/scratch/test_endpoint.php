@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 // Create the request
 $request = Request::create('/admin/ai-analytics/sync-sheet', 'POST', [
     'type' => 'student',
-    'url' => 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTBG1UkL1l-2L-KOTZziYCiLv4oZf0c-gR_PXZl_d8MSIAr6Z8HH_doFN-I4dU40wkT06GaGuJ8KSVW/pub?gid=710071064&single=true&output=csv'
+    'url' => 'https://docs.google.com/spreadsheets/d/1BR4zpfaaYbdHCDLswafBBjiJ9csiwb72TsN9ks_TglI/export?format=csv'
 ]);
 
 echo "Invoking controller...\n";

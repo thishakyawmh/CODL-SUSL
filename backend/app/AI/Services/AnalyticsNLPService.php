@@ -24,48 +24,6 @@ class AnalyticsNLPService
         $studentSurveys = StudentInterest::all();
         $industrySurveys = IndustryRequirement::all();
 
-        // If a course is provided, use multi-signal NLP to filter relevant surveys
-        if ($course) {
-            $courseText = $course->title . ' ' . $course->department . ' ' . $course->code;
-            $courseDomains = $this->extractDomains($courseText);
-            
-            // Load semesters & subjects to extract domains from curriculum subjects
-            $course->load('semesters.subjects');
-            foreach ($course->semesters as $semester) {
-                foreach ($semester->subjects as $subject) {
-                    $courseDomains = array_merge($courseDomains, $this->extractDomains($subject->name));
-                }
-            }
-            $courseDomains = $this->deduplicateDomains($courseDomains);
-
-            // Default to broad matching if course text is too vague
-            if (empty($courseDomains)) {
-                $courseDomains = [$course->department];
-            }
-
-            $studentSurveys = $studentSurveys->filter(function ($survey) use ($courseDomains) {
-                // Multi-signal evaluation
-                $text = implode(' ', [
-                    $survey->primary_interest,
-                    $survey->primary_skills,
-                    $survey->secondary_interest,
-                    $survey->secondary_skills,
-                    $survey->ternary_interest,
-                    $survey->ternary_skills,
-                    $survey->new_program_suggestion
-                ]);
-                $surveyDomains = $this->extractDomains($text);
-                // Return true if there is any semantic intersection
-                return count(array_intersect($courseDomains, $surveyDomains)) > 0;
-            });
-
-            $industrySurveys = $industrySurveys->filter(function ($survey) use ($courseDomains) {
-                $text = $survey->industry_sector . ' ' . $survey->primary_academic_field . ' ' . $survey->required_skills;
-                $surveyDomains = $this->extractDomains($text);
-                return count(array_intersect($courseDomains, $surveyDomains)) > 0;
-            });
-        }
-
         $studentDomains = [];
         $industryDomains = [];
         $emergingTechnologies = [];
@@ -92,74 +50,166 @@ class AnalyticsNLPService
             return 3.0;
         };
 
-        // 1. Process Student Surveys
-        foreach ($studentSurveys as $survey) {
-            $text = implode(' ', [
-                $survey->primary_interest,
-                $survey->primary_skills,
-                $survey->secondary_interest,
-                $survey->secondary_skills,
-                $survey->ternary_interest,
-                $survey->ternary_skills,
-                $survey->new_program_suggestion
-            ]);
-            $domains = $this->extractDomains($text);
-            $domains = $this->deduplicateDomains($domains);
-            $studentDomains = array_merge($studentDomains, $domains);
-            
-            // Collect raw skills as emerging fields or suggestions
-            if ($survey->new_program_suggestion) {
-                $emergingTechnologies[] = $survey->new_program_suggestion;
-            }
+        if ($course) {
+            $courseField = $this->classifyCourseField($course);
 
-            // Extract theory practical scores from balances
-            $surveyScores = [];
-            if ($survey->primary_learning_balance) $surveyScores[] = $parseBalance($survey->primary_learning_balance);
-            if ($survey->secondary_learning_balance) $surveyScores[] = $parseBalance($survey->secondary_learning_balance);
-            if ($survey->ternary_learning_balance) $surveyScores[] = $parseBalance($survey->ternary_learning_balance);
-            if (count($surveyScores) > 0) {
-                $theoryPracticalScores[] = array_sum($surveyScores) / count($surveyScores);
-            }
+            // 1. Process Student Surveys
+            foreach ($studentSurveys as $survey) {
+                $weight = 0.0;
+                $skills = '';
+                $methods = '';
+                $balance = '';
 
-            // Extract learning preferences from all methods
-            $prefsText = implode(',', array_filter([
-                $survey->primary_learning_methods,
-                $survey->secondary_learning_methods,
-                $survey->ternary_learning_methods
-            ]));
-            if ($prefsText) {
-                $prefs = array_map('trim', explode(',', $prefsText));
-                foreach ($prefs as $p) {
-                    if ($p) $learningPreferences[] = $p;
+                // Check Primary Interest
+                if (strtolower(trim($survey->primary_interest)) === strtolower(trim($courseField))) {
+                    $weight = 1.0;
+                    $skills = $survey->primary_skills;
+                    $methods = $survey->primary_learning_methods;
+                    $balance = $survey->primary_learning_balance;
+                }
+                // Check Secondary Interest
+                elseif (strtolower(trim($survey->secondary_interest)) === strtolower(trim($courseField))) {
+                    $weight = 0.6;
+                    $skills = $survey->secondary_skills;
+                    $methods = $survey->secondary_learning_methods;
+                    $balance = $survey->secondary_learning_balance;
+                }
+                // Check Ternary Interest
+                elseif (strtolower(trim($survey->ternary_interest)) === strtolower(trim($courseField))) {
+                    $weight = 0.3;
+                    $skills = $survey->ternary_skills;
+                    $methods = $survey->ternary_learning_methods;
+                    $balance = $survey->ternary_learning_balance;
+                }
+
+                if ($weight > 0.0) {
+                    $domains = $this->extractDomains($skills);
+                    $domains = $this->deduplicateDomains($domains);
+
+                    // Add domains weighted by duplicating entries
+                    $relevanceCount = (int) round($weight * 10);
+                    for ($i = 0; $i < $relevanceCount; $i++) {
+                        $studentDomains = array_merge($studentDomains, $domains);
+                    }
+
+                    if ($survey->new_program_suggestion) {
+                        for ($i = 0; $i < $relevanceCount; $i++) {
+                            $emergingTechnologies[] = $survey->new_program_suggestion;
+                        }
+                    }
+
+                    if ($balance) {
+                        $score = $parseBalance($balance);
+                        for ($i = 0; $i < $relevanceCount; $i++) {
+                            $theoryPracticalScores[] = $score;
+                        }
+                    }
+
+                    if ($methods) {
+                        $prefs = array_map('trim', explode(',', $methods));
+                        for ($i = 0; $i < $relevanceCount; $i++) {
+                            foreach ($prefs as $p) {
+                                if ($p) $learningPreferences[] = $p;
+                            }
+                        }
+                    }
                 }
             }
-        }
 
-        // 2. Process Industry Surveys
-        foreach ($industrySurveys as $survey) {
-            $text = $survey->required_skills . ' ' . $survey->graduate_skill_gaps . ' ' . $survey->emerging_fields;
-            $domains = $this->extractDomains($text);
-            $domains = $this->deduplicateDomains($domains);
-            $industryDomains = array_merge($industryDomains, $domains);
-            
-            if ($survey->emerging_fields) {
-                $emergingTechnologies[] = $survey->emerging_fields;
-            }
-            if ($survey->graduate_skill_gaps) {
-                $skillGapsList = array_merge($skillGapsList, $this->extractDomains($survey->graduate_skill_gaps));
-            }
+            // 2. Process Industry Surveys
+            foreach ($industrySurveys as $survey) {
+                $weight = 0.0;
 
-            // Extract academic practices
-            if ($survey->academic_practices) {
-                $practices = array_map('trim', explode(',', $survey->academic_practices));
-                foreach ($practices as $p) {
-                    if ($p) $academicPractices[] = $p;
+                if (strtolower(trim($survey->primary_academic_field)) === strtolower(trim($courseField))) {
+                    $weight = 1.0;
+                } elseif (strtolower(trim($survey->secondary_academic_field)) === strtolower(trim($courseField))) {
+                    $weight = 0.6;
+                } elseif (strtolower(trim($survey->third_academic_field)) === strtolower(trim($courseField))) {
+                    $weight = 0.3;
+                }
+
+                if ($weight > 0.0) {
+                    $domains = $this->extractDomains($survey->required_skills);
+                    $domains = $this->deduplicateDomains($domains);
+
+                    $relevanceCount = (int) round($weight * 10);
+                    for ($i = 0; $i < $relevanceCount; $i++) {
+                        $industryDomains = array_merge($industryDomains, $domains);
+                    }
+
+                    if ($survey->emerging_fields) {
+                        for ($i = 0; $i < $relevanceCount; $i++) {
+                            $emergingTechnologies[] = $survey->emerging_fields;
+                        }
+                    }
+
+                    if ($survey->graduate_skill_gaps) {
+                        $gaps = $this->extractDomains($survey->graduate_skill_gaps);
+                        for ($i = 0; $i < $relevanceCount; $i++) {
+                            $skillGapsList = array_merge($skillGapsList, $gaps);
+                        }
+                    }
+
+                    if ($survey->academic_practices) {
+                        $practices = array_map('trim', explode(',', $survey->academic_practices));
+                        for ($i = 0; $i < $relevanceCount; $i++) {
+                            foreach ($practices as $p) {
+                                if ($p) $academicPractices[] = $p;
+                            }
+                        }
+                    }
+
+                    if (isset($survey->certification_importance)) {
+                        for ($i = 0; $i < $relevanceCount; $i++) {
+                            $certImportances[] = $survey->certification_importance;
+                        }
+                    }
+                }
+            }
+        } else {
+            // Global scope fallback
+            foreach ($studentSurveys as $survey) {
+                $text = implode(' ', [$survey->primary_interest, $survey->primary_skills, $survey->secondary_interest, $survey->secondary_skills, $survey->ternary_interest, $survey->ternary_skills]);
+                $domains = $this->extractDomains($text);
+                $studentDomains = array_merge($studentDomains, $domains);
+                
+                if ($survey->new_program_suggestion) {
+                    $emergingTechnologies[] = $survey->new_program_suggestion;
+                }
+
+                if ($survey->primary_learning_balance) {
+                    $theoryPracticalScores[] = $parseBalance($survey->primary_learning_balance);
+                }
+
+                $prefsText = implode(',', array_filter([$survey->primary_learning_methods, $survey->secondary_learning_methods, $survey->ternary_learning_methods]));
+                if ($prefsText) {
+                    $prefs = array_map('trim', explode(',', $prefsText));
+                    foreach ($prefs as $p) {
+                        if ($p) $learningPreferences[] = $p;
+                    }
                 }
             }
 
-            // Extract certification importance
-            if (isset($survey->certification_importance)) {
-                $certImportances[] = $survey->certification_importance;
+            foreach ($industrySurveys as $survey) {
+                $text = $survey->required_skills . ' ' . $survey->graduate_skill_gaps . ' ' . $survey->emerging_fields;
+                $domains = $this->extractDomains($text);
+                $industryDomains = array_merge($industryDomains, $domains);
+
+                if ($survey->emerging_fields) {
+                    $emergingTechnologies[] = $survey->emerging_fields;
+                }
+                if ($survey->graduate_skill_gaps) {
+                    $skillGapsList = array_merge($skillGapsList, $this->extractDomains($survey->graduate_skill_gaps));
+                }
+                if ($survey->academic_practices) {
+                    $practices = array_map('trim', explode(',', $survey->academic_practices));
+                    foreach ($practices as $p) {
+                        if ($p) $academicPractices[] = $p;
+                    }
+                }
+                if (isset($survey->certification_importance)) {
+                    $certImportances[] = $survey->certification_importance;
+                }
             }
         }
 
@@ -446,5 +496,45 @@ class AnalyticsNLPService
         }
 
         return $distribution;
+    }
+
+    /**
+     * Helper to classify a course into one of the 19 standard academic interests.
+     */
+    public function classifyCourseField(\App\Models\Course $course): string
+    {
+        $text = strtolower($course->title . ' ' . $course->department);
+        
+        $fields = [
+            'Computing & Information Technology' => ['computing', 'information technology', 'software', 'computer', 'it', 'programming', 'network', 'system'],
+            'Accounting & Finance' => ['accounting', 'finance', 'audit', 'taxation', 'banking'],
+            'Business & Management' => ['business', 'management', 'mba', 'administration', 'hr', 'human resource', 'entrepreneurship'],
+            'Hospitality & Tourism' => ['hospitality', 'tourism', 'hotel', 'travel', 'event management'],
+            'Marketing' => ['marketing', 'digital marketing', 'advertising', 'sales'],
+            'Economics' => ['economics', 'macroeconomics', 'microeconomics'],
+            'Psychology' => ['psychology', 'counseling', 'behavior'],
+            'Media & Communication' => ['media', 'communication', 'journalism', 'public relations'],
+            'Environmental Studies' => ['environmental', 'ecology', 'forestry'],
+            'Architecture' => ['architecture', 'design', 'building'],
+            'Mathematics & Statistics' => ['mathematics', 'statistics', 'math', 'actuarial'],
+            'Education' => ['education', 'teaching', 'pedagogy'],
+            'Arts & Humanities' => ['arts', 'humanities', 'english', 'history', 'philosophy'],
+            'Social Science' => ['social science', 'sociology', 'anthropology'],
+            'Engineering & Technology' => ['engineering', 'mechanical', 'civil', 'electrical', 'electronic'],
+            'Medicine & Health Sciences' => ['medicine', 'health', 'nursing', 'medical', 'dental', 'pharmacy'],
+            'Agriculture' => ['agriculture', 'farming', 'crop', 'horticulture'],
+            'Law' => ['law', 'legal', 'jurisprudence'],
+            'Science' => ['science', 'chemistry', 'physics', 'biology', 'zoology', 'botany']
+        ];
+
+        foreach ($fields as $fieldName => $keywords) {
+            foreach ($keywords as $kw) {
+                if (str_contains($text, $kw)) {
+                    return $fieldName;
+                }
+            }
+        }
+
+        return $course->department;
     }
 }
