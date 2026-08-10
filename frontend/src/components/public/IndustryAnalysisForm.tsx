@@ -181,11 +181,8 @@ export function IndustryAnalysisForm() {
 
             {/* Premium Info Card */}
             <div className="industry-analysis-description-card">
-                <div className="info-icon-wrapper">
-                    <Info size={20} />
-                </div>
                 <div className="description-text">
-                    This survey gathers feedback from industry partners to evaluate core skill demands, qualification expectations, and emerging domains. Your inputs directly assist us in curriculum upgrading and planning relevant future degree programs.
+                    This survey gathers industry feedback to identify current skill demands and emerging trends, supporting curriculum advancement and the development of relevant future degree programs.
                 </div>
             </div>
 
