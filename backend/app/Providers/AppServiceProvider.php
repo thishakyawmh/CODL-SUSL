@@ -30,5 +30,13 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('login', function (Request $request) {
             return Limit::perMinute(5)->by($request->ip());
         });
+
+        RateLimiter::for('submissions', function (Request $request) {
+            return Limit::perMinute(5)->by($request->ip());
+        });
+
+        RateLimiter::for('survey-configs', function (Request $request) {
+            return Limit::perMinute(30)->by($request->ip());
+        });
     }
 }
