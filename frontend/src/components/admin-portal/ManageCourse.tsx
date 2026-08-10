@@ -1234,14 +1234,14 @@ export const ManageCourse: React.FC = () => {
             if (regNoIndex === -1) regNoIndex = 0;
             if (gradeIndex === -1) gradeIndex = regNoIndex === 0 ? 1 : 0;
 
-            const hasHeader = parsedRows[0].some(cell => 
-                cell.toLowerCase().includes('reg') || 
-                cell.toLowerCase().includes('id') || 
-                cell.toLowerCase().includes('grade') || 
+            const hasHeader = parsedRows[0].some(cell =>
+                cell.toLowerCase().includes('reg') ||
+                cell.toLowerCase().includes('id') ||
+                cell.toLowerCase().includes('grade') ||
                 cell.toLowerCase().includes('result') ||
                 cell.toLowerCase().includes('student')
             );
-            
+
             const dataRows = hasHeader ? parsedRows.slice(1) : parsedRows;
 
             if (!importedResults) {
@@ -1254,10 +1254,10 @@ export const ManageCourse: React.FC = () => {
                 const matchingRow = dataRows.find(row => {
                     const csvRegNo = row[regNoIndex];
                     if (!csvRegNo || !existing.studentId) return false;
-                    
+
                     const cleanCsv = csvRegNo.toLowerCase().replace(/[^a-z0-9]/g, '');
                     const cleanExisting = existing.studentId.toLowerCase().replace(/[^a-z0-9]/g, '');
-                    
+
                     return cleanCsv === cleanExisting || cleanCsv.includes(cleanExisting) || cleanExisting.includes(cleanCsv);
                 });
 
@@ -1265,7 +1265,7 @@ export const ManageCourse: React.FC = () => {
                     const rawGrade = matchingRow[gradeIndex] || 'N/A';
                     let formattedGrade = rawGrade.trim().toUpperCase();
                     if (formattedGrade === 'NA' || formattedGrade === 'PENDING') formattedGrade = 'N/A';
-                    
+
                     mappedCount++;
                     return {
                         ...existing,
@@ -1278,7 +1278,7 @@ export const ManageCourse: React.FC = () => {
 
             setImportedResults(updatedResults);
             toast.success(`Successfully mapped ${mappedCount} student results from CSV!`);
-            
+
             if (csvInputRef.current) csvInputRef.current.value = '';
         };
         reader.readAsText(file);
@@ -2050,12 +2050,12 @@ export const ManageCourse: React.FC = () => {
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.setAttribute("href", url);
-        
+
         // Construct filename: course code and batch
         const courseStr = course?.code ? course.code.replace(/[^a-zA-Z0-9-_]/g, '_') : 'course';
         const batchStr = selectedBatch ? selectedBatch.toString().replace(/[^a-zA-Z0-9-_]/g, '_') : 'all';
         const dateStr = new Date().toISOString().split('T')[0];
-        
+
         link.setAttribute("download", `Students_${courseStr}_${batchStr}_${dateStr}.csv`);
         document.body.appendChild(link);
         link.click();
@@ -5709,7 +5709,7 @@ export const ManageCourse: React.FC = () => {
                                 toast.success(editingMaterial ? 'Lesson recording updated successfully in database!' : 'Lesson recording added successfully to database!');
                             } catch (err: any) {
                                 console.error('Failed to save lesson recording:', err);
-                                toast.error('Failed to save lesson recording in database.');
+                                toast.error(err.response?.data?.message || 'Failed to save lesson recording in database.');
                             }
 
                             setShowVideoModal(false);
@@ -5788,12 +5788,27 @@ export const ManageCourse: React.FC = () => {
                                     return;
                                 }
 
-                                if (!fileForm.link) {
-                                    toast.error('Please provide an external cloud link.');
+                                let uploadedUrl = fileForm.link || '';
+                                let fileSize = 'Cloud Link';
+
+                                if (selectedFile) {
+                                    toast.info('Uploading file, please wait...');
+                                    const uploadRes = await batchService.uploadMaterial(targetBatch.id, selectedFile);
+                                    uploadedUrl = uploadRes.url;
+
+                                    const bytes = uploadRes.size || selectedFile.size;
+                                    if (bytes === 0) fileSize = '0 Bytes';
+                                    else {
+                                        const k = 1024;
+                                        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                                        const i = Math.floor(Math.log(bytes) / Math.log(k));
+                                        fileSize = parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+                                    }
+                                } else if (!editingMaterial) {
+                                    toast.error('Please select a file to upload.');
                                     return;
                                 }
 
-                                const uploadedUrl = fileForm.link;
                                 let updatedSemesters = [];
                                 if (editingMaterial) {
                                     updatedSemesters = materialsSemesters.map(sem => {
@@ -5810,7 +5825,7 @@ export const ManageCourse: React.FC = () => {
                                                             ...mat,
                                                             title: fileForm.title,
                                                             type: fileForm.type,
-                                                            size: 'Cloud Link',
+                                                            size: selectedFile ? fileSize : (mat.size || 'Cloud Link'),
                                                             url: uploadedUrl,
                                                             link: uploadedUrl
                                                         };
@@ -5823,7 +5838,7 @@ export const ManageCourse: React.FC = () => {
                                     const newFile = {
                                         title: fileForm.title,
                                         type: fileForm.type,
-                                        size: 'Cloud Link',
+                                        size: fileSize,
                                         locked: false,
                                         addedAt: new Date().toISOString(),
                                         url: uploadedUrl,
@@ -5892,17 +5907,27 @@ export const ManageCourse: React.FC = () => {
                                 </div>
                                 <div className="cm-form-group" style={{ marginTop: '20px' }}>
                                     <label style={{ color: '#475569', fontWeight: 600, marginBottom: '8px', display: 'block' }}>
-                                        External Link (OneDrive / Google Drive)
+                                        Upload Document / File
                                     </label>
                                     <input
-                                        type="url"
-                                        required
-                                        placeholder="e.g. https://drive.google.com/..."
+                                        type="file"
+                                        required={!editingMaterial}
                                         className="admin-input"
-                                        value={fileForm.link || ''}
-                                        onChange={(e) => setFileForm({ ...fileForm, link: e.target.value })}
-                                        style={{ width: '100%', height: '45px' }}
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0] || null;
+                                            setSelectedFile(file);
+                                            if (file && !fileForm.title) {
+                                                const titleWithoutExt = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+                                                setFileForm(prev => ({ ...prev, title: titleWithoutExt }));
+                                            }
+                                        }}
+                                        style={{ width: '100%', height: '45px', padding: '8px' }}
                                     />
+                                    {editingMaterial && (
+                                        <span style={{ fontSize: '12px', color: '#64748B', display: 'block', marginTop: '6px' }}>
+                                            Leave empty to keep current file: <strong>{editingMaterial.title}</strong>
+                                        </span>
+                                    )}
                                 </div>
                             </div>
                             <div className="cm-modal-footer" style={{ padding: '0 24px 24px 24px', borderTop: 'none', justifyContent: 'flex-end', gap: '12px' }}>
@@ -6397,9 +6422,9 @@ export const ManageCourse: React.FC = () => {
             })()}
 
             {confirmModal.show && (
-                <div 
-                    className="cm-modal-overlay" 
-                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }} 
+                <div
+                    className="cm-modal-overlay"
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     onClick={() => {
                         if (!isConfirmLoading) {
                             setConfirmModal(prev => ({ ...prev, show: false }));
@@ -6414,9 +6439,9 @@ export const ManageCourse: React.FC = () => {
                             <p style={{ color: '#64748B', fontSize: '14px', lineHeight: 1.5, margin: 0 }}>{confirmModal.message}</p>
                         </div>
                         <div className="cm-modal-footer" style={{ borderTop: 'none', padding: 0, display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-                            <button 
-                                className="admin-btn-outline" 
-                                style={{ height: '38px', padding: '0 16px', borderRadius: '8px', cursor: isConfirmLoading ? 'not-allowed' : 'pointer', fontWeight: 600, border: '1px solid #E2E8F0', background: '#FFFFFF', color: '#475569' }} 
+                            <button
+                                className="admin-btn-outline"
+                                style={{ height: '38px', padding: '0 16px', borderRadius: '8px', cursor: isConfirmLoading ? 'not-allowed' : 'pointer', fontWeight: 600, border: '1px solid #E2E8F0', background: '#FFFFFF', color: '#475569' }}
                                 disabled={isConfirmLoading}
                                 onClick={() => setConfirmModal(prev => ({ ...prev, show: false }))}
                             >
@@ -6424,14 +6449,14 @@ export const ManageCourse: React.FC = () => {
                             </button>
                             <button
                                 className="admin-btn-primary"
-                                style={{ 
-                                    height: '38px', 
-                                    padding: '0 16px', 
-                                    borderRadius: '8px', 
-                                    cursor: isConfirmLoading ? 'not-allowed' : 'pointer', 
-                                    fontWeight: 600, 
-                                    border: 'none', 
-                                    background: '#EF4444', 
+                                style={{
+                                    height: '38px',
+                                    padding: '0 16px',
+                                    borderRadius: '8px',
+                                    cursor: isConfirmLoading ? 'not-allowed' : 'pointer',
+                                    fontWeight: 600,
+                                    border: 'none',
+                                    background: '#EF4444',
                                     color: '#FFFFFF',
                                     opacity: isConfirmLoading ? 0.7 : 1,
                                     display: 'inline-flex',
