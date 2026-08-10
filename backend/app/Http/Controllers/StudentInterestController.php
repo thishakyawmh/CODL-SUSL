@@ -43,11 +43,49 @@ class StudentInterestController extends Controller
             // Global questions
             'university_opportunities' => 'nullable|string',
             'new_program_suggestion' => 'nullable|string',
+            'recaptcha_token' => 'nullable|string',
         ]);
+
+        // Verify reCAPTCHA if credentials are provided and not set to placeholder
+        $recaptchaSecret = env('RECAPTCHA_SECRET_KEY');
+        if ($recaptchaSecret && $recaptchaSecret !== '6Ld_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx') {
+            $token = $request->input('recaptcha_token');
+            if (!$token) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'reCAPTCHA token is missing.'
+                ], 422);
+            }
+
+            try {
+                $verifyResponse = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
+                    'secret' => $recaptchaSecret,
+                    'response' => $token,
+                    'remoteip' => $request->ip(),
+                ]);
+
+                if (!$verifyResponse->successful() || !$verifyResponse->json('success') || $verifyResponse->json('score') < 0.5) {
+                    Log::warning('reCAPTCHA validation failed', [
+                        'ip' => $request->ip(),
+                        'response' => $verifyResponse->json()
+                    ]);
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Anti-bot verification failed. Please try again.'
+                    ], 422);
+                }
+            } catch (\Exception $verifyException) {
+                Log::error('reCAPTCHA verification error: ' . $verifyException->getMessage());
+                // Fallback: allow submission in case of API timeout/downtime to not disrupt real users
+            }
+        }
 
         try {
             // Set timestamp of submission
             $validated['survey_submitted_at'] = now();
+
+            // Remove token so it doesn't get inserted into student_interests table
+            unset($validated['recaptcha_token']);
 
             $studentInterest = StudentInterest::create($validated);
 
@@ -313,6 +351,84 @@ class StudentInterestController extends Controller
         } catch (\Exception $e) {
             Log::error('Failed to delete university opportunity config: ' . $e->getMessage());
             return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Store a new industry analysis survey submission.
+     */
+    public function storeIndustry(Request $request)
+    {
+        $validated = $request->validate([
+            'company_name' => 'required|string',
+            'industry_sector' => 'required|string',
+            'organization_size' => 'nullable|string',
+            'primary_academic_field' => 'required|string',
+            'secondary_academic_field' => 'nullable|string',
+            'third_academic_field' => 'nullable|string',
+            'required_skills' => 'nullable|string',
+            'academic_practices' => 'nullable|string',
+            'minimum_qualification' => 'nullable|string',
+            'minimum_degree_result' => 'nullable|string',
+            'certification_importance' => 'nullable|integer|min:1|max:5',
+            'emerging_fields' => 'nullable|string',
+            'new_program_suggestion' => 'nullable|string',
+            'graduate_skill_gaps' => 'nullable|string',
+            'additional_recommendations' => 'nullable|string',
+            'recaptcha_token' => 'nullable|string',
+        ]);
+
+        // Verify reCAPTCHA if credentials are provided and not set to placeholder
+        $recaptchaSecret = env('RECAPTCHA_SECRET_KEY');
+        if ($recaptchaSecret && $recaptchaSecret !== '6Ld_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx') {
+            $token = $request->input('recaptcha_token');
+            if (!$token) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'reCAPTCHA token is missing.'
+                ], 422);
+            }
+
+            try {
+                $verifyResponse = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
+                    'secret' => $recaptchaSecret,
+                    'response' => $token,
+                    'remoteip' => $request->ip(),
+                ]);
+
+                if (!$verifyResponse->successful() || !$verifyResponse->json('success') || $verifyResponse->json('score') < 0.5) {
+                    Log::warning('reCAPTCHA validation failed for industry survey', [
+                        'ip' => $request->ip(),
+                        'response' => $verifyResponse->json()
+                    ]);
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Anti-bot verification failed. Please try again.'
+                    ], 422);
+                }
+            } catch (\Exception $verifyException) {
+                Log::error('reCAPTCHA verification error for industry: ' . $verifyException->getMessage());
+            }
+        }
+
+        try {
+            $validated['survey_submitted_at'] = now();
+            unset($validated['recaptcha_token']);
+
+            $industryAnalysis = \App\AI\Models\IndustryRequirement::create($validated);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Industry requirements submitted successfully.',
+                'data' => $industryAnalysis
+            ], 201);
+        } catch (\Exception $e) {
+            Log::error('Failed to save industry requirement: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while saving industry requirements.',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 }
