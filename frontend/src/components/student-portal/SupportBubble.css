@@ -138,6 +138,11 @@
     box-shadow: 0 4px 10px rgba(124, 58, 237, 0.2);
 }
 
+.help-icon {
+    background: linear-gradient(135deg, #3B82F6, #2563EB);
+    box-shadow: 0 4px 10px rgba(59, 130, 246, 0.2);
+}
+
 .support-text {
     display: flex;
     flex-direction: column;

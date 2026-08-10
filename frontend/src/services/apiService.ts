@@ -598,4 +598,55 @@ export const curriculumAlignmentService = {
     }
 };
 
+export const studentInterestService = {
+    submit: async (data: any) => {
+        const response = await api.post('/student-interests', data);
+        return response.data;
+    },
+    getConfig: async () => {
+        const response = await api.get('/student-interests/config');
+        return response.data;
+    },
+    saveConfig: async (data: any) => {
+        const response = await api.post('/admin/student-interests/config', data);
+        return response.data;
+    },
+    deleteConfig: async (id: string | number) => {
+        const response = await api.delete(`/admin/student-interests/config/${id}`);
+        return response.data;
+    },
+    getTeachingMethods: async () => {
+        const response = await api.get('/student-interests/teaching-methods');
+        return response.data;
+    },
+    saveTeachingMethod: async (data: any) => {
+        const response = await api.post('/admin/student-interests/teaching-methods', data);
+        return response.data;
+    },
+    deleteTeachingMethod: async (id: string | number) => {
+        const response = await api.delete(`/admin/student-interests/teaching-methods/${id}`);
+        return response.data;
+    },
+    getUniversityOpportunities: async () => {
+        const response = await api.get('/student-interests/university-opportunities');
+        return response.data;
+    },
+    saveUniversityOpportunity: async (data: any) => {
+        const response = await api.post('/admin/student-interests/university-opportunities', data);
+        return response.data;
+    },
+    deleteUniversityOpportunity: async (id: string | number) => {
+        const response = await api.delete(`/admin/student-interests/university-opportunities/${id}`);
+        return response.data;
+    }
+};
+
+export const industryAnalysisService = {
+    submit: async (data: any) => {
+        const response = await api.post('/industry-analysis', data);
+        return response.data;
+    }
+};
+
 export default api;
+

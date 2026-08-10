@@ -762,7 +762,7 @@ export const CourseExaminations: React.FC = () => {
                                                 </div>
                                             </div>
 
-                                            <div className="pro-card-actions" style={{ display: 'flex', gap: '8px', width: isResultsReleased ? 'auto' : '100%' }}>
+                                            <div className="pro-card-actions" style={{ display: 'flex', gap: '8px' }}>
                                                 {isResultsReleased ? (
                                                     <button
                                                         className="pro-action-btn secondary"
@@ -779,7 +779,6 @@ export const CourseExaminations: React.FC = () => {
                                                                 navigate(`/course/${course.id}/examinations/${app.assignedExam.id}/results`);
                                                             }
                                                         }}
-                                                        style={{ width: '100%' }}
                                                     >
                                                         View Results
                                                     </button>
@@ -787,7 +786,6 @@ export const CourseExaminations: React.FC = () => {
                                                     <button
                                                         className="pro-action-btn primary"
                                                         onClick={() => setShowDetailsModal(app)}
-                                                        style={{ width: '100%' }}
                                                     >
                                                         View Details
                                                     </button>
@@ -809,7 +807,7 @@ export const CourseExaminations: React.FC = () => {
                         <div className="tracker-modal-header">
                             <div className="header-text-group">
                                 <h3>Application Progress</h3>
-                                <p className="tracker-app-number">Application Reference: <strong>{showStatusModal.application?.appNumber || 'EXM-2026-0001'}</strong></p>
+                                <p className="tracker-app-number"><span className="desktop-only-text">Application </span>Reference: <strong>{showStatusModal.application?.appNumber || 'EXM-2026-0001'}</strong></p>
                             </div>
                             <button className="tracker-close-btn" onClick={() => setShowStatusModal(null)}>×</button>
                         </div>
@@ -900,15 +898,13 @@ export const CourseExaminations: React.FC = () => {
                             {showDetailsModal.type === 'postponement' || showDetailsModal.type === 'reattempt' ? (
                                 <div>
                                     {/* Request Summary - compact header */}
-                                    <div style={{ display: 'flex', gap: '16px', alignItems: 'center', padding: '14px 18px', background: '#F8FAFC', borderRadius: '14px', border: '1px solid #E2E8F0', marginBottom: '10px' }}>
-                                        <div style={{ flex: 1 }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                <span style={{ fontSize: '11px', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase' as const }}>Application</span>
-                                                <span style={{ fontSize: '13px', fontWeight: 700, color: '#1E293B' }}>{showDetailsModal.appNumber}</span>
-                                                <span style={{ padding: '2px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 700, textTransform: 'capitalize' as const, background: showDetailsModal.type === 'postponement' ? '#DBEAFE' : '#FEF3C7', color: showDetailsModal.type === 'postponement' ? '#1E40AF' : '#D97706' }}>{showDetailsModal.type}</span>
-                                            </div>
+                                    <div className="details-request-summary">
+                                        <div className="summary-left-group">
+                                            <span style={{ fontSize: '11px', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase' as const }}>Application</span>
+                                            <span style={{ fontSize: '13px', fontWeight: 700, color: '#1E293B' }}>{showDetailsModal.appNumber}</span>
                                         </div>
-                                        <div>
+                                        <div className="summary-badges-group">
+                                            <span style={{ padding: '2px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 700, textTransform: 'capitalize' as const, background: showDetailsModal.type === 'postponement' ? '#DBEAFE' : '#FEF3C7', color: showDetailsModal.type === 'postponement' ? '#1E40AF' : '#D97706' }}>{showDetailsModal.type}</span>
                                             <span style={{
                                                 display: 'inline-block', fontSize: '12px', fontWeight: 700, padding: '4px 12px', borderRadius: '8px',
                                                 background: showDetailsModal.status === 'Assigned' ? '#DCFCE7' : showDetailsModal.status === 'Approved' ? '#DCFCE7' : showDetailsModal.status === 'Rejected' ? '#FEE2E2' : '#FEF3C7',

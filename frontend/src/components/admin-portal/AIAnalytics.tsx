@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     Sparkles, RefreshCw, BarChart2, ShieldAlert, BookOpen, FileText,
     Database, Plus, ChevronDown, CheckCircle, Download, ArrowLeft,
@@ -21,6 +22,7 @@ interface Course {
 }
 
 export const AIAnalytics: React.FC = () => {
+    const navigate = useNavigate();
     const [programs, setPrograms] = useState<Course[]>([]);
     const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
     const [loading, setLoading] = useState(true);
@@ -29,6 +31,8 @@ export const AIAnalytics: React.FC = () => {
     const [syncing, setSyncing] = useState(false);
     const [syncUrl, setSyncUrl] = useState('');
     const [syncType, setSyncType] = useState<'student' | 'industry'>('student');
+
+
 
     useEffect(() => {
         fetchPrograms();
@@ -82,6 +86,7 @@ export const AIAnalytics: React.FC = () => {
                     programs={programs}
                     onSelect={setSelectedCourse}
                     onOpenSync={() => setShowSyncModal(true)}
+                    onOpenManageForms={() => navigate('/admin/ai-analytics/manage-forms')}
                 />
             )}
 
@@ -127,14 +132,23 @@ export const AIAnalytics: React.FC = () => {
                     </div>
                 </div>
             )}
+
+
         </div>
     );
 };
 
+
+
 /* =========================================================
    STATE A: PROGRAM HUB (LANDING PAGE)
    ========================================================= */
-const ProgramHub: React.FC<{ programs: Course[], onSelect: (c: Course) => void, onOpenSync: () => void }> = ({ programs, onSelect, onOpenSync }) => {
+const ProgramHub: React.FC<{ 
+    programs: Course[], 
+    onSelect: (c: Course) => void, 
+    onOpenSync: () => void,
+    onOpenManageForms: () => void 
+}> = ({ programs, onSelect, onOpenSync, onOpenManageForms }) => {
     const [levelFilter, setLevelFilter] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -248,8 +262,11 @@ const ProgramHub: React.FC<{ programs: Course[], onSelect: (c: Course) => void, 
                     </p>
                 </div>
                 {levelFilter === 'all' && !searchTerm && (
-                    <div className="admin-header-actions" style={{ display: 'flex', alignItems: 'center' }}>
-                        <button className="btn btn-primary" onClick={onOpenSync} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                    <div className="admin-header-actions">
+                        <button className="admin-btn-outline" onClick={onOpenManageForms}>
+                            <Database size={16} /> Manage Forms
+                        </button>
+                        <button className="admin-btn-primary" onClick={onOpenSync}>
                             <RefreshCw size={16} /> Sync Google Sheet Data
                         </button>
                     </div>

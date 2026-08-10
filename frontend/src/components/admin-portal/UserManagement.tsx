@@ -4,10 +4,10 @@ import {
     Eye, X, Download, Save,
     Shield, Key,
     Mail, Phone, Calendar, BookOpen, AlertCircle,
-    MoreVertical, Hash
+    MoreVertical, Hash, Clock, CheckCircle2, XCircle, FileText, AlertTriangle
 } from 'lucide-react';
 import { type User, getFullAvatarUrl } from '../../data/mockAdminData';
-import { userService } from '../../services/apiService';
+import { userService, courseApplicationService } from '../../services/apiService';
 import { toast } from '../../utils/toast';
 import './UserManagement.css';
 
@@ -38,6 +38,15 @@ export const UserManagement: React.FC = () => {
     const [isEditMode, setIsEditMode] = useState(false);
     const [editFormData, setEditFormData] = useState<User | null>(null);
     const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+    const [showResetConfirmModal, setShowResetConfirmModal] = useState(false);
+    const [userToReset, setUserToReset] = useState<User | null>(null);
+    const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+    const [userToDelete, setUserToDelete] = useState<User | null>(null);
+
+    const [showApprovalStagesModal, setShowApprovalStagesModal] = useState(false);
+    const [applicantStagesUser, setApplicantStagesUser] = useState<User | null>(null);
+    const [stagesLoading, setStagesLoading] = useState(false);
+    const [applicantApplication, setApplicantApplication] = useState<any | null>(null);
 
     const [newUser, setNewUser] = useState({
         fullName: '',
@@ -188,38 +197,77 @@ export const UserManagement: React.FC = () => {
         }
     };
 
-    const handleResetPassword = async (user: User) => {
+    const triggerResetPassword = (user: User) => {
         if (user.role === 'super_admin') {
             toast.error('Super Administrators cannot be modified.');
             return;
         }
-        if (window.confirm(`Reset password for ${user.fullName} to default (NIC: ${user.nic})?`)) {
-            try {
-                await userService.resetPassword(user.id);
-                toast.success('Password reset successfully!');
-            } catch (err: any) {
-                toast.error(err.response?.data?.message || 'Failed to reset password');
-            }
-        }
+        setUserToReset(user);
+        setShowResetConfirmModal(true);
         setOpenMenuId(null);
     };
 
-    const handleDeleteUser = async (user: User) => {
+    const handleConfirmResetPassword = async () => {
+        if (!userToReset) return;
+        setIsLoading(true);
+        try {
+            await userService.resetPassword(userToReset.id);
+            toast.success('Password reset successfully!');
+            setShowResetConfirmModal(false);
+            setUserToReset(null);
+        } catch (err: any) {
+            toast.error(err.response?.data?.message || 'Failed to reset password');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const triggerDeleteUser = (user: User) => {
         if (user.role === 'super_admin') {
             toast.error('Super Administrators cannot be deleted.');
             return;
         }
-        if (window.confirm(`Are you sure you want to delete account for ${user.fullName}? This action cannot be undone.`)) {
-            try {
-                await userService.delete(user.id);
-                // Update local state immediately for instant feedback
-                setUsers(prev => prev.filter(u => u.id !== user.id));
-                toast.success('User deleted successfully');
-            } catch (err) {
-                console.error('Delete failed:', err);
-                toast.error('Failed to delete user. Please try again.');
-            }
-            setOpenMenuId(null);
+        setUserToDelete(user);
+        setShowDeleteConfirmModal(true);
+        setOpenMenuId(null);
+    };
+
+    const handleConfirmDeleteUser = async () => {
+        if (!userToDelete) return;
+        setIsLoading(true);
+        try {
+            await userService.delete(userToDelete.id);
+            setUsers(prev => prev.filter(u => u.id !== userToDelete.id));
+            toast.success('User deleted successfully');
+            setShowDeleteConfirmModal(false);
+            setUserToDelete(null);
+        } catch (err: any) {
+            console.error('Delete failed:', err);
+            toast.error(err.response?.data?.message || 'Failed to delete user. Please try again.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleViewApprovalStages = async (user: User) => {
+        setApplicantStagesUser(user);
+        setShowApprovalStagesModal(true);
+        setStagesLoading(true);
+        setOpenMenuId(null);
+        setApplicantApplication(null);
+        try {
+            const apps = await courseApplicationService.getAll();
+            const app = apps.find((a: any) =>
+                String(a.user_id) === String(user.id) ||
+                a.applicant_email?.toLowerCase() === user.email?.toLowerCase() ||
+                a.applicant_nic === user.nic
+            );
+            setApplicantApplication(app || null);
+        } catch (err) {
+            console.error('Failed to fetch applicant application stages:', err);
+            toast.error('Failed to load approval stages.');
+        } finally {
+            setStagesLoading(false);
         }
     };
 
@@ -417,14 +465,26 @@ export const UserManagement: React.FC = () => {
                                                 <>
                                                     <div className="um-menu-overlay" onClick={() => setOpenMenuId(null)} />
                                                     <div className="um-dropdown-menu">
-                                                        <button onClick={() => handleResetPassword(user)}>
-                                                            <Key size={14} /> Reset Password
-                                                        </button>
-                                                        <button onClick={() => handleChangeRoleAction(user)}>
-                                                            <Edit3 size={14} /> Change Role
-                                                        </button>
-                                                        <div className="um-menu-divider" />
-                                                        <button className="delete" onClick={() => handleDeleteUser(user)}>
+                                                        {user.role !== 'applicant' && (
+                                                            <>
+                                                                <button onClick={() => triggerResetPassword(user)}>
+                                                                    <Key size={14} /> Reset Password
+                                                                </button>
+                                                                <button onClick={() => handleChangeRoleAction(user)}>
+                                                                    <Edit3 size={14} /> Change Role
+                                                                </button>
+                                                                <div className="um-menu-divider" />
+                                                            </>
+                                                        )}
+                                                        {user.role === 'applicant' && (
+                                                            <>
+                                                                <button onClick={() => handleViewApprovalStages(user)}>
+                                                                    <Clock size={14} /> View Progress
+                                                                </button>
+                                                                <div className="um-menu-divider" />
+                                                            </>
+                                                        )}
+                                                        <button className="delete" onClick={() => triggerDeleteUser(user)}>
                                                             <Trash2 size={14} /> Delete Account
                                                         </button>
                                                     </div>
@@ -723,6 +783,231 @@ export const UserManagement: React.FC = () => {
                                 </button>
                             </div>
                         )}
+                    </div>
+                </div>
+            )}
+
+            {/* Reset Password Confirmation Modal */}
+            {showResetConfirmModal && userToReset && (
+                <div className="um-modal-overlay" onClick={() => { setShowResetConfirmModal(false); setUserToReset(null); }}>
+                    <div className="um-modal" style={{ maxWidth: '480px' }} onClick={(e) => e.stopPropagation()}>
+                        <div className="um-modal-header" style={{ padding: '20px 24px' }}>
+                            <div>
+                                <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#1E293B', fontSize: '18px', fontWeight: 700 }}>
+                                    <Key size={20} style={{ color: '#7C3AED' }} /> Confirm Reset Password
+                                </h2>
+                                <p style={{ fontSize: '13px', color: '#64748B', marginTop: '4px', margin: 0 }}>
+                                    Are you sure you want to reset this user's password?
+                                </p>
+                            </div>
+                            <button className="um-modal-close" onClick={() => { setShowResetConfirmModal(false); setUserToReset(null); }}>
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="um-modal-body" style={{ padding: '20px 24px' }}>
+                            <div className="um-info-banner" style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', color: '#475569', display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-start', margin: 0 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <AlertCircle size={16} style={{ color: '#F59E0B' }} />
+                                    <span style={{ fontWeight: 600 }}>Account Details</span>
+                                </div>
+                                <div style={{ paddingLeft: '24px', fontSize: '13px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                    <span><strong>Name:</strong> {userToReset.fullName}</span>
+                                    <span><strong>Registration ID:</strong> {userToReset.studentNumber || 'N/A'}</span>
+                                    <span><strong>Default Password (NIC):</strong> {userToReset.nic || <span style={{ fontStyle: 'italic', color: '#94A3B8' }}>Not Provided</span>}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="um-modal-footer-integrated" style={{ padding: '16px 24px' }}>
+                            <button type="button" className="um-btn-cancel" style={{ height: '40px', minWidth: '100px', padding: '0 20px' }} onClick={() => { setShowResetConfirmModal(false); setUserToReset(null); }} disabled={isLoading}>
+                                Cancel
+                            </button>
+                            <button type="button" className="um-btn-create" style={{ height: '40px', minWidth: '160px', padding: '0 20px', background: 'linear-gradient(135deg, #7C3AED, #6D28D9)' }} onClick={handleConfirmResetPassword} disabled={isLoading}>
+                                {isLoading ? 'Resetting...' : 'Reset Password'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Account Confirmation Modal */}
+            {showDeleteConfirmModal && userToDelete && (
+                <div className="um-modal-overlay" onClick={() => { setShowDeleteConfirmModal(false); setUserToDelete(null); }}>
+                    <div className="um-modal" style={{ maxWidth: '480px' }} onClick={(e) => e.stopPropagation()}>
+                        <div className="um-modal-header" style={{ padding: '20px 24px' }}>
+                            <div>
+                                <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#1E293B', fontSize: '18px', fontWeight: 700 }}>
+                                    <Trash2 size={20} style={{ color: '#EF4444' }} /> Confirm Delete Account
+                                </h2>
+                                <p style={{ fontSize: '13px', color: '#64748B', marginTop: '4px', margin: 0 }}>
+                                    Are you sure you want to delete this account? <strong>This action cannot be undone.</strong>
+                                </p>
+                            </div>
+                            <button className="um-modal-close" onClick={() => { setShowDeleteConfirmModal(false); setUserToDelete(null); }}>
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="um-modal-body" style={{ padding: '20px 24px' }}>
+                            <div className="um-info-banner" style={{ background: '#FEF2F2', border: '1px solid #FEE2E2', color: '#991B1B', display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-start', margin: 0 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <AlertCircle size={16} style={{ color: '#EF4444' }} />
+                                    <span style={{ fontWeight: 600 }}>Account Details</span>
+                                </div>
+                                <div style={{ paddingLeft: '24px', fontSize: '13px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                    <span><strong>Name:</strong> {userToDelete.fullName}</span>
+                                    <span><strong>Registration ID:</strong> {userToDelete.studentNumber || 'N/A'}</span>
+                                    <span><strong>Role:</strong> {userToDelete.role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="um-modal-footer-integrated" style={{ padding: '16px 24px' }}>
+                            <button type="button" className="um-btn-cancel" style={{ height: '40px', minWidth: '100px', padding: '0 20px' }} onClick={() => { setShowDeleteConfirmModal(false); setUserToDelete(null); }} disabled={isLoading}>
+                                Cancel
+                            </button>
+                            <button type="button" className="um-btn-create" style={{ height: '40px', minWidth: '160px', padding: '0 20px', background: 'linear-gradient(135deg, #EF4444, #DC2626)', boxShadow: '0 6px 16px rgba(239, 68, 68, 0.25)' }} onClick={handleConfirmDeleteUser} disabled={isLoading}>
+                                {isLoading ? 'Deleting...' : 'Delete Account'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Applicant Approval Stages Modal */}
+            {showApprovalStagesModal && applicantStagesUser && (
+                <div className="um-modal-overlay" onClick={() => { setShowApprovalStagesModal(false); setApplicantStagesUser(null); }}>
+                    <div className="um-modal" style={{ maxWidth: '560px' }} onClick={(e) => e.stopPropagation()}>
+                        <div className="um-modal-header">
+                            <div>
+                                <h2>Application Approval Progress</h2>
+                                <p>Track the verification and approval stages completed for this applicant.</p>
+                            </div>
+                            <button className="um-modal-close" onClick={() => { setShowApprovalStagesModal(false); setApplicantStagesUser(null); }}>
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="um-modal-body">
+                            {stagesLoading ? (
+                                <div className="um-loading" style={{ padding: '40px 0' }}>
+                                    <div className="um-spinner"></div>
+                                    <p>Loading approval stages...</p>
+                                </div>
+                            ) : (
+                                <>
+                                    <div className="um-applicant-card">
+                                        <div className="um-applicant-card-col">
+                                            <h4>Applicant Details</h4>
+                                            <span style={{ fontSize: '13px', color: '#1E293B', fontWeight: 600 }}>{applicantStagesUser.fullName}</span>
+                                            <span style={{ fontSize: '12px', color: '#64748B' }}>{applicantStagesUser.email}</span>
+                                            <span style={{ fontSize: '12px', color: '#64748B' }}>NIC: {applicantStagesUser.nic || 'N/A'}</span>
+                                        </div>
+                                        <div className="um-applicant-card-col">
+                                            <h4>Application Details</h4>
+                                            {applicantApplication ? (
+                                                <>
+                                                    <span style={{ fontSize: '13px', color: '#1E293B', fontWeight: 600 }}>{applicantApplication.course?.title || 'Unknown Course'}</span>
+                                                    <span style={{ fontSize: '12px', color: '#64748B' }}>Batch: {applicantApplication.batch?.name || 'N/A'}</span>
+                                                    <span style={{ fontSize: '12px', color: '#64748B' }}>
+                                                        Current Status: <strong style={{ color: applicantApplication.status === 'rejected' ? '#EF4444' : (applicantApplication.status === 'approved' || (applicantApplication.approval_level || 0) === 3 ? '#10B981' : '#F59E0B') }}>
+                                                            {applicantApplication.status === 'rejected' ? 'Rejected' : (applicantApplication.status === 'approved' || (applicantApplication.approval_level || 0) === 3 ? 'Approved' : 'In Review')}
+                                                        </strong>
+                                                    </span>
+                                                </>
+                                            ) : (
+                                                <span style={{ fontSize: '12px', color: '#94A3B8', fontStyle: 'italic' }}>No application data</span>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {!applicantApplication ? (
+                                        <div className="um-info-banner" style={{ background: '#FFFBEB', border: '1px solid #FDE68A', color: '#B45309', margin: 0 }}>
+                                            <AlertTriangle size={16} />
+                                            <span>No active application record was found for this applicant user.</span>
+                                        </div>
+                                    ) : (
+                                        <div className="um-stages-timeline">
+                                            {(() => {
+                                                const approvalLevel = applicantApplication.approval_level || 0;
+                                                const isRejected = applicantApplication.status === 'rejected';
+
+                                                const steps = [
+                                                    {
+                                                        id: 1,
+                                                        title: 'Application Submitted',
+                                                        description: 'The course application has been successfully submitted online.',
+                                                        date: applicantApplication.created_at ? new Date(applicantApplication.created_at).toLocaleDateString() : 'N/A',
+                                                        status: 'completed',
+                                                        icon: <FileText size={16} />
+                                                    },
+                                                    {
+                                                        id: 2,
+                                                        title: 'Document Verification (Secretary)',
+                                                        description: 'Initial review of documents and academic requirements.',
+                                                        date: approvalLevel >= 1 ? new Date(applicantApplication.secretary_approved_at || Date.now()).toLocaleDateString() : 'Pending',
+                                                        status: isRejected && approvalLevel === 0 ? 'rejected' : (approvalLevel >= 1 ? 'completed' : 'pending'),
+                                                        icon: <Clock size={16} />,
+                                                        approver: applicantApplication.secretary_approver?.full_name,
+                                                        comment: isRejected && approvalLevel === 0 ? applicantApplication.secretary_comment : null
+                                                    },
+                                                    {
+                                                        id: 3,
+                                                        title: 'Coordinator Approval',
+                                                        description: 'Academic qualification and intake review by the Course Coordinator.',
+                                                        date: approvalLevel >= 2 ? new Date(applicantApplication.coordinator_approved_at || Date.now()).toLocaleDateString() : 'Pending',
+                                                        status: isRejected && approvalLevel === 1 ? 'rejected' : (approvalLevel >= 2 ? 'completed' : 'pending'),
+                                                        icon: <Clock size={16} />,
+                                                        approver: applicantApplication.coordinator_approver?.full_name,
+                                                        comment: isRejected && approvalLevel === 1 ? applicantApplication.coordinator_comment : null
+                                                    },
+                                                    {
+                                                        id: 4,
+                                                        title: 'Final Director Approval & Account Generation',
+                                                        description: 'Final sign-off by Director and automatic user account generation.',
+                                                        date: approvalLevel >= 3 ? new Date(applicantApplication.director_approved_at || Date.now()).toLocaleDateString() : 'Pending',
+                                                        status: isRejected && approvalLevel === 2 ? 'rejected' : (approvalLevel >= 3 ? 'completed' : 'pending'),
+                                                        icon: <Shield size={16} />,
+                                                        approver: applicantApplication.director_approver?.full_name,
+                                                        comment: isRejected && approvalLevel === 2 ? applicantApplication.director_comment : null
+                                                    }
+                                                ];
+
+                                                return steps.map((step) => (
+                                                    <div className="um-timeline-item" key={step.id}>
+                                                        <div className="um-timeline-indicator">
+                                                            <div className={`um-timeline-circle ${step.status}`}>
+                                                                {step.status === 'completed' ? <CheckCircle2 size={16} /> : (step.status === 'rejected' ? <XCircle size={16} /> : step.icon)}
+                                                            </div>
+                                                            <div className="um-timeline-line"></div>
+                                                        </div>
+                                                        <div className="um-timeline-content">
+                                                            <div className="um-timeline-header">
+                                                                <span className="um-timeline-title">{step.title}</span>
+                                                                <span className={`um-timeline-status-badge ${step.status}`}>{step.status}</span>
+                                                            </div>
+                                                            <p className="um-timeline-desc">{step.description}</p>
+                                                            <div className="um-timeline-meta">
+                                                                <span>Date: <strong>{step.date}</strong></span>
+                                                                {step.approver && (
+                                                                    <span>Reviewed By: <strong>{step.approver}</strong></span>
+                                                                )}
+                                                            </div>
+                                                            {step.comment && (
+                                                                <div className="um-timeline-comment-box rejected">
+                                                                    <strong>Rejection Reason:</strong> {step.comment}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                ));
+                                            })()}
+                                        </div>
+                                    )}
+                                </>
+                            )}
+                        </div>
+                        <div className="um-modal-footer-integrated" style={{ padding: '16px 28px' }}>
+                            <button type="button" className="um-btn-cancel" style={{ height: '40px', minWidth: '100px', padding: '0 20px', marginLeft: 'auto' }} onClick={() => { setShowApprovalStagesModal(false); setApplicantStagesUser(null); }}>
+                                Close
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

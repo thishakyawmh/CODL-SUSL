@@ -13,26 +13,28 @@ return new class extends Migration
             $table->id();
             $table->timestamp('survey_submitted_at')->nullable();
 
-            // Section 1
+            $table->string('email')->nullable();
+            $table->string('whatsapp')->nullable();
             $table->string('education_level');
             $table->string('province')->nullable();
             $table->string('district')->nullable();
 
-            // Section 2
-            $table->string('primary_field');
-            $table->string('secondary_field')->nullable();
-            $table->string('third_field')->nullable();
+            $table->string('primary_interest')->nullable();
+            $table->text('primary_skills')->nullable();
+            $table->text('primary_learning_methods')->nullable();
+            $table->string('primary_learning_balance')->nullable();
 
-            // Section 3
-            $table->text('specializations')->nullable();
+            $table->string('secondary_interest')->nullable();
+            $table->text('secondary_skills')->nullable();
+            $table->text('secondary_learning_methods')->nullable();
+            $table->string('secondary_learning_balance')->nullable();
 
-            // Section 4
-            $table->text('learning_preferences')->nullable();
-            $table->unsignedTinyInteger('theory_practical_score')->nullable();
+            $table->string('ternary_interest')->nullable();
+            $table->text('ternary_skills')->nullable();
+            $table->text('ternary_learning_methods')->nullable();
+            $table->string('ternary_learning_balance')->nullable();
+
             $table->text('university_opportunities')->nullable();
-
-            // Section 5
-            $table->text('emerging_fields')->nullable();
             $table->text('new_program_suggestion')->nullable();
 
             $table->timestamps();
