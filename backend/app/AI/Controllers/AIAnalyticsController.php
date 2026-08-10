@@ -332,7 +332,7 @@ class AIAnalyticsController extends Controller
         $rowsIgnored = 0;
 
         try {
-            DB::connection('analytics')->transaction(function () use ($lines, $mappedIndexes, $type, &$rowsImported, &$rowsIgnored) {
+            DB::connection('analytics')->transaction(function () use ($lines, $mappedIndexes, $type, $requiredColumns, &$rowsImported, &$rowsIgnored) {
                 
                 if ($type === 'student') {
                     StudentInterest::query()->delete();
@@ -352,9 +352,27 @@ class AIAnalyticsController extends Controller
                         continue;
                     }
 
+                    // Check if required columns are present and not empty
+                    $hasRequired = true;
+                    foreach ($requiredColumns as $reqCol) {
+                        $colIdx = $mappedIndexes[$reqCol] ?? null;
+                        if ($colIdx === null || !isset($row[$colIdx]) || trim($row[$colIdx]) === '') {
+                            $hasRequired = false;
+                            break;
+                        }
+                    }
+
+                    if (!$hasRequired) {
+                        $rowsIgnored++;
+                        continue;
+                    }
+
                     $record = [];
                     foreach ($mappedIndexes as $dbColumn => $index) {
                         $val = $row[$index] ?? null;
+                        if ($val === '') {
+                            $val = null;
+                        }
                         if ($dbColumn === 'survey_submitted_at' && $val) {
                             try {
                                 $val = \Carbon\Carbon::parse($val)->toDateTimeString();

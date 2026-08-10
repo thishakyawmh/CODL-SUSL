@@ -49,7 +49,35 @@ class StudentInterestController extends Controller
             // Set timestamp of submission
             $validated['survey_submitted_at'] = now();
 
-            $studentInterest = StudentInterest::create($validated);
+            // Map incoming Version 1 fields to Model's Version 2 fields
+            $modelData = [
+                'survey_submitted_at' => $validated['survey_submitted_at'],
+                'email' => $validated['email'] ?? null,
+                'whatsapp' => $validated['whatsapp_no'] ?? null,
+                'education_level' => $validated['education_level'],
+                'province' => $validated['province'],
+                'district' => $validated['district'],
+
+                'primary_interest' => $validated['primary_field'],
+                'primary_skills' => $validated['primary_skills'],
+                'primary_learning_methods' => $validated['primary_teaching_methods'],
+                'primary_learning_balance' => $validated['primary_theory_practical'],
+
+                'secondary_interest' => $validated['secondary_field'] ?? null,
+                'secondary_skills' => $validated['secondary_skills'] ?? null,
+                'secondary_learning_methods' => $validated['secondary_teaching_methods'] ?? null,
+                'secondary_learning_balance' => $validated['secondary_theory_practical'] ?? null,
+
+                'ternary_interest' => $validated['third_field'] ?? null,
+                'ternary_skills' => $validated['third_skills'] ?? null,
+                'ternary_learning_methods' => $validated['third_teaching_methods'] ?? null,
+                'ternary_learning_balance' => $validated['third_theory_practical'] ?? null,
+
+                'university_opportunities' => $validated['university_opportunities'] ?? null,
+                'new_program_suggestion' => $validated['new_program_suggestion'] ?? null,
+            ];
+
+            $studentInterest = StudentInterest::create($modelData);
 
             // Send to Google Sheets webhook asynchronously
             $webhookUrl = env('GOOGLE_SHEET_WEBHOOK_URL');
