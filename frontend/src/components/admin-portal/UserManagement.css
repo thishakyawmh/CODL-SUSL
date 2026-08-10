@@ -971,3 +971,169 @@
     font-style: italic;
     font-size: 13px;
 }
+
+/* Applicant Stages Timeline Styles */
+.um-stages-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin-top: 16px;
+}
+
+.um-applicant-card {
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 24px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.um-applicant-card-col {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.um-applicant-card-col h4 {
+    margin: 0 0 4px 0;
+    font-size: 14px;
+    color: #475569;
+    font-weight: 600;
+}
+
+.um-timeline-item {
+    display: flex;
+    gap: 16px;
+    min-height: 80px;
+    position: relative;
+}
+
+.um-timeline-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+    width: 32px;
+}
+
+.um-timeline-circle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+    transition: all 0.3s ease;
+}
+
+.um-timeline-circle.completed {
+    background: #DEF7EC;
+    color: #03543F;
+    border: 2px solid #31C48D;
+}
+
+.um-timeline-circle.rejected {
+    background: #FDE8E8;
+    color: #9B1C1C;
+    border: 2px solid #F05252;
+}
+
+.um-timeline-circle.pending {
+    background: #F1F5F9;
+    color: #94A3B8;
+    border: 2px solid #E2E8F0;
+}
+
+.um-timeline-line {
+    width: 2px;
+    background: #E2E8F0;
+    flex: 1;
+    margin: 4px 0;
+    z-index: 1;
+}
+
+.um-timeline-item:last-child .um-timeline-line {
+    display: none;
+}
+
+.um-timeline-content {
+    flex: 1;
+    padding-bottom: 24px;
+}
+
+.um-timeline-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.um-timeline-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1E293B;
+}
+
+.um-timeline-status-badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 9999px;
+    text-transform: uppercase;
+}
+
+.um-timeline-status-badge.completed {
+    background: #DEF7EC;
+    color: #03543F;
+}
+
+.um-timeline-status-badge.rejected {
+    background: #FDE8E8;
+    color: #9B1C1C;
+}
+
+.um-timeline-status-badge.pending {
+    background: #F1F5F9;
+    color: #64748B;
+}
+
+.um-timeline-desc {
+    font-size: 12.5px;
+    color: #64748B;
+    margin: 4px 0;
+    line-height: 1.5;
+}
+
+.um-timeline-meta {
+    font-size: 11.5px;
+    color: #94A3B8;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 6px;
+}
+
+.um-timeline-meta strong {
+    color: #475569;
+}
+
+.um-timeline-comment-box {
+    background: #F8FAFC;
+    border-left: 3px solid #7C3AED;
+    padding: 8px 12px;
+    border-radius: 0 8px 8px 0;
+    margin-top: 8px;
+    font-size: 12px;
+    color: #475569;
+    font-style: italic;
+}
+
+.um-timeline-comment-box.rejected {
+    border-left-color: #EF4444;
+    background: #FFF5F5;
+}
