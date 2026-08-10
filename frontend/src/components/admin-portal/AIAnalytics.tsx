@@ -26,6 +26,7 @@ export const AIAnalytics: React.FC = () => {
     const [programs, setPrograms] = useState<Course[]>([]);
     const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
     const [loading, setLoading] = useState(true);
+    const [globalEmergingTech, setGlobalEmergingTech] = useState<string[]>([]);
 
     const [showSyncModal, setShowSyncModal] = useState(false);
     const [syncing, setSyncing] = useState(false);
@@ -43,6 +44,10 @@ export const AIAnalytics: React.FC = () => {
         try {
             const data = await aiAnalyticsService.getPrograms();
             setPrograms(data);
+            const globalData = await aiAnalyticsService.getGlobalOverview().catch(() => null);
+            if (globalData && globalData.emerging_technologies) {
+                setGlobalEmergingTech(globalData.emerging_technologies);
+            }
         } catch (err) {
             console.error('Failed to load programs', err);
         } finally {
@@ -84,6 +89,7 @@ export const AIAnalytics: React.FC = () => {
             ) : (
                 <ProgramHub
                     programs={programs}
+                    globalEmergingTech={globalEmergingTech}
                     onSelect={setSelectedCourse}
                     onOpenSync={() => setShowSyncModal(true)}
                     onOpenManageForms={() => navigate('/admin/ai-analytics/manage-forms')}
@@ -145,10 +151,11 @@ export const AIAnalytics: React.FC = () => {
    ========================================================= */
 const ProgramHub: React.FC<{ 
     programs: Course[], 
+    globalEmergingTech: string[],
     onSelect: (c: Course) => void, 
     onOpenSync: () => void,
     onOpenManageForms: () => void 
-}> = ({ programs, onSelect, onOpenSync, onOpenManageForms }) => {
+}> = ({ programs, globalEmergingTech, onSelect, onOpenSync, onOpenManageForms }) => {
     const [levelFilter, setLevelFilter] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -356,6 +363,21 @@ const ProgramHub: React.FC<{
                     )}
                 </>
             )}
+            {levelFilter === 'all' && !searchTerm && (
+                <div className="ai-chart-card" style={{ marginTop: '32px' }}>
+                    <h4>Global Emerging Technologies</h4>
+                    <p className="text-slate-400 text-xs mb-4" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Raw tags detected in qualitative student & industry feedback across all programs.</p>
+                    {globalEmergingTech && globalEmergingTech.length > 0 ? (
+                        <div className="tag-container">
+                            {globalEmergingTech.map((tech, idx) => (
+                                <span key={idx} className="tag well">{tech}</span>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-center text-slate-400 py-4 text-sm">No emerging signals detected.</div>
+                    )}
+                </div>
+            )}
         </div>
     );
 };
@@ -450,7 +472,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                 </div>
                 <div className="text-right p-4 rounded-2xl border border-purple-100 min-w-[160px]" style={{ background: '#EDE9FE40', border: '1px solid #7C3AED20' }}>
                     <div className="text-xs text-purple-600 font-bold uppercase tracking-wider mb-1">Curriculum Coverage</div>
-                    <div className="text-3xl font-black text-purple-900" style={{ color: '#7C3AED', fontWeight: 900 }}>{overview.coverage_percent}%</div>
+                    <div className="text-3xl font-black text-purple-900" style={{ color: '#7C3AED', fontWeight: 900 }}>{overview.coverage_percent !== null ? `${overview.coverage_percent}%` : 'N/A'}</div>
                 </div>
             </div>
 
@@ -461,7 +483,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                         <BookOpen size={22} />
                     </div>
                     <div className="ai-kpi-info">
-                        <span className="ai-kpi-val">{overview.coverage_percent}%</span>
+                        <span className="ai-kpi-val">{overview.coverage_percent !== null ? `${overview.coverage_percent}%` : 'N/A'}</span>
                         <span className="ai-kpi-label">Curriculum Coverage</span>
                         <p style={{ margin: '4px 0 0 0', fontSize: '11px', color: '#94A3B8', fontWeight: 500, lineHeight: 1.3 }}>Percentage of demanded domains covered by subjects</p>
                     </div>
@@ -471,7 +493,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                         <TrendingUp size={22} />
                     </div>
                     <div className="ai-kpi-info">
-                        <span className="ai-kpi-val">{overview.kpis.studentMatch}%</span>
+                        <span className="ai-kpi-val">{overview.kpis.studentMatch !== null ? `${overview.kpis.studentMatch}%` : 'N/A'}</span>
                         <span className="ai-kpi-label">Student Demand Alignment</span>
                         <p style={{ margin: '4px 0 0 0', fontSize: '11px', color: '#94A3B8', fontWeight: 500, lineHeight: 1.3 }}>Semantic match with applicant interests</p>
                     </div>
@@ -481,7 +503,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                         <Award size={22} />
                     </div>
                     <div className="ai-kpi-info">
-                        <span className="ai-kpi-val">{overview.kpis.industryMatch}%</span>
+                        <span className="ai-kpi-val">{overview.kpis.industryMatch !== null ? `${overview.kpis.industryMatch}%` : 'N/A'}</span>
                         <span className="ai-kpi-label">Industry Requirement Match</span>
                         <p style={{ margin: '4px 0 0 0', fontSize: '11px', color: '#94A3B8', fontWeight: 500, lineHeight: 1.3 }}>Fulfillment of graduate employer gaps</p>
                     </div>
@@ -557,11 +579,11 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                         <div style={{ marginTop: '24px' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', fontWeight: '700', marginBottom: '8px', color: '#1E293B' }}>
                                 <span>Theory Lectures</span>
-                                <span>{overview.learning_preferences_data.student_theory_percent}%</span>
+                                <span>{overview.learning_preferences_data.student_theory_percent !== null ? `${overview.learning_preferences_data.student_theory_percent}%` : 'N/A'}</span>
                             </div>
                             <div className="bar-bg" style={{ height: '16px', borderRadius: '8px', position: 'relative', overflow: 'hidden', backgroundColor: '#EDE9FE' }}>
                                 <div className="bar-fill purple" style={{ 
-                                    width: `${overview.learning_preferences_data.student_practical_percent}%`, 
+                                    width: `${overview.learning_preferences_data.student_practical_percent || 0}%`, 
                                     height: '100%', 
                                     backgroundColor: '#7C3AED',
                                     borderRadius: '0 8px 8px 0',
@@ -570,7 +592,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', fontWeight: '700', marginTop: '8px', color: '#1E293B' }}>
                                 <span>Hands-on Practical</span>
-                                <span>{overview.learning_preferences_data.student_practical_percent}%</span>
+                                <span>{overview.learning_preferences_data.student_practical_percent !== null ? `${overview.learning_preferences_data.student_practical_percent}%` : 'N/A'}</span>
                             </div>
                         </div>
                     </div>
@@ -652,22 +674,8 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                 </div>
             </div>
 
-            {/* Emerging Tech & Skill Gaps */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6" style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '24px', marginBottom: '32px' }}>
-                <div className="ai-chart-card">
-                    <h4>Emerging Technologies</h4>
-                    <p className="text-slate-400 text-xs mb-4" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Raw tags detected in qualitative feedback.</p>
-                    {emergingTech && emergingTech.length > 0 ? (
-                        <div className="tag-container">
-                            {emergingTech.map((tech, idx) => (
-                                <span key={idx} className="tag well">{tech}</span>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="text-center text-slate-400 py-4 text-sm">No emerging signals detected.</div>
-                    )}
-                </div>
-                
+            {/* Skill Gaps */}
+            <div style={{ marginBottom: '32px' }}>
                 <div className="ai-chart-card" style={{ borderLeft: '5px solid #EF4444' }}>
                     <h4 className="flex items-center gap-2" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
                         <AlertTriangle size={18} className="text-red-500" /> Graduate Skill Shortages

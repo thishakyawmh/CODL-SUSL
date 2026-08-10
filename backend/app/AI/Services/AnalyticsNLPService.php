@@ -50,122 +50,292 @@ class AnalyticsNLPService
             return 3.0;
         };
 
+        // Load config thresholds & weights
+        $minStudentThreshold = config('analytics.thresholds.min_student_responses', 10);
+        $minIndustryThreshold = config('analytics.thresholds.min_industry_responses', 5);
+        $minRelevanceScore = config('analytics.thresholds.min_relevance_score', 0.65);
+        $weightInterest = config('analytics.weights.interest_match', 0.7);
+        $weightKeyword = config('analytics.weights.keyword_similarity', 0.3);
+
+        $evidenceStatus = 'sufficient';
+        $confidence = 'High';
+        $studentCount = 0;
+        $industryCount = 0;
+        $totalRelevant = 0;
+
+        $relevantStudentSurveys = [];
+        $relevantIndustrySurveys = [];
+
         if ($course) {
-            $courseField = $this->classifyCourseField($course);
-
-            // 1. Process Student Surveys
-            foreach ($studentSurveys as $survey) {
-                $weight = 0.0;
-                $skills = '';
-                $methods = '';
-                $balance = '';
-
-                // Check Primary Interest
-                if (strtolower(trim($survey->primary_interest)) === strtolower(trim($courseField))) {
-                    $weight = 1.0;
-                    $skills = $survey->primary_skills;
-                    $methods = $survey->primary_learning_methods;
-                    $balance = $survey->primary_learning_balance;
+            // Build Program Profile
+            $course->loadMissing('semesters.subjects', 'category');
+            
+            $profileParts = [];
+            $profileParts[] = $course->title;
+            $profileParts[] = $course->level;
+            $profileParts[] = $course->department;
+            if ($course->category) {
+                $profileParts[] = $course->category->name;
+            }
+            foreach ($course->semesters as $semester) {
+                foreach ($semester->subjects as $subject) {
+                    $profileParts[] = $subject->name;
+                    $profileParts[] = $subject->code;
                 }
-                // Check Secondary Interest
-                elseif (strtolower(trim($survey->secondary_interest)) === strtolower(trim($courseField))) {
-                    $weight = 0.6;
+            }
+            $profileText = implode(' ', $profileParts);
+            
+            $profileTokens = $this->removeStopWords($this->tokenize($this->normalizeText($profileText)));
+            $profileDomains = array_unique($this->extractDomains($profileText));
+            $courseFields = $this->classifyCourseFields($course);
+
+            // 1. Filter Student Surveys
+            foreach ($studentSurveys as $survey) {
+                $interestScore = 0.0;
+                if (in_array($survey->primary_interest, $courseFields)) {
+                    $interestScore = 1.0;
+                } elseif (in_array($survey->secondary_interest, $courseFields)) {
+                    $interestScore = 0.6;
+                } elseif (in_array($survey->ternary_interest, $courseFields)) {
+                    $interestScore = 0.3;
+                }
+
+                $surveyText = implode(' ', array_filter([
+                    $survey->primary_skills,
+                    $survey->secondary_skills,
+                    $survey->ternary_skills,
+                    $survey->new_program_suggestion
+                ]));
+                $surveyTokens = $this->removeStopWords($this->tokenize($this->normalizeText($surveyText)));
+                
+                $surveyDomains = array_unique($this->extractDomains($surveyText));
+                $domainOverlap = array_intersect($profileDomains, $surveyDomains);
+                $tokenOverlap = array_intersect($profileTokens, $surveyTokens);
+                
+                $similarityScore = 0.0;
+                if (count($surveyDomains) > 0) {
+                    $similarityScore = count($domainOverlap) > 0 ? 1.0 : 0.0;
+                } elseif (count($surveyTokens) > 0) {
+                    $similarityScore = count($tokenOverlap) > 0 ? 0.5 : 0.0;
+                }
+
+                $relevanceScore = ($interestScore * $weightInterest) + ($similarityScore * $weightKeyword);
+
+                if ($relevanceScore >= $minRelevanceScore) {
+                    $relevantStudentSurveys[] = [
+                        'survey' => $survey,
+                        'relevance_score' => $relevanceScore,
+                        'interest_score' => $interestScore,
+                        'similarity_score' => $similarityScore,
+                        'matched_domains' => array_values($domainOverlap),
+                        'matched_keywords' => array_values(array_slice($tokenOverlap, 0, 5)),
+                    ];
+                }
+            }
+
+            // 2. Filter Industry Surveys
+            foreach ($industrySurveys as $survey) {
+                $interestScore = 0.0;
+                if (in_array($survey->primary_academic_field, $courseFields)) {
+                    $interestScore = 1.0;
+                } elseif (in_array($survey->secondary_academic_field, $courseFields)) {
+                    $interestScore = 0.6;
+                } elseif (in_array($survey->third_academic_field, $courseFields)) {
+                    $interestScore = 0.3;
+                }
+
+                $surveyText = implode(' ', array_filter([
+                    $survey->required_skills,
+                    $survey->emerging_fields,
+                    $survey->new_program_suggestion,
+                    $survey->graduate_skill_gaps,
+                ]));
+                $surveyTokens = $this->removeStopWords($this->tokenize($this->normalizeText($surveyText)));
+                
+                $surveyDomains = array_unique($this->extractDomains($surveyText));
+                $domainOverlap = array_intersect($profileDomains, $surveyDomains);
+                $tokenOverlap = array_intersect($profileTokens, $surveyTokens);
+                
+                $similarityScore = 0.0;
+                if (count($surveyDomains) > 0) {
+                    $similarityScore = count($domainOverlap) > 0 ? 1.0 : 0.0;
+                } elseif (count($surveyTokens) > 0) {
+                    $similarityScore = count($tokenOverlap) > 0 ? 0.5 : 0.0;
+                }
+
+                $relevanceScore = ($interestScore * $weightInterest) + ($similarityScore * $weightKeyword);
+
+                if ($relevanceScore >= $minRelevanceScore) {
+                    $relevantIndustrySurveys[] = [
+                        'survey' => $survey,
+                        'relevance_score' => $relevanceScore,
+                        'interest_score' => $interestScore,
+                        'similarity_score' => $similarityScore,
+                        'matched_domains' => array_values($domainOverlap),
+                        'matched_keywords' => array_values(array_slice($tokenOverlap, 0, 5)),
+                    ];
+                }
+            }
+
+            $studentCount = count($relevantStudentSurveys);
+            $industryCount = count($relevantIndustrySurveys);
+            $totalRelevant = $studentCount + $industryCount;
+
+            // Calculate confidence & evidence status
+            if ($totalRelevant === 0) {
+                $evidenceStatus = 'insufficient';
+                $confidence = 'Insufficient evidence';
+            } elseif ($studentCount < $minStudentThreshold || $industryCount < $minIndustryThreshold) {
+                $evidenceStatus = 'limited';
+                $confidence = 'Medium';
+            } else {
+                $evidenceStatus = 'sufficient';
+                $confidence = 'High';
+            }
+
+            // If evidence is insufficient, bypass normal analysis and return empty KPIs
+            if ($evidenceStatus === 'insufficient') {
+                return [
+                    'student_demand_distribution' => [['name' => 'Insufficient data', 'value' => 0]],
+                    'industry_demand_distribution' => [['name' => 'Insufficient data', 'value' => 0]],
+                    'domain_frequency_counts' => [
+                        'student' => [],
+                        'industry' => [],
+                    ],
+                    'emerging_technologies' => [],
+                    'skill_gaps' => [],
+                    'jaccard_similarity_results' => [
+                        'intersection' => [],
+                        'union' => [],
+                        'overall_score' => null
+                    ],
+                    
+                    'coverage_percent' => null,
+                    'missing_subjects' => [],
+                    'outdated_subjects' => [],
+                    'low_demand_subjects' => [],
+                    
+                    'learning_preferences_data' => [
+                        'student_theory_percent' => null,
+                        'student_practical_percent' => null,
+                        'student_methods' => [],
+                        'industry_practices' => [],
+                        'certification_importance' => null
+                    ],
+
+                    'kpis' => [
+                        'studentMatch' => null,
+                        'industryMatch' => null,
+                        'alignment' => null,
+                        'surveys' => 0,
+                        'companies' => 0,
+                        'courses' => \App\Models\Course::count(),
+                        'evidence_status' => $evidenceStatus,
+                        'confidence' => $confidence,
+                        'student_count' => 0,
+                        'industry_count' => 0,
+                    ],
+                    'explainability' => [
+                        'student_surveys' => [],
+                        'industry_surveys' => [],
+                    ]
+                ];
+            }
+
+            // 3. Process Relevant Student Surveys
+            foreach ($relevantStudentSurveys as $item) {
+                $survey = $item['survey'];
+                $weight = $item['interest_score'];
+                if ($weight <= 0.0) $weight = 0.3;
+
+                $skills = $survey->primary_skills;
+                $methods = $survey->primary_learning_methods;
+                $balance = $survey->primary_learning_balance;
+
+                if (in_array($survey->secondary_interest, $courseFields) && !in_array($survey->primary_interest, $courseFields)) {
                     $skills = $survey->secondary_skills;
                     $methods = $survey->secondary_learning_methods;
                     $balance = $survey->secondary_learning_balance;
-                }
-                // Check Ternary Interest
-                elseif (strtolower(trim($survey->ternary_interest)) === strtolower(trim($courseField))) {
-                    $weight = 0.3;
+                } elseif (in_array($survey->ternary_interest, $courseFields) && !in_array($survey->primary_interest, $courseFields) && !in_array($survey->secondary_interest, $courseFields)) {
                     $skills = $survey->ternary_skills;
                     $methods = $survey->ternary_learning_methods;
                     $balance = $survey->ternary_learning_balance;
                 }
 
-                if ($weight > 0.0) {
-                    $domains = $this->extractDomains($skills);
-                    $domains = $this->deduplicateDomains($domains);
+                $domains = $this->extractDomains($skills);
+                $domains = $this->deduplicateDomains($domains);
 
-                    // Add domains weighted by duplicating entries
-                    $relevanceCount = (int) round($weight * 10);
+                $relevanceCount = (int) round($weight * 10);
+                for ($i = 0; $i < $relevanceCount; $i++) {
+                    $studentDomains = array_merge($studentDomains, $domains);
+                }
+
+                if ($survey->new_program_suggestion) {
                     for ($i = 0; $i < $relevanceCount; $i++) {
-                        $studentDomains = array_merge($studentDomains, $domains);
+                        $emergingTechnologies[] = $survey->new_program_suggestion;
                     }
+                }
 
-                    if ($survey->new_program_suggestion) {
-                        for ($i = 0; $i < $relevanceCount; $i++) {
-                            $emergingTechnologies[] = $survey->new_program_suggestion;
-                        }
+                if ($balance) {
+                    $score = $parseBalance($balance);
+                    for ($i = 0; $i < $relevanceCount; $i++) {
+                        $theoryPracticalScores[] = $score;
                     }
+                }
 
-                    if ($balance) {
-                        $score = $parseBalance($balance);
-                        for ($i = 0; $i < $relevanceCount; $i++) {
-                            $theoryPracticalScores[] = $score;
-                        }
-                    }
-
-                    if ($methods) {
-                        $prefs = array_map('trim', explode(',', $methods));
-                        for ($i = 0; $i < $relevanceCount; $i++) {
-                            foreach ($prefs as $p) {
-                                if ($p) $learningPreferences[] = $p;
-                            }
+                if ($methods) {
+                    $prefs = array_map('trim', explode(',', $methods));
+                    for ($i = 0; $i < $relevanceCount; $i++) {
+                        foreach ($prefs as $p) {
+                            if ($p) $learningPreferences[] = $p;
                         }
                     }
                 }
             }
 
-            // 2. Process Industry Surveys
-            foreach ($industrySurveys as $survey) {
-                $weight = 0.0;
+            // 4. Process Relevant Industry Surveys
+            foreach ($relevantIndustrySurveys as $item) {
+                $survey = $item['survey'];
+                $weight = $item['interest_score'];
+                if ($weight <= 0.0) $weight = 0.3;
 
-                if (strtolower(trim($survey->primary_academic_field)) === strtolower(trim($courseField))) {
-                    $weight = 1.0;
-                } elseif (strtolower(trim($survey->secondary_academic_field)) === strtolower(trim($courseField))) {
-                    $weight = 0.6;
-                } elseif (strtolower(trim($survey->third_academic_field)) === strtolower(trim($courseField))) {
-                    $weight = 0.3;
+                $domains = $this->extractDomains($survey->required_skills);
+                $domains = $this->deduplicateDomains($domains);
+
+                $relevanceCount = (int) round($weight * 10);
+                for ($i = 0; $i < $relevanceCount; $i++) {
+                    $industryDomains = array_merge($industryDomains, $domains);
                 }
 
-                if ($weight > 0.0) {
-                    $domains = $this->extractDomains($survey->required_skills);
-                    $domains = $this->deduplicateDomains($domains);
-
-                    $relevanceCount = (int) round($weight * 10);
+                if ($survey->emerging_fields) {
                     for ($i = 0; $i < $relevanceCount; $i++) {
-                        $industryDomains = array_merge($industryDomains, $domains);
+                        $emergingTechnologies[] = $survey->emerging_fields;
                     }
+                }
 
-                    if ($survey->emerging_fields) {
-                        for ($i = 0; $i < $relevanceCount; $i++) {
-                            $emergingTechnologies[] = $survey->emerging_fields;
+                if ($survey->graduate_skill_gaps) {
+                    $gaps = $this->extractDomains($survey->graduate_skill_gaps);
+                    for ($i = 0; $i < $relevanceCount; $i++) {
+                        $skillGapsList = array_merge($skillGapsList, $gaps);
+                    }
+                }
+
+                if ($survey->academic_practices) {
+                    $practices = array_map('trim', explode(',', $survey->academic_practices));
+                    for ($i = 0; $i < $relevanceCount; $i++) {
+                        foreach ($practices as $p) {
+                            if ($p) $academicPractices[] = $p;
                         }
                     }
+                }
 
-                    if ($survey->graduate_skill_gaps) {
-                        $gaps = $this->extractDomains($survey->graduate_skill_gaps);
-                        for ($i = 0; $i < $relevanceCount; $i++) {
-                            $skillGapsList = array_merge($skillGapsList, $gaps);
-                        }
-                    }
-
-                    if ($survey->academic_practices) {
-                        $practices = array_map('trim', explode(',', $survey->academic_practices));
-                        for ($i = 0; $i < $relevanceCount; $i++) {
-                            foreach ($practices as $p) {
-                                if ($p) $academicPractices[] = $p;
-                            }
-                        }
-                    }
-
-                    if (isset($survey->certification_importance)) {
-                        for ($i = 0; $i < $relevanceCount; $i++) {
-                            $certImportances[] = $survey->certification_importance;
-                        }
+                if (isset($survey->certification_importance)) {
+                    for ($i = 0; $i < $relevanceCount; $i++) {
+                        $certImportances[] = $survey->certification_importance;
                     }
                 }
             }
+
         } else {
             // Global scope fallback
             foreach ($studentSurveys as $survey) {
@@ -264,7 +434,7 @@ class AnalyticsNLPService
         $lowDemandSubjects = [];
 
         if ($course) {
-            $course->load('semesters.subjects');
+            $course->loadMissing('semesters.subjects');
             foreach ($course->semesters as $semester) {
                 foreach ($semester->subjects as $subject) {
                     $curriculumSubjects[] = [
@@ -289,7 +459,7 @@ class AnalyticsNLPService
             }
 
             // Identify Missing Subjects: High-demand domains not present in the curriculum
-            $totalResponses = $studentSurveys->count() + $industrySurveys->count();
+            $totalResponses = $studentCount + $industryCount;
             $highDemandDomains = [];
             foreach ($studentFrequencies as $domain => $count) {
                 if ($totalResponses > 0 && ($count / $totalResponses) >= 0.15) {
@@ -344,6 +514,11 @@ class AnalyticsNLPService
             }
         }
 
+        if ($course && ($evidenceStatus === 'insufficient' || $evidenceStatus === 'limited')) {
+            $coveragePercent = null;
+            $jaccardResults['overall_score'] = null;
+        }
+
         return [
             'student_demand_distribution' => $studentDistribution,
             'industry_demand_distribution' => $industryDistribution,
@@ -373,10 +548,24 @@ class AnalyticsNLPService
             'kpis' => [
                 'studentMatch' => $jaccardResults['overall_score'] ?? 0,
                 'industryMatch' => $jaccardResults['overall_score'] ?? 0,
-                'alignment' => $coveragePercent, // Align alignment score to actual coverage percentage!
-                'surveys' => $studentSurveys->count() + $industrySurveys->count(),
-                'companies' => IndustryRequirement::distinct('company_name')->count(),
+                'alignment' => $coveragePercent,
+                'surveys' => $totalRelevant,
+                'companies' => count($relevantIndustrySurveys) > 0 ? count(array_unique(array_column(array_column($relevantIndustrySurveys, 'survey'), 'company_name'))) : 0,
                 'courses' => \App\Models\Course::count(),
+                'evidence_status' => $evidenceStatus,
+                'confidence' => $confidence,
+                'student_count' => $studentCount,
+                'industry_count' => $industryCount,
+            ],
+            'explainability' => [
+                'student_surveys' => array_map(function($s) {
+                    unset($s['survey']);
+                    return $s;
+                }, $relevantStudentSurveys),
+                'industry_surveys' => array_map(function($s) {
+                    unset($s['survey']);
+                    return $s;
+                }, $relevantIndustrySurveys),
             ]
         ];
     }
@@ -529,12 +718,70 @@ class AnalyticsNLPService
 
         foreach ($fields as $fieldName => $keywords) {
             foreach ($keywords as $kw) {
-                if (str_contains($text, $kw)) {
+                $pattern = '/\b' . preg_quote($kw, '/') . '\b/i';
+                if (preg_match($pattern, $text)) {
                     return $fieldName;
                 }
             }
         }
 
         return $course->department;
+    }
+
+    /**
+     * Recommends multiple related academic interests based on program title, category, and subject names.
+     */
+    public function classifyCourseFields(\App\Models\Course $course): array
+    {
+        $course->loadMissing('semesters.subjects', 'category');
+        $textParts = [$course->title, $course->department];
+        if ($course->category) {
+            $textParts[] = $course->category->name;
+        }
+        foreach ($course->semesters as $semester) {
+            foreach ($semester->subjects as $subject) {
+                $textParts[] = $subject->name;
+            }
+        }
+        $fullText = strtolower(implode(' ', $textParts));
+
+        $fields = [
+            'Computing & Information Technology' => ['computing', 'information technology', 'software', 'computer', 'it', 'programming', 'network', 'system', 'database', 'developer'],
+            'Accounting & Finance' => ['accounting', 'finance', 'audit', 'taxation', 'banking', 'accountant'],
+            'Business & Management' => ['business', 'management', 'mba', 'administration', 'hr', 'human resource', 'entrepreneurship'],
+            'Hospitality & Tourism' => ['hospitality', 'tourism', 'hotel', 'travel', 'event management'],
+            'Marketing' => ['marketing', 'digital marketing', 'advertising', 'sales'],
+            'Economics' => ['economics', 'macroeconomics', 'microeconomics'],
+            'Psychology' => ['psychology', 'counseling', 'behavior'],
+            'Media & Communication' => ['media', 'communication', 'journalism', 'public relations'],
+            'Environmental Studies' => ['environmental', 'ecology', 'forestry'],
+            'Architecture' => ['architecture', 'design', 'building'],
+            'Mathematics & Statistics' => ['mathematics', 'statistics', 'math', 'actuarial'],
+            'Education' => ['education', 'teaching', 'pedagogy'],
+            'Arts & Humanities' => ['arts', 'humanities', 'english', 'history', 'philosophy', 'language', 'literature', 'creative writing'],
+            'Social Science' => ['social science', 'sociology', 'anthropology'],
+            'Engineering & Technology' => ['engineering', 'mechanical', 'civil', 'electrical', 'electronic', 'mechatronics'],
+            'Medicine & Health Sciences' => ['medicine', 'health', 'nursing', 'medical', 'dental', 'pharmacy'],
+            'Agriculture' => ['agriculture', 'farming', 'crop', 'horticulture'],
+            'Law' => ['law', 'legal', 'jurisprudence'],
+            'Science' => ['science', 'chemistry', 'physics', 'biology', 'zoology', 'botany']
+        ];
+
+        $matchedFields = [];
+        foreach ($fields as $fieldName => $keywords) {
+            foreach ($keywords as $kw) {
+                $pattern = '/\b' . preg_quote($kw, '/') . '\b/i';
+                if (preg_match($pattern, $fullText)) {
+                    $matchedFields[] = $fieldName;
+                    break;
+                }
+            }
+        }
+
+        if (empty($matchedFields)) {
+            $matchedFields[] = $course->department;
+        }
+
+        return array_unique($matchedFields);
     }
 }

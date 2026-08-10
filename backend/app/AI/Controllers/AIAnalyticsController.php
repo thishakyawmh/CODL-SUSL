@@ -52,7 +52,7 @@ class AIAnalyticsController extends Controller
         return response()->json([
             'kpis' => $cache->kpis,
             'last_generated' => $cache->generated_at->format('M j, Y - g:i A'),
-            'coverage_percent' => $cache->kpis['coverage_percent'] ?? 0,
+            'coverage_percent' => isset($cache->kpis['coverage_percent']) ? $cache->kpis['coverage_percent'] : null,
             'missing_subjects' => $cache->kpis['missing_subjects'] ?? [],
             'outdated_subjects' => $cache->kpis['outdated_subjects'] ?? [],
             'low_demand_subjects' => $cache->kpis['low_demand_subjects'] ?? [],
@@ -94,7 +94,7 @@ class AIAnalyticsController extends Controller
         return response()->json([
             'missing_skills' => $cache->skill_gaps,
             'jaccard_similarity' => $cache->jaccard_similarity_results,
-            'coverage_percent' => $cache->kpis['coverage_percent'] ?? 0,
+            'coverage_percent' => isset($cache->kpis['coverage_percent']) ? $cache->kpis['coverage_percent'] : null,
             'missing_subjects' => $cache->kpis['missing_subjects'] ?? [],
             'outdated_subjects' => $cache->kpis['outdated_subjects'] ?? [],
             'low_demand_subjects' => $cache->kpis['low_demand_subjects'] ?? [],
@@ -108,6 +108,14 @@ class AIAnalyticsController extends Controller
         if (!$cache) return response()->json([]);
 
         return response()->json($cache->emerging_technologies);
+    }
+
+    public function getGlobalOverview(AnalyticsNLPService $nlpService)
+    {
+        $analytics = $nlpService->processAll(null);
+        return response()->json([
+            'emerging_technologies' => $analytics['emerging_technologies'] ?? [],
+        ]);
     }
 
     /**
@@ -411,7 +419,7 @@ class AIAnalyticsController extends Controller
                 $recommendations = $recommendationEngine->generateRecommendations($analytics);
 
                 $kpis = $analytics['kpis'] ?? [];
-                $kpis['coverage_percent'] = $analytics['coverage_percent'] ?? 0;
+                $kpis['coverage_percent'] = $analytics['coverage_percent'];
                 $kpis['missing_subjects'] = $analytics['missing_subjects'] ?? [];
                 $kpis['outdated_subjects'] = $analytics['outdated_subjects'] ?? [];
                 $kpis['low_demand_subjects'] = $analytics['low_demand_subjects'] ?? [];

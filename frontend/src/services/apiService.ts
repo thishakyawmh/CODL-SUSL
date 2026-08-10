@@ -510,6 +510,10 @@ export const aiAnalyticsService = {
         const response = await api.get('/admin/ai-analytics/programs');
         return response.data;
     },
+    getGlobalOverview: async () => {
+        const response = await api.get('/admin/ai-analytics/global-overview');
+        return response.data;
+    },
     getOverview: async (courseId: string) => {
         const response = await api.get(`/admin/ai-analytics/${courseId}/overview`);
         return response.data;
