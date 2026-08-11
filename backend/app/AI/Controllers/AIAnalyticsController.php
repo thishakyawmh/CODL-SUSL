@@ -490,6 +490,49 @@ class AIAnalyticsController extends Controller
                                 $val = null;
                             }
                         }
+
+                        // Convert student learning balance strings to tinyint (1-5)
+                        if (in_array($dbColumn, ['primary_learning_balance', 'secondary_learning_balance', 'ternary_learning_balance']) && $val) {
+                            if (is_numeric($val)) {
+                                $val = (int) $val;
+                            } else {
+                                $b = strtolower(trim($val));
+                                if (str_contains($b, 'balanced')) {
+                                    $val = 3;
+                                } elseif (str_contains($b, 'mostly practical') || str_contains($b, 'practical oriented')) {
+                                    $val = 4;
+                                } elseif (str_contains($b, 'mostly theory') || str_contains($b, 'theory oriented')) {
+                                    $val = 2;
+                                } elseif (str_contains($b, 'practical')) {
+                                    $val = 5;
+                                } elseif (str_contains($b, 'theory')) {
+                                    $val = 1;
+                                } else {
+                                    $val = 3;
+                                }
+                            }
+                        }
+
+                        // Convert industry certification importance strings/numbers to tinyint (1-5)
+                        if ($dbColumn === 'certification_importance' && $val) {
+                            if (is_numeric($val)) {
+                                $val = (int) $val;
+                            } else {
+                                $b = strtolower(trim($val));
+                                if (str_contains($b, 'very') || str_contains($b, 'critical') || str_contains($b, 'high')) {
+                                    $val = 5;
+                                } elseif (str_contains($b, 'important')) {
+                                    $val = 4;
+                                } elseif (str_contains($b, 'neutral') || str_contains($b, 'medium')) {
+                                    $val = 3;
+                                } elseif (str_contains($b, 'low') || str_contains($b, 'not')) {
+                                    $val = 2;
+                                } else {
+                                    $val = 1;
+                                }
+                            }
+                        }
+
                         $record[$dbColumn] = $val;
                     }
                     
