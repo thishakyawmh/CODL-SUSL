@@ -554,11 +554,8 @@ export const aiAnalyticsService = {
         const response = await api.post('/admin/ai-analytics/surveys', data);
         return response.data;
     },
-    syncGoogleSheet: async (data: { type: 'student' | 'industry'; url: string }) => {
-        const response = await api.post('/admin/ai-analytics/sync-sheet', {
-            type: data.type,
-            sheet_url: data.url
-        });
+    syncGoogleSheet: async (data?: { type?: 'student' | 'industry'; url?: string }) => {
+        const response = await api.post('/admin/ai-analytics/sync-sheet', data || {});
         return response.data;
     }
 };
@@ -648,6 +645,30 @@ export const studentInterestService = {
 export const industryAnalysisService = {
     submit: async (data: any) => {
         const response = await api.post('/industry-analysis', data);
+        return response.data;
+    },
+    getSectors: async () => {
+        const response = await api.get('/industry-analysis/sectors');
+        return response.data;
+    },
+    saveSector: async (data: any) => {
+        const response = await api.post('/admin/industry-analysis/sectors', data);
+        return response.data;
+    },
+    deleteSector: async (id: string | number) => {
+        const response = await api.delete(`/admin/industry-analysis/sectors/${id}`);
+        return response.data;
+    },
+    getConfig: async () => {
+        const response = await api.get('/industry-analysis/config');
+        return response.data;
+    },
+    saveConfig: async (data: any) => {
+        const response = await api.post('/admin/industry-analysis/config', data);
+        return response.data;
+    },
+    deleteConfig: async (id: string | number) => {
+        const response = await api.delete(`/admin/industry-analysis/config/${id}`);
         return response.data;
     }
 };

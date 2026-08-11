@@ -41,6 +41,8 @@ Route::post('/industry-analysis', [StudentInterestController::class, 'storeIndus
 Route::get('/student-interests/config', [StudentInterestController::class, 'getConfig'])->middleware('throttle:survey-configs');
 Route::get('/student-interests/teaching-methods', [StudentInterestController::class, 'getTeachingMethods'])->middleware('throttle:survey-configs');
 Route::get('/student-interests/university-opportunities', [StudentInterestController::class, 'getUniversityOpportunities'])->middleware('throttle:survey-configs');
+Route::get('/industry-analysis/sectors', [StudentInterestController::class, 'getIndustrySectors'])->middleware('throttle:survey-configs');
+Route::get('/industry-analysis/config', [StudentInterestController::class, 'getIndustryConfig'])->middleware('throttle:survey-configs');
 
 
 
@@ -89,6 +91,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/admin/ai-analytics/{courseId}/recommendations', [AIAnalyticsController::class, 'getRecommendations']);
         Route::get('/admin/ai-analytics/{courseId}/skill-gap', [AIAnalyticsController::class, 'getSkillGap']);
         Route::get('/admin/ai-analytics/{courseId}/emerging-technologies', [AIAnalyticsController::class, 'getEmergingTechnologies']);
+        Route::get('/admin/ai-analytics/{courseId}/export', [AIAnalyticsController::class, 'exportCSV']);
         Route::get('/admin/ai-analytics/surveys', [AIAnalyticsController::class, 'getSurveys']);
         Route::post('/admin/ai-analytics/surveys', [AIAnalyticsController::class, 'storeSurvey']);
         Route::post('/admin/student-interests/config', [StudentInterestController::class, 'storeConfig']);
@@ -97,6 +100,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/admin/student-interests/teaching-methods/{id}', [StudentInterestController::class, 'deleteTeachingMethod']);
         Route::post('/admin/student-interests/university-opportunities', [StudentInterestController::class, 'storeUniversityOpportunity']);
         Route::delete('/admin/student-interests/university-opportunities/{id}', [StudentInterestController::class, 'deleteUniversityOpportunity']);
+
+        // Industry survey configs
+        Route::post('/admin/industry-analysis/sectors', [StudentInterestController::class, 'storeIndustrySector']);
+        Route::delete('/admin/industry-analysis/sectors/{id}', [StudentInterestController::class, 'deleteIndustrySector']);
+        Route::post('/admin/industry-analysis/config', [StudentInterestController::class, 'storeIndustryConfig']);
+        Route::delete('/admin/industry-analysis/config/{id}', [StudentInterestController::class, 'deleteIndustryConfig']);
     });
 
     // Super Admin / Director Management routes

@@ -114,4 +114,17 @@ return [
         'keyword_similarity' => env('AI_WEIGHT_KEYWORD_SIMILERITY', 0.3),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Outdated Legacy Technology Keywords
+    |--------------------------------------------------------------------------
+    |
+    | Used by the curriculum gap analysis to identify subjects that teach
+    | outdated/deprecated frameworks, programming languages or libraries.
+    |
+    */
+    'legacy_keywords' => [
+        'visual basic', 'flash', 'silverlight', 'cobol', 'dreamweaver', 'pascal', 'fortran'
+    ],
+
 ];
