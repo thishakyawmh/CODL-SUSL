@@ -39,7 +39,7 @@ export const AIAnalytics: React.FC = () => {
     const toastIdRef = React.useRef(0);
 
     // Confirmation modal state
-    const [confirmModal, setConfirmModal] = useState<{ open: boolean; onConfirm: () => void }>({ open: false, onConfirm: () => {} });
+    const [confirmModal, setConfirmModal] = useState<{ open: boolean; onConfirm: () => void }>({ open: false, onConfirm: () => { } });
 
     const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
         const id = ++toastIdRef.current;
@@ -80,7 +80,7 @@ export const AIAnalytics: React.FC = () => {
         setConfirmModal({
             open: true,
             onConfirm: async () => {
-                setConfirmModal({ open: false, onConfirm: () => {} });
+                setConfirmModal({ open: false, onConfirm: () => { } });
                 setSyncing(true);
                 try {
                     const res = await aiAnalyticsService.syncGoogleSheet();
@@ -115,7 +115,7 @@ export const AIAnalytics: React.FC = () => {
                 </div>
                 <div className="loading-spinner-container">
                     <div className="loading-spinner"></div>
-                    <p>Loading AI Roadmap...</p>
+                    <p>Loading AI Analytics...</p>
                 </div>
             </>
         );
@@ -145,7 +145,7 @@ export const AIAnalytics: React.FC = () => {
 
             {/* ===== CONFIRMATION MODAL ===== */}
             {confirmModal.open && (
-                <div className="confirm-modal-backdrop" onClick={() => setConfirmModal({ open: false, onConfirm: () => {} })}>
+                <div className="confirm-modal-backdrop" onClick={() => setConfirmModal({ open: false, onConfirm: () => { } })}>
                     <div className="confirm-modal-card" onClick={e => e.stopPropagation()}>
                         <div className="confirm-modal-icon-wrap">
                             <RefreshCw size={28} />
@@ -155,7 +155,7 @@ export const AIAnalytics: React.FC = () => {
                             This will download the latest Student and Industry survey sheets from Google Sheets, update local databases, and run the AI matching algorithms. The process may take 1–2 minutes.
                         </p>
                         <div className="confirm-modal-actions">
-                            <button className="confirm-modal-btn cancel" onClick={() => setConfirmModal({ open: false, onConfirm: () => {} })}>Cancel</button>
+                            <button className="confirm-modal-btn cancel" onClick={() => setConfirmModal({ open: false, onConfirm: () => { } })}>Cancel</button>
                             <button className="confirm-modal-btn confirm" onClick={confirmModal.onConfirm}>
                                 <RefreshCw size={16} /> Yes, Sync Now
                             </button>
@@ -482,7 +482,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                 if (style?.fontSize) doc.setFontSize(style.fontSize);
                 if (style?.fontStyle) doc.setFont('helvetica', style.fontStyle);
                 else doc.setFont('helvetica', 'normal');
-                
+
                 if (style?.color) {
                     if (style.color === 'purple') doc.setTextColor(124, 58, 237);
                     else if (style.color === 'red') doc.setTextColor(239, 68, 68);
@@ -492,14 +492,14 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                 } else {
                     doc.setTextColor(15, 23, 42);
                 }
-                
+
                 doc.text(text, x, y);
             };
 
             // --- PAGE 1: TITLE & EXECUTIVE SUMMARY ---
             addText('ACADEMIC CURRICULUM ALIGNMENT REPORT', margin, { fontSize: 16, fontStyle: 'bold', color: 'purple' });
             y += 10;
-            
+
             doc.setDrawColor(226, 232, 240);
             doc.line(margin, y, pageWidth - margin, y);
             y += 10;
@@ -515,11 +515,11 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
 
             addText('I. EXECUTIVE KPI SUMMARY', margin, { fontSize: 12, fontStyle: 'bold', color: 'purple' });
             y += 8;
-            
+
             const covText = overview.coverage_percent !== null ? `${overview.coverage_percent}%` : 'N/A';
             const studText = overview.kpis?.studentMatch !== null ? `${overview.kpis.studentMatch}%` : 'N/A';
             const indText = overview.kpis?.industryMatch !== null ? `${overview.kpis.industryMatch}%` : 'N/A';
-            
+
             addText(`Curriculum Coverage: ${covText}`, margin + 5, { fontSize: 10, fontStyle: 'bold' });
             y += 6;
             addText(`Student Demand Alignment: ${studText}`, margin + 5, { fontSize: 10, fontStyle: 'bold' });
@@ -532,8 +532,8 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
 
             addText('Missing Core Subjects:', margin + 5, { fontSize: 10, fontStyle: 'bold' });
             y += 5;
-            const missingText = overview.missing_subjects && overview.missing_subjects.length > 0 
-                ? overview.missing_subjects.join(', ') 
+            const missingText = overview.missing_subjects && overview.missing_subjects.length > 0
+                ? overview.missing_subjects.join(', ')
                 : 'None';
             const splitMissing = doc.splitTextToSize(missingText, pageWidth - margin * 2 - 10);
             doc.setFont('helvetica', 'normal');
@@ -566,29 +566,29 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
 
             addText(`Preferred Learning Delivery Split:`, margin + 5, { fontSize: 10, fontStyle: 'bold' });
             const y_start = y;
-            
+
             const theory = overview.learning_preferences_data?.student_theory_percent || 0;
             const practical = overview.learning_preferences_data?.student_practical_percent || 0;
-            
+
             // Donut Chart coordinates - centered vertically with the legend block
             const cx = margin + 120;
             const cy = y_start + 11;
             const r = 14;
-            
+
             const drawPieSlice = (cx: number, cy: number, r: number, startAngle: number, endAngle: number, fillHex: string) => {
                 const steps = 30;
                 const stepAngle = (endAngle - startAngle) / steps;
-                
+
                 if (fillHex === 'purple') doc.setFillColor(192, 132, 252);
                 else doc.setFillColor(124, 58, 237);
-                
+
                 for (let i = 0; i < steps; i++) {
                     const a1 = startAngle + i * stepAngle;
                     const a2 = startAngle + (i + 1) * stepAngle;
-                    
+
                     const rad1 = (a1 - 90) * Math.PI / 180;
                     const rad2 = (a2 - 90) * Math.PI / 180;
-                    
+
                     doc.triangle(
                         cx, cy,
                         cx + r * Math.cos(rad1), cy + r * Math.sin(rad1),
@@ -601,7 +601,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
             const theoryAngle = (theory / 100) * 360;
             drawPieSlice(cx, cy, r, 0, theoryAngle, 'purple');
             drawPieSlice(cx, cy, r, theoryAngle, 360, 'indigo');
-            
+
             // Inner cutout to build a Donut chart
             doc.setFillColor(255, 255, 255);
             doc.ellipse(cx, cy, r * 0.45, r * 0.45, 'F');
@@ -611,12 +611,12 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
             doc.setFillColor(192, 132, 252);
             doc.rect(margin + 10, y - 2.5, 3, 3, 'F');
             addText(`Theory Preference: ${theory}%`, margin + 15, { fontSize: 9 });
-            
+
             y += 6;
             doc.setFillColor(124, 58, 237);
             doc.rect(margin + 10, y - 2.5, 3, 3, 'F');
             addText(`Practical Preference: ${practical}%`, margin + 15, { fontSize: 9 });
-            
+
             y = y_start + 28; // clearance below chart bottom
 
             addText('Student Preferred Learning Methods:', margin + 5, { fontSize: 10, fontStyle: 'bold' });
@@ -626,7 +626,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                     checkPageOverflow(15);
                     addText(`${m.name}: ${m.value}%`, margin + 10, { fontSize: 9 });
                     y += 4;
-                    
+
                     // Draw single progress bar chart
                     doc.setFillColor(241, 245, 249);
                     doc.rect(margin + 10, y, 90, 2, 'F');
@@ -642,7 +642,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
             // --- PAGE 2: STUDENT & JOB MARKET ALIGNMENT ---
             doc.addPage();
             y = margin;
-            
+
             addText('III. STUDENT & JOB MARKET ALIGNMENT INSIGHTS', margin, { fontSize: 14, fontStyle: 'bold', color: 'purple' });
             y += 10;
 
@@ -653,7 +653,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                     checkPageOverflow(15);
                     addText(`${item.name}: ${item.value}%`, margin + 10, { fontSize: 9 });
                     y += 4;
-                    
+
                     doc.setFillColor(241, 245, 249);
                     doc.rect(margin + 10, y, 90, 2, 'F');
                     doc.setFillColor(124, 58, 237);
@@ -673,7 +673,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                     checkPageOverflow(15);
                     addText(`${item.name}: ${item.value}%`, margin + 10, { fontSize: 9 });
                     y += 4;
-                    
+
                     doc.setFillColor(241, 245, 249);
                     doc.rect(margin + 10, y, 90, 2, 'F');
                     doc.setFillColor(79, 70, 229);
@@ -708,7 +708,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                     checkPageOverflow(15);
                     addText(`${item.name}: ${item.value}% expected practice rate`, margin + 10, { fontSize: 9 });
                     y += 4;
-                    
+
                     doc.setFillColor(241, 245, 249);
                     doc.rect(margin + 10, y, 90, 2, 'F');
                     doc.setFillColor(79, 70, 229);
@@ -733,10 +733,10 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
             } else {
                 recommendations.forEach((rec, idx) => {
                     checkPageOverflow(46);
-                    
+
                     doc.setDrawColor(226, 232, 240);
                     doc.rect(margin, y, pageWidth - margin * 2, 34);
-                    
+
                     if (rec.priority === 'Critical') doc.setFillColor(239, 68, 68);
                     else if (rec.priority === 'High') doc.setFillColor(245, 158, 11);
                     else doc.setFillColor(59, 130, 246);
@@ -747,7 +747,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                     doc.setFontSize(10);
                     doc.setTextColor(15, 23, 42);
                     doc.text(`${rec.priority} Priority: ${rec.title}`, margin + 6, y + 5);
-                    
+
                     // Description
                     doc.setFont('helvetica', 'normal');
                     doc.setFontSize(9);
@@ -755,17 +755,17 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                     const descText = `Insight: ${rec.description}`;
                     const splitDesc = doc.splitTextToSize(descText, pageWidth - margin * 2 - 12);
                     doc.text(splitDesc, margin + 6, y + 11);
-                    
+
                     // Impact
                     doc.setFont('helvetica', 'bold');
                     doc.text(`Impact: ${rec.impact}`, margin + 6, y + 23);
-                    
+
                     // Source
                     doc.setFont('helvetica', 'normal');
                     doc.setFontSize(8.5);
                     doc.setTextColor(148, 163, 184);
                     doc.text(`Evidence Source: ${rec.evidence_source}`, margin + 6, y + 29);
-                    
+
                     y += 39;
                 });
             }
@@ -780,7 +780,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
             if (fullCourseData?.semesters && fullCourseData.semesters.length > 0) {
                 fullCourseData.semesters.forEach((sem: any) => {
                     checkPageOverflow(35);
-                    
+
                     addText(sem.name, margin + 5, { fontSize: 11, fontStyle: 'bold', color: 'purple' });
                     y += 6;
 
@@ -803,7 +803,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                             doc.setFont('helvetica', 'normal');
                             doc.setFontSize(9.5);
                             doc.setTextColor(51, 65, 85);
-                            
+
                             doc.text(sub.code || '', margin + 10, y);
                             doc.text(sub.name || '', margin + 35, y);
                             doc.text(`${sub.credits} Credits`, pageWidth - margin - 25, y);
@@ -838,7 +838,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                     doc.setFont('helvetica', 'normal');
                     doc.setFontSize(9.5);
                     doc.setTextColor(51, 65, 85);
-                    
+
                     doc.text(sub.code || '', margin + 10, y);
                     doc.text(sub.name || '', margin + 35, y);
                     doc.text(`${sub.credits} Credits`, pageWidth - margin - 25, y);
