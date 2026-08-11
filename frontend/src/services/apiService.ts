@@ -563,7 +563,9 @@ export const aiAnalyticsService = {
         return response.data;
     },
     syncGoogleSheet: async (data?: { type?: 'student' | 'industry'; url?: string }) => {
-        const response = await api.post('/admin/ai-analytics/sync-sheet', data || {});
+        const response = await api.post('/admin/ai-analytics/sync-sheet', data || {}, {
+            timeout: 300000 // 5 minutes (300,000 ms) for large datasets and AI processing
+        });
         return response.data;
     }
 };
