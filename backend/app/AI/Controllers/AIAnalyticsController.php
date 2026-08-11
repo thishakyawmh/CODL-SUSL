@@ -119,6 +119,26 @@ class AIAnalyticsController extends Controller
         return response()->json([
             'emerging_technologies' => $analytics['emerging_technologies'] ?? [],
             'last_sync_at' => $lastSyncTime,
+            'student_count' => \App\AI\Models\StudentInterest::count(),
+            'industry_count' => \App\AI\Models\IndustryRequirement::count(),
+            'education_levels' => \App\AI\Models\StudentInterest::select('education_level', \DB::raw('count(*) as count'))
+                ->groupBy('education_level')
+                ->get()
+                ->map(function($item) {
+                    return [
+                        'name' => $item->education_level ?: 'Not Specified',
+                        'value' => (int) $item->count
+                    ];
+                }),
+            'districts' => \App\AI\Models\StudentInterest::select('district', \DB::raw('count(*) as count'))
+                ->groupBy('district')
+                ->get()
+                ->map(function($item) {
+                    return [
+                        'name' => trim($item->district) ?: 'Not Specified',
+                        'count' => (int) $item->count
+                    ];
+                })
         ]);
     }
 
@@ -298,13 +318,25 @@ class AIAnalyticsController extends Controller
             return ['error' => 'HTTP request failed: ' . $e->getMessage()];
         }
 
-        // 3. Parsing CSV
-        $lines = explode("\n", $csvData);
-        if (count($lines) < 2) {
+        // 3. Parsing CSV using native stream to handle multi-line fields correctly
+        $tempStream = fopen('php://temp', 'r+');
+        fwrite($tempStream, $csvData);
+        rewind($tempStream);
+        
+        $allRows = [];
+        while (($row = fgetcsv($tempStream, 0, ',', '"', '\\')) !== false) {
+            if (empty($row) || (count($row) === 1 && $row[0] === null)) {
+                continue;
+            }
+            $allRows[] = $row;
+        }
+        fclose($tempStream);
+
+        if (count($allRows) < 2) {
             return ['error' => 'CSV file is empty or only contains headers.'];
         }
 
-        $headers = str_getcsv(array_shift($lines));
+        $headers = array_shift($allRows);
         $headers = array_map(function($h) {
             return trim(preg_replace('/\s+/', ' ', $h));
         }, $headers);
@@ -420,14 +452,10 @@ class AIAnalyticsController extends Controller
         $rowsIgnored = 0;
 
         try {
-            DB::connection('analytics')->transaction(function () use ($lines, $mappedIndexes, $type, $requiredColumns, &$rowsImported, &$rowsIgnored) {
+            DB::connection('analytics')->transaction(function () use ($allRows, $mappedIndexes, $type, $requiredColumns, &$rowsImported, &$rowsIgnored) {
                 $processedIds = [];
                 
-                foreach ($lines as $line) {
-                    if (empty(trim($line))) continue;
-                    
-                    $row = str_getcsv($line);
-                    
+                foreach ($allRows as $row) {
                     // Simple skip if row doesn't have enough columns
                     if (count($row) <= max(array_values($mappedIndexes))) {
                         $rowsIgnored++;

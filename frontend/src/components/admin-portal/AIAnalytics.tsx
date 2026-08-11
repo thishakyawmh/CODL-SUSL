@@ -9,6 +9,9 @@ import {
 import { aiAnalyticsService, courseService } from '../../services/apiService';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
+import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
+// @ts-ignore
+import SriLankaMapData from '@svg-maps/sri-lanka';
 import './AIAnalytics.css';
 
 interface Course {
@@ -33,13 +36,17 @@ export const AIAnalytics: React.FC = () => {
 
     const [syncing, setSyncing] = useState(false);
     const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
+    const [studentCount, setStudentCount] = useState<number>(0);
+    const [industryCount, setIndustryCount] = useState<number>(0);
+    const [educationLevels, setEducationLevels] = useState<{ name: string; value: number }[]>([]);
+    const [districts, setDistricts] = useState<{ name: string; count: number }[]>([]);
 
     // Toast notification state
     const [toasts, setToasts] = useState<{ id: number; message: string; type: 'success' | 'error' | 'info' }[]>([]);
     const toastIdRef = React.useRef(0);
 
     // Confirmation modal state
-    const [confirmModal, setConfirmModal] = useState<{ open: boolean; onConfirm: () => void }>({ open: false, onConfirm: () => {} });
+    const [confirmModal, setConfirmModal] = useState<{ open: boolean; onConfirm: () => void }>({ open: false, onConfirm: () => { } });
 
     const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
         const id = ++toastIdRef.current;
@@ -63,11 +70,17 @@ export const AIAnalytics: React.FC = () => {
             const data = await aiAnalyticsService.getPrograms();
             setPrograms(data);
             const globalData = await aiAnalyticsService.getGlobalOverview().catch(() => null);
-            if (globalData && globalData.emerging_technologies) {
-                setGlobalEmergingTech(globalData.emerging_technologies);
-            }
-            if (globalData && globalData.last_sync_at) {
-                setLastSyncedAt(globalData.last_sync_at);
+            if (globalData) {
+                if (globalData.emerging_technologies) {
+                    setGlobalEmergingTech(globalData.emerging_technologies);
+                }
+                if (globalData.last_sync_at) {
+                    setLastSyncedAt(globalData.last_sync_at);
+                }
+                setStudentCount(globalData.student_count || 0);
+                setIndustryCount(globalData.industry_count || 0);
+                setEducationLevels(globalData.education_levels || []);
+                setDistricts(globalData.districts || []);
             }
         } catch (err) {
             console.error('Failed to load programs', err);
@@ -80,7 +93,7 @@ export const AIAnalytics: React.FC = () => {
         setConfirmModal({
             open: true,
             onConfirm: async () => {
-                setConfirmModal({ open: false, onConfirm: () => {} });
+                setConfirmModal({ open: false, onConfirm: () => { } });
                 setSyncing(true);
                 try {
                     const res = await aiAnalyticsService.syncGoogleSheet();
@@ -115,7 +128,7 @@ export const AIAnalytics: React.FC = () => {
                 </div>
                 <div className="loading-spinner-container">
                     <div className="loading-spinner"></div>
-                    <p>Loading AI Roadmap...</p>
+                    <p>Loading AI Analytics...</p>
                 </div>
             </>
         );
@@ -145,7 +158,7 @@ export const AIAnalytics: React.FC = () => {
 
             {/* ===== CONFIRMATION MODAL ===== */}
             {confirmModal.open && (
-                <div className="confirm-modal-backdrop" onClick={() => setConfirmModal({ open: false, onConfirm: () => {} })}>
+                <div className="confirm-modal-backdrop" onClick={() => setConfirmModal({ open: false, onConfirm: () => { } })}>
                     <div className="confirm-modal-card" onClick={e => e.stopPropagation()}>
                         <div className="confirm-modal-icon-wrap">
                             <RefreshCw size={28} />
@@ -155,7 +168,7 @@ export const AIAnalytics: React.FC = () => {
                             This will download the latest Student and Industry survey sheets from Google Sheets, update local databases, and run the AI matching algorithms. The process may take 1–2 minutes.
                         </p>
                         <div className="confirm-modal-actions">
-                            <button className="confirm-modal-btn cancel" onClick={() => setConfirmModal({ open: false, onConfirm: () => {} })}>Cancel</button>
+                            <button className="confirm-modal-btn cancel" onClick={() => setConfirmModal({ open: false, onConfirm: () => { } })}>Cancel</button>
                             <button className="confirm-modal-btn confirm" onClick={confirmModal.onConfirm}>
                                 <RefreshCw size={16} /> Yes, Sync Now
                             </button>
@@ -193,6 +206,10 @@ export const AIAnalytics: React.FC = () => {
                     onOpenCommonAnalytics={() => setViewMode('common')}
                     syncing={syncing}
                     lastSyncedAt={lastSyncedAt}
+                    studentCount={studentCount}
+                    industryCount={industryCount}
+                    educationLevels={educationLevels}
+                    districts={districts}
                 />
             )}
         </div>
@@ -212,8 +229,12 @@ const ProgramHub: React.FC<{
     onOpenManageForms: () => void,
     onOpenCommonAnalytics: () => void,
     syncing?: boolean,
-    lastSyncedAt?: string | null
-}> = ({ programs, globalEmergingTech, onSelect, onOpenSync, onOpenManageForms, onOpenCommonAnalytics, syncing, lastSyncedAt }) => {
+    lastSyncedAt?: string | null,
+    studentCount: number,
+    industryCount: number,
+    educationLevels: { name: string; value: number }[],
+    districts: { name: string; count: number }[]
+}> = ({ programs, globalEmergingTech, onSelect, onOpenSync, onOpenManageForms, onOpenCommonAnalytics, syncing, lastSyncedAt, studentCount, industryCount, educationLevels, districts }) => {
     const [levelFilter, setLevelFilter] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -359,6 +380,40 @@ const ProgramHub: React.FC<{
                 </div>
             </div>
 
+            {/* Survey Records Analyzed Metric Cards */}
+            {levelFilter === 'all' && !searchTerm && (
+                <>
+                    {/* Top Row: Simple Stats Count Cards */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', marginBottom: '20px' }}>
+                        <div className="ai-chart-card" style={{ display: 'flex', alignItems: 'center', gap: '20px', padding: '20px 24px', margin: 0, borderLeft: '6px solid #7C3AED', background: '#FFFFFF', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.015)', borderRadius: '16px' }}>
+                            <div style={{ backgroundColor: '#F3E8FF', color: '#7C3AED', padding: '12px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <Users size={28} />
+                            </div>
+                            <div>
+                                <span style={{ fontSize: '11px', color: '#64748B', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Student Interests Analyzed</span>
+                                <h2 style={{ fontSize: '28px', fontWeight: 900, color: '#0F172A', margin: '4px 0 0 0', lineHeight: 1 }}>{studentCount}</h2>
+                            </div>
+                        </div>
+                        
+                        <div className="ai-chart-card" style={{ display: 'flex', alignItems: 'center', gap: '20px', padding: '20px 24px', margin: 0, borderLeft: '6px solid #10B981', background: '#FFFFFF', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.015)', borderRadius: '16px' }}>
+                            <div style={{ backgroundColor: '#D1FAE5', color: '#10B981', padding: '12px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <Award size={28} />
+                            </div>
+                            <div>
+                                <span style={{ fontSize: '11px', color: '#64748B', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Industry Audits Analyzed</span>
+                                <h2 style={{ fontSize: '28px', fontWeight: 900, color: '#0F172A', margin: '4px 0 0 0', lineHeight: 1 }}>{industryCount}</h2>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Second Row: Visual Charts Side-by-Side */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px', marginBottom: '32px' }}>
+                        <EducationLevelChart data={educationLevels} />
+                        <GeographicalMapCard data={districts} />
+                    </div>
+                </>
+            )}
+
             {/* Qualification Cards Grid (Initially visible when no category/search is selected) */}
             {levelFilter === 'all' && !searchTerm ? (
                 <div className="cm-categories-grid">
@@ -482,7 +537,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                 if (style?.fontSize) doc.setFontSize(style.fontSize);
                 if (style?.fontStyle) doc.setFont('helvetica', style.fontStyle);
                 else doc.setFont('helvetica', 'normal');
-                
+
                 if (style?.color) {
                     if (style.color === 'purple') doc.setTextColor(124, 58, 237);
                     else if (style.color === 'red') doc.setTextColor(239, 68, 68);
@@ -492,14 +547,14 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                 } else {
                     doc.setTextColor(15, 23, 42);
                 }
-                
+
                 doc.text(text, x, y);
             };
 
             // --- PAGE 1: TITLE & EXECUTIVE SUMMARY ---
             addText('ACADEMIC CURRICULUM ALIGNMENT REPORT', margin, { fontSize: 16, fontStyle: 'bold', color: 'purple' });
             y += 10;
-            
+
             doc.setDrawColor(226, 232, 240);
             doc.line(margin, y, pageWidth - margin, y);
             y += 10;
@@ -515,11 +570,11 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
 
             addText('I. EXECUTIVE KPI SUMMARY', margin, { fontSize: 12, fontStyle: 'bold', color: 'purple' });
             y += 8;
-            
+
             const covText = overview.coverage_percent !== null ? `${overview.coverage_percent}%` : 'N/A';
             const studText = overview.kpis?.studentMatch !== null ? `${overview.kpis.studentMatch}%` : 'N/A';
             const indText = overview.kpis?.industryMatch !== null ? `${overview.kpis.industryMatch}%` : 'N/A';
-            
+
             addText(`Curriculum Coverage: ${covText}`, margin + 5, { fontSize: 10, fontStyle: 'bold' });
             y += 6;
             addText(`Student Demand Alignment: ${studText}`, margin + 5, { fontSize: 10, fontStyle: 'bold' });
@@ -532,8 +587,8 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
 
             addText('Missing Core Subjects:', margin + 5, { fontSize: 10, fontStyle: 'bold' });
             y += 5;
-            const missingText = overview.missing_subjects && overview.missing_subjects.length > 0 
-                ? overview.missing_subjects.join(', ') 
+            const missingText = overview.missing_subjects && overview.missing_subjects.length > 0
+                ? overview.missing_subjects.join(', ')
                 : 'None';
             const splitMissing = doc.splitTextToSize(missingText, pageWidth - margin * 2 - 10);
             doc.setFont('helvetica', 'normal');
@@ -566,29 +621,29 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
 
             addText(`Preferred Learning Delivery Split:`, margin + 5, { fontSize: 10, fontStyle: 'bold' });
             const y_start = y;
-            
+
             const theory = overview.learning_preferences_data?.student_theory_percent || 0;
             const practical = overview.learning_preferences_data?.student_practical_percent || 0;
-            
+
             // Donut Chart coordinates - centered vertically with the legend block
             const cx = margin + 120;
             const cy = y_start + 11;
             const r = 14;
-            
+
             const drawPieSlice = (cx: number, cy: number, r: number, startAngle: number, endAngle: number, fillHex: string) => {
                 const steps = 30;
                 const stepAngle = (endAngle - startAngle) / steps;
-                
+
                 if (fillHex === 'purple') doc.setFillColor(192, 132, 252);
                 else doc.setFillColor(124, 58, 237);
-                
+
                 for (let i = 0; i < steps; i++) {
                     const a1 = startAngle + i * stepAngle;
                     const a2 = startAngle + (i + 1) * stepAngle;
-                    
+
                     const rad1 = (a1 - 90) * Math.PI / 180;
                     const rad2 = (a2 - 90) * Math.PI / 180;
-                    
+
                     doc.triangle(
                         cx, cy,
                         cx + r * Math.cos(rad1), cy + r * Math.sin(rad1),
@@ -601,7 +656,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
             const theoryAngle = (theory / 100) * 360;
             drawPieSlice(cx, cy, r, 0, theoryAngle, 'purple');
             drawPieSlice(cx, cy, r, theoryAngle, 360, 'indigo');
-            
+
             // Inner cutout to build a Donut chart
             doc.setFillColor(255, 255, 255);
             doc.ellipse(cx, cy, r * 0.45, r * 0.45, 'F');
@@ -611,12 +666,12 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
             doc.setFillColor(192, 132, 252);
             doc.rect(margin + 10, y - 2.5, 3, 3, 'F');
             addText(`Theory Preference: ${theory}%`, margin + 15, { fontSize: 9 });
-            
+
             y += 6;
             doc.setFillColor(124, 58, 237);
             doc.rect(margin + 10, y - 2.5, 3, 3, 'F');
             addText(`Practical Preference: ${practical}%`, margin + 15, { fontSize: 9 });
-            
+
             y = y_start + 28; // clearance below chart bottom
 
             addText('Student Preferred Learning Methods:', margin + 5, { fontSize: 10, fontStyle: 'bold' });
@@ -626,7 +681,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                     checkPageOverflow(15);
                     addText(`${m.name}: ${m.value}%`, margin + 10, { fontSize: 9 });
                     y += 4;
-                    
+
                     // Draw single progress bar chart
                     doc.setFillColor(241, 245, 249);
                     doc.rect(margin + 10, y, 90, 2, 'F');
@@ -642,7 +697,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
             // --- PAGE 2: STUDENT & JOB MARKET ALIGNMENT ---
             doc.addPage();
             y = margin;
-            
+
             addText('III. STUDENT & JOB MARKET ALIGNMENT INSIGHTS', margin, { fontSize: 14, fontStyle: 'bold', color: 'purple' });
             y += 10;
 
@@ -653,7 +708,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                     checkPageOverflow(15);
                     addText(`${item.name}: ${item.value}%`, margin + 10, { fontSize: 9 });
                     y += 4;
-                    
+
                     doc.setFillColor(241, 245, 249);
                     doc.rect(margin + 10, y, 90, 2, 'F');
                     doc.setFillColor(124, 58, 237);
@@ -673,7 +728,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                     checkPageOverflow(15);
                     addText(`${item.name}: ${item.value}%`, margin + 10, { fontSize: 9 });
                     y += 4;
-                    
+
                     doc.setFillColor(241, 245, 249);
                     doc.rect(margin + 10, y, 90, 2, 'F');
                     doc.setFillColor(79, 70, 229);
@@ -708,7 +763,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                     checkPageOverflow(15);
                     addText(`${item.name}: ${item.value}% expected practice rate`, margin + 10, { fontSize: 9 });
                     y += 4;
-                    
+
                     doc.setFillColor(241, 245, 249);
                     doc.rect(margin + 10, y, 90, 2, 'F');
                     doc.setFillColor(79, 70, 229);
@@ -733,10 +788,10 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
             } else {
                 recommendations.forEach((rec, idx) => {
                     checkPageOverflow(46);
-                    
+
                     doc.setDrawColor(226, 232, 240);
                     doc.rect(margin, y, pageWidth - margin * 2, 34);
-                    
+
                     if (rec.priority === 'Critical') doc.setFillColor(239, 68, 68);
                     else if (rec.priority === 'High') doc.setFillColor(245, 158, 11);
                     else doc.setFillColor(59, 130, 246);
@@ -747,7 +802,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                     doc.setFontSize(10);
                     doc.setTextColor(15, 23, 42);
                     doc.text(`${rec.priority} Priority: ${rec.title}`, margin + 6, y + 5);
-                    
+
                     // Description
                     doc.setFont('helvetica', 'normal');
                     doc.setFontSize(9);
@@ -755,17 +810,17 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                     const descText = `Insight: ${rec.description}`;
                     const splitDesc = doc.splitTextToSize(descText, pageWidth - margin * 2 - 12);
                     doc.text(splitDesc, margin + 6, y + 11);
-                    
+
                     // Impact
                     doc.setFont('helvetica', 'bold');
                     doc.text(`Impact: ${rec.impact}`, margin + 6, y + 23);
-                    
+
                     // Source
                     doc.setFont('helvetica', 'normal');
                     doc.setFontSize(8.5);
                     doc.setTextColor(148, 163, 184);
                     doc.text(`Evidence Source: ${rec.evidence_source}`, margin + 6, y + 29);
-                    
+
                     y += 39;
                 });
             }
@@ -780,7 +835,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
             if (fullCourseData?.semesters && fullCourseData.semesters.length > 0) {
                 fullCourseData.semesters.forEach((sem: any) => {
                     checkPageOverflow(35);
-                    
+
                     addText(sem.name, margin + 5, { fontSize: 11, fontStyle: 'bold', color: 'purple' });
                     y += 6;
 
@@ -803,7 +858,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                             doc.setFont('helvetica', 'normal');
                             doc.setFontSize(9.5);
                             doc.setTextColor(51, 65, 85);
-                            
+
                             doc.text(sub.code || '', margin + 10, y);
                             doc.text(sub.name || '', margin + 35, y);
                             doc.text(`${sub.credits} Credits`, pageWidth - margin - 25, y);
@@ -838,7 +893,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                     doc.setFont('helvetica', 'normal');
                     doc.setFontSize(9.5);
                     doc.setTextColor(51, 65, 85);
-                    
+
                     doc.text(sub.code || '', margin + 10, y);
                     doc.text(sub.name || '', margin + 35, y);
                     doc.text(`${sub.credits} Credits`, pageWidth - margin - 25, y);
@@ -894,7 +949,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
         );
     }
 
-    if (!overview || Object.keys(overview).length === 0 || !overview.kpis) {
+    if (!overview || Object.keys(overview).length === 0 || !overview.kpis || overview.kpis.evidence_status === 'insufficient' || overview.kpis.surveys === 0) {
         return (
             <div style={{ animation: 'fadeIn 0.3s ease' }}>
                 <button
@@ -905,10 +960,10 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                     <ArrowLeft size={16} /> Back to Programs
                 </button>
                 <div className="card-empty-state">
-                    <Database size={48} className="text-slate-300 mb-4" />
+                    <Database size={54} style={{ color: '#94A3B8', marginBottom: '16px' }} />
                     <h3>No AI Analytics Generated Yet</h3>
-                    <p className="mb-4">There is no synchronized survey data matching the academic scope of <strong>{course.title}</strong>.</p>
-                    <p className="text-sm">Please return to the hub and sync the Google Sheets data.</p>
+                    <p>There is no synchronized survey data matching the academic scope of <strong>{course.title}</strong>.</p>
+                    <p>Please return to the hub and sync the Google Sheets data.</p>
                 </div>
             </div>
         );
@@ -1685,55 +1740,165 @@ const FieldSkillDrilldown: React.FC<{
     );
 };
 
-const ProvinceInterests: React.FC<{ data: any }> = ({ data }) => {
-    const provinces = Object.keys(data);
+const GeographicalMapCard: React.FC<{ data: { name: string; count: number }[] }> = ({ data }) => {
+    const [hoveredDistrict, setHoveredDistrict] = useState<{ name: string; count: number } | null>(null);
 
-    if (provinces.length === 0) {
-        return (
-            <div className="ai-chart-card">
-                <div className="text-center text-slate-400 py-6 text-sm">No province data available.</div>
-            </div>
-        );
-    }
+    // Create a dictionary for quick lookup
+    const districtCounts = React.useMemo(() => {
+        const dict: Record<string, number> = {};
+        data.forEach(d => {
+            dict[d.name.toLowerCase()] = d.count;
+        });
+        return dict;
+    }, [data]);
+
+    // Find the maximum count to calculate colors
+    const maxCount = React.useMemo(() => {
+        const counts = data.map(d => d.count);
+        return counts.length > 0 ? Math.max(...counts) : 1;
+    }, [data]);
+
+    const getColorForDistrict = (districtName: string) => {
+        const count = districtCounts[districtName.toLowerCase()] || 0;
+        if (count === 0) return '#F1F5F9'; // Slate 100
+        
+        // Use a nice purple gradient based on count
+        const ratio = count / maxCount;
+        if (ratio < 0.25) return '#E9D5FF'; // Purple 200
+        if (ratio < 0.5) return '#C084FC';  // Purple 400
+        if (ratio < 0.75) return '#A855F7'; // Purple 500
+        return '#7C3AED';                   // Purple 600
+    };
 
     return (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
-            {provinces.map((prov) => {
-                const fields = data[prov];
-                return (
-                    <div key={prov} className="ai-chart-card" style={{ borderTop: '4px solid #3B82F6' }}>
-                        <h4 style={{ color: '#1E3A8A', fontSize: '15px', fontWeight: '800', marginBottom: '12px' }}>
-                            {prov} Province
-                        </h4>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                            {fields.map((f: any) => (
-                                <div key={f.field} className="chart-bar-row">
-                                    <div className="label" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
-                                        <span style={{ fontWeight: '700', color: '#334155' }}>
-                                            #{f.rank} {f.field}
-                                        </span>
-                                        <span style={{ color: '#64748B', fontWeight: '600' }}>
-                                            {f.percentage}%
-                                        </span>
-                                    </div>
-                                    <div className="bar-bg" style={{ height: '8px', borderRadius: '4px' }}>
-                                        <div
-                                            className="bar-fill blue"
-                                            style={{
-                                                width: `${f.percentage}%`,
-                                                height: '100%',
-                                                backgroundColor: '#3B82F6',
-                                                borderRadius: '4px'
-                                            }}
-                                            title={`${f.field}: ${f.count} weighted responses (${f.percentage}%)`}
-                                        ></div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
+        <div className="ai-chart-card" style={{ display: 'flex', flexDirection: 'column', margin: '0 0 32px 0', padding: '24px', alignItems: 'center' }}>
+            <h4 style={{ margin: '0 0 4px 0', fontSize: '15px', fontWeight: '800', color: '#1E293B', alignSelf: 'flex-start' }}>Geographical Distribution</h4>
+            <p className="text-slate-400 text-xs mb-6" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500, alignSelf: 'flex-start' }}>Applicant interest mapped by district of residence.</p>
+            
+            {/* SVG Map Section */}
+            <div style={{ position: 'relative', width: '260px', height: '420px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '10px' }}>
+                <svg viewBox={SriLankaMapData.viewBox} style={{ width: '100%', height: '100%', cursor: 'pointer' }}>
+                    {SriLankaMapData.locations.map((loc: any) => {
+                        const count = districtCounts[loc.name.toLowerCase()] || 0;
+                        const isHovered = hoveredDistrict?.name.toLowerCase() === loc.name.toLowerCase();
+                        
+                        return (
+                            <path
+                                key={loc.id}
+                                d={loc.path}
+                                fill={getColorForDistrict(loc.name)}
+                                stroke={isHovered ? '#7C3AED' : '#FFFFFF'}
+                                strokeWidth={isHovered ? '2' : '1'}
+                                style={{ transition: 'all 0.2s ease' }}
+                                onMouseEnter={() => setHoveredDistrict({ name: loc.name, count })}
+                                onMouseLeave={() => setHoveredDistrict(null)}
+                            >
+                                <title>{loc.name}: {count} applicants</title>
+                            </path>
+                        );
+                    })}
+                </svg>
+                
+                {/* Hover Tooltip Overlay */}
+                {hoveredDistrict && (
+                    <div style={{
+                        position: 'absolute',
+                        bottom: '20px',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        backgroundColor: '#1E293B',
+                        color: '#FFFFFF',
+                        padding: '8px 12px',
+                        borderRadius: '8px',
+                        fontSize: '12px',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                        pointerEvents: 'none',
+                        whiteSpace: 'nowrap',
+                        zIndex: 10
+                    }}>
+                        <span style={{ fontWeight: 700 }}>{hoveredDistrict.name}</span>: {hoveredDistrict.count} applicants
                     </div>
-                );
-            })}
+                )}
+            </div>
+        </div>
+    );
+};
+
+const EducationLevelChart: React.FC<{ data: { name: string; value: number }[] }> = ({ data }) => {
+    const COLORS = [
+        '#7C3AED', // Purple
+        '#3B82F6', // Blue
+        '#10B981', // Emerald
+        '#EC4899', // Pink
+        '#F59E0B', // Amber
+        '#06B6D4'  // Cyan
+    ];
+
+    const total = data.reduce((sum, item) => sum + item.value, 0) || 1;
+
+    // Format data for Recharts
+    const chartData = data.map((item, index) => ({
+        name: item.name,
+        value: item.value,
+        percentage: ((item.value / total) * 100).toFixed(1)
+    }));
+
+    return (
+        <div className="ai-chart-card" style={{ display: 'flex', flexDirection: 'column', margin: 0, padding: '24px', minHeight: '300px' }}>
+            <h4 style={{ margin: '0 0 4px 0', fontSize: '15px', fontWeight: '800', color: '#1E293B' }}>Applicant Education Levels</h4>
+            <p className="text-slate-400 text-xs mb-6" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Prior qualifications of surveyed applicants.</p>
+            
+            <div style={{ width: '100%', height: '180px', position: 'relative', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                        <Pie
+                            data={chartData}
+                            cx="40%"
+                            cy="50%"
+                            innerRadius={45}
+                            outerRadius={65}
+                            paddingAngle={3}
+                            dataKey="value"
+                            labelLine={false}
+                        >
+                            {chartData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} style={{ outline: 'none' }} />
+                            ))}
+                        </Pie>
+                        <Tooltip
+                            content={({ active, payload }) => {
+                                if (active && payload && payload.length) {
+                                    const item = payload[0].payload;
+                                    return (
+                                        <div style={{ backgroundColor: '#1E293B', color: '#FFFFFF', padding: '8px 12px', borderRadius: '8px', fontSize: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', border: 'none' }}>
+                                            <span style={{ fontWeight: 700 }}>{item.name}</span>
+                                            <div style={{ marginTop: '4px', opacity: 0.9 }}>
+                                                {item.value} applicants ({item.percentage}%)
+                                            </div>
+                                        </div>
+                                    );
+                                }
+                                return null;
+                            }}
+                        />
+                        <Legend
+                            verticalAlign="middle"
+                            align="right"
+                            layout="vertical"
+                            iconType="circle"
+                            iconSize={8}
+                            formatter={(value, entry: any) => {
+                                const payload = entry.payload;
+                                return (
+                                    <span style={{ fontSize: '11px', color: '#475569', fontWeight: 600, marginLeft: '6px' }}>
+                                        {value} ({payload ? payload.percentage : 0}%)
+                                    </span>
+                                );
+                            }}
+                        />
+                    </PieChart>
+                </ResponsiveContainer>
+            </div>
         </div>
     );
 };
@@ -1951,10 +2116,10 @@ const CommonAnalyticsDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) 
                     <ArrowLeft size={16} /> Back to Programs
                 </button>
                 <div className="card-empty-state">
-                    <Database size={48} className="text-slate-300 mb-4" />
+                    <Database size={54} style={{ color: '#94A3B8', marginBottom: '16px' }} />
                     <h3>No Common Student Analytics Available</h3>
-                    <p className="mb-4">There are currently no student interest surveys loaded in the database.</p>
-                    <p className="text-sm">Please return to the hub and sync the Google Sheets data.</p>
+                    <p>There are currently no student interest surveys loaded in the database.</p>
+                    <p>Please return to the hub and sync the Google Sheets data.</p>
                 </div>
             </div>
         );
@@ -1994,13 +2159,6 @@ const CommonAnalyticsDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) 
                     skillsData={drilldownData}
                     loading={drilldownLoading}
                 />
-            </div>
-
-            <div>
-                <h3 className="text-xl font-bold text-slate-800 mb-4" style={{ fontSize: '18px', fontWeight: '800', marginBottom: '16px' }}>
-                    Student Interests by Province
-                </h3>
-                <ProvinceInterests data={data.provinces_data} />
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
