@@ -3,28 +3,159 @@ import { GraduationCap, CheckCircle2, AlertCircle, Loader2, Send, Info } from 'l
 import { industryAnalysisService } from '../../services/apiService';
 import './IndustryAnalysisForm.css';
 
+// ───────────────────────────────────────────────────────────────────────
+// Data: Primary Academic Domains & their Sub-Disciplines
+// ───────────────────────────────────────────────────────────────────────
+const ACADEMIC_DOMAINS: Record<string, string[]> = {
+    'Computing & Information Technology': [
+        'Computer Science', 'Software Engineering', 'Information Systems', 'Cybersecurity',
+        'Artificial Intelligence', 'Data Science', 'Cloud Computing', 'Network Administration',
+        'Database Management', 'Human-Computer Interaction', 'Game Development',
+        'Internet of Things (IoT)', 'Blockchain Technology', 'Quantum Computing', 'Bioinformatics'
+    ],
+    'Engineering & Technology': [
+        'Civil Engineering', 'Mechanical Engineering', 'Electrical Engineering', 'Chemical Engineering',
+        'Aerospace Engineering', 'Materials Science & Engineering', 'Industrial Engineering',
+        'Biomedical Engineering', 'Robotics Engineering', 'Environmental Engineering',
+        'Nanotechnology', 'Mechatronics', 'Petroleum Engineering', 'Marine Engineering'
+    ],
+    'Business & Management': [
+        'Business Administration', 'Human Resource Management', 'Operations Management',
+        'Supply Chain Management', 'International Business', 'Entrepreneurship',
+        'Strategic Management', 'Project Management', 'Organizational Behavior',
+        'Business Analytics', 'Risk Management', 'E-commerce Management', 'Healthcare Management'
+    ],
+    'Accounting & Finance': [
+        'Financial Accounting', 'Management Accounting', 'Corporate Finance', 'Investment Banking',
+        'Taxation', 'Auditing', 'Forensic Accounting', 'Wealth Management', 'Actuarial Finance',
+        'Financial Risk Management', 'Quantitative Finance', 'Public Accounting', 'Islamic Finance'
+    ],
+    'Marketing': [
+        'Digital Marketing', 'Brand Management', 'Market Research', 'Product Marketing',
+        'Advertising', 'Sales Management', 'Consumer Behavior', 'Public Relations (PR)',
+        'Social Media Marketing', 'Content Marketing', 'Search Engine Optimization (SEO)',
+        'Retail Marketing', 'B2B Marketing'
+    ],
+    'Economics': [
+        'Microeconomics', 'Macroeconomics', 'International Economics', 'Econometrics',
+        'Behavioral Economics', 'Development Economics', 'Environmental Economics',
+        'Labor Economics', 'Financial Economics', 'Health Economics', 'Public Economics',
+        'Urban Economics', 'Industrial Organization'
+    ],
+    'Science': [
+        'Physics', 'Chemistry', 'Biology', 'Earth Science', 'Astronomy', 'Biochemistry',
+        'Zoology', 'Botany', 'Microbiology', 'Genetics', 'Ecology', 'Oceanography',
+        'Neuroscience', 'Materials Chemistry'
+    ],
+    'Mathematics & Statistics': [
+        'Pure Mathematics', 'Applied Mathematics', 'Statistics', 'Actuarial Science',
+        'Data Analytics', 'Probability Theory', 'Cryptography', 'Operations Research',
+        'Computational Mathematics', 'Financial Mathematics', 'Topology', 'Number Theory', 'Geometry'
+    ],
+    'Medicine & Health Sciences': [
+        'General Medicine', 'Nursing', 'Dentistry', 'Pharmacy', 'Public Health',
+        'Physiotherapy', 'Surgery', 'Pediatrics', 'Psychiatry', 'Radiology', 'Pathology',
+        'Medical Laboratory Science', 'Occupational Therapy', 'Epidemiology', 'Nutrition and Dietetics'
+    ],
+    'Agriculture': [
+        'Agronomy (Crop Science)', 'Animal Science', 'Horticulture', 'Agricultural Economics',
+        'Soil Science', 'Forestry', 'Plant Pathology', 'Entomology', 'Agricultural Engineering',
+        'Aquaculture', 'Agribusiness', 'Dairy Science', 'Organic Farming'
+    ],
+    'Law': [
+        'Criminal Law', 'Civil Law', 'Corporate Law', 'International Law', 'Constitutional Law',
+        'Intellectual Property Law', 'Environmental Law', 'Family Law', 'Human Rights Law',
+        'Tax Law', 'Labor and Employment Law', 'Real Estate Law', 'Space Law'
+    ],
+    'Education': [
+        'Early Childhood Education', 'Special Education', 'Curriculum and Instruction',
+        'Educational Leadership', 'Educational Psychology', 'Adult Education',
+        'Primary Education', 'Secondary Education', 'Educational Technology (EdTech)',
+        'Physical Education', 'Language Teaching (e.g., TESOL)', 'Higher Education Administration',
+        'Bilingual Education'
+    ],
+    'Social Sciences': [
+        'Sociology', 'Anthropology', 'Political Science', 'Geography', 'International Relations',
+        'Criminology', 'Demography', 'Cultural Studies', 'Urban Studies', 'Public Policy',
+        'Social Work', 'Development Studies', 'Gender Studies'
+    ],
+    'Arts & Humanities': [
+        'History', 'Philosophy', 'Literature', 'Linguistics', 'Performing Arts (Music, Theater, Dance)',
+        'Visual Arts', 'Religious Studies', 'Classics', 'Art History', 'Creative Writing',
+        'Cultural Heritage Studies', 'Archaeology', 'Ethics'
+    ],
+    'Architecture': [
+        'Landscape Architecture', 'Interior Architecture', 'Urban Planning',
+        'Architectural Engineering', 'Historic Preservation', 'Sustainable Design',
+        'Industrial Design', 'Naval Architecture', 'Parametric Design', 'Civic Design',
+        'Residential Architecture', 'Commercial Architecture', 'Construction Management'
+    ],
+    'Environmental Studies': [
+        'Environmental Science', 'Ecology', 'Conservation Biology', 'Climate Science',
+        'Environmental Policy', 'Sustainability Studies', 'Renewable Energy',
+        'Wildlife Management', 'Environmental Toxicology', 'Water Resource Management',
+        'Ocean Conservation', 'Forestry Management', 'Environmental Law and Ethics'
+    ],
+    'Hospitality & Tourism': [
+        'Hotel Management', 'Culinary Arts', 'Event Management', 'Travel and Tourism',
+        'Recreation and Leisure Studies', 'Resort Management', 'Food and Beverage Management',
+        'Eco-Tourism', 'Aviation Management', 'Cruise Ship Management', 'Casino Management',
+        'Hospitality Marketing', 'Theme Park Management'
+    ],
+    'Media & Communication': [
+        'Journalism', 'Broadcasting', 'Film and Television Studies', 'Public Relations',
+        'Digital Media', 'Corporate Communication', 'Advertising Strategy', 'Photojournalism',
+        'Mass Communication', 'Media Ethics', 'Interactive Media', 'Sports Communication', 'Publishing'
+    ],
+    'Psychology': [
+        'Clinical Psychology', 'Cognitive Psychology', 'Developmental Psychology',
+        'Forensic Psychology', 'Social Psychology', 'Educational Psychology',
+        'Industrial-Organizational Psychology', 'Neuropsychology', 'Sports Psychology',
+        'Counseling Psychology', 'Health Psychology', 'Evolutionary Psychology', 'Consumer Psychology'
+    ]
+};
+
+const DOMAIN_KEYS = Object.keys(ACADEMIC_DOMAINS);
+
+const SOFT_SKILLS = [
+    'Communication', 'Teamwork', 'Problem Solving', 'Time Management',
+    'Critical Thinking', 'Emotional Intelligence', 'Adaptability', 'Leadership',
+    'Conflict Resolution', 'Active Listening', 'Creativity', 'Work Ethic',
+    'Interpersonal Skills', 'Negotiation', 'Decision Making', 'Flexibility',
+    'Empathy', 'Networking', 'Attention to Detail', 'Public Speaking'
+];
+
+const TRAINING_PRACTICES = [
+    'Practical Labs', 'Workshops', 'Group Projects', 'Individual Projects',
+    'Industry Training', 'Research Projects', 'Field Visits', 'Guest Lectures',
+    'Internships', 'Hackathons'
+];
+
 export function IndustryAnalysisForm() {
     const [formData, setFormData] = useState({
         company_name: '',
         industry_sector: '',
         organization_size: 'Medium',
         primary_academic_field: '',
-        secondary_academic_field: '',
-        third_academic_field: '',
-        required_skills: '',
-        academic_practices: '',
+        sub_disciplines: [] as string[],
+        tech_stacks: '',
+        soft_skills: [] as string[],
+        training_practices: [] as string[],
         minimum_qualification: 'Bachelor\'s Degree',
         minimum_degree_result: 'Second Class Upper',
         certification_importance: 3,
-        emerging_fields: '',
         new_program_suggestion: '',
         graduate_skill_gaps: '',
         additional_recommendations: ''
     });
 
+    const [customDomain, setCustomDomain] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [errorMsg, setErrorMsg] = useState('');
+
+    const [industrySectors, setIndustrySectors] = useState<string[]>([]);
+    const [academicDomains, setAcademicDomains] = useState<any[]>([]);
 
     // Load Google reCAPTCHA v3 script dynamically
     useEffect(() => {
@@ -53,9 +184,68 @@ export function IndustryAnalysisForm() {
         };
     }, []);
 
+    // Fetch config on mount
+    useEffect(() => {
+        const loadConfigs = async () => {
+            try {
+                const sectorsData = await industryAnalysisService.getSectors();
+                if (sectorsData && sectorsData.length > 0) {
+                    setIndustrySectors(sectorsData.map((s: any) => s.sector_name));
+                } else {
+                    setIndustrySectors([
+                        'Information Technology',
+                        'Engineering & Construction',
+                        'Banking & Finance',
+                        'Tourism & Hospitality',
+                        'Apparel & Manufacturing',
+                        'Healthcare & Pharmaceutical',
+                        'Education & Research'
+                    ]);
+                }
+            } catch (err) {
+                console.error('Failed to load industry sectors config:', err);
+                setIndustrySectors([
+                    'Information Technology',
+                    'Engineering & Construction',
+                    'Banking & Finance',
+                    'Tourism & Hospitality',
+                    'Apparel & Manufacturing',
+                    'Healthcare & Pharmaceutical',
+                    'Education & Research'
+                ]);
+            }
+
+            try {
+                const configData = await industryAnalysisService.getConfig();
+                if (configData && configData.length > 0) {
+                    setAcademicDomains(configData);
+                } else {
+                    const mapped = Object.keys(ACADEMIC_DOMAINS).map(key => ({
+                        interest_field: key,
+                        skills: ACADEMIC_DOMAINS[key]
+                    }));
+                    setAcademicDomains(mapped);
+                }
+            } catch (err) {
+                console.error('Failed to load academic domains config:', err);
+                const mapped = Object.keys(ACADEMIC_DOMAINS).map(key => ({
+                    interest_field: key,
+                    skills: ACADEMIC_DOMAINS[key]
+                }));
+                setAcademicDomains(mapped);
+            }
+        };
+
+        loadConfigs();
+    }, []);
+
     // Determine backend URL dynamically
     const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
     const bannerImgUrl = `${backendUrl}/storage/industry-analysis.webp`;
+
+    // Available sub-disciplines for the currently selected primary domain
+    const selectedDomainObj = academicDomains.find(d => d.interest_field === formData.primary_academic_field);
+    const availableSubDisciplines: string[] = selectedDomainObj ? selectedDomainObj.skills : [];
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
@@ -63,6 +253,55 @@ export function IndustryAnalysisForm() {
             ...prev,
             [name]: value
         }));
+    };
+
+    const handleDomainChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const value = e.target.value;
+        setFormData(prev => ({
+            ...prev,
+            primary_academic_field: value,
+            sub_disciplines: [],   // reset sub-disciplines when domain changes
+            tech_stacks: ''        // reset tech stacks too
+        }));
+        if (value !== 'Other') setCustomDomain('');
+    };
+
+    const toggleSubDiscipline = (discipline: string) => {
+        setFormData(prev => {
+            const current = prev.sub_disciplines;
+            if (current.includes(discipline)) {
+                return { ...prev, sub_disciplines: current.filter(d => d !== discipline) };
+            }
+            if (current.length >= 5) return prev; // max 5
+            return { ...prev, sub_disciplines: [...current, discipline] };
+        });
+    };
+
+    const removeSubDiscipline = (discipline: string) => {
+        setFormData(prev => ({
+            ...prev,
+            sub_disciplines: prev.sub_disciplines.filter(d => d !== discipline)
+        }));
+    };
+
+    const toggleSoftSkill = (skill: string) => {
+        setFormData(prev => {
+            const current = prev.soft_skills;
+            if (current.includes(skill)) {
+                return { ...prev, soft_skills: current.filter(s => s !== skill) };
+            }
+            return { ...prev, soft_skills: [...current, skill] };
+        });
+    };
+
+    const toggleTrainingPractice = (practice: string) => {
+        setFormData(prev => {
+            const current = prev.training_practices;
+            if (current.includes(practice)) {
+                return { ...prev, training_practices: current.filter(p => p !== practice) };
+            }
+            return { ...prev, training_practices: [...current, practice] };
+        });
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -81,8 +320,13 @@ export function IndustryAnalysisForm() {
             setIsLoading(false);
             return;
         }
-        if (!formData.primary_academic_field) {
-            setErrorMsg('Please select your primary academic field of interest.');
+
+        const effectiveDomain = formData.primary_academic_field === 'Other'
+            ? customDomain.trim()
+            : formData.primary_academic_field;
+
+        if (!effectiveDomain) {
+            setErrorMsg('Please select or enter your primary academic domain of interest.');
             setIsLoading(false);
             return;
         }
@@ -101,8 +345,22 @@ export function IndustryAnalysisForm() {
                 }
             }
 
+            // Map frontend state → backend fields
             const payload = {
-                ...formData,
+                company_name: formData.company_name,
+                industry_sector: formData.industry_sector,
+                organization_size: formData.organization_size,
+                primary_academic_field: effectiveDomain,
+                secondary_academic_field: formData.sub_disciplines.join(', '),
+                third_academic_field: formData.soft_skills.join(', '),
+                required_skills: formData.tech_stacks,
+                academic_practices: formData.training_practices.join(', '),
+                minimum_qualification: formData.minimum_qualification,
+                minimum_degree_result: formData.minimum_degree_result,
+                certification_importance: formData.certification_importance,
+                new_program_suggestion: formData.new_program_suggestion,
+                graduate_skill_gaps: formData.graduate_skill_gaps,
+                additional_recommendations: formData.additional_recommendations,
                 recaptcha_token: recaptchaToken
             };
 
@@ -139,18 +397,18 @@ export function IndustryAnalysisForm() {
                                 industry_sector: '',
                                 organization_size: 'Medium',
                                 primary_academic_field: '',
-                                secondary_academic_field: '',
-                                third_academic_field: '',
-                                required_skills: '',
-                                academic_practices: '',
+                                sub_disciplines: [],
+                                tech_stacks: '',
+                                soft_skills: [],
+                                training_practices: [],
                                 minimum_qualification: 'Bachelor\'s Degree',
                                 minimum_degree_result: 'Second Class Upper',
                                 certification_importance: 3,
-                                emerging_fields: '',
                                 new_program_suggestion: '',
                                 graduate_skill_gaps: '',
                                 additional_recommendations: ''
                             });
+                            setCustomDomain('');
                         }}
                     >
                         Submit Another Response
@@ -193,7 +451,7 @@ export function IndustryAnalysisForm() {
                 <div className="form-section">
                     <div className="section-header-row">
                         <h3 className="form-section-title" style={{ borderLeftColor: '#7C3AED' }}>
-                            Part 1: Company Profile
+                            Company Profile
                         </h3>
                     </div>
                     <div className="form-grid">
@@ -222,13 +480,9 @@ export function IndustryAnalysisForm() {
                                 required
                             >
                                 <option value="">Select Sector...</option>
-                                <option value="Information Technology">Information Technology</option>
-                                <option value="Engineering & Construction">Engineering & Construction</option>
-                                <option value="Banking & Finance">Banking & Finance</option>
-                                <option value="Tourism & Hospitality">Tourism & Hospitality</option>
-                                <option value="Apparel & Manufacturing">Apparel & Manufacturing</option>
-                                <option value="Healthcare & Pharmaceutical">Healthcare & Pharmaceutical</option>
-                                <option value="Education & Research">Education & Research</option>
+                                {industrySectors.map(s => (
+                                    <option key={s} value={s}>{s}</option>
+                                ))}
                                 <option value="Other">Other</option>
                             </select>
                         </div>
@@ -254,53 +508,148 @@ export function IndustryAnalysisForm() {
                 <div className="form-section">
                     <div className="section-header-row">
                         <h3 className="form-section-title" style={{ borderLeftColor: '#3B82F6' }}>
-                            Part 2: Academic & Skill Alignment
+                            Academic & Skill Alignment
                         </h3>
                     </div>
                     <div className="form-grid">
-                        <div className="form-group">
+                        {/* Primary Academic Domain */}
+                        <div className="form-group full-width">
                             <label htmlFor="primary_academic_field">Primary Academic Domain of Interest *</label>
                             <select
                                 id="primary_academic_field"
                                 name="primary_academic_field"
                                 className="form-select"
                                 value={formData.primary_academic_field}
-                                onChange={handleInputChange}
+                                onChange={handleDomainChange}
                                 required
                             >
-                                <option value="">Select Field...</option>
-                                <option value="Computing & IT">Computing & Information Technology</option>
-                                <option value="Business & Management">Business & Management</option>
-                                <option value="Engineering & Technology">Engineering & Technology</option>
-                                <option value="Languages & Communication">Languages & Communication</option>
-                                <option value="Agricultural Sciences">Agricultural Sciences</option>
+                                <option value="">Select Domain...</option>
+                                {academicDomains.map(d => (
+                                    <option key={d.interest_field} value={d.interest_field}>{d.interest_field}</option>
+                                ))}
+                                <option value="Other">Other (type below)</option>
                             </select>
                         </div>
 
-                        <div className="form-group full-width">
-                            <label htmlFor="required_skills">Demanded Professional Skills</label>
-                            <textarea
-                                id="required_skills"
-                                name="required_skills"
-                                className="form-textarea"
-                                placeholder="List essential skills, technologies, or tool competencies required for incoming hires..."
-                                value={formData.required_skills}
-                                onChange={handleInputChange}
-                            />
-                        </div>
+                        {/* Custom domain input when "Other" is selected */}
+                        {formData.primary_academic_field === 'Other' && (
+                            <div className="form-group full-width">
+                                <label htmlFor="custom_domain">Specify Your Academic Domain *</label>
+                                <input
+                                    type="text"
+                                    id="custom_domain"
+                                    className="form-input"
+                                    placeholder="Type your academic domain..."
+                                    value={customDomain}
+                                    onChange={(e) => setCustomDomain(e.target.value)}
+                                    required
+                                />
+                            </div>
+                        )}
+
+                        {/* Sub-Disciplines (shown only when a known domain is selected) */}
+                        {availableSubDisciplines.length > 0 && (
+                            <div className="form-group full-width">
+                                <label>
+                                    Sub-Disciplines
+                                    <span className="sub-discipline-hint"> (select up to 5)</span>
+                                </label>
+
+                                {/* Clickable chip selector */}
+                                <div className="subdiscipline-chips">
+                                    {availableSubDisciplines.map(disc => {
+                                        const isSelected = formData.sub_disciplines.includes(disc);
+                                        const isDisabled = !isSelected && formData.sub_disciplines.length >= 5;
+                                        return (
+                                            <button
+                                                key={disc}
+                                                type="button"
+                                                className={`subdiscipline-chip${isSelected ? ' selected' : ''}${isDisabled ? ' disabled' : ''}`}
+                                                onClick={() => !isDisabled && toggleSubDiscipline(disc)}
+                                                disabled={isDisabled}
+                                            >
+                                                {disc}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+
+                                {formData.sub_disciplines.length >= 5 && (
+                                    <p className="max-reached-note">Maximum of 5 sub-disciplines reached.</p>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Tech Stacks / Specialized Areas */}
+                        {(formData.sub_disciplines.length > 0 || formData.primary_academic_field === 'Other') && (
+                            <div className="form-group full-width">
+                                <label htmlFor="tech_stacks">Tech Stacks / Specialized Areas Needed</label>
+                                <input
+                                    type="text"
+                                    id="tech_stacks"
+                                    name="tech_stacks"
+                                    className="form-input"
+                                    placeholder="e.g. React, Node.js, Python, TensorFlow  (separate with commas)"
+                                    value={formData.tech_stacks}
+                                    onChange={handleInputChange}
+                                />
+                                <span className="field-helper-text">Type the technologies, tools, or specialized areas separated by commas.</span>
+                            </div>
+                        )}
                     </div>
                 </div>
 
-                {/* Part 3: Recommendations & Feedback */}
+                {/* Part 3: Skill Sets & Training Preferences */}
                 <div className="form-section">
                     <div className="section-header-row">
                         <h3 className="form-section-title" style={{ borderLeftColor: '#F59E0B' }}>
-                            Part 3: Curriculum Recommendations & Feedback
+                            Skill Sets & Training Preferences
                         </h3>
                     </div>
                     <div className="form-grid">
+                        {/* Soft Skills */}
+                        <div className="form-group full-width">
+                            <label>Soft Skills Needed</label>
+                            <div className="subdiscipline-chips">
+                                {SOFT_SKILLS.map(skill => {
+                                    const isSelected = formData.soft_skills.includes(skill);
+                                    return (
+                                        <button
+                                            key={skill}
+                                            type="button"
+                                            className={`subdiscipline-chip${isSelected ? ' selected' : ''}`}
+                                            onClick={() => toggleSoftSkill(skill)}
+                                        >
+                                            {skill}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Training Practices */}
+                        <div className="form-group full-width">
+                            <label>Training Practices Requested</label>
+                            <div className="subdiscipline-chips">
+                                {TRAINING_PRACTICES.map(practice => {
+                                    const isSelected = formData.training_practices.includes(practice);
+                                    return (
+                                        <button
+                                            key={practice}
+                                            type="button"
+                                            className={`subdiscipline-chip${isSelected ? ' selected' : ''}`}
+                                            onClick={() => toggleTrainingPractice(practice)}
+                                        >
+                                            {practice}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Minimum Education Required */}
                         <div className="form-group">
-                            <label htmlFor="minimum_qualification">Expected Minimum Qualification Level</label>
+                            <label htmlFor="minimum_qualification">Minimum Education Required</label>
                             <select
                                 id="minimum_qualification"
                                 name="minimum_qualification"
@@ -308,52 +657,88 @@ export function IndustryAnalysisForm() {
                                 value={formData.minimum_qualification}
                                 onChange={handleInputChange}
                             >
-                                <option value="Diploma">Diploma</option>
-                                <option value="Higher National Diploma">Higher National Diploma (HND)</option>
                                 <option value="Bachelor's Degree">Bachelor's Degree</option>
-                                <option value="Master's Degree">Master's Degree or Higher</option>
+                                <option value="Master's Degree">Master's Degree</option>
+                                <option value="Diploma / Higher National Diploma">Diploma / Higher National Diploma</option>
+                                <option value="Professional Certification">Professional Certification</option>
+                                <option value="Doctorate (Ph.D.)">Doctorate (Ph.D.)</option>
+                                <option value="Other">Other</option>
                             </select>
                         </div>
 
+                        {/* Minimum Expected GPA / Result Class */}
                         <div className="form-group">
-                            <label htmlFor="certification_importance">Importance of Professional Certifications (1-5)</label>
-                            <div className="slider-container" style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '8px' }}>
-                                <input
-                                    type="range"
-                                    id="certification_importance"
-                                    name="certification_importance"
-                                    min="1"
-                                    max="5"
-                                    style={{ flex: 1, accentColor: '#7c3aed' }}
-                                    value={formData.certification_importance}
-                                    onChange={handleInputChange}
-                                />
-                                <span style={{ fontWeight: 600, color: '#4b5563', minWidth: '24px' }}>
-                                    {formData.certification_importance}
-                                </span>
+                            <label htmlFor="minimum_degree_result">Minimum Expected GPA / Result Class</label>
+                            <select
+                                id="minimum_degree_result"
+                                name="minimum_degree_result"
+                                className="form-select"
+                                value={formData.minimum_degree_result}
+                                onChange={handleInputChange}
+                            >
+                                <option value="First Class">First Class</option>
+                                <option value="Second Class Upper">Second Class (Upper)</option>
+                                <option value="Second Class Lower">Second Class (Lower)</option>
+                                <option value="General Pass">General Pass</option>
+                                <option value="Specific GPA Threshold">Specific GPA Threshold</option>
+                            </select>
+                        </div>
+
+                        {/* Importance of Professional Credentials */}
+                        <div className="form-group full-width">
+                            <label htmlFor="certification_importance">Importance of Professional Credentials</label>
+                            <div className="credentials-scale">
+                                {[1, 2, 3, 4, 5].map((val) => (
+                                    <button
+                                        key={val}
+                                        type="button"
+                                        className={`credentials-option ${formData.certification_importance === val ? 'active' : ''}`}
+                                        onClick={() => setFormData(prev => ({ ...prev, certification_importance: val }))}
+                                    >
+                                        <span className="credentials-number">{val}</span>
+                                        <span className="credentials-label">{
+                                            val === 1 ? 'Not Important' :
+                                                val === 2 ? 'Low Importance' :
+                                                    val === 3 ? 'Medium' :
+                                                        val === 4 ? 'Important' : 'Extremely Important'
+                                        }</span>
+                                    </button>
+                                ))}
                             </div>
                         </div>
+                    </div>
+                </div>
 
+                {/* Part 4: Curriculum Feedback & Strategic Recommendations */}
+                <div className="form-section">
+                    <div className="section-header-row">
+                        <h3 className="form-section-title" style={{ borderLeftColor: '#10B981' }}>
+                            Curriculum Feedback & Strategic Recommendations
+                        </h3>
+                    </div>
+                    <div className="form-grid">
+                        {/* Direct suggestions for new degree programs */}
                         <div className="form-group full-width">
-                            <label htmlFor="graduate_skill_gaps">Observed Skill Gaps in Current Graduates</label>
-                            <textarea
-                                id="graduate_skill_gaps"
-                                name="graduate_skill_gaps"
-                                className="form-textarea"
-                                placeholder="Describe any gaps in soft skills, technical skills, or business understanding you regularly observe..."
-                                value={formData.graduate_skill_gaps}
-                                onChange={handleInputChange}
-                            />
-                        </div>
-
-                        <div className="form-group full-width">
-                            <label htmlFor="new_program_suggestion">New Degree Programs or Specialization Recommendations</label>
+                            <label htmlFor="new_program_suggestion">Direct suggestions for new degree programs</label>
                             <textarea
                                 id="new_program_suggestion"
                                 name="new_program_suggestion"
                                 className="form-textarea"
-                                placeholder="If you could introduce one new specialization or degree program, what would it be?..."
+                                placeholder="Describe any new degree programs, curriculums, or specializations that the university should introduce..."
                                 value={formData.new_program_suggestion}
+                                onChange={handleInputChange}
+                            />
+                        </div>
+
+                        {/* Identified Capability deficits in recent graduates */}
+                        <div className="form-group full-width">
+                            <label htmlFor="graduate_skill_gaps">Identified Capability deficits in recent graduates</label>
+                            <textarea
+                                id="graduate_skill_gaps"
+                                name="graduate_skill_gaps"
+                                className="form-textarea"
+                                placeholder="Describe any capability, technical, or soft skill deficits observed in recent hires..."
+                                value={formData.graduate_skill_gaps}
                                 onChange={handleInputChange}
                             />
                         </div>
