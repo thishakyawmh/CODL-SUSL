@@ -38,8 +38,7 @@ export const AIAnalytics: React.FC = () => {
     const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
     const [studentCount, setStudentCount] = useState<number>(0);
     const [industryCount, setIndustryCount] = useState<number>(0);
-    const [educationLevels, setEducationLevels] = useState<{ name: string; value: number }[]>([]);
-    const [districts, setDistricts] = useState<{ name: string; count: number }[]>([]);
+    // educationLevels and districts removed — now fetched directly by InteractiveSriLankaMap
 
     // Toast notification state
     const [toasts, setToasts] = useState<{ id: number; message: string; type: 'success' | 'error' | 'info' }[]>([]);
@@ -79,8 +78,6 @@ export const AIAnalytics: React.FC = () => {
                 }
                 setStudentCount(globalData.student_count || 0);
                 setIndustryCount(globalData.industry_count || 0);
-                setEducationLevels(globalData.education_levels || []);
-                setDistricts(globalData.districts || []);
             }
         } catch (err) {
             console.error('Failed to load programs', err);
@@ -208,8 +205,6 @@ export const AIAnalytics: React.FC = () => {
                     lastSyncedAt={lastSyncedAt}
                     studentCount={studentCount}
                     industryCount={industryCount}
-                    educationLevels={educationLevels}
-                    districts={districts}
                 />
             )}
         </div>
@@ -232,9 +227,7 @@ const ProgramHub: React.FC<{
     lastSyncedAt?: string | null,
     studentCount: number,
     industryCount: number,
-    educationLevels: { name: string; value: number }[],
-    districts: { name: string; count: number }[]
-}> = ({ programs, globalEmergingTech, onSelect, onOpenSync, onOpenManageForms, onOpenCommonAnalytics, syncing, lastSyncedAt, studentCount, industryCount, educationLevels, districts }) => {
+}> = ({ programs, globalEmergingTech, onSelect, onOpenSync, onOpenManageForms, onOpenCommonAnalytics, syncing, lastSyncedAt, studentCount, industryCount }) => {
     const [levelFilter, setLevelFilter] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -406,10 +399,9 @@ const ProgramHub: React.FC<{
                         </div>
                     </div>
 
-                    {/* Second Row: Visual Charts Side-by-Side */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px', marginBottom: '32px' }}>
-                        <EducationLevelChart data={educationLevels} />
-                        <GeographicalMapCard data={districts} />
+                    {/* Second Row: Interactive Sri Lanka Map (full width) */}
+                    <div style={{ marginBottom: '32px' }}>
+                        <InteractiveSriLankaMap />
                     </div>
                 </>
             )}
@@ -1740,165 +1732,537 @@ const FieldSkillDrilldown: React.FC<{
     );
 };
 
-const GeographicalMapCard: React.FC<{ data: { name: string; count: number }[] }> = ({ data }) => {
-    const [hoveredDistrict, setHoveredDistrict] = useState<{ name: string; count: number } | null>(null);
-
-    // Create a dictionary for quick lookup
-    const districtCounts = React.useMemo(() => {
-        const dict: Record<string, number> = {};
-        data.forEach(d => {
-            dict[d.name.toLowerCase()] = d.count;
-        });
-        return dict;
-    }, [data]);
-
-    // Find the maximum count to calculate colors
-    const maxCount = React.useMemo(() => {
-        const counts = data.map(d => d.count);
-        return counts.length > 0 ? Math.max(...counts) : 1;
-    }, [data]);
-
-    const getColorForDistrict = (districtName: string) => {
-        const count = districtCounts[districtName.toLowerCase()] || 0;
-        if (count === 0) return '#F1F5F9'; // Slate 100
-        
-        // Use a nice purple gradient based on count
-        const ratio = count / maxCount;
-        if (ratio < 0.25) return '#E9D5FF'; // Purple 200
-        if (ratio < 0.5) return '#C084FC';  // Purple 400
-        if (ratio < 0.75) return '#A855F7'; // Purple 500
-        return '#7C3AED';                   // Purple 600
-    };
-
-    return (
-        <div className="ai-chart-card" style={{ display: 'flex', flexDirection: 'column', margin: '0 0 32px 0', padding: '24px', alignItems: 'center' }}>
-            <h4 style={{ margin: '0 0 4px 0', fontSize: '15px', fontWeight: '800', color: '#1E293B', alignSelf: 'flex-start' }}>Geographical Distribution</h4>
-            <p className="text-slate-400 text-xs mb-6" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500, alignSelf: 'flex-start' }}>Applicant interest mapped by district of residence.</p>
-            
-            {/* SVG Map Section */}
-            <div style={{ position: 'relative', width: '260px', height: '420px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '10px' }}>
-                <svg viewBox={SriLankaMapData.viewBox} style={{ width: '100%', height: '100%', cursor: 'pointer' }}>
-                    {SriLankaMapData.locations.map((loc: any) => {
-                        const count = districtCounts[loc.name.toLowerCase()] || 0;
-                        const isHovered = hoveredDistrict?.name.toLowerCase() === loc.name.toLowerCase();
-                        
-                        return (
-                            <path
-                                key={loc.id}
-                                d={loc.path}
-                                fill={getColorForDistrict(loc.name)}
-                                stroke={isHovered ? '#7C3AED' : '#FFFFFF'}
-                                strokeWidth={isHovered ? '2' : '1'}
-                                style={{ transition: 'all 0.2s ease' }}
-                                onMouseEnter={() => setHoveredDistrict({ name: loc.name, count })}
-                                onMouseLeave={() => setHoveredDistrict(null)}
-                            >
-                                <title>{loc.name}: {count} applicants</title>
-                            </path>
-                        );
-                    })}
-                </svg>
-                
-                {/* Hover Tooltip Overlay */}
-                {hoveredDistrict && (
-                    <div style={{
-                        position: 'absolute',
-                        bottom: '20px',
-                        left: '50%',
-                        transform: 'translateX(-50%)',
-                        backgroundColor: '#1E293B',
-                        color: '#FFFFFF',
-                        padding: '8px 12px',
-                        borderRadius: '8px',
-                        fontSize: '12px',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                        pointerEvents: 'none',
-                        whiteSpace: 'nowrap',
-                        zIndex: 10
-                    }}>
-                        <span style={{ fontWeight: 700 }}>{hoveredDistrict.name}</span>: {hoveredDistrict.count} applicants
-                    </div>
-                )}
-            </div>
-        </div>
-    );
+// ─── District → Province lookup ─────────────────────────────────────────────
+const DISTRICT_TO_PROVINCE: Record<string, string> = {
+    colombo: 'Western', gampaha: 'Western', kalutara: 'Western',
+    kandy: 'Central', matale: 'Central', 'nuwara eliya': 'Central',
+    galle: 'Southern', matara: 'Southern', hambantota: 'Southern',
+    jaffna: 'Northern', kilinochchi: 'Northern', mannar: 'Northern', mullaitivu: 'Northern', vavuniya: 'Northern',
+    batticaloa: 'Eastern', ampara: 'Eastern', trincomalee: 'Eastern',
+    kurunegala: 'North Western', puttalam: 'North Western',
+    anuradhapura: 'North Central', polonnaruwa: 'North Central',
+    badulla: 'Uva', monaragala: 'Uva',
+    ratnapura: 'Sabaragamuwa', kegalle: 'Sabaragamuwa',
 };
 
-const EducationLevelChart: React.FC<{ data: { name: string; value: number }[] }> = ({ data }) => {
-    const COLORS = [
-        '#7C3AED', // Purple
-        '#3B82F6', // Blue
-        '#10B981', // Emerald
-        '#EC4899', // Pink
-        '#F59E0B', // Amber
-        '#06B6D4'  // Cyan
-    ];
+const PROVINCE_COLORS: Record<string, string> = {
+    'Western':       '#7C3AED',
+    'Central':       '#2563EB',
+    'Southern':      '#059669',
+    'Northern':      '#DC2626',
+    'Eastern':       '#D97706',
+    'North Western': '#0891B2',
+    'North Central': '#7C3AED',
+    'Uva':           '#DB2777',
+    'Sabaragamuwa':  '#65A30D',
+};
 
-    const total = data.reduce((sum, item) => sum + item.value, 0) || 1;
+const EDU_ORDER = ['Undergraduate', 'Advanced Level', 'Diploma Holder', 'Ordinary Level', 'Not Specified'];
+const CHART_COLORS = ['#7C3AED', '#3B82F6', '#10B981', '#EC4899', '#F59E0B', '#06B6D4', '#EF4444', '#8B5CF6'];
 
-    // Format data for Recharts
-    const chartData = data.map((item, index) => ({
-        name: item.name,
-        value: item.value,
-        percentage: ((item.value / total) * 100).toFixed(1)
+interface GeoData {
+    by_province: Record<string, Record<string, { name: string; score: number }[]>>;
+    all_island: { name: string; score: number }[];
+    district_counts: Record<string, number>;
+}
+
+const InteractiveSriLankaMap: React.FC = () => {
+    const [geoData, setGeoData] = useState<GeoData | null>(null);
+    const [loadingGeo, setLoadingGeo] = useState(true);
+
+    // Map hover/click state
+    const [hoveredDistrict, setHoveredDistrict] = useState<string | null>(null);
+    const [selectedProvince, setSelectedProvince] = useState<string | null>(null);
+    const [allIslandMode, setAllIslandMode] = useState(false);
+
+    // Panel 1 state: selected field for skills drill-down
+    const [selectedField, setSelectedField] = useState<string | null>(null);
+    const [selectedEduLevel, setSelectedEduLevel] = useState<string | null>(null);
+
+    // Panel 2: skills
+    const [skills, setSkills] = useState<{ name: string; score: number; percentage: number }[]>([]);
+    const [loadingSkills, setLoadingSkills] = useState(false);
+
+    // All Island pie selection
+    const [allIslandSelectedField, setAllIslandSelectedField] = useState<string | null>(null);
+    const [allIslandSkills, setAllIslandSkills] = useState<{ name: string; score: number; percentage: number }[]>([]);
+    const [loadingAllIslandSkills, setLoadingAllIslandSkills] = useState(false);
+
+    useEffect(() => {
+        aiAnalyticsService.getGeographyData().then(d => {
+            setGeoData(d);
+            setLoadingGeo(false);
+        }).catch(() => setLoadingGeo(false));
+    }, []);
+
+    const districtCounts = geoData?.district_counts || {};
+    const maxCount = Math.max(...Object.values(districtCounts), 1);
+
+    const getProvinceForDistrict = (name: string) =>
+        DISTRICT_TO_PROVINCE[name.toLowerCase()] || null;
+
+    const getColorForDistrict = (name: string) => {
+        const province = getProvinceForDistrict(name);
+        const count = districtCounts[name] || 0;
+        if (count === 0) return '#E2E8F0';
+        const ratio = count / maxCount;
+        const base = PROVINCE_COLORS[province || ''] || '#7C3AED';
+        if (ratio < 0.25) return `${base}40`;
+        if (ratio < 0.5)  return `${base}80`;
+        if (ratio < 0.75) return `${base}BB`;
+        return base;
+    };
+
+    const handleDistrictClick = (districtName: string) => {
+        const province = getProvinceForDistrict(districtName);
+        if (!province) return;
+        setAllIslandMode(false);
+        setSelectedProvince(province);
+        setSelectedField(null);
+        setSelectedEduLevel(null);
+        setSkills([]);
+    };
+
+    const handleFieldClick = async (field: string, eduLevel: string) => {
+        setSelectedField(field);
+        setSelectedEduLevel(eduLevel);
+        setLoadingSkills(true);
+        setSkills([]);
+        try {
+            const data = await aiAnalyticsService.getGeographySkills(field, selectedProvince || '', eduLevel);
+            setSkills(data.skills || []);
+        } catch (e) {
+            setSkills([]);
+        } finally {
+            setLoadingSkills(false);
+        }
+    };
+
+    const handleAllIslandFieldClick = async (field: string) => {
+        setAllIslandSelectedField(field);
+        setLoadingAllIslandSkills(true);
+        setAllIslandSkills([]);
+        try {
+            const data = await aiAnalyticsService.getGeographySkills(field);
+            setAllIslandSkills(data.skills || []);
+        } catch (e) {
+            setAllIslandSkills([]);
+        } finally {
+            setLoadingAllIslandSkills(false);
+        }
+    };
+
+    // Prepare all-island pie data
+    const allIslandPieData = (geoData?.all_island || []).slice(0, 8).map(f => ({
+        ...f,
+        value: f.score,
     }));
 
+    const provinceData = selectedProvince && geoData?.by_province[selectedProvince]
+        ? geoData.by_province[selectedProvince]
+        : null;
+
+    // Sorted education levels for this province
+    const sortedEduLevels = provinceData
+        ? EDU_ORDER.filter(e => provinceData[e]).concat(
+            Object.keys(provinceData).filter(e => !EDU_ORDER.includes(e))
+          )
+        : [];
+
     return (
-        <div className="ai-chart-card" style={{ display: 'flex', flexDirection: 'column', margin: 0, padding: '24px', minHeight: '300px' }}>
-            <h4 style={{ margin: '0 0 4px 0', fontSize: '15px', fontWeight: '800', color: '#1E293B' }}>Applicant Education Levels</h4>
-            <p className="text-slate-400 text-xs mb-6" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Prior qualifications of surveyed applicants.</p>
-            
-            <div style={{ width: '100%', height: '180px', position: 'relative', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                        <Pie
-                            data={chartData}
-                            cx="40%"
-                            cy="50%"
-                            innerRadius={45}
-                            outerRadius={65}
-                            paddingAngle={3}
-                            dataKey="value"
-                            labelLine={false}
-                        >
-                            {chartData.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} style={{ outline: 'none' }} />
-                            ))}
-                        </Pie>
-                        <Tooltip
-                            content={({ active, payload }) => {
-                                if (active && payload && payload.length) {
-                                    const item = payload[0].payload;
-                                    return (
-                                        <div style={{ backgroundColor: '#1E293B', color: '#FFFFFF', padding: '8px 12px', borderRadius: '8px', fontSize: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', border: 'none' }}>
-                                            <span style={{ fontWeight: 700 }}>{item.name}</span>
-                                            <div style={{ marginTop: '4px', opacity: 0.9 }}>
-                                                {item.value} applicants ({item.percentage}%)
-                                            </div>
-                                        </div>
-                                    );
-                                }
-                                return null;
-                            }}
-                        />
-                        <Legend
-                            verticalAlign="middle"
-                            align="right"
-                            layout="vertical"
-                            iconType="circle"
-                            iconSize={8}
-                            formatter={(value, entry: any) => {
-                                const payload = entry.payload;
-                                return (
-                                    <span style={{ fontSize: '11px', color: '#475569', fontWeight: 600, marginLeft: '6px' }}>
-                                        {value} ({payload ? payload.percentage : 0}%)
-                                    </span>
-                                );
-                            }}
-                        />
-                    </PieChart>
-                </ResponsiveContainer>
+        <div style={{
+            background: '#FFFFFF',
+            borderRadius: '20px',
+            border: '1px solid #E2E8F0',
+            boxShadow: '0 4px 24px rgba(0,0,0,0.06)',
+            padding: '28px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0',
+        }}>
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '24px' }}>
+                <div>
+                    <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>
+                        Geographic Interest Distribution
+                    </h4>
+                    <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#64748B', fontWeight: 500 }}>
+                        Click a district to explore academic interests by education level. Click a field to see top skills.
+                    </p>
+                </div>
+                <button
+                    onClick={() => {
+                        setAllIslandMode(!allIslandMode);
+                        setSelectedProvince(null);
+                        setSelectedField(null);
+                        setAllIslandSelectedField(null);
+                        setAllIslandSkills([]);
+                        setSkills([]);
+                    }}
+                    style={{
+                        padding: '8px 18px',
+                        borderRadius: '10px',
+                        border: allIslandMode ? '2px solid #7C3AED' : '1.5px solid #CBD5E1',
+                        background: allIslandMode ? '#7C3AED' : '#FFFFFF',
+                        color: allIslandMode ? '#FFFFFF' : '#475569',
+                        fontWeight: 700,
+                        fontSize: '12px',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        whiteSpace: 'nowrap',
+                    }}
+                >
+                    🌐 All Island
+                </button>
             </div>
+
+            {loadingGeo ? (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '360px' }}>
+                    <div style={{ textAlign: 'center' }}>
+                        <div style={{ width: '36px', height: '36px', borderRadius: '50%', border: '3px solid #E9D5FF', borderTopColor: '#7C3AED', animation: 'spin 0.9s linear infinite', margin: '0 auto 12px auto' }}></div>
+                        <span style={{ fontSize: '13px', color: '#94A3B8' }}>Loading geographic data…</span>
+                    </div>
+                </div>
+            ) : allIslandMode ? (
+                /* ── ALL ISLAND MODE ────────────────────────────────────────── */
+                <div style={{ display: 'grid', gridTemplateColumns: allIslandSelectedField ? '1fr 1fr' : '1fr', gap: '32px', alignItems: 'flex-start' }}>
+                    {/* Pie Chart 1: Top Fields */}
+                    <div>
+                        <p style={{ margin: '0 0 16px 0', fontSize: '13px', fontWeight: 700, color: '#374151' }}>
+                            Top Interest Fields — All Island
+                            <span style={{ fontSize: '11px', fontWeight: 500, color: '#94A3B8', marginLeft: '8px' }}>click a slice to see skills</span>
+                        </p>
+                        <ResponsiveContainer width="100%" height={340}>
+                            <PieChart>
+                                <Pie
+                                    data={allIslandPieData}
+                                    cx="50%" cy="50%"
+                                    outerRadius={120}
+                                    paddingAngle={3}
+                                    dataKey="value"
+                                    onClick={(entry: any) => handleAllIslandFieldClick(entry.name)}
+                                    style={{ cursor: 'pointer' }}
+                                >
+                                    {allIslandPieData.map((_, i) => (
+                                        <Cell
+                                            key={i}
+                                            fill={CHART_COLORS[i % CHART_COLORS.length]}
+                                            stroke={allIslandSelectedField === allIslandPieData[i]?.name ? '#0F172A' : 'transparent'}
+                                            strokeWidth={allIslandSelectedField === allIslandPieData[i]?.name ? 3 : 0}
+                                            opacity={allIslandSelectedField && allIslandSelectedField !== allIslandPieData[i]?.name ? 0.45 : 1}
+                                        />
+                                    ))}
+                                </Pie>
+                                <Tooltip
+                                    content={({ active, payload }) => {
+                                        if (active && payload?.length) {
+                                            const p = payload[0].payload;
+                                            return (
+                                                <div style={{ background: '#1E293B', color: '#FFF', padding: '10px 14px', borderRadius: '10px', fontSize: '12px' }}>
+                                                    <div style={{ fontWeight: 700 }}>{p.name}</div>
+                                                    <div style={{ opacity: 0.85, marginTop: 4 }}>Weighted score: {p.score}</div>
+                                                </div>
+                                            );
+                                        }
+                                        return null;
+                                    }}
+                                />
+                                <Legend
+                                    layout="vertical" verticalAlign="middle" align="right"
+                                    iconType="circle" iconSize={8}
+                                    formatter={(value) => (
+                                        <span style={{ fontSize: '11px', color: '#475569', fontWeight: 600 }}>{value}</span>
+                                    )}
+                                />
+                            </PieChart>
+                        </ResponsiveContainer>
+                    </div>
+
+                    {/* Pie Chart 2: Top Skills for selected field */}
+                    {allIslandSelectedField && (
+                        <div style={{ animation: 'fadeInRight 0.3s ease' }}>
+                            <p style={{ margin: '0 0 6px 0', fontSize: '13px', fontWeight: 700, color: '#374151' }}>
+                                Top Skills for "{allIslandSelectedField}"
+                            </p>
+                            <p style={{ margin: '0 0 16px 0', fontSize: '11px', color: '#94A3B8' }}>All Island · All Education Levels</p>
+                            {loadingAllIslandSkills ? (
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '300px' }}>
+                                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', border: '3px solid #E9D5FF', borderTopColor: '#7C3AED', animation: 'spin 0.9s linear infinite' }}></div>
+                                </div>
+                            ) : allIslandSkills.length === 0 ? (
+                                <div style={{ textAlign: 'center', padding: '40px 0', color: '#94A3B8', fontSize: '13px' }}>No skill data found.</div>
+                            ) : (
+                                <ResponsiveContainer width="100%" height={340}>
+                                    <PieChart>
+                                        <Pie
+                                            data={allIslandSkills.map(s => ({ ...s, value: s.score }))}
+                                            cx="50%" cy="50%"
+                                            outerRadius={115}
+                                            paddingAngle={2}
+                                            dataKey="value"
+                                        >
+                                            {allIslandSkills.map((_, i) => (
+                                                <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip
+                                            content={({ active, payload }) => {
+                                                if (active && payload?.length) {
+                                                    const p = payload[0].payload;
+                                                    return (
+                                                        <div style={{ background: '#1E293B', color: '#FFF', padding: '10px 14px', borderRadius: '10px', fontSize: '12px' }}>
+                                                            <div style={{ fontWeight: 700, textTransform: 'capitalize' }}>{p.name}</div>
+                                                            <div style={{ opacity: 0.85, marginTop: 4 }}>{p.percentage}% · score {p.score}</div>
+                                                        </div>
+                                                    );
+                                                }
+                                                return null;
+                                            }}
+                                        />
+                                        <Legend
+                                            layout="vertical" verticalAlign="middle" align="right"
+                                            iconType="circle" iconSize={8}
+                                            formatter={(value) => (
+                                                <span style={{ fontSize: '11px', color: '#475569', fontWeight: 600, textTransform: 'capitalize' }}>{value}</span>
+                                            )}
+                                        />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            )}
+                        </div>
+                    )}
+                </div>
+            ) : (
+                /* ── PROVINCE MAP MODE ──────────────────────────────────────── */
+                <div style={{ display: 'grid', gridTemplateColumns: selectedProvince ? '220px 1fr 1fr' : '220px 1fr', gap: '24px', alignItems: 'flex-start' }}>
+                    {/* Sri Lanka SVG Map */}
+                    <div style={{ position: 'relative' }}>
+                        <svg
+                            viewBox={SriLankaMapData.viewBox}
+                            style={{ width: '100%', maxHeight: '400px', cursor: 'pointer' }}
+                        >
+                            {SriLankaMapData.locations.map((loc: any) => {
+                                const province = getProvinceForDistrict(loc.name);
+                                const isSelected = province === selectedProvince;
+                                const isHovered = hoveredDistrict === loc.name;
+                                return (
+                                    <path
+                                        key={loc.id}
+                                        d={loc.path}
+                                        fill={getColorForDistrict(loc.name)}
+                                        stroke={isSelected ? '#0F172A' : isHovered ? '#7C3AED' : '#FFFFFF'}
+                                        strokeWidth={isSelected ? '2.5' : isHovered ? '2' : '1'}
+                                        style={{ transition: 'all 0.18s ease', outline: 'none' }}
+                                        onMouseEnter={() => setHoveredDistrict(loc.name)}
+                                        onMouseLeave={() => setHoveredDistrict(null)}
+                                        onClick={() => handleDistrictClick(loc.name)}
+                                    >
+                                        <title>{loc.name}{province ? ` (${province})` : ''}: {districtCounts[loc.name] || 0} applicants</title>
+                                    </path>
+                                );
+                            })}
+                        </svg>
+                        {/* Hover tooltip */}
+                        {hoveredDistrict && (
+                            <div style={{
+                                position: 'absolute', bottom: '8px', left: '50%',
+                                transform: 'translateX(-50%)',
+                                background: '#1E293B', color: '#FFF',
+                                padding: '6px 12px', borderRadius: '8px',
+                                fontSize: '11px', fontWeight: 600,
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                                pointerEvents: 'none', whiteSpace: 'nowrap', zIndex: 10,
+                            }}>
+                                {hoveredDistrict} · {districtCounts[hoveredDistrict] || 0} applicants
+                            </div>
+                        )}
+                        {/* Province color legend */}
+                        <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            {Object.entries(PROVINCE_COLORS).map(([p, c]) => (
+                                <div key={p} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '10px', color: '#475569' }}>
+                                    <div style={{ width: '10px', height: '10px', borderRadius: '3px', background: c, flexShrink: 0 }} />
+                                    {p}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Panel 1: Interest breakdown by education level */}
+                    {selectedProvince && provinceData && (
+                        <div style={{
+                            background: '#F8FAFC',
+                            borderRadius: '14px',
+                            border: '1px solid #E2E8F0',
+                            padding: '20px',
+                            animation: 'fadeInRight 0.25s ease',
+                            maxHeight: '520px',
+                            overflowY: 'auto',
+                        }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                                <div>
+                                    <h5 style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: '#0F172A' }}>
+                                        {selectedProvince} Province
+                                    </h5>
+                                    <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#64748B' }}>
+                                        Top interest fields · click a field to see skills
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => { setSelectedProvince(null); setSelectedField(null); setSkills([]); }}
+                                    style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', color: '#94A3B8', lineHeight: 1 }}
+                                >
+                                    ×
+                                </button>
+                            </div>
+
+                            {sortedEduLevels.map(eduLevel => {
+                                const fields = provinceData[eduLevel] || [];
+                                return (
+                                    <div key={eduLevel} style={{ marginBottom: '16px' }}>
+                                        <div style={{
+                                            fontSize: '11px', fontWeight: 700,
+                                            color: '#7C3AED', textTransform: 'uppercase',
+                                            letterSpacing: '0.5px', marginBottom: '8px',
+                                            display: 'flex', alignItems: 'center', gap: '6px',
+                                        }}>
+                                            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#7C3AED' }} />
+                                            {eduLevel}
+                                        </div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                            {fields.slice(0, 3).map((f, idx) => {
+                                                const isActive = selectedField === f.name && selectedEduLevel === eduLevel;
+                                                return (
+                                                    <button
+                                                        key={idx}
+                                                        onClick={() => handleFieldClick(f.name, eduLevel)}
+                                                        style={{
+                                                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                                            padding: '8px 12px', borderRadius: '8px', cursor: 'pointer',
+                                                            border: isActive ? '1.5px solid #7C3AED' : '1px solid #E2E8F0',
+                                                            background: isActive ? '#EDE9FE' : '#FFFFFF',
+                                                            textAlign: 'left', transition: 'all 0.15s ease',
+                                                            width: '100%',
+                                                        }}
+                                                    >
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                            <span style={{
+                                                                width: '20px', height: '20px', borderRadius: '50%',
+                                                                background: CHART_COLORS[idx],
+                                                                color: '#FFF', fontSize: '10px', fontWeight: 700,
+                                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                                flexShrink: 0,
+                                                            }}>
+                                                                {idx + 1}
+                                                            </span>
+                                                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#1E293B' }}>
+                                                                {f.name}
+                                                            </span>
+                                                        </div>
+                                                        <span style={{ fontSize: '11px', color: '#94A3B8', fontWeight: 600 }}>
+                                                            {f.score}
+                                                        </span>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+
+                    {/* Panel 2: Skills drill-down */}
+                    {selectedProvince && selectedField && (
+                        <div style={{
+                            background: '#F8FAFC',
+                            borderRadius: '14px',
+                            border: '1px solid #E2E8F0',
+                            padding: '20px',
+                            animation: 'fadeInRight 0.25s ease',
+                        }}>
+                            <div style={{ marginBottom: '16px' }}>
+                                <h5 style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: '#0F172A' }}>
+                                    Top Skills
+                                </h5>
+                                <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#64748B' }}>
+                                    {selectedField} · {selectedEduLevel}
+                                </p>
+                            </div>
+
+                            {loadingSkills ? (
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px' }}>
+                                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', border: '3px solid #E9D5FF', borderTopColor: '#7C3AED', animation: 'spin 0.9s linear infinite' }}></div>
+                                </div>
+                            ) : skills.length === 0 ? (
+                                <div style={{ textAlign: 'center', padding: '40px 0', color: '#94A3B8', fontSize: '13px' }}>
+                                    No skill data for this field.
+                                </div>
+                            ) : (
+                                <>
+                                    <ResponsiveContainer width="100%" height={220}>
+                                        <PieChart>
+                                            <Pie
+                                                data={skills.map(s => ({ ...s, value: s.score }))}
+                                                cx="50%" cy="50%"
+                                                outerRadius={85}
+                                                paddingAngle={2}
+                                                dataKey="value"
+                                            >
+                                                {skills.map((_, i) => (
+                                                    <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                                                ))}
+                                            </Pie>
+                                            <Tooltip
+                                                content={({ active, payload }) => {
+                                                    if (active && payload?.length) {
+                                                        const p = payload[0].payload;
+                                                        return (
+                                                            <div style={{ background: '#1E293B', color: '#FFF', padding: '8px 12px', borderRadius: '8px', fontSize: '11px' }}>
+                                                                <div style={{ fontWeight: 700, textTransform: 'capitalize' }}>{p.name}</div>
+                                                                <div style={{ opacity: 0.8, marginTop: 2 }}>{p.percentage}%</div>
+                                                            </div>
+                                                        );
+                                                    }
+                                                    return null;
+                                                }}
+                                            />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}>
+                                        {skills.map((s, i) => (
+                                            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                <div style={{ width: '10px', height: '10px', borderRadius: '3px', background: CHART_COLORS[i % CHART_COLORS.length], flexShrink: 0 }} />
+                                                <span style={{ fontSize: '12px', color: '#1E293B', fontWeight: 600, textTransform: 'capitalize', flex: 1 }}>{s.name}</span>
+                                                <div style={{ height: '6px', borderRadius: '3px', background: '#EDE9FE', flex: 2, overflow: 'hidden' }}>
+                                                    <div style={{ height: '100%', width: `${s.percentage}%`, background: CHART_COLORS[i % CHART_COLORS.length], borderRadius: '3px' }} />
+                                                </div>
+                                                <span style={{ fontSize: '11px', color: '#94A3B8', fontWeight: 600, minWidth: '36px', textAlign: 'right' }}>{s.percentage}%</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Empty state hint when no province selected */}
+                    {!selectedProvince && (
+                        <div style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            flexDirection: 'column', gap: '12px', color: '#94A3B8',
+                            padding: '40px',
+                        }}>
+                            <div style={{ fontSize: '40px' }}>🗺️</div>
+                            <p style={{ margin: 0, fontSize: '13px', fontWeight: 600, textAlign: 'center' }}>
+                                Click a district on the map<br />to explore academic interests
+                            </p>
+                            <p style={{ margin: 0, fontSize: '11px', textAlign: 'center' }}>
+                                Or use "All Island" to see<br />a full pie chart overview
+                            </p>
+                        </div>
+                    )}
+                </div>
+            )}
         </div>
     );
 };

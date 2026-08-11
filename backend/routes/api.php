@@ -90,6 +90,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/admin/ai-analytics/{courseId}/export', [AIAnalyticsController::class, 'exportCSV']);
         Route::get('/admin/ai-analytics/surveys', [AIAnalyticsController::class, 'getSurveys']);
         Route::post('/admin/ai-analytics/surveys', [AIAnalyticsController::class, 'storeSurvey']);
+        Route::get('/admin/ai-analytics/geography', [AIAnalyticsController::class, 'getGeographyData']);
+        Route::get('/admin/ai-analytics/geography/skills', [AIAnalyticsController::class, 'getGeographySkills']);
         Route::post('/admin/student-interests/config', [StudentInterestController::class, 'storeConfig']);
         Route::delete('/admin/student-interests/config/{id}', [StudentInterestController::class, 'deleteConfig']);
         Route::post('/admin/student-interests/teaching-methods', [StudentInterestController::class, 'storeTeachingMethod']);

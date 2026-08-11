@@ -567,7 +567,18 @@ export const aiAnalyticsService = {
             timeout: 300000 // 5 minutes (300,000 ms) for large datasets and AI processing
         });
         return response.data;
-    }
+    },
+    getGeographyData: async () => {
+        const response = await api.get('/admin/ai-analytics/geography');
+        return response.data;
+    },
+    getGeographySkills: async (field: string, province?: string, educationLevel?: string) => {
+        const params = new URLSearchParams({ field });
+        if (province) params.append('province', province);
+        if (educationLevel) params.append('education_level', educationLevel);
+        const response = await api.get(`/admin/ai-analytics/geography/skills?${params.toString()}`);
+        return response.data;
+    },
 };
 
 export const curriculumAlignmentService = {
