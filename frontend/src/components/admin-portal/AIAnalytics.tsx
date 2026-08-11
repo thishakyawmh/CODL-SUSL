@@ -894,7 +894,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
         );
     }
 
-    if (!overview || Object.keys(overview).length === 0 || !overview.kpis) {
+    if (!overview || Object.keys(overview).length === 0 || !overview.kpis || overview.kpis.evidence_status === 'insufficient' || overview.kpis.surveys === 0) {
         return (
             <div style={{ animation: 'fadeIn 0.3s ease' }}>
                 <button

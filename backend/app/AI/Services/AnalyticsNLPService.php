@@ -94,7 +94,7 @@ class AnalyticsNLPService
             
             $profileTokens = $this->removeStopWords($this->tokenize($this->normalizeText($profileText)));
             $profileDomains = array_unique($this->extractDomains($profileText));
-            $courseFields = $this->classifyCourseFields($course);
+            $courseFields = [$this->classifyCourseField($course)];
 
             // 1. Filter Student Surveys using memory-efficient cursor loop
             foreach ($studentSurveys as $survey) {
