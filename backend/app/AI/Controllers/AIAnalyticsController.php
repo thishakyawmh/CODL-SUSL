@@ -113,8 +113,12 @@ class AIAnalyticsController extends Controller
     public function getGlobalOverview(AnalyticsNLPService $nlpService)
     {
         $analytics = $nlpService->processAll(null);
+        $lastSync = \App\AI\Models\AnalyticsCache::orderBy('generated_at', 'desc')->first();
+        $lastSyncTime = $lastSync ? $lastSync->generated_at->toIso8601String() : null;
+
         return response()->json([
             'emerging_technologies' => $analytics['emerging_technologies'] ?? [],
+            'last_sync_at' => $lastSyncTime,
         ]);
     }
 
@@ -195,8 +199,47 @@ class AIAnalyticsController extends Controller
      */
     public function syncGoogleSheet(Request $request, AnalyticsNLPService $nlpService, RecommendationEngineService $recommendationEngine)
     {
+        set_time_limit(300); // Allow up to 5 minutes for sync + AI pipeline
         $startTime = microtime(true);
         
+        // If neither type nor sheet_url is provided, perform a dual sync using configured .env URLs
+        if (!$request->has('type') && !$request->has('sheet_url') && !$request->has('url')) {
+            $studentUrl = env('GOOGLE_SHEET_STUDENT_URL');
+            $industryUrl = env('GOOGLE_SHEET_INDUSTRY_URL');
+
+            if (!$studentUrl || !$industryUrl) {
+                return response()->json(['error' => 'Google Sheets URLs are not fully configured in .env. Please set GOOGLE_SHEET_STUDENT_URL and GOOGLE_SHEET_INDUSTRY_URL.'], 422);
+            }
+
+            $studentResult = $this->executeSingleSync('student', $studentUrl);
+            if (isset($studentResult['error'])) {
+                return response()->json(['error' => 'Student Sync Failed: ' . $studentResult['error']], 500);
+            }
+
+            $industryResult = $this->executeSingleSync('industry', $industryUrl);
+            if (isset($industryResult['error'])) {
+                return response()->json(['error' => 'Industry Sync Failed: ' . $industryResult['error']], 500);
+            }
+
+            // Trigger Background NLP Processing Pipeline
+            try {
+                \App\Jobs\ProcessAnalyticsPipelineJob::dispatch();
+            } catch (\Exception $e) {
+                \Log::error('Failed to dispatch ProcessAnalyticsPipelineJob: ' . $e->getMessage());
+            }
+
+            return response()->json([
+                'message' => 'Sync completed successfully for both Student and Industry sheets.',
+                'student_imported' => $studentResult['imported'],
+                'student_ignored' => $studentResult['ignored'],
+                'industry_imported' => $industryResult['imported'],
+                'industry_ignored' => $industryResult['ignored'],
+                'execution_time_sec' => round(microtime(true) - $startTime, 2),
+                'status' => 'success'
+            ]);
+        }
+
+        // Legacy individual sheet sync path
         if (!$request->has('sheet_url') && $request->has('url')) {
             $request->merge(['sheet_url' => $request->input('url')]);
         }
@@ -206,11 +249,31 @@ class AIAnalyticsController extends Controller
             'sheet_url' => 'required|url'
         ]);
 
-        $type = $request->type;
-        $url = $request->sheet_url;
+        $singleResult = $this->executeSingleSync($request->type, $request->sheet_url);
+        if (isset($singleResult['error'])) {
+            return response()->json(['error' => $singleResult['error']], 500);
+        }
 
+        // Trigger Background NLP Processing Pipeline
+        try {
+            \App\Jobs\ProcessAnalyticsPipelineJob::dispatch();
+        } catch (\Exception $e) {
+            \Log::error('Failed to dispatch ProcessAnalyticsPipelineJob: ' . $e->getMessage());
+        }
+
+        return response()->json([
+            'message' => ucfirst($request->type) . ' Survey Imported Successfully',
+            'type' => $request->type,
+            'rows_imported' => $singleResult['imported'],
+            'rows_ignored' => $singleResult['ignored'],
+            'execution_time_sec' => round(microtime(true) - $startTime, 2),
+            'status' => 'success'
+        ]);
+    }
+
+    private function executeSingleSync($type, $url)
+    {
         // 1. URL Rewriting
-        // Convert /edit#gid=X or /edit?usp=sharing to /export?format=csv&gid=X
         if (str_contains($url, 'format=csv') || str_contains($url, 'output=csv')) {
             $csvUrl = $url;
         } elseif (preg_match('/\/d\/([a-zA-Z0-9-_]+)/', $url, $matches)) {
@@ -221,24 +284,24 @@ class AIAnalyticsController extends Controller
             }
             $csvUrl = "https://docs.google.com/spreadsheets/d/{$spreadsheetId}/export?format=csv&gid={$gid}";
         } else {
-            return response()->json(['error' => 'Invalid Google Sheets URL format.'], 400);
+            return ['error' => 'Invalid Google Sheets URL format.'];
         }
 
         // 2. HTTP Fetch
         try {
             $response = Http::get($csvUrl);
             if (!$response->successful()) {
-                return response()->json(['error' => 'Failed to download CSV from Google Sheets. Make sure the sheet is public.'], 400);
+                return ['error' => 'Failed to download CSV from Google Sheets. Make sure the sheet is public.'];
             }
             $csvData = $response->body();
         } catch (\Exception $e) {
-            return response()->json(['error' => 'HTTP request failed: ' . $e->getMessage()], 500);
+            return ['error' => 'HTTP request failed: ' . $e->getMessage()];
         }
 
         // 3. Parsing CSV
         $lines = explode("\n", $csvData);
         if (count($lines) < 2) {
-            return response()->json(['error' => 'CSV file is empty or only contains headers.'], 400);
+            return ['error' => 'CSV file is empty or only contains headers.'];
         }
 
         $headers = str_getcsv(array_shift($lines));
@@ -276,16 +339,26 @@ class AIAnalyticsController extends Controller
             'Industry Sector' => 'industry_sector',
             'Organization Size' => 'organization_size',
             'Primary academic field recruited' => 'primary_academic_field',
+            'Primary Academic Domain of Interest' => 'primary_academic_field',
             'Secondary academic field recruited' => 'secondary_academic_field',
+            'Sub disciplines' => 'secondary_academic_field',
             'Third academic field recruited' => 'third_academic_field',
+            'Soft skills needed' => 'third_academic_field',
             'Required skills' => 'required_skills',
+            'Tech stacks / Specialized Areas Needed' => 'required_skills',
             'Academic practices required' => 'academic_practices',
+            'Training Practices Requested' => 'academic_practices',
             'Minimum qualification' => 'minimum_qualification',
+            'Minimum education required' => 'minimum_qualification',
             'Minimum degree result' => 'minimum_degree_result',
+            'Minimum expected GPA/result class' => 'minimum_degree_result',
             'Certification importance (1-5)' => 'certification_importance',
+            'Importance value on professional credentials' => 'certification_importance',
             'Emerging fields to introduce' => 'emerging_fields',
             'New program suggestions' => 'new_program_suggestion',
+            'Direct suggestions for new degree programs' => 'new_program_suggestion',
             'Graduate skill gaps' => 'graduate_skill_gaps',
+            'Identified Capability deficits in recent graduates' => 'graduate_skill_gaps',
             'Additional recommendations' => 'additional_recommendations',
         ];
 
@@ -316,6 +389,16 @@ class AIAnalyticsController extends Controller
                     if (str_contains($cleanHeader, 'sector') && $dbColumn === 'industry_sector') { $mappedIndexes[$dbColumn] = $index; break; }
                     if (str_contains($cleanHeader, 'education') && $dbColumn === 'education_level') { $mappedIndexes[$dbColumn] = $index; break; }
                     if (str_contains($cleanHeader, 'province') && $dbColumn === 'province') { $mappedIndexes[$dbColumn] = $index; break; }
+                    if (str_contains($cleanHeader, 'primaryacademic') && $dbColumn === 'primary_academic_field') { $mappedIndexes[$dbColumn] = $index; break; }
+                    if (str_contains($cleanHeader, 'subdiscipline') && $dbColumn === 'secondary_academic_field') { $mappedIndexes[$dbColumn] = $index; break; }
+                    if (str_contains($cleanHeader, 'softskill') && $dbColumn === 'third_academic_field') { $mappedIndexes[$dbColumn] = $index; break; }
+                    if (str_contains($cleanHeader, 'techstack') && $dbColumn === 'required_skills') { $mappedIndexes[$dbColumn] = $index; break; }
+                    if (str_contains($cleanHeader, 'trainingpractice') && $dbColumn === 'academic_practices') { $mappedIndexes[$dbColumn] = $index; break; }
+                    if (str_contains($cleanHeader, 'mineducation') && $dbColumn === 'minimum_qualification') { $mappedIndexes[$dbColumn] = $index; break; }
+                    if (str_contains($cleanHeader, 'mingpa') && $dbColumn === 'minimum_degree_result') { $mappedIndexes[$dbColumn] = $index; break; }
+                    if (str_contains($cleanHeader, 'credentialimportance') && $dbColumn === 'certification_importance') { $mappedIndexes[$dbColumn] = $index; break; }
+                    if (str_contains($cleanHeader, 'newprogram') && $dbColumn === 'new_program_suggestion') { $mappedIndexes[$dbColumn] = $index; break; }
+                    if (str_contains($cleanHeader, 'capabilitydeficit') && $dbColumn === 'graduate_skill_gaps') { $mappedIndexes[$dbColumn] = $index; break; }
                 }
             }
         }
@@ -329,26 +412,17 @@ class AIAnalyticsController extends Controller
         }
 
         if (count($missingColumns) > 0) {
-            return response()->json([
-                'error' => 'Missing required columns in Google Sheet based on mapping.',
-                'missing_columns' => $missingColumns
-            ], 422);
+            return ['error' => 'Missing required columns in Google Sheet based on mapping: ' . implode(', ', $missingColumns)];
         }
 
-        // 6 & 7 & 8: Wrap Truncate and Bulk Insert in Transaction
+        // 6: Wrap Upsert in Transaction
         $rowsImported = 0;
         $rowsIgnored = 0;
 
         try {
             DB::connection('analytics')->transaction(function () use ($lines, $mappedIndexes, $type, $requiredColumns, &$rowsImported, &$rowsIgnored) {
+                $processedIds = [];
                 
-                if ($type === 'student') {
-                    StudentInterest::query()->delete();
-                } else {
-                    IndustryRequirement::query()->delete();
-                }
-
-                $insertData = [];
                 foreach ($lines as $line) {
                     if (empty(trim($line))) continue;
                     
@@ -391,71 +465,75 @@ class AIAnalyticsController extends Controller
                         $record[$dbColumn] = $val;
                     }
                     
+                    // Perform validation on the parsed record
+                    if ($type === 'student') {
+                        $validator = \Illuminate\Support\Facades\Validator::make($record, [
+                            'email' => 'nullable|email',
+                            'education_level' => 'required|string',
+                            'province' => 'required|string',
+                            'district' => 'required|string',
+                            'primary_interest' => 'required|string',
+                            'primary_skills' => 'required|string',
+                        ]);
+                    } else {
+                        $validator = \Illuminate\Support\Facades\Validator::make($record, [
+                            'company_name' => 'required|string',
+                            'industry_sector' => 'required|string',
+                            'primary_academic_field' => 'required|string',
+                            'required_skills' => 'required|string',
+                        ]);
+                    }
+
+                    if ($validator->fails()) {
+                        $rowsIgnored++;
+                        continue;
+                    }
+                    
                     $record['created_at'] = now();
                     $record['updated_at'] = now();
 
-                    $insertData[] = $record;
+                    if ($type === 'student') {
+                        $matchAttributes = [
+                            'survey_submitted_at' => $record['survey_submitted_at']
+                        ];
+                        if (!empty($record['email'])) {
+                            $matchAttributes['email'] = $record['email'];
+                        } elseif (!empty($record['whatsapp'])) {
+                            $matchAttributes['whatsapp'] = $record['whatsapp'];
+                        } else {
+                            $matchAttributes['education_level'] = $record['education_level'];
+                            $matchAttributes['province'] = $record['province'];
+                            $matchAttributes['district'] = $record['district'];
+                        }
+                        $model = StudentInterest::updateOrCreate($matchAttributes, $record);
+                        $processedIds[] = $model->id;
+                    } else {
+                        $matchAttributes = [
+                            'survey_submitted_at' => $record['survey_submitted_at'],
+                            'company_name' => $record['company_name']
+                        ];
+                        $model = IndustryRequirement::updateOrCreate($matchAttributes, $record);
+                        $processedIds[] = $model->id;
+                    }
+
                     $rowsImported++;
                 }
 
-                if (!empty($insertData)) {
-                    if ($type === 'student') {
-                        StudentInterest::insert($insertData);
-                    } else {
-                        IndustryRequirement::insert($insertData);
-                    }
+                // Delete missing surveys (Mirror Sync) to reflect manually deleted rows from Google Sheet
+                if ($type === 'student') {
+                    StudentInterest::whereNotIn('id', $processedIds)->delete();
+                } else {
+                    IndustryRequirement::whereNotIn('id', $processedIds)->delete();
                 }
             });
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Database transaction failed: ' . $e->getMessage()], 500);
+            return ['error' => 'Database transaction failed: ' . $e->getMessage()];
         }
 
-        // Trigger NLP Processing Pipeline Offline
-        // Trigger NLP Processing Pipeline Offline for each program
-        try {
-            $courses = \App\Models\Course::all();
-            foreach ($courses as $course) {
-                $analytics = $nlpService->processAll($course);
-                $recommendations = $recommendationEngine->generateRecommendations($analytics);
-
-                $kpis = $analytics['kpis'] ?? [];
-                $kpis['coverage_percent'] = $analytics['coverage_percent'];
-                $kpis['missing_subjects'] = $analytics['missing_subjects'] ?? [];
-                $kpis['outdated_subjects'] = $analytics['outdated_subjects'] ?? [];
-                $kpis['low_demand_subjects'] = $analytics['low_demand_subjects'] ?? [];
-                $kpis['learning_preferences_data'] = $analytics['learning_preferences_data'] ?? null;
-
-                \App\AI\Models\AnalyticsCache::updateOrCreate(
-                    ['scope_type' => 'program', 'scope_id' => $course->id],
-                    [
-                        'student_demand_distribution' => $analytics['student_demand_distribution'],
-                        'industry_demand_distribution' => $analytics['industry_demand_distribution'],
-                        'domain_frequency_counts' => $analytics['domain_frequency_counts'],
-                        'emerging_technologies' => $analytics['emerging_technologies'] ?? [],
-                        'skill_gaps' => $analytics['skill_gaps'] ?? [],
-                        'jaccard_similarity_results' => $analytics['jaccard_similarity_results'] ?? [],
-                        'kpis' => $kpis,
-                        'generated_recommendations' => $recommendations,
-                        'generated_at' => now(),
-                    ]
-                );
-            }
-        } catch (\Exception $e) {
-            // Log but don't fail the entire import request
-            \Log::error('NLP Pipeline failed during CSV Sync: ' . $e->getMessage());
-        }
-
-        $executionTime = round(microtime(true) - $startTime, 2);
-
-        // 9. Detailed Response
-        return response()->json([
-            'message' => ucfirst($type) . ' Survey Imported Successfully',
-            'type' => $type,
-            'rows_imported' => $rowsImported,
-            'rows_ignored' => $rowsIgnored,
-            'execution_time_sec' => $executionTime,
-            'status' => 'success'
-        ]);
+        return [
+            'imported' => $rowsImported,
+            'ignored' => $rowsIgnored
+        ];
     }
 
     public function getCommonOverview(AnalyticsNLPService $nlpService)
@@ -746,5 +824,77 @@ class AIAnalyticsController extends Controller
         }
         
         return response()->json($drilldownData);
+    }
+
+    public function exportCSV($courseId)
+    {
+        $cache = $this->getCacheForCourse($courseId);
+        if (!$cache) {
+            return response()->json(['error' => 'No cached analytics found for this program.'], 404);
+        }
+
+        $course = Course::find($courseId);
+        $courseTitle = $course ? str_replace(' ', '_', $course->title) : 'Course_' . $courseId;
+
+        $headers = [
+            "Content-type"        => "text/csv",
+            "Content-Disposition" => "attachment; filename=AI_Analytics_{$courseTitle}.csv",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Expires"             => "0"
+        ];
+
+        $callback = function() use ($cache) {
+            $file = fopen('php://output', 'w');
+            
+            // Header information
+            fputcsv($file, ['CODL-SUSL AI Analytics Export']);
+            fputcsv($file, ['Generated At', $cache->generated_at ? $cache->generated_at->toDateTimeString() : '']);
+            fputcsv($file, []);
+
+            // KPIs
+            fputcsv($file, ['KPI Key', 'KPI Value']);
+            if (is_array($cache->kpis)) {
+                foreach ($cache->kpis as $k => $v) {
+                    if (is_array($v)) $v = implode(', ', $v);
+                    fputcsv($file, [$k, $v]);
+                }
+            }
+            fputcsv($file, []);
+
+            // Emerging Tech
+            fputcsv($file, ['Emerging Technologies']);
+            if (is_array($cache->emerging_technologies)) {
+                foreach ($cache->emerging_technologies as $tech) {
+                    fputcsv($file, [$tech]);
+                }
+            }
+            fputcsv($file, []);
+
+            // Skill Gaps
+            fputcsv($file, ['Skill Gaps']);
+            if (is_array($cache->skill_gaps)) {
+                foreach ($cache->skill_gaps as $gap) {
+                    fputcsv($file, [$gap]);
+                }
+            }
+            fputcsv($file, []);
+
+            // Recommendations
+            fputcsv($file, ['Recommendation Type', 'Recommendation Subject', 'Recommendation Text']);
+            if (is_array($cache->generated_recommendations)) {
+                foreach ($cache->generated_recommendations as $rec) {
+                    fputcsv($file, [
+                        $rec['recommendation_type'] ?? '',
+                        $rec['recommendation_subject'] ?? '',
+                        $rec['recommendation_text'] ?? ''
+                    ]);
+                }
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 }

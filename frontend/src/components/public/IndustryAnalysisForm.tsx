@@ -380,6 +380,23 @@ export function IndustryAnalysisForm() {
     if (isSubmitted) {
         return (
             <div className="industry-analysis-container">
+                {/* Top Header Card */}
+                <div className="industry-analysis-header-card">
+                    <div className="header-text-section">
+                        <h1>Industry Requirements</h1>
+                        <div className="header-subtitle-container">
+                            <img src="/images/logo.png" className="header-uni-logo" alt="SUSL Logo" />
+                            <div className="subtitle-text">
+                                <span className="subtitle-line1">Center for Open and Distance Learning</span>
+                                <span className="subtitle-line2">Sabaragamuwa University of Sri Lanka</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="banner-image-placeholder">
+                        <img src={bannerImgUrl} alt="Industry Requirements Survey Banner" />
+                    </div>
+                </div>
+
                 <div className="success-card">
                     <div className="success-icon-wrapper">
                         <CheckCircle2 size={56} style={{ color: '#10B981' }} />
@@ -581,7 +598,7 @@ export function IndustryAnalysisForm() {
                         )}
 
                         {/* Tech Stacks / Specialized Areas */}
-                        {(formData.sub_disciplines.length > 0 || formData.primary_academic_field === 'Other') && (
+                        {formData.primary_academic_field && (
                             <div className="form-group full-width">
                                 <label htmlFor="tech_stacks">Tech Stacks / Specialized Areas Needed</label>
                                 <input

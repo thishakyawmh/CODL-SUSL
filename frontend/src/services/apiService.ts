@@ -554,11 +554,8 @@ export const aiAnalyticsService = {
         const response = await api.post('/admin/ai-analytics/surveys', data);
         return response.data;
     },
-    syncGoogleSheet: async (data: { type: 'student' | 'industry'; url: string }) => {
-        const response = await api.post('/admin/ai-analytics/sync-sheet', {
-            type: data.type,
-            sheet_url: data.url
-        });
+    syncGoogleSheet: async (data?: { type?: 'student' | 'industry'; url?: string }) => {
+        const response = await api.post('/admin/ai-analytics/sync-sheet', data || {});
         return response.data;
     }
 };
