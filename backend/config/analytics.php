@@ -104,9 +104,9 @@ return [
     |
     */
     'thresholds' => [
-        'min_student_responses' => env('AI_MIN_STUDENT_RESPONSES', 10),
-        'min_industry_responses' => env('AI_MIN_INDUSTRY_RESPONSES', 5),
-        'min_relevance_score' => env('AI_MIN_RELEVANCE_SCORE', 0.5),
+        'min_student_responses' => env('AI_MIN_STUDENT_RESPONSES', 3),
+        'min_industry_responses' => env('AI_MIN_INDUSTRY_RESPONSES', 1),
+        'min_relevance_score' => env('AI_MIN_RELEVANCE_SCORE', 0.35),
     ],
 
     'weights' => [

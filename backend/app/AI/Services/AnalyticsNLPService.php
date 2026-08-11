@@ -524,7 +524,7 @@ class AnalyticsNLPService
             }
         }
 
-        if ($course && ($evidenceStatus === 'insufficient' || $evidenceStatus === 'limited')) {
+        if ($course && $evidenceStatus === 'insufficient') {
             $coveragePercent = null;
             $jaccardResults['overall_score'] = null;
         }
@@ -684,7 +684,7 @@ class AnalyticsNLPService
                     . "Response format requirement: Return a raw JSON array containing objects with keys 'text' (exact match to input text) and 'domains' (array of strings from the allowed list). Do not write any conversational intro/outro text, code blocks, or markdown. Output only the raw valid JSON array.";
 
                 $response = \Illuminate\Support\Facades\Http::post(
-                    "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" . $apiKey,
+                    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" . $apiKey,
                     [
                         'contents' => [[
                             'parts' => [[

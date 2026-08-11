@@ -994,6 +994,9 @@
 @media screen and (min-width: 768px) {
     .ai-category-grid {
         grid-template-columns: repeat(2, 1fr);
+    }
+}
+
 /* =========================================================
    FULL-PAGE SYNC OVERLAY
    ========================================================= */
