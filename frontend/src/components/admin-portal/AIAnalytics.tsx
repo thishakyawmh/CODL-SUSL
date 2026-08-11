@@ -26,6 +26,8 @@ export const AIAnalytics: React.FC = () => {
     const [programs, setPrograms] = useState<Course[]>([]);
     const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
     const [loading, setLoading] = useState(true);
+    const [globalEmergingTech, setGlobalEmergingTech] = useState<string[]>([]);
+    const [viewMode, setViewMode] = useState<'hub' | 'course' | 'common'>('hub');
 
     const [showSyncModal, setShowSyncModal] = useState(false);
     const [syncing, setSyncing] = useState(false);
@@ -43,6 +45,10 @@ export const AIAnalytics: React.FC = () => {
         try {
             const data = await aiAnalyticsService.getPrograms();
             setPrograms(data);
+            const globalData = await aiAnalyticsService.getGlobalOverview().catch(() => null);
+            if (globalData && globalData.emerging_technologies) {
+                setGlobalEmergingTech(globalData.emerging_technologies);
+            }
         } catch (err) {
             console.error('Failed to load programs', err);
         } finally {
@@ -79,14 +85,18 @@ export const AIAnalytics: React.FC = () => {
 
     return (
         <div className="ai-analytics-page">
-            {selectedCourse ? (
-                <ProgramDashboard course={selectedCourse} onBack={() => setSelectedCourse(null)} />
+            {viewMode === 'course' && selectedCourse ? (
+                <ProgramDashboard course={selectedCourse} onBack={() => { setSelectedCourse(null); setViewMode('hub'); }} />
+            ) : viewMode === 'common' ? (
+                <CommonAnalyticsDashboard onBack={() => setViewMode('hub')} />
             ) : (
                 <ProgramHub
                     programs={programs}
-                    onSelect={setSelectedCourse}
+                    globalEmergingTech={globalEmergingTech}
+                    onSelect={(c) => { setSelectedCourse(c); setViewMode('course'); }}
                     onOpenSync={() => setShowSyncModal(true)}
                     onOpenManageForms={() => navigate('/admin/ai-analytics/manage-forms')}
+                    onOpenCommonAnalytics={() => setViewMode('common')}
                 />
             )}
 
@@ -145,10 +155,12 @@ export const AIAnalytics: React.FC = () => {
    ========================================================= */
 const ProgramHub: React.FC<{ 
     programs: Course[], 
+    globalEmergingTech: string[],
     onSelect: (c: Course) => void, 
     onOpenSync: () => void,
-    onOpenManageForms: () => void 
-}> = ({ programs, onSelect, onOpenSync, onOpenManageForms }) => {
+    onOpenManageForms: () => void,
+    onOpenCommonAnalytics: () => void
+}> = ({ programs, globalEmergingTech, onSelect, onOpenSync, onOpenManageForms, onOpenCommonAnalytics }) => {
     const [levelFilter, setLevelFilter] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -263,6 +275,9 @@ const ProgramHub: React.FC<{
                 </div>
                 {levelFilter === 'all' && !searchTerm && (
                     <div className="admin-header-actions">
+                        <button className="admin-btn-outline" onClick={onOpenCommonAnalytics}>
+                            <BarChart2 size={16} /> Common Student Analytics
+                        </button>
                         <button className="admin-btn-outline" onClick={onOpenManageForms}>
                             <Database size={16} /> Manage Forms
                         </button>
@@ -355,6 +370,21 @@ const ProgramHub: React.FC<{
                         </div>
                     )}
                 </>
+            )}
+            {levelFilter === 'all' && !searchTerm && (
+                <div className="ai-chart-card" style={{ marginTop: '32px' }}>
+                    <h4>Global Emerging Technologies</h4>
+                    <p className="text-slate-400 text-xs mb-4" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Raw tags detected in qualitative student & industry feedback across all programs.</p>
+                    {globalEmergingTech && globalEmergingTech.length > 0 ? (
+                        <div className="tag-container">
+                            {globalEmergingTech.map((tech, idx) => (
+                                <span key={idx} className="tag well">{tech}</span>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-center text-slate-400 py-4 text-sm">No emerging signals detected.</div>
+                    )}
+                </div>
             )}
         </div>
     );
@@ -450,7 +480,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                 </div>
                 <div className="text-right p-4 rounded-2xl border border-purple-100 min-w-[160px]" style={{ background: '#EDE9FE40', border: '1px solid #7C3AED20' }}>
                     <div className="text-xs text-purple-600 font-bold uppercase tracking-wider mb-1">Curriculum Coverage</div>
-                    <div className="text-3xl font-black text-purple-900" style={{ color: '#7C3AED', fontWeight: 900 }}>{overview.coverage_percent}%</div>
+                    <div className="text-3xl font-black text-purple-900" style={{ color: '#7C3AED', fontWeight: 900 }}>{overview.coverage_percent !== null ? `${overview.coverage_percent}%` : 'N/A'}</div>
                 </div>
             </div>
 
@@ -461,7 +491,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                         <BookOpen size={22} />
                     </div>
                     <div className="ai-kpi-info">
-                        <span className="ai-kpi-val">{overview.coverage_percent}%</span>
+                        <span className="ai-kpi-val">{overview.coverage_percent !== null ? `${overview.coverage_percent}%` : 'N/A'}</span>
                         <span className="ai-kpi-label">Curriculum Coverage</span>
                         <p style={{ margin: '4px 0 0 0', fontSize: '11px', color: '#94A3B8', fontWeight: 500, lineHeight: 1.3 }}>Percentage of demanded domains covered by subjects</p>
                     </div>
@@ -471,7 +501,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                         <TrendingUp size={22} />
                     </div>
                     <div className="ai-kpi-info">
-                        <span className="ai-kpi-val">{overview.kpis.studentMatch}%</span>
+                        <span className="ai-kpi-val">{overview.kpis.studentMatch !== null ? `${overview.kpis.studentMatch}%` : 'N/A'}</span>
                         <span className="ai-kpi-label">Student Demand Alignment</span>
                         <p style={{ margin: '4px 0 0 0', fontSize: '11px', color: '#94A3B8', fontWeight: 500, lineHeight: 1.3 }}>Semantic match with applicant interests</p>
                     </div>
@@ -481,7 +511,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                         <Award size={22} />
                     </div>
                     <div className="ai-kpi-info">
-                        <span className="ai-kpi-val">{overview.kpis.industryMatch}%</span>
+                        <span className="ai-kpi-val">{overview.kpis.industryMatch !== null ? `${overview.kpis.industryMatch}%` : 'N/A'}</span>
                         <span className="ai-kpi-label">Industry Requirement Match</span>
                         <p style={{ margin: '4px 0 0 0', fontSize: '11px', color: '#94A3B8', fontWeight: 500, lineHeight: 1.3 }}>Fulfillment of graduate employer gaps</p>
                     </div>
@@ -557,11 +587,11 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                         <div style={{ marginTop: '24px' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', fontWeight: '700', marginBottom: '8px', color: '#1E293B' }}>
                                 <span>Theory Lectures</span>
-                                <span>{overview.learning_preferences_data.student_theory_percent}%</span>
+                                <span>{overview.learning_preferences_data.student_theory_percent !== null ? `${overview.learning_preferences_data.student_theory_percent}%` : 'N/A'}</span>
                             </div>
                             <div className="bar-bg" style={{ height: '16px', borderRadius: '8px', position: 'relative', overflow: 'hidden', backgroundColor: '#EDE9FE' }}>
                                 <div className="bar-fill purple" style={{ 
-                                    width: `${overview.learning_preferences_data.student_practical_percent}%`, 
+                                    width: `${overview.learning_preferences_data.student_practical_percent || 0}%`, 
                                     height: '100%', 
                                     backgroundColor: '#7C3AED',
                                     borderRadius: '0 8px 8px 0',
@@ -570,7 +600,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', fontWeight: '700', marginTop: '8px', color: '#1E293B' }}>
                                 <span>Hands-on Practical</span>
-                                <span>{overview.learning_preferences_data.student_practical_percent}%</span>
+                                <span>{overview.learning_preferences_data.student_practical_percent !== null ? `${overview.learning_preferences_data.student_practical_percent}%` : 'N/A'}</span>
                             </div>
                         </div>
                     </div>
@@ -652,22 +682,8 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                 </div>
             </div>
 
-            {/* Emerging Tech & Skill Gaps */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6" style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '24px', marginBottom: '32px' }}>
-                <div className="ai-chart-card">
-                    <h4>Emerging Technologies</h4>
-                    <p className="text-slate-400 text-xs mb-4" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Raw tags detected in qualitative feedback.</p>
-                    {emergingTech && emergingTech.length > 0 ? (
-                        <div className="tag-container">
-                            {emergingTech.map((tech, idx) => (
-                                <span key={idx} className="tag well">{tech}</span>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="text-center text-slate-400 py-4 text-sm">No emerging signals detected.</div>
-                    )}
-                </div>
-                
+            {/* Skill Gaps */}
+            <div style={{ marginBottom: '32px' }}>
                 <div className="ai-chart-card" style={{ borderLeft: '5px solid #EF4444' }}>
                     <h4 className="flex items-center gap-2" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
                         <AlertTriangle size={18} className="text-red-500" /> Graduate Skill Shortages
@@ -740,6 +756,491 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                 )}
             </div>
 
+        </div>
+    );
+};
+
+/* =========================================================
+   COMMON STUDENT ANALYTICS COMPONENTS
+   ========================================================= */
+
+const DonutChart: React.FC<{
+    data: any[],
+    onSliceClick: (fieldName: string) => void,
+    selectedField: string | null
+}> = ({ data, onSliceClick, selectedField }) => {
+    const radius = 70;
+    const circumference = 2 * Math.PI * radius;
+    let accumulatedPercent = 0;
+
+    const colors = [
+        '#7C3AED', // Purple
+        '#3B82F6', // Blue
+        '#10B981', // Emerald
+        '#EC4899', // Pink
+        '#F59E0B', // Amber
+        '#06B6D4', // Cyan
+        '#94A3B8'  // Slate
+    ];
+
+    return (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
+            <div style={{ position: 'relative', width: '220px', height: '220px' }}>
+                <svg width="220" height="220" viewBox="0 0 200 200" style={{ transform: 'rotate(-90deg)' }}>
+                    {data.map((item, index) => {
+                        const percent = item.value;
+                        const strokeLength = (percent / 100) * circumference;
+                        const strokeOffset = circumference - ((accumulatedPercent / 100) * circumference);
+                        accumulatedPercent += percent;
+                        
+                        const color = colors[index % colors.length];
+                        const isSelected = selectedField === item.name;
+
+                        return (
+                            <circle
+                                key={item.name}
+                                cx="100"
+                                cy="100"
+                                r={radius}
+                                fill="transparent"
+                                stroke={color}
+                                strokeWidth={isSelected ? "22" : "16"}
+                                strokeDasharray={`${strokeLength} ${circumference}`}
+                                strokeDashoffset={strokeOffset}
+                                style={{
+                                    transition: 'all 0.3s ease',
+                                    cursor: 'pointer',
+                                    opacity: selectedField ? (isSelected ? 1.0 : 0.4) : 0.95
+                                }}
+                                onMouseEnter={(e) => {
+                                    if (!isSelected) e.currentTarget.style.opacity = '1.0';
+                                }}
+                                onMouseLeave={(e) => {
+                                    if (!isSelected && selectedField) e.currentTarget.style.opacity = '0.4';
+                                    else if (!isSelected) e.currentTarget.style.opacity = '0.95';
+                                }}
+                                onClick={() => onSliceClick(item.name)}
+                            >
+                                <title>{item.name}: {item.count} responses ({item.value}%)</title>
+                            </circle>
+                        );
+                    })}
+                    <circle cx="100" cy="100" r={radius - 12} fill="#FFFFFF" />
+                </svg>
+                <div style={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    textAlign: 'center',
+                    pointerEvents: 'none'
+                }}>
+                    <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        Selected Field
+                    </span>
+                    <div style={{ fontSize: '14px', fontWeight: '900', color: '#1E293B', marginTop: '2px', maxWidth: '140px', lineHeight: 1.2 }}>
+                        {selectedField || "Click a slice"}
+                    </div>
+                </div>
+            </div>
+            <div style={{ marginTop: '20px', display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center', maxWidth: '340px' }}>
+                {data.map((item, index) => {
+                    const color = colors[index % colors.length];
+                    const isSelected = selectedField === item.name;
+                    return (
+                        <div 
+                            key={item.name} 
+                            style={{ 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                gap: '6px', 
+                                fontSize: '12px', 
+                                fontWeight: isSelected ? '700' : '500',
+                                color: isSelected ? '#1E293B' : '#64748B',
+                                cursor: 'pointer'
+                            }}
+                            onClick={() => onSliceClick(item.name)}
+                        >
+                            <span style={{ display: 'inline-block', width: '10px', height: '10px', borderRadius: '50%', backgroundColor: color }}></span>
+                            <span>{item.name} ({item.value}%)</span>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+};
+
+const FieldSkillDrilldown: React.FC<{
+    field: string,
+    skillsData: any[],
+    loading: boolean
+}> = ({ field, skillsData, loading }) => {
+    return (
+        <div className="ai-chart-card" style={{ borderLeft: '5px solid #10B981' }}>
+            <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#065F46', fontWeight: '800' }}>
+                <Sparkles size={18} className="text-emerald-500" /> Skill Demand for {field}
+            </h4>
+            <p className="text-slate-400 text-xs mb-4" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>
+                Normalized skill/domain demand filtered strictly by students interested in {field}.
+            </p>
+            {loading ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center', padding: '48px 0' }}>
+                    <div className="loading-spinner small"></div>
+                    <span className="text-sm text-slate-400">Loading skill demands...</span>
+                </div>
+            ) : (
+                <div className="ai-chart-body" style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {skillsData && skillsData.length > 0 ? (
+                        skillsData.map((s: any, idx: number) => (
+                            <div key={idx} className="chart-bar-row">
+                                <div className="label">
+                                    <span>{s.name}</span>
+                                    <span>{s.count} ({s.value}%)</span>
+                                </div>
+                                <div className="bar-bg">
+                                    <div className="bar-fill emerald" style={{ width: `${s.value}%` }}></div>
+                                </div>
+                            </div>
+                        ))
+                    ) : (
+                        <div className="text-center text-slate-400 py-6 text-sm">No skill demand data for this field.</div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+};
+
+const ProvinceInterests: React.FC<{ data: any }> = ({ data }) => {
+    const provinces = Object.keys(data);
+
+    if (provinces.length === 0) {
+        return (
+            <div className="ai-chart-card">
+                <div className="text-center text-slate-400 py-6 text-sm">No province data available.</div>
+            </div>
+        );
+    }
+
+    return (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
+            {provinces.map((prov) => {
+                const fields = data[prov];
+                return (
+                    <div key={prov} className="ai-chart-card" style={{ borderTop: '4px solid #3B82F6' }}>
+                        <h4 style={{ color: '#1E3A8A', fontSize: '15px', fontWeight: '800', marginBottom: '12px' }}>
+                            {prov} Province
+                        </h4>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                            {fields.map((f: any) => (
+                                <div key={f.field} className="chart-bar-row">
+                                    <div className="label" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+                                        <span style={{ fontWeight: '700', color: '#334155' }}>
+                                            #{f.rank} {f.field}
+                                        </span>
+                                        <span style={{ color: '#64748B', fontWeight: '600' }}>
+                                            {f.percentage}%
+                                        </span>
+                                    </div>
+                                    <div className="bar-bg" style={{ height: '8px', borderRadius: '4px' }}>
+                                        <div 
+                                            className="bar-fill blue" 
+                                            style={{ 
+                                                width: `${f.percentage}%`, 
+                                                height: '100%', 
+                                                backgroundColor: '#3B82F6', 
+                                                borderRadius: '4px' 
+                                            }}
+                                            title={`${f.field}: ${f.count} weighted responses (${f.percentage}%)`}
+                                        ></div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                );
+            })}
+        </div>
+    );
+};
+
+const HighDemandSkills: React.FC<{ skills: any[] }> = ({ skills }) => {
+    return (
+        <div className="ai-chart-card" style={{ borderLeft: '5px solid #F59E0B' }}>
+            <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#78350F', fontWeight: '800' }}>
+                <TrendingUp size={18} className="text-amber-500" /> High-Demand Skills
+            </h4>
+            <p className="text-slate-400 text-xs mb-4" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Ranked horizontal bar chart of high-growth / high-demand skill domains.</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {skills && skills.length > 0 ? (
+                    skills.map((s: any, idx: number) => (
+                        <div key={idx} className="chart-bar-row">
+                            <div className="label">
+                                <span>#{s.rank} {s.name}</span>
+                                <span>{s.count} ({s.percentage}%)</span>
+                            </div>
+                            <div className="bar-bg">
+                                <div className="bar-fill amber" style={{ width: `${s.percentage}%` }}></div>
+                            </div>
+                        </div>
+                    ))
+                ) : (
+                    <div className="text-center text-slate-400 py-6 text-sm">Insufficient data points.</div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+const OpportunitiesExpected: React.FC<{ opportunities: any[] }> = ({ opportunities }) => {
+    return (
+        <div className="ai-chart-card">
+            <h4>University Opportunities Students Expect</h4>
+            <p className="text-slate-400 text-xs mb-4" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Recurring opportunity themes grouped dynamically from survey feedback.</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {opportunities && opportunities.length > 0 ? (
+                    opportunities.map((o: any, idx: number) => (
+                        <div key={idx} className="chart-bar-row">
+                            <div className="label"><span>{o.name}</span> <span>{o.count} ({o.percentage}%)</span></div>
+                            <div className="bar-bg"><div className="bar-fill blue" style={{ width: `${o.percentage}%` }}></div></div>
+                        </div>
+                    ))
+                ) : (
+                    <div className="text-center text-slate-400 py-6 text-sm">Insufficient data points.</div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+const BalanceDonutChart: React.FC<{ data: any[] }> = ({ data }) => {
+    const activeData = data.filter(item => item.count > 0);
+    const radius = 60;
+    const circumference = 2 * Math.PI * radius;
+    let accumulatedPercent = 0;
+
+    const colorMap: { [key: string]: string } = {
+        '1 (100% Theory)': '#EF4444',
+        '2 (Mostly Theory)': '#F59E0B',
+        '3 (Balanced)': '#3B82F6',
+        '4 (Mostly Practical)': '#10B981',
+        '5 (100% Practical)': '#7C3AED'
+    };
+
+    if (activeData.length === 0) {
+        return <div className="text-center text-slate-400 py-6 text-sm">No data available.</div>;
+    }
+
+    return (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around', gap: '20px', width: '100%', flexWrap: 'wrap', marginTop: '10px' }}>
+            <div style={{ position: 'relative', width: '130px', height: '130px' }}>
+                <svg width="130" height="130" viewBox="0 0 140 140" style={{ transform: 'rotate(-90deg)' }}>
+                    {activeData.map((item) => {
+                        const percent = item.percentage;
+                        const strokeLength = (percent / 100) * circumference;
+                        const strokeOffset = circumference - ((accumulatedPercent / 100) * circumference);
+                        accumulatedPercent += percent;
+                        
+                        const color = colorMap[item.label] || '#94A3B8';
+
+                        return (
+                            <circle
+                                key={item.label}
+                                cx="70"
+                                cy="70"
+                                r={radius}
+                                fill="transparent"
+                                stroke={color}
+                                strokeWidth="12"
+                                strokeDasharray={`${strokeLength} ${circumference}`}
+                                strokeDashoffset={strokeOffset}
+                                style={{ opacity: 0.95 }}
+                            >
+                                <title>{item.label}: {item.count} responses ({item.percentage}%)</title>
+                            </circle>
+                        );
+                    })}
+                    <circle cx="70" cy="70" r={radius - 8} fill="#FFFFFF" />
+                </svg>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {activeData.map((item) => {
+                    const color = colorMap[item.label] || '#94A3B8';
+                    return (
+                        <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#475569', fontWeight: 600 }}>
+                            <span style={{ display: 'inline-block', width: '10px', height: '10px', borderRadius: '3px', backgroundColor: color }}></span>
+                            <span>{item.label}: {item.count} ({item.percentage}%)</span>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+};
+
+const LearningPreferences: React.FC<{ methods: any[], balance: any[] }> = ({ methods, balance }) => {
+    return (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
+            {/* Preferred Learning Methods */}
+            <div className="ai-chart-card">
+                <h4>Preferred Learning Methods</h4>
+                <p className="text-slate-400 text-xs mb-4" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Ranked teaching modes selected by students in surveys.</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {methods && methods.length > 0 ? (
+                        methods.map((m: any, idx: number) => (
+                            <div key={idx} className="chart-bar-row">
+                                <div className="label"><span>{m.name}</span> <span>{m.count} ({m.percentage}%)</span></div>
+                                <div className="bar-bg"><div className="bar-fill purple" style={{ width: `${m.percentage}%` }}></div></div>
+                            </div>
+                        ))
+                    ) : (
+                        <div className="text-center text-slate-400 py-6 text-sm">Insufficient data points.</div>
+                    )}
+                </div>
+            </div>
+
+            {/* Learning Balance Donut Chart */}
+            <div className="ai-chart-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <h4 style={{ alignSelf: 'flex-start' }}>Learning Balance Distribution</h4>
+                <p className="text-slate-400 text-xs mb-4" style={{ alignSelf: 'flex-start', margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Proportional breakdown of theory vs practical learning preferences.</p>
+                <BalanceDonutChart data={balance} />
+            </div>
+        </div>
+    );
+};
+
+const CommonAnalyticsDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+    const [loading, setLoading] = useState(true);
+    const [data, setData] = useState<any>(null);
+    const [selectedField, setSelectedField] = useState<string | null>(null);
+    const [drilldownData, setDrilldownData] = useState<any[]>([]);
+    const [drilldownLoading, setDrilldownLoading] = useState(false);
+
+    useEffect(() => {
+        const fetchCommonOverview = async () => {
+            setLoading(true);
+            try {
+                const res = await aiAnalyticsService.getCommonOverview();
+                setData(res);
+                if (res.overall_demand && res.overall_demand.length > 0) {
+                    const firstField = res.overall_demand[0].name;
+                    setSelectedField(firstField);
+                    fetchDrilldown(firstField);
+                }
+            } catch (err) {
+                console.error("Failed to load common student analytics", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchCommonOverview();
+    }, []);
+
+    const fetchDrilldown = async (field: string) => {
+        if (field === 'Other') {
+            setDrilldownData([]);
+            return;
+        }
+        setDrilldownLoading(true);
+        try {
+            const res = await aiAnalyticsService.getCommonDrilldown(field);
+            setDrilldownData(res);
+        } catch (err) {
+            console.error("Failed to load drilldown data", err);
+        } finally {
+            setDrilldownLoading(false);
+        }
+    };
+
+    const handleSliceClick = (field: string) => {
+        setSelectedField(field);
+        fetchDrilldown(field);
+    };
+
+    if (loading) {
+        return (
+            <div className="loading-spinner-container">
+                <div className="loading-spinner"></div>
+                <p>Aggregating University-wide Student Analytics...</p>
+            </div>
+        );
+    }
+
+    if (!data || data.total_surveys === 0) {
+        return (
+            <div style={{ animation: 'fadeIn 0.3s ease' }}>
+                <button 
+                    className="cm-back-text-btn" 
+                    onClick={onBack}
+                    style={{ marginBottom: '24px' }}
+                >
+                    <ArrowLeft size={16} /> Back to Programs
+                </button>
+                <div className="card-empty-state">
+                    <Database size={48} className="text-slate-300 mb-4" />
+                    <h3>No Common Student Analytics Available</h3>
+                    <p className="mb-4">There are currently no student interest surveys loaded in the database.</p>
+                    <p className="text-sm">Please return to the hub and sync the Google Sheets data.</p>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-8 pb-10" style={{ animation: 'fadeIn 0.3s ease', display: 'flex', flexDirection: 'column', gap: '32px' }}>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-6" style={{ borderBottom: '1px solid #E2E8F0', paddingBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '20px' }}>
+                <div>
+                    <button 
+                        className="cm-back-text-btn" 
+                        onClick={onBack}
+                        style={{ marginBottom: '16px' }}
+                    >
+                        <ArrowLeft size={16} /> Back to Programs
+                    </button>
+                    <h1 className="admin-page-title">Common Student Analytics</h1>
+                    <p className="text-slate-500 text-sm mt-1" style={{ fontWeight: 600 }}>University-wide student demand and academic interest insights across {data.total_surveys} surveys.</p>
+                </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
+                <div className="ai-chart-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <h4 style={{ alignSelf: 'flex-start' }}>Overall Student Demand by Academic Field</h4>
+                    <p className="text-slate-400 text-xs mb-6" style={{ alignSelf: 'flex-start', margin: '0 0 24px 0', fontSize: '12px', fontWeight: 500 }}>
+                        Click a slice of the donut to drill down into field-specific skill demands.
+                    </p>
+                    <DonutChart 
+                        data={data.overall_demand} 
+                        onSliceClick={handleSliceClick} 
+                        selectedField={selectedField} 
+                    />
+                </div>
+                
+                <FieldSkillDrilldown 
+                    field={selectedField || "None"} 
+                    skillsData={drilldownData} 
+                    loading={drilldownLoading} 
+                />
+            </div>
+
+            <div>
+                <h3 className="text-xl font-bold text-slate-800 mb-4" style={{ fontSize: '18px', fontWeight: '800', marginBottom: '16px' }}>
+                    Student Interests by Province
+                </h3>
+                <ProvinceInterests data={data.provinces_data} />
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
+                <HighDemandSkills skills={data.high_demand_skills} />
+                <OpportunitiesExpected opportunities={data.opportunities} />
+            </div>
+
+            <div>
+                <h3 className="text-xl font-bold text-slate-800 mb-4" style={{ fontSize: '18px', fontWeight: '800', marginBottom: '16px' }}>
+                    Learning Preferences
+                </h3>
+                <LearningPreferences methods={data.learning_methods} balance={data.learning_balance} />
+            </div>
         </div>
     );
 };

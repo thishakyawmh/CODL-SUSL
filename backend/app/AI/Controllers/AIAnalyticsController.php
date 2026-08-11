@@ -52,7 +52,7 @@ class AIAnalyticsController extends Controller
         return response()->json([
             'kpis' => $cache->kpis,
             'last_generated' => $cache->generated_at->format('M j, Y - g:i A'),
-            'coverage_percent' => $cache->kpis['coverage_percent'] ?? 0,
+            'coverage_percent' => isset($cache->kpis['coverage_percent']) ? $cache->kpis['coverage_percent'] : null,
             'missing_subjects' => $cache->kpis['missing_subjects'] ?? [],
             'outdated_subjects' => $cache->kpis['outdated_subjects'] ?? [],
             'low_demand_subjects' => $cache->kpis['low_demand_subjects'] ?? [],
@@ -94,7 +94,7 @@ class AIAnalyticsController extends Controller
         return response()->json([
             'missing_skills' => $cache->skill_gaps,
             'jaccard_similarity' => $cache->jaccard_similarity_results,
-            'coverage_percent' => $cache->kpis['coverage_percent'] ?? 0,
+            'coverage_percent' => isset($cache->kpis['coverage_percent']) ? $cache->kpis['coverage_percent'] : null,
             'missing_subjects' => $cache->kpis['missing_subjects'] ?? [],
             'outdated_subjects' => $cache->kpis['outdated_subjects'] ?? [],
             'low_demand_subjects' => $cache->kpis['low_demand_subjects'] ?? [],
@@ -108,6 +108,14 @@ class AIAnalyticsController extends Controller
         if (!$cache) return response()->json([]);
 
         return response()->json($cache->emerging_technologies);
+    }
+
+    public function getGlobalOverview(AnalyticsNLPService $nlpService)
+    {
+        $analytics = $nlpService->processAll(null);
+        return response()->json([
+            'emerging_technologies' => $analytics['emerging_technologies'] ?? [],
+        ]);
     }
 
     /**
@@ -411,7 +419,7 @@ class AIAnalyticsController extends Controller
                 $recommendations = $recommendationEngine->generateRecommendations($analytics);
 
                 $kpis = $analytics['kpis'] ?? [];
-                $kpis['coverage_percent'] = $analytics['coverage_percent'] ?? 0;
+                $kpis['coverage_percent'] = $analytics['coverage_percent'];
                 $kpis['missing_subjects'] = $analytics['missing_subjects'] ?? [];
                 $kpis['outdated_subjects'] = $analytics['outdated_subjects'] ?? [];
                 $kpis['low_demand_subjects'] = $analytics['low_demand_subjects'] ?? [];
@@ -448,5 +456,295 @@ class AIAnalyticsController extends Controller
             'execution_time_sec' => $executionTime,
             'status' => 'success'
         ]);
+    }
+
+    public function getCommonOverview(AnalyticsNLPService $nlpService)
+    {
+        $surveys = StudentInterest::all();
+        $totalSurveysCount = $surveys->count();
+
+        if ($totalSurveysCount === 0) {
+            return response()->json([
+                'total_surveys' => 0,
+                'provinces_data' => [],
+                'overall_demand' => [],
+                'high_demand_skills' => [],
+                'opportunities' => [],
+                'learning_methods' => [],
+                'learning_balance' => []
+            ]);
+        }
+
+        // 1. Student Interests by Province
+        $provincesData = [];
+        $groupedByProvince = $surveys->groupBy('province');
+        foreach ($groupedByProvince as $provinceName => $provinceSurveys) {
+            if (empty($provinceName)) continue;
+            
+            $fieldScores = [];
+            foreach ($provinceSurveys as $survey) {
+                if ($survey->primary_interest) {
+                    $fieldScores[$survey->primary_interest] = ($fieldScores[$survey->primary_interest] ?? 0) + 1.0;
+                }
+                if ($survey->secondary_interest) {
+                    $fieldScores[$survey->secondary_interest] = ($fieldScores[$survey->secondary_interest] ?? 0) + 0.6;
+                }
+                if ($survey->ternary_interest) {
+                    $fieldScores[$survey->ternary_interest] = ($fieldScores[$survey->ternary_interest] ?? 0) + 0.3;
+                }
+            }
+            
+            $totalWeightedScore = array_sum($fieldScores);
+            if ($totalWeightedScore === 0) continue;
+            
+            arsort($fieldScores);
+            
+            $topFields = [];
+            $rank = 1;
+            foreach (array_slice($fieldScores, 0, 3, true) as $field => $score) {
+                $topFields[] = [
+                    'province' => $provinceName,
+                    'field' => $field,
+                    'count' => round($score, 1),
+                    'percentage' => round(($score / $totalWeightedScore) * 100, 1),
+                    'rank' => $rank++
+                ];
+            }
+            
+            $provincesData[$provinceName] = $topFields;
+        }
+
+        // 2. Overall Student Demand by Academic Field
+        $overallScores = [];
+        foreach ($surveys as $survey) {
+            if ($survey->primary_interest) {
+                $overallScores[$survey->primary_interest] = ($overallScores[$survey->primary_interest] ?? 0) + 1.0;
+            }
+            if ($survey->secondary_interest) {
+                $overallScores[$survey->secondary_interest] = ($overallScores[$survey->secondary_interest] ?? 0) + 0.6;
+            }
+            if ($survey->ternary_interest) {
+                $overallScores[$survey->ternary_interest] = ($overallScores[$survey->ternary_interest] ?? 0) + 0.3;
+            }
+        }
+        
+        arsort($overallScores);
+        $overallTotal = array_sum($overallScores) ?: 1;
+        $topFields = array_slice($overallScores, 0, 6, true);
+        $remaining = array_slice($overallScores, 6, null, true);
+        
+        $overallData = [];
+        foreach ($topFields as $field => $score) {
+            $overallData[] = [
+                'name' => $field,
+                'count' => round($score, 1),
+                'value' => round(($score / $overallTotal) * 100, 1)
+            ];
+        }
+        
+        if (count($remaining) > 0) {
+            $otherScore = array_sum($remaining);
+            $overallData[] = [
+                'name' => 'Other',
+                'count' => round($otherScore, 1),
+                'value' => round(($otherScore / $overallTotal) * 100, 1)
+            ];
+        }
+
+        // 3. High-Demand Skills (Emerging Skills Demand)
+        $skillScores = [];
+        foreach ($surveys as $survey) {
+            if ($survey->primary_skills) {
+                $domains = $nlpService->extractDomains($survey->primary_skills);
+                foreach ($domains as $d) {
+                    $skillScores[$d] = ($skillScores[$d] ?? 0) + 1.0;
+                }
+            }
+            if ($survey->secondary_skills) {
+                $domains = $nlpService->extractDomains($survey->secondary_skills);
+                foreach ($domains as $d) {
+                    $skillScores[$d] = ($skillScores[$d] ?? 0) + 0.6;
+                }
+            }
+            if ($survey->ternary_skills) {
+                $domains = $nlpService->extractDomains($survey->ternary_skills);
+                foreach ($domains as $d) {
+                    $skillScores[$d] = ($skillScores[$d] ?? 0) + 0.3;
+                }
+            }
+        }
+        
+        arsort($skillScores);
+        $skillsTotal = array_sum($skillScores) ?: 1;
+        
+        $highDemandSkills = [];
+        $rank = 1;
+        foreach (array_slice($skillScores, 0, 10, true) as $skill => $score) {
+            $highDemandSkills[] = [
+                'name' => $skill,
+                'count' => round($score, 1),
+                'percentage' => round(($score / $skillsTotal) * 100, 1),
+                'rank' => $rank++
+            ];
+        }
+
+        // 4. University Opportunities Themes
+        $oppList = [];
+        foreach ($surveys as $survey) {
+            if ($survey->university_opportunities) {
+                $items = array_map('trim', explode(',', $survey->university_opportunities));
+                foreach ($items as $item) {
+                    if (!empty($item)) {
+                        $oppList[] = $item;
+                    }
+                }
+            }
+        }
+        
+        $oppCounts = array_count_values($oppList);
+        arsort($oppCounts);
+        $oppTotal = array_sum($oppCounts) ?: 1;
+        
+        $opportunitiesData = [];
+        foreach (array_slice($oppCounts, 0, 10, true) as $opp => $count) {
+            $opportunitiesData[] = [
+                'name' => $opp,
+                'count' => $count,
+                'percentage' => round(($count / $oppTotal) * 100, 1)
+            ];
+        }
+
+        // 5. Learning Preferences
+        // A. Preferred Learning Methods
+        $methodList = [];
+        foreach ($surveys as $survey) {
+            $methodsText = implode(',', array_filter([$survey->primary_learning_methods, $survey->secondary_learning_methods, $survey->ternary_learning_methods]));
+            if ($methodsText) {
+                $methods = array_map('trim', explode(',', $methodsText));
+                foreach ($methods as $m) {
+                    if (!empty($m)) {
+                        $methodList[] = $m;
+                    }
+                }
+            }
+        }
+        
+        $methodCounts = array_count_values($methodList);
+        arsort($methodCounts);
+        $methodTotal = array_sum($methodCounts) ?: 1;
+        
+        $learningMethods = [];
+        foreach (array_slice($methodCounts, 0, 10, true) as $method => $count) {
+            $learningMethods[] = [
+                'name' => $method,
+                'count' => $count,
+                'percentage' => round(($count / $methodTotal) * 100, 1)
+            ];
+        }
+
+        // B. Learning Balance distribution
+        $balanceScores = [];
+        foreach ($surveys as $survey) {
+            if ($survey->primary_learning_balance !== null) {
+                $balanceScores[] = (int) $survey->primary_learning_balance;
+            }
+            if ($survey->secondary_learning_balance !== null) {
+                $balanceScores[] = (int) $survey->secondary_learning_balance;
+            }
+            if ($survey->ternary_learning_balance !== null) {
+                $balanceScores[] = (int) $survey->ternary_learning_balance;
+            }
+        }
+        
+        $balanceCounts = [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0];
+        foreach ($balanceScores as $val) {
+            if (isset($balanceCounts[$val])) {
+                $balanceCounts[$val]++;
+            }
+        }
+        
+        $balanceTotal = array_sum($balanceCounts) ?: 1;
+        $learningBalance = [];
+        $labels = [
+            1 => '1 (100% Theory)',
+            2 => '2 (Mostly Theory)',
+            3 => '3 (Balanced)',
+            4 => '4 (Mostly Practical)',
+            5 => '5 (100% Practical)'
+        ];
+        foreach ($balanceCounts as $val => $count) {
+            $learningBalance[] = [
+                'label' => $labels[$val],
+                'count' => $count,
+                'percentage' => round(($count / $balanceTotal) * 100, 1)
+            ];
+        }
+
+        return response()->json([
+            'total_surveys' => $totalSurveysCount,
+            'provinces_data' => $provincesData,
+            'overall_demand' => $overallData,
+            'high_demand_skills' => $highDemandSkills,
+            'opportunities' => $opportunitiesData,
+            'learning_methods' => $learningMethods,
+            'learning_balance' => $learningBalance
+        ]);
+    }
+
+    public function getCommonDrilldown(Request $request, AnalyticsNLPService $nlpService)
+    {
+        $field = $request->input('field');
+        if (empty($field)) {
+            return response()->json(['error' => 'Field parameter is required.'], 400);
+        }
+        
+        $surveys = StudentInterest::all();
+        
+        $skillScores = [];
+        foreach ($surveys as $survey) {
+            $interestWeight = 0.0;
+            if ($survey->primary_interest === $field) {
+                $interestWeight = 1.0;
+            } elseif ($survey->secondary_interest === $field) {
+                $interestWeight = 0.6;
+            } elseif ($survey->ternary_interest === $field) {
+                $interestWeight = 0.3;
+            }
+            
+            if ($interestWeight === 0.0) continue;
+            
+            if ($survey->primary_skills) {
+                $domains = $nlpService->extractDomains($survey->primary_skills);
+                foreach ($domains as $d) {
+                    $skillScores[$d] = ($skillScores[$d] ?? 0) + (1.0 * $interestWeight);
+                }
+            }
+            if ($survey->secondary_skills) {
+                $domains = $nlpService->extractDomains($survey->secondary_skills);
+                foreach ($domains as $d) {
+                    $skillScores[$d] = ($skillScores[$d] ?? 0) + (0.6 * $interestWeight);
+                }
+            }
+            if ($survey->ternary_skills) {
+                $domains = $nlpService->extractDomains($survey->ternary_skills);
+                foreach ($domains as $d) {
+                    $skillScores[$d] = ($skillScores[$d] ?? 0) + (0.3 * $interestWeight);
+                }
+            }
+        }
+        
+        arsort($skillScores);
+        $skillsTotal = array_sum($skillScores) ?: 1;
+        
+        $drilldownData = [];
+        foreach (array_slice($skillScores, 0, 10, true) as $skill => $score) {
+            $drilldownData[] = [
+                'name' => $skill,
+                'count' => round($score, 1),
+                'value' => round(($score / $skillsTotal) * 100, 1)
+            ];
+        }
+        
+        return response()->json($drilldownData);
     }
 }

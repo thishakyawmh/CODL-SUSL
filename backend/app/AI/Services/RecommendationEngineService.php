@@ -12,6 +12,46 @@ class RecommendationEngineService
      */
     public function generateRecommendations(array $analyticsData): array
     {
+        $evidenceStatus = $analyticsData['kpis']['evidence_status'] ?? 'sufficient';
+        
+        if ($evidenceStatus === 'insufficient' || $evidenceStatus === 'limited') {
+            $studentMin = config('analytics.thresholds.min_student_responses', 10);
+            $industryMin = config('analytics.thresholds.min_industry_responses', 5);
+            $studentCount = $analyticsData['kpis']['student_count'] ?? 0;
+            $industryCount = $analyticsData['kpis']['industry_count'] ?? 0;
+
+            if ($evidenceStatus === 'insufficient') {
+                $title = 'No Recommendations Generated';
+                $description = "There is currently not enough program-specific survey data (minimum required: {$studentMin} student and {$industryMin} industry responses) to produce reliable AI curriculum recommendations. Please collect more target surveys.";
+                $confidenceText = 'Insufficient evidence';
+            } else {
+                $title = 'Limited Evidence - Recommendations Suppressed';
+                $description = "We found some matching data ({$studentCount} student and {$industryCount} industry responses), but it is below the confidence thresholds (requires at least {$studentMin} student and {$industryMin} industry responses) to generate confident curriculum recommendations.";
+                $confidenceText = 'Limited evidence';
+            }
+
+            return [
+                [
+                    'id' => 'insufficient_evidence',
+                    'course' => 'Curriculum Audit',
+                    'type' => 'System Audit',
+                    'title' => $title,
+                    'description' => $description,
+                    'priority' => 'Medium',
+                    'evidence_source' => 'AI Evidence Gate',
+                    'impact' => 'N/A',
+                    'evidence' => [
+                        'relevant_responses' => $studentCount + $industryCount,
+                        'observed_percentage' => 'N/A',
+                        'supporting_domain' => 'None',
+                        'threshold' => "{$studentMin} Stud / {$industryMin} Ind",
+                        'confidence' => $confidenceText,
+                        'trigger' => 'Evidence Gate'
+                    ]
+                ]
+            ];
+        }
+
         $rules = $this->loadRules();
         $recommendations = [];
         
@@ -21,8 +61,8 @@ class RecommendationEngineService
 
         // 1. Process standard static rules (MVP Rules)
         foreach ($rules as $rule) {
-            $isTriggered = $this->evaluateRule($rule, $industryFrequencies, $totalIndustryDemand);
-            if ($isTriggered) {
+            $matchData = $this->evaluateRule($rule, $industryFrequencies, $totalIndustryDemand);
+            if ($matchData) {
                 $recommendations[] = [
                     'id' => 'rule_' . $rule->id,
                     'course' => $rule->recommendation_subject,
@@ -32,6 +72,14 @@ class RecommendationEngineService
                     'priority' => $rule->priority,
                     'evidence_source' => $rule->evidence_source,
                     'impact' => '+15% Industry Match',
+                    'evidence' => [
+                        'relevant_responses' => $matchData['count'],
+                        'observed_percentage' => $matchData['percentage'] . '%',
+                        'supporting_domain' => $matchData['domain'],
+                        'threshold' => $matchData['threshold'] . '%',
+                        'confidence' => $analyticsData['kpis']['confidence'] ?? 'High',
+                        'trigger' => $matchData['pattern']
+                    ]
                 ];
             }
         }
@@ -48,6 +96,14 @@ class RecommendationEngineService
                     'priority' => 'Critical',
                     'evidence_source' => 'Course Management',
                     'impact' => 'Outdated Code Removal',
+                    'evidence' => [
+                        'relevant_responses' => 1,
+                        'observed_percentage' => '100%',
+                        'supporting_domain' => $subject['name'],
+                        'threshold' => 'Legacy Keyword Match',
+                        'confidence' => 'High',
+                        'trigger' => 'Outdated Tech Detected'
+                    ]
                 ];
             }
         }
@@ -64,6 +120,14 @@ class RecommendationEngineService
                     'priority' => 'Medium',
                     'evidence_source' => 'Surveys & Curriculum',
                     'impact' => 'Syllabus Optimization',
+                    'evidence' => [
+                        'relevant_responses' => 0,
+                        'observed_percentage' => '<5%',
+                        'supporting_domain' => $subject['name'],
+                        'threshold' => '5%',
+                        'confidence' => $analyticsData['kpis']['confidence'] ?? 'High',
+                        'trigger' => 'Low Observed Demand'
+                    ]
                 ];
             }
         }
@@ -71,6 +135,10 @@ class RecommendationEngineService
         // 4. Generate Missing Subject Recommendations (real curriculum gap analysis)
         if (!empty($analyticsData['missing_subjects'])) {
             foreach ($analyticsData['missing_subjects'] as $idx => $domain) {
+                $count = ($industryFrequencies[$domain] ?? 0) + ($studentFrequencies[$domain] ?? 0);
+                $totalResponses = ($analyticsData['kpis']['student_count'] ?? 0) + ($analyticsData['kpis']['industry_count'] ?? 0);
+                $percentage = $totalResponses > 0 ? round(($count / $totalResponses) * 100, 1) : 0;
+
                 $recommendations[] = [
                     'id' => 'missing_' . $idx,
                     'course' => $domain,
@@ -80,6 +148,14 @@ class RecommendationEngineService
                     'priority' => 'High',
                     'evidence_source' => 'Survey Gap Analysis',
                     'impact' => '+25% Industry Alignment',
+                    'evidence' => [
+                        'relevant_responses' => $count,
+                        'observed_percentage' => $percentage . '%',
+                        'supporting_domain' => $domain,
+                        'threshold' => '15%',
+                        'confidence' => $analyticsData['kpis']['confidence'] ?? 'High',
+                        'trigger' => 'Curriculum Gap'
+                    ]
                 ];
             }
         }
@@ -98,6 +174,14 @@ class RecommendationEngineService
                     'priority' => 'High',
                     'evidence_source' => 'Student Learning Preferences',
                     'impact' => 'Higher Student Satisfaction',
+                    'evidence' => [
+                        'relevant_responses' => $analyticsData['kpis']['student_count'] ?? 0,
+                        'observed_percentage' => ($prefData['student_practical_percent'] ?? 0) . '%',
+                        'supporting_domain' => 'Pedagogy',
+                        'threshold' => '60%',
+                        'confidence' => $analyticsData['kpis']['confidence'] ?? 'High',
+                        'trigger' => 'Practical/Theory Ratio'
+                    ]
                 ];
             }
 
@@ -111,6 +195,14 @@ class RecommendationEngineService
                     'priority' => 'Medium',
                     'evidence_source' => 'Industry Gaps Audit',
                     'impact' => 'Employability Boost',
+                    'evidence' => [
+                        'relevant_responses' => $analyticsData['kpis']['industry_count'] ?? 0,
+                        'observed_percentage' => ($prefData['certification_importance'] ?? 0) . '%',
+                        'supporting_domain' => 'Certifications',
+                        'threshold' => '60%',
+                        'confidence' => $analyticsData['kpis']['confidence'] ?? 'High',
+                        'trigger' => 'Industry Certification Value'
+                    ]
                 ];
             }
         }
@@ -121,11 +213,19 @@ class RecommendationEngineService
                 'id' => 'fallback_999',
                 'course' => 'System-wide Curriculum',
                 'type' => 'Review Completed',
-                'title' => 'Curriculum Review',
-                'description' => 'Gather more survey data or add more semesters/subjects in Course Management to run the AI gap analysis engine.',
+                'title' => 'Curriculum Review Completed',
+                'description' => 'No additional gaps or anomalies found based on current matching surveys. The curriculum appears well-aligned with student and industry expectations.',
                 'priority' => 'Medium',
                 'evidence_source' => 'System Audit',
                 'impact' => 'N/A',
+                'evidence' => [
+                    'relevant_responses' => $totalRelevant,
+                    'observed_percentage' => '100%',
+                    'supporting_domain' => 'N/A',
+                    'threshold' => 'N/A',
+                    'confidence' => $analyticsData['kpis']['confidence'] ?? 'High',
+                    'trigger' => 'No Anomalies Found'
+                ]
             ];
         }
 
@@ -155,21 +255,27 @@ class RecommendationEngineService
     /**
      * Evaluates a single rule against the processed analytics data (normalized domains).
      */
-    protected function evaluateRule(RecommendationRule $rule, array $industryFrequencies, int $totalDemand): bool
+    protected function evaluateRule(RecommendationRule $rule, array $industryFrequencies, int $totalDemand)
     {
         $triggerPattern = $rule->trigger_skill_pattern;
         
         foreach ($industryFrequencies as $domain => $count) {
             $percentage = ($count / $totalDemand) * 100;
             
-            // Execute the exact regex string stored in the database against the normalized domain
             if (preg_match($triggerPattern, $domain)) {
                 if ($percentage >= $rule->threshold_percent) {
-                    return true;
+                    return [
+                        'domain' => $domain,
+                        'count' => $count,
+                        'percentage' => round($percentage, 1),
+                        'threshold' => $rule->threshold_percent,
+                        'pattern' => $triggerPattern
+                    ];
                 }
             }
         }
 
-        return false;
+        return null;
     }
 }
+
