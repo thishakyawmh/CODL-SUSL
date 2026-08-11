@@ -14,8 +14,15 @@
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(12px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .fade-in-up {
@@ -23,20 +30,24 @@
 }
 
 @keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* Header Branding Layout */
 .help-center-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
     padding-bottom: 20px;
     margin-bottom: 32px;
     border-bottom: 1px solid #E2E8F0;
-    flex-wrap: wrap;
-    gap: 20px;
 }
 
 .hc-branding {
@@ -113,7 +124,7 @@
     font-size: 13.5px;
     font-weight: 700;
     transition: all 0.2s ease;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
 }
 
 .hc-back-btn:hover {
@@ -121,6 +132,21 @@
     color: #1E293B;
     border-color: #CBD5E1;
     transform: translateX(-2px);
+}
+
+/* Header Specific Back Button Style (Purple themed on the purple banner) */
+.help-center-header .hc-back-btn {
+    background: #FFFFFF;
+    color: #7C3AED;
+    border: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.help-center-header .hc-back-btn:hover {
+    background: #F8FAFC;
+    color: #6D28D9;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.12);
 }
 
 /* Hero Section */
@@ -283,18 +309,16 @@
 
 .hc-detail-wrapper {
     width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
 }
 
 .hc-detail-card {
-    background: #FFFFFF;
-    border-radius: 24px;
-    padding: 40px;
-    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
-    border: 1px solid rgba(226, 232, 240, 0.8);
     display: flex;
     flex-direction: column;
     gap: 32px;
     box-sizing: border-box;
+    padding: 12px 0;
 }
 
 .hc-detail-header {
@@ -332,6 +356,7 @@
     line-height: 1.6;
     margin: 0 0 28px 0;
     font-weight: 500;
+    text-align: justify;
 }
 
 .hc-steps-section h5 {
@@ -422,24 +447,42 @@
     border-color: #E2E8F0;
     color: #475569;
 }
-.hc-info-box.note svg { color: #64748B; }
-.hc-info-box.note h6 { color: #334155; }
+
+.hc-info-box.note svg {
+    color: #64748B;
+}
+
+.hc-info-box.note h6 {
+    color: #334155;
+}
 
 .hc-info-box.tip {
     background: #F0FDF4;
     border-color: #DCFCE7;
     color: #166534;
 }
-.hc-info-box.tip svg { color: #16A34A; }
-.hc-info-box.tip h6 { color: #15803D; }
+
+.hc-info-box.tip svg {
+    color: #16A34A;
+}
+
+.hc-info-box.tip h6 {
+    color: #15803D;
+}
 
 .hc-info-box.warning {
     background: #FFF5F5;
     border-color: #FED7D7;
     color: #9B2C2C;
 }
-.hc-info-box.warning svg { color: #E53E3E; }
-.hc-info-box.warning h6 { color: #C53030; }
+
+.hc-info-box.warning svg {
+    color: #E53E3E;
+}
+
+.hc-info-box.warning h6 {
+    color: #C53030;
+}
 
 /* Empty state */
 .hc-empty-state {
@@ -465,40 +508,62 @@
 }
 
 /* Responsive adjustments */
+/* Responsive adjustments */
 @media screen and (max-width: 768px) {
     .help-center-page {
-        padding: 24px 20px;
+        padding: 24px 16px;
     }
-    
+
     .help-center-header {
         flex-direction: column;
         align-items: flex-start;
         gap: 16px;
     }
-    
+
+    .hc-branding-text h2 {
+        font-size: 16px;
+    }
+
+    .hc-branding-text p {
+        font-size: 11px;
+    }
+
     .hc-header-actions {
         width: 100%;
         justify-content: space-between;
     }
-    
+
     .help-center-hero {
-        padding: 40px 20px;
+        padding: 32px 18px;
     }
-    
+
     .help-center-hero h1 {
-        font-size: 26px;
+        font-size: 24px;
     }
-    
+
+    .help-center-hero p {
+        font-size: 13.5px;
+    }
+
+    .hc-categories-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
     .hc-detail-card {
-        padding: 24px;
+        padding: 0;
     }
-    
+
     .hc-detail-header {
         flex-direction: column;
         align-items: flex-start;
         gap: 16px;
     }
-    
+
+    .hc-detail-header .hc-card-icon {
+        display: none;
+    }
+
     .hc-detail-header h1 {
         font-size: 20px;
     }
@@ -511,7 +576,8 @@
 .hc-video-container {
     position: relative;
     width: 100%;
-    padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+    padding-bottom: 56.25%;
+    /* 16:9 Aspect Ratio */
     height: 0;
     overflow: hidden;
     border-radius: 18px;

@@ -24,17 +24,10 @@ interface Guide {
 export const HelpCenter: React.FC = () => {
     const { guideId } = useParams<{ guideId?: string }>();
 
-    // Persist language state dynamically using sessionStorage
-    const [lang, setLang] = useState<'en' | 'si'>(() => {
-        return (sessionStorage.getItem('help_lang') as 'en' | 'si') || 'en';
-    });
+    // Language is defaulted to English
+    const lang = 'en';
 
     const [searchTerm, setSearchTerm] = useState('');
-
-    const handleLangChange = (newLang: 'en' | 'si') => {
-        setLang(newLang);
-        sessionStorage.setItem('help_lang', newLang);
-    };
 
     // UI interface and branding labels must ALWAYS remain in English
     const branding = {
@@ -186,7 +179,6 @@ export const HelpCenter: React.FC = () => {
 
     return (
         <div className="help-center-page">
-            {/* Header Layout matches application layout (Always English) */}
             <div className="help-center-header">
                 <div className="hc-branding">
                     <img src={branding.logo} alt="Logo" className="hc-logo" />
@@ -195,38 +187,29 @@ export const HelpCenter: React.FC = () => {
                         <p>{branding.university}</p>
                     </div>
                 </div>
-
-                <div className="hc-header-actions">
-                    <div className="hc-lang-selector">
-                        <label>{branding.langLabel}:</label>
-                        <select 
-                            value={lang} 
-                            onChange={(e) => handleLangChange(e.target.value as 'en' | 'si')}
-                            className="hc-lang-select"
-                        >
-                            <option value="en">English</option>
-                            <option value="si">සිංහල</option>
-                        </select>
-                    </div>
-                    {/* Always display standard navigation actions in the header, but hide Back to Login on guide detail pages */}
-                    {!currentGuide && (
-                        <Link to="/login" className="hc-back-btn">
-                            <ArrowLeft size={16} /> {branding.backLabel}
-                        </Link>
-                    )}
-                </div>
             </div>
+
+            {!currentGuide && (
+                <div style={{ marginBottom: '24px', display: 'flex' }}>
+                    <Link to="/login" className="hc-back-btn">
+                        <ArrowLeft size={16} /> {branding.backLabel}
+                    </Link>
+                </div>
+            )}
 
             {currentGuide ? (
                 /* =========================================================
                    STATE B: GUIDE DETAIL PAGE (ALWAYS ENGLISH CARD TITLE)
                    ========================================================= */
-                <div className="hc-detail-wrapper fade-in-up">
-                    <Link to="/help-center" className="hc-back-btn" style={{ marginBottom: '24px' }}>
-                        <ArrowLeft size={16} /> {branding.backToHubLabel}
-                    </Link>
+                <>
+                    <div style={{ marginBottom: '24px', display: 'flex' }}>
+                        <Link to="/help-center" className="hc-back-btn">
+                            <ArrowLeft size={16} /> {branding.backToHubLabel}
+                        </Link>
+                    </div>
 
-                    <div className="hc-detail-card" style={{ borderTop: `6px solid ${currentGuide.color}` }}>
+                    <div className="hc-detail-wrapper fade-in-up">
+                        <div className="hc-detail-card">
                         <div className="hc-detail-header">
                             <div className="hc-card-icon big" style={{ background: `${currentGuide.color}15`, color: currentGuide.color }}>
                                 <currentGuide.icon size={28} />
@@ -258,22 +241,11 @@ export const HelpCenter: React.FC = () => {
                                 </div>
                             )}
 
-                            {((lang === 'en' ? currentGuide.notesEn : currentGuide.notesSi) || []).length > 0 && (
-                                <div className="hc-info-box note">
-                                    <div className="hc-info-box-header">
-                                        <Info size={16} />
-                                        <h6>{branding.notesLabel}</h6>
-                                    </div>
-                                    <ul>
-                                        {(lang === 'en' ? currentGuide.notesEn : currentGuide.notesSi)?.map((n, i) => (
-                                            <li key={i}>{n}</li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            )}
+
                         </div>
                     </div>
                 </div>
+                </>
             ) : (
                 /* =========================================================
                    STATE A: HELP CENTER LANDING HUB
