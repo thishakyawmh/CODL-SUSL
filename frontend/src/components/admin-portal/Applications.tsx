@@ -4,7 +4,7 @@ import {
     X, Calendar, Award,
     ArrowUpRight, UserCheck, FileText, CheckCircle2, Layers,
     ArrowLeft, Eye, Check, XCircle, Edit3, Save, User, ShieldCheck, Clock, Trash2,
-    MapPin, CheckSquare
+    MapPin, CheckSquare, Info
 } from 'lucide-react';
 import { mockAdminCourses } from '../../data/mockAdminData';
 import type {
