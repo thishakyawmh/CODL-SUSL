@@ -20,11 +20,7 @@ use App\AI\Controllers\AIAnalyticsController;
 use App\Http\Controllers\StudentInterestController;
 
 
-/*
-|--------------------------------------------------------------------------
-| API Routes
-|--------------------------------------------------------------------------
-*/
+/* API Routes */
 
 Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:login');
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
@@ -178,6 +174,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/courses/{id}/exams', [ExamController::class, 'store']);
     Route::put('/exams/{id}', [ExamController::class, 'update']);
     Route::delete('/exams/{id}', [ExamController::class, 'destroy']);
+    Route::post('/exams/upload-timetable', [ExamController::class, 'uploadTimetable']);
 
     // Announcements
     Route::get('/announcements', [AnnouncementController::class, 'index']);

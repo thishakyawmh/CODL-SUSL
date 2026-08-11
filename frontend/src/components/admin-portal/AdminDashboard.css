@@ -104,6 +104,7 @@
 .activity-icon.course { background: var(--primary-light); color: var(--primary-color); }
 .activity-icon.grade { background: var(--warning-light); color: var(--warning); }
 .activity-icon.system { background: var(--surface-2); color: var(--text-secondary); }
+.activity-icon.letter { background: #EDE9FE; color: #7C3AED; }
 
 /* Role Badges */
 .ru-role-badge {

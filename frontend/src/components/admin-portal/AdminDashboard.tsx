@@ -18,6 +18,10 @@ import {
 import { statsService } from '../../services/apiService';
 import './AdminDashboard.css';
 
+const getRoleLabel = (role: string) => {
+    return role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+};
+
 // ============================================================================
 // SVG Chart Subcomponents (Option 2: Recharts Library Integration)
 // ============================================================================
@@ -548,10 +552,6 @@ export const AdminDashboard: React.FC = () => {
             type: 'users'
         },
     ];
-
-    const getRoleLabel = (role: string) => {
-        return role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
-    };
 
     const getFilteredTrendData = () => {
         switch (selectedTimeframe) {
