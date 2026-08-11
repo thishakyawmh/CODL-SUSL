@@ -119,6 +119,8 @@ class AIAnalyticsController extends Controller
         return response()->json([
             'emerging_technologies' => $analytics['emerging_technologies'] ?? [],
             'last_sync_at' => $lastSyncTime,
+            'student_count' => \App\AI\Models\StudentInterest::count(),
+            'industry_count' => \App\AI\Models\IndustryRequirement::count(),
         ]);
     }
 

@@ -33,6 +33,8 @@ export const AIAnalytics: React.FC = () => {
 
     const [syncing, setSyncing] = useState(false);
     const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
+    const [studentCount, setStudentCount] = useState<number>(0);
+    const [industryCount, setIndustryCount] = useState<number>(0);
 
     // Toast notification state
     const [toasts, setToasts] = useState<{ id: number; message: string; type: 'success' | 'error' | 'info' }[]>([]);
@@ -63,11 +65,15 @@ export const AIAnalytics: React.FC = () => {
             const data = await aiAnalyticsService.getPrograms();
             setPrograms(data);
             const globalData = await aiAnalyticsService.getGlobalOverview().catch(() => null);
-            if (globalData && globalData.emerging_technologies) {
-                setGlobalEmergingTech(globalData.emerging_technologies);
-            }
-            if (globalData && globalData.last_sync_at) {
-                setLastSyncedAt(globalData.last_sync_at);
+            if (globalData) {
+                if (globalData.emerging_technologies) {
+                    setGlobalEmergingTech(globalData.emerging_technologies);
+                }
+                if (globalData.last_sync_at) {
+                    setLastSyncedAt(globalData.last_sync_at);
+                }
+                setStudentCount(globalData.student_count || 0);
+                setIndustryCount(globalData.industry_count || 0);
             }
         } catch (err) {
             console.error('Failed to load programs', err);
@@ -193,6 +199,8 @@ export const AIAnalytics: React.FC = () => {
                     onOpenCommonAnalytics={() => setViewMode('common')}
                     syncing={syncing}
                     lastSyncedAt={lastSyncedAt}
+                    studentCount={studentCount}
+                    industryCount={industryCount}
                 />
             )}
         </div>
@@ -212,8 +220,10 @@ const ProgramHub: React.FC<{
     onOpenManageForms: () => void,
     onOpenCommonAnalytics: () => void,
     syncing?: boolean,
-    lastSyncedAt?: string | null
-}> = ({ programs, globalEmergingTech, onSelect, onOpenSync, onOpenManageForms, onOpenCommonAnalytics, syncing, lastSyncedAt }) => {
+    lastSyncedAt?: string | null,
+    studentCount: number,
+    industryCount: number
+}> = ({ programs, globalEmergingTech, onSelect, onOpenSync, onOpenManageForms, onOpenCommonAnalytics, syncing, lastSyncedAt, studentCount, industryCount }) => {
     const [levelFilter, setLevelFilter] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -358,6 +368,31 @@ const ProgramHub: React.FC<{
                     />
                 </div>
             </div>
+
+            {/* Survey Records Analyzed Metric Cards */}
+            {levelFilter === 'all' && !searchTerm && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', marginBottom: '32px' }}>
+                    <div className="ai-chart-card" style={{ display: 'flex', alignItems: 'center', gap: '20px', padding: '20px 24px', margin: 0, borderLeft: '6px solid #7C3AED', background: '#FFFFFF', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.015)', borderRadius: '16px' }}>
+                        <div style={{ backgroundColor: '#F3E8FF', color: '#7C3AED', padding: '12px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Users size={28} />
+                        </div>
+                        <div>
+                            <span style={{ fontSize: '11px', color: '#64748B', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Student Interests Analyzed</span>
+                            <h2 style={{ fontSize: '28px', fontWeight: 900, color: '#0F172A', margin: '4px 0 0 0', lineHeight: 1 }}>{studentCount}</h2>
+                        </div>
+                    </div>
+                    
+                    <div className="ai-chart-card" style={{ display: 'flex', alignItems: 'center', gap: '20px', padding: '20px 24px', margin: 0, borderLeft: '6px solid #10B981', background: '#FFFFFF', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.015)', borderRadius: '16px' }}>
+                        <div style={{ backgroundColor: '#D1FAE5', color: '#10B981', padding: '12px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Award size={28} />
+                        </div>
+                        <div>
+                            <span style={{ fontSize: '11px', color: '#64748B', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Industry Audits Analyzed</span>
+                            <h2 style={{ fontSize: '28px', fontWeight: 900, color: '#0F172A', margin: '4px 0 0 0', lineHeight: 1 }}>{industryCount}</h2>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Qualification Cards Grid (Initially visible when no category/search is selected) */}
             {levelFilter === 'all' && !searchTerm ? (
