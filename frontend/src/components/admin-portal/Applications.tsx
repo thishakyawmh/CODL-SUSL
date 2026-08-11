@@ -1109,7 +1109,8 @@ export const Applications: React.FC = () => {
                 const regNo = app.isNewApplicant ? '' : `CODL/ST/2024/${app.id.split('-')[1]}`;
                 const regMatch = regNo.toLowerCase().includes(query);
                 const idMatch = String(app.id || '').toLowerCase().includes(query);
-                matchesSearch = nameMatch || emailMatch || regMatch || idMatch;
+                const studentNumberMatch = (app.studentNumber || '').toLowerCase().includes(query);
+                matchesSearch = nameMatch || emailMatch || regMatch || idMatch || studentNumberMatch;
             }
 
             return matchesCourse && matchesType && matchesSearch;

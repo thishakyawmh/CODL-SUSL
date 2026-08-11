@@ -105,7 +105,6 @@ export const AdminSettings: React.FC = () => {
         };
         fetchHealthStats();
     }, [activeSection, healthTimeframe]);
-
     const fetchBackups = async () => {
         setLoadingBackups(true);
         try {
@@ -124,6 +123,12 @@ export const AdminSettings: React.FC = () => {
             setLoadingBackups(false);
         }
     };
+
+    useEffect(() => {
+        if (activeSection === 'backup') {
+            fetchBackups();
+        }
+    }, [activeSection]);
 
     const handleRunBackup = async () => {
         setIsRunningBackup(true);
@@ -235,12 +240,6 @@ export const AdminSettings: React.FC = () => {
     const [tableSearch, setTableSearch] = useState('');
     const [rowSearch, setRowSearch] = useState('');
 
-    useEffect(() => {
-        if (activeSection === 'datatables') {
-            fetchTables();
-        }
-    }, [activeSection]);
-
     const fetchTables = async () => {
         setLoadingTables(true);
         try {
@@ -253,6 +252,12 @@ export const AdminSettings: React.FC = () => {
             setLoadingTables(false);
         }
     };
+
+    useEffect(() => {
+        if (activeSection === 'datatables') {
+            fetchTables();
+        }
+    }, [activeSection]);
 
     const fetchTableData = async (tableName: string) => {
         setLoadingData(true);

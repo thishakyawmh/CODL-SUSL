@@ -4,6 +4,7 @@ import { Activity, Clock, Search, ArrowLeft, Shield, Calendar, Filter } from 'lu
 import { activityLogService } from '../../services/apiService';
 import { getCurrentAdminUser } from '../../data/mockAdminData';
 import './RoleManagement.css'; // Reuses the container layout styling
+import './AdminDashboard.css'; // Standard Activity styling
 
 export const ActivityLogs: React.FC = () => {
     const navigate = useNavigate();
@@ -47,7 +48,8 @@ export const ActivityLogs: React.FC = () => {
             case 'coordinator': return { bg: '#FEF3C7', text: '#D97706', border: '#FCD34D' };
             case 'secretary': return { bg: '#DBEAFE', text: '#2563EB', border: '#93C5FD' };
             case 'lecturer': return { bg: '#E0F2FE', text: '#0369A1', border: '#7DD3FC' };
-            case 'student': return { bg: '#D1FAE5', text: '#059669', border: '#6EE7B7' };
+            case 'student': return { bg: '#D1FAE5', text: '#059669', border: '#10B981' };
+            case 'pro_student': return { bg: '#FEF3C7', text: '#D97706', border: '#FCD34D' };
             case 'applicant': return { bg: '#FFE4E6', text: '#E11D48', border: '#FDA4AF' };
             default: return { bg: '#F1F5F9', text: '#475569', border: '#CBD5E1' };
         }
@@ -164,6 +166,7 @@ export const ActivityLogs: React.FC = () => {
                         <option value="secretary">Course Secretary</option>
                         <option value="lecturer">Lecturer</option>
                         <option value="student">Student</option>
+                        <option value="pro_student">Pro Student</option>
                         <option value="applicant">Applicant</option>
                     </select>
                 </div>
