@@ -9,6 +9,9 @@ import {
 import { aiAnalyticsService, courseService } from '../../services/apiService';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
+import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
+// @ts-ignore
+import SriLankaMapData from '@svg-maps/sri-lanka';
 import './AIAnalytics.css';
 
 interface Course {
@@ -35,6 +38,8 @@ export const AIAnalytics: React.FC = () => {
     const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
     const [studentCount, setStudentCount] = useState<number>(0);
     const [industryCount, setIndustryCount] = useState<number>(0);
+    const [educationLevels, setEducationLevels] = useState<{ name: string; value: number }[]>([]);
+    const [districts, setDistricts] = useState<{ name: string; count: number }[]>([]);
 
     // Toast notification state
     const [toasts, setToasts] = useState<{ id: number; message: string; type: 'success' | 'error' | 'info' }[]>([]);
@@ -74,6 +79,8 @@ export const AIAnalytics: React.FC = () => {
                 }
                 setStudentCount(globalData.student_count || 0);
                 setIndustryCount(globalData.industry_count || 0);
+                setEducationLevels(globalData.education_levels || []);
+                setDistricts(globalData.districts || []);
             }
         } catch (err) {
             console.error('Failed to load programs', err);
@@ -201,6 +208,8 @@ export const AIAnalytics: React.FC = () => {
                     lastSyncedAt={lastSyncedAt}
                     studentCount={studentCount}
                     industryCount={industryCount}
+                    educationLevels={educationLevels}
+                    districts={districts}
                 />
             )}
         </div>
@@ -222,8 +231,10 @@ const ProgramHub: React.FC<{
     syncing?: boolean,
     lastSyncedAt?: string | null,
     studentCount: number,
-    industryCount: number
-}> = ({ programs, globalEmergingTech, onSelect, onOpenSync, onOpenManageForms, onOpenCommonAnalytics, syncing, lastSyncedAt, studentCount, industryCount }) => {
+    industryCount: number,
+    educationLevels: { name: string; value: number }[],
+    districts: { name: string; count: number }[]
+}> = ({ programs, globalEmergingTech, onSelect, onOpenSync, onOpenManageForms, onOpenCommonAnalytics, syncing, lastSyncedAt, studentCount, industryCount, educationLevels, districts }) => {
     const [levelFilter, setLevelFilter] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -371,27 +382,36 @@ const ProgramHub: React.FC<{
 
             {/* Survey Records Analyzed Metric Cards */}
             {levelFilter === 'all' && !searchTerm && (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', marginBottom: '32px' }}>
-                    <div className="ai-chart-card" style={{ display: 'flex', alignItems: 'center', gap: '20px', padding: '20px 24px', margin: 0, borderLeft: '6px solid #7C3AED', background: '#FFFFFF', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.015)', borderRadius: '16px' }}>
-                        <div style={{ backgroundColor: '#F3E8FF', color: '#7C3AED', padding: '12px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <Users size={28} />
+                <>
+                    {/* Top Row: Simple Stats Count Cards */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', marginBottom: '20px' }}>
+                        <div className="ai-chart-card" style={{ display: 'flex', alignItems: 'center', gap: '20px', padding: '20px 24px', margin: 0, borderLeft: '6px solid #7C3AED', background: '#FFFFFF', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.015)', borderRadius: '16px' }}>
+                            <div style={{ backgroundColor: '#F3E8FF', color: '#7C3AED', padding: '12px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <Users size={28} />
+                            </div>
+                            <div>
+                                <span style={{ fontSize: '11px', color: '#64748B', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Student Interests Analyzed</span>
+                                <h2 style={{ fontSize: '28px', fontWeight: 900, color: '#0F172A', margin: '4px 0 0 0', lineHeight: 1 }}>{studentCount}</h2>
+                            </div>
                         </div>
-                        <div>
-                            <span style={{ fontSize: '11px', color: '#64748B', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Student Interests Analyzed</span>
-                            <h2 style={{ fontSize: '28px', fontWeight: 900, color: '#0F172A', margin: '4px 0 0 0', lineHeight: 1 }}>{studentCount}</h2>
+                        
+                        <div className="ai-chart-card" style={{ display: 'flex', alignItems: 'center', gap: '20px', padding: '20px 24px', margin: 0, borderLeft: '6px solid #10B981', background: '#FFFFFF', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.015)', borderRadius: '16px' }}>
+                            <div style={{ backgroundColor: '#D1FAE5', color: '#10B981', padding: '12px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <Award size={28} />
+                            </div>
+                            <div>
+                                <span style={{ fontSize: '11px', color: '#64748B', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Industry Audits Analyzed</span>
+                                <h2 style={{ fontSize: '28px', fontWeight: 900, color: '#0F172A', margin: '4px 0 0 0', lineHeight: 1 }}>{industryCount}</h2>
+                            </div>
                         </div>
                     </div>
-                    
-                    <div className="ai-chart-card" style={{ display: 'flex', alignItems: 'center', gap: '20px', padding: '20px 24px', margin: 0, borderLeft: '6px solid #10B981', background: '#FFFFFF', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.015)', borderRadius: '16px' }}>
-                        <div style={{ backgroundColor: '#D1FAE5', color: '#10B981', padding: '12px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <Award size={28} />
-                        </div>
-                        <div>
-                            <span style={{ fontSize: '11px', color: '#64748B', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Industry Audits Analyzed</span>
-                            <h2 style={{ fontSize: '28px', fontWeight: 900, color: '#0F172A', margin: '4px 0 0 0', lineHeight: 1 }}>{industryCount}</h2>
-                        </div>
+
+                    {/* Second Row: Visual Charts Side-by-Side */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px', marginBottom: '32px' }}>
+                        <EducationLevelChart data={educationLevels} />
+                        <GeographicalMapCard data={districts} />
                     </div>
-                </div>
+                </>
             )}
 
             {/* Qualification Cards Grid (Initially visible when no category/search is selected) */}
@@ -1716,6 +1736,169 @@ const FieldSkillDrilldown: React.FC<{
                     )}
                 </div>
             )}
+        </div>
+    );
+};
+
+const GeographicalMapCard: React.FC<{ data: { name: string; count: number }[] }> = ({ data }) => {
+    const [hoveredDistrict, setHoveredDistrict] = useState<{ name: string; count: number } | null>(null);
+
+    // Create a dictionary for quick lookup
+    const districtCounts = React.useMemo(() => {
+        const dict: Record<string, number> = {};
+        data.forEach(d => {
+            dict[d.name.toLowerCase()] = d.count;
+        });
+        return dict;
+    }, [data]);
+
+    // Find the maximum count to calculate colors
+    const maxCount = React.useMemo(() => {
+        const counts = data.map(d => d.count);
+        return counts.length > 0 ? Math.max(...counts) : 1;
+    }, [data]);
+
+    const getColorForDistrict = (districtName: string) => {
+        const count = districtCounts[districtName.toLowerCase()] || 0;
+        if (count === 0) return '#F1F5F9'; // Slate 100
+        
+        // Use a nice purple gradient based on count
+        const ratio = count / maxCount;
+        if (ratio < 0.25) return '#E9D5FF'; // Purple 200
+        if (ratio < 0.5) return '#C084FC';  // Purple 400
+        if (ratio < 0.75) return '#A855F7'; // Purple 500
+        return '#7C3AED';                   // Purple 600
+    };
+
+    return (
+        <div className="ai-chart-card" style={{ display: 'flex', flexDirection: 'column', margin: '0 0 32px 0', padding: '24px', alignItems: 'center' }}>
+            <h4 style={{ margin: '0 0 4px 0', fontSize: '15px', fontWeight: '800', color: '#1E293B', alignSelf: 'flex-start' }}>Geographical Distribution</h4>
+            <p className="text-slate-400 text-xs mb-6" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500, alignSelf: 'flex-start' }}>Applicant interest mapped by district of residence.</p>
+            
+            {/* SVG Map Section */}
+            <div style={{ position: 'relative', width: '260px', height: '420px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '10px' }}>
+                <svg viewBox={SriLankaMapData.viewBox} style={{ width: '100%', height: '100%', cursor: 'pointer' }}>
+                    {SriLankaMapData.locations.map((loc: any) => {
+                        const count = districtCounts[loc.name.toLowerCase()] || 0;
+                        const isHovered = hoveredDistrict?.name.toLowerCase() === loc.name.toLowerCase();
+                        
+                        return (
+                            <path
+                                key={loc.id}
+                                d={loc.path}
+                                fill={getColorForDistrict(loc.name)}
+                                stroke={isHovered ? '#7C3AED' : '#FFFFFF'}
+                                strokeWidth={isHovered ? '2' : '1'}
+                                style={{ transition: 'all 0.2s ease' }}
+                                onMouseEnter={() => setHoveredDistrict({ name: loc.name, count })}
+                                onMouseLeave={() => setHoveredDistrict(null)}
+                            >
+                                <title>{loc.name}: {count} applicants</title>
+                            </path>
+                        );
+                    })}
+                </svg>
+                
+                {/* Hover Tooltip Overlay */}
+                {hoveredDistrict && (
+                    <div style={{
+                        position: 'absolute',
+                        bottom: '20px',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        backgroundColor: '#1E293B',
+                        color: '#FFFFFF',
+                        padding: '8px 12px',
+                        borderRadius: '8px',
+                        fontSize: '12px',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                        pointerEvents: 'none',
+                        whiteSpace: 'nowrap',
+                        zIndex: 10
+                    }}>
+                        <span style={{ fontWeight: 700 }}>{hoveredDistrict.name}</span>: {hoveredDistrict.count} applicants
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+const EducationLevelChart: React.FC<{ data: { name: string; value: number }[] }> = ({ data }) => {
+    const COLORS = [
+        '#7C3AED', // Purple
+        '#3B82F6', // Blue
+        '#10B981', // Emerald
+        '#EC4899', // Pink
+        '#F59E0B', // Amber
+        '#06B6D4'  // Cyan
+    ];
+
+    const total = data.reduce((sum, item) => sum + item.value, 0) || 1;
+
+    // Format data for Recharts
+    const chartData = data.map((item, index) => ({
+        name: item.name,
+        value: item.value,
+        percentage: ((item.value / total) * 100).toFixed(1)
+    }));
+
+    return (
+        <div className="ai-chart-card" style={{ display: 'flex', flexDirection: 'column', margin: 0, padding: '24px', minHeight: '300px' }}>
+            <h4 style={{ margin: '0 0 4px 0', fontSize: '15px', fontWeight: '800', color: '#1E293B' }}>Applicant Education Levels</h4>
+            <p className="text-slate-400 text-xs mb-6" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Prior qualifications of surveyed applicants.</p>
+            
+            <div style={{ width: '100%', height: '180px', position: 'relative', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                        <Pie
+                            data={chartData}
+                            cx="40%"
+                            cy="50%"
+                            innerRadius={45}
+                            outerRadius={65}
+                            paddingAngle={3}
+                            dataKey="value"
+                            labelLine={false}
+                        >
+                            {chartData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} style={{ outline: 'none' }} />
+                            ))}
+                        </Pie>
+                        <Tooltip
+                            content={({ active, payload }) => {
+                                if (active && payload && payload.length) {
+                                    const item = payload[0].payload;
+                                    return (
+                                        <div style={{ backgroundColor: '#1E293B', color: '#FFFFFF', padding: '8px 12px', borderRadius: '8px', fontSize: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', border: 'none' }}>
+                                            <span style={{ fontWeight: 700 }}>{item.name}</span>
+                                            <div style={{ marginTop: '4px', opacity: 0.9 }}>
+                                                {item.value} applicants ({item.percentage}%)
+                                            </div>
+                                        </div>
+                                    );
+                                }
+                                return null;
+                            }}
+                        />
+                        <Legend
+                            verticalAlign="middle"
+                            align="right"
+                            layout="vertical"
+                            iconType="circle"
+                            iconSize={8}
+                            formatter={(value, entry: any) => {
+                                const payload = entry.payload;
+                                return (
+                                    <span style={{ fontSize: '11px', color: '#475569', fontWeight: 600, marginLeft: '6px' }}>
+                                        {value} ({payload ? payload.percentage : 0}%)
+                                    </span>
+                                );
+                            }}
+                        />
+                    </PieChart>
+                </ResponsiveContainer>
+            </div>
         </div>
     );
 };
