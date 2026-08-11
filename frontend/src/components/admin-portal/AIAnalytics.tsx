@@ -1685,59 +1685,6 @@ const FieldSkillDrilldown: React.FC<{
     );
 };
 
-const ProvinceInterests: React.FC<{ data: any }> = ({ data }) => {
-    const provinces = Object.keys(data);
-
-    if (provinces.length === 0) {
-        return (
-            <div className="ai-chart-card">
-                <div className="text-center text-slate-400 py-6 text-sm">No province data available.</div>
-            </div>
-        );
-    }
-
-    return (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
-            {provinces.map((prov) => {
-                const fields = data[prov];
-                return (
-                    <div key={prov} className="ai-chart-card" style={{ borderTop: '4px solid #3B82F6' }}>
-                        <h4 style={{ color: '#1E3A8A', fontSize: '15px', fontWeight: '800', marginBottom: '12px' }}>
-                            {prov} Province
-                        </h4>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                            {fields.map((f: any) => (
-                                <div key={f.field} className="chart-bar-row">
-                                    <div className="label" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
-                                        <span style={{ fontWeight: '700', color: '#334155' }}>
-                                            #{f.rank} {f.field}
-                                        </span>
-                                        <span style={{ color: '#64748B', fontWeight: '600' }}>
-                                            {f.percentage}%
-                                        </span>
-                                    </div>
-                                    <div className="bar-bg" style={{ height: '8px', borderRadius: '4px' }}>
-                                        <div
-                                            className="bar-fill blue"
-                                            style={{
-                                                width: `${f.percentage}%`,
-                                                height: '100%',
-                                                backgroundColor: '#3B82F6',
-                                                borderRadius: '4px'
-                                            }}
-                                            title={`${f.field}: ${f.count} weighted responses (${f.percentage}%)`}
-                                        ></div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                );
-            })}
-        </div>
-    );
-};
-
 const HighDemandSkills: React.FC<{ skills: any[] }> = ({ skills }) => {
     return (
         <div className="ai-chart-card" style={{ borderLeft: '5px solid #F59E0B' }}>
@@ -1994,13 +1941,6 @@ const CommonAnalyticsDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) 
                     skillsData={drilldownData}
                     loading={drilldownLoading}
                 />
-            </div>
-
-            <div>
-                <h3 className="text-xl font-bold text-slate-800 mb-4" style={{ fontSize: '18px', fontWeight: '800', marginBottom: '16px' }}>
-                    Student Interests by Province
-                </h3>
-                <ProvinceInterests data={data.provinces_data} />
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
