@@ -79,6 +79,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // AI Analytics Dashboard (moved to secure block and corrected parameters)
         Route::get('/admin/ai-analytics/programs', [AIAnalyticsController::class, 'getPrograms']);
+        Route::get('/admin/ai-analytics/global-overview', [AIAnalyticsController::class, 'getGlobalOverview']);
+        Route::get('/admin/ai-analytics/common/overview', [AIAnalyticsController::class, 'getCommonOverview']);
+        Route::get('/admin/ai-analytics/common/drilldown', [AIAnalyticsController::class, 'getCommonDrilldown']);
         Route::post('/admin/ai-analytics/sync-sheet', [AIAnalyticsController::class, 'syncGoogleSheet']);
         Route::get('/admin/ai-analytics/{courseId}/overview', [AIAnalyticsController::class, 'getOverview']);
         Route::get('/admin/ai-analytics/{courseId}/student-demand', [AIAnalyticsController::class, 'getStudentInterest']);
