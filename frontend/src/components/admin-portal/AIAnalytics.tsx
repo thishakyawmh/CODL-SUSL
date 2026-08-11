@@ -905,10 +905,10 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                     <ArrowLeft size={16} /> Back to Programs
                 </button>
                 <div className="card-empty-state">
-                    <Database size={48} className="text-slate-300 mb-4" />
+                    <Database size={54} style={{ color: '#94A3B8', marginBottom: '16px' }} />
                     <h3>No AI Analytics Generated Yet</h3>
-                    <p className="mb-4">There is no synchronized survey data matching the academic scope of <strong>{course.title}</strong>.</p>
-                    <p className="text-sm">Please return to the hub and sync the Google Sheets data.</p>
+                    <p>There is no synchronized survey data matching the academic scope of <strong>{course.title}</strong>.</p>
+                    <p>Please return to the hub and sync the Google Sheets data.</p>
                 </div>
             </div>
         );
@@ -1951,10 +1951,10 @@ const CommonAnalyticsDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) 
                     <ArrowLeft size={16} /> Back to Programs
                 </button>
                 <div className="card-empty-state">
-                    <Database size={48} className="text-slate-300 mb-4" />
+                    <Database size={54} style={{ color: '#94A3B8', marginBottom: '16px' }} />
                     <h3>No Common Student Analytics Available</h3>
-                    <p className="mb-4">There are currently no student interest surveys loaded in the database.</p>
-                    <p className="text-sm">Please return to the hub and sync the Google Sheets data.</p>
+                    <p>There are currently no student interest surveys loaded in the database.</p>
+                    <p>Please return to the hub and sync the Google Sheets data.</p>
                 </div>
             </div>
         );
