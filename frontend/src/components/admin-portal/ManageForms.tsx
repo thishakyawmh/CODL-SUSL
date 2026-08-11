@@ -1,14 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Database, RefreshCw, Trash2, Edit } from 'lucide-react';
-import { studentInterestService } from '../../services/apiService';
+import { ArrowLeft, Plus, Database, RefreshCw, Trash2, Edit, GraduationCap, Building } from 'lucide-react';
+import { studentInterestService, industryAnalysisService } from '../../services/apiService';
 import './AIAnalytics.css'; // Leverage existing dashboard styles and variables
 
 export const ManageForms: React.FC = () => {
     const navigate = useNavigate();
+    const [formType, setFormType] = useState<'student' | 'industry' | null>(null);
     const [manageTab, setManageTab] = useState<'interests' | 'methods' | 'opportunities'>('interests');
+    const [industryTab, setIndustryTab] = useState<'sectors' | 'interests'>('sectors');
 
-    // Academic fields states
+    // ───────────────────────────────────────────────────────────────────────
+    // Student Form States
+    // ───────────────────────────────────────────────────────────────────────
     const [configs, setConfigs] = useState<any[]>([]);
     const [configsLoading, setConfigsLoading] = useState(false);
     const [isEditingConfig, setIsEditingConfig] = useState(false);
@@ -18,7 +22,6 @@ export const ManageForms: React.FC = () => {
         skills: ''
     });
 
-    // Teaching methods states
     const [teachingMethodsList, setTeachingMethodsList] = useState<any[]>([]);
     const [methodsLoading, setMethodsLoading] = useState(false);
     const [isEditingMethod, setIsEditingMethod] = useState(false);
@@ -27,7 +30,6 @@ export const ManageForms: React.FC = () => {
         method_name: ''
     });
 
-    // University opportunities states
     const [opportunitiesList, setOpportunitiesList] = useState<any[]>([]);
     const [opportunitiesLoading, setOpportunitiesLoading] = useState(false);
     const [isEditingOpportunity, setIsEditingOpportunity] = useState(false);
@@ -36,6 +38,29 @@ export const ManageForms: React.FC = () => {
         opportunity_name: ''
     });
 
+    // ───────────────────────────────────────────────────────────────────────
+    // Industry Form States
+    // ───────────────────────────────────────────────────────────────────────
+    const [sectors, setSectors] = useState<any[]>([]);
+    const [sectorsLoading, setSectorsLoading] = useState(false);
+    const [isEditingSector, setIsEditingSector] = useState(false);
+    const [sectorForm, setSectorForm] = useState({
+        id: undefined as number | undefined,
+        sector_name: ''
+    });
+
+    const [indConfigs, setIndConfigs] = useState<any[]>([]);
+    const [indConfigsLoading, setIndConfigsLoading] = useState(false);
+    const [isEditingIndConfig, setIsEditingIndConfig] = useState(false);
+    const [indConfigForm, setIndConfigForm] = useState({
+        id: undefined as number | undefined,
+        interest_field: '',
+        skills: ''
+    });
+
+    // ───────────────────────────────────────────────────────────────────────
+    // Fetch Student Survey Configs
+    // ───────────────────────────────────────────────────────────────────────
     const fetchConfigs = async () => {
         setConfigsLoading(true);
         try {
@@ -72,28 +97,55 @@ export const ManageForms: React.FC = () => {
         }
     };
 
-    useEffect(() => {
-        if (manageTab === 'interests') {
-            fetchConfigs();
-        } else if (manageTab === 'methods') {
-            fetchTeachingMethods();
-        } else if (manageTab === 'opportunities') {
-            fetchUniversityOpportunities();
+    // ───────────────────────────────────────────────────────────────────────
+    // Fetch Industry Survey Configs
+    // ───────────────────────────────────────────────────────────────────────
+    const fetchSectors = async () => {
+        setSectorsLoading(true);
+        try {
+            const data = await industryAnalysisService.getSectors();
+            setSectors(data);
+        } catch (err) {
+            console.error('Failed to load industry sectors:', err);
+        } finally {
+            setSectorsLoading(false);
         }
-    }, [manageTab]);
+    };
 
+    const fetchIndConfigs = async () => {
+        setIndConfigsLoading(true);
+        try {
+            const data = await industryAnalysisService.getConfig();
+            setIndConfigs(data);
+        } catch (err) {
+            console.error('Failed to load industry academic field configs:', err);
+        } finally {
+            setIndConfigsLoading(false);
+        }
+    };
+
+    // Effect for Form Selection & Tab Navigation
+    useEffect(() => {
+        if (formType === 'student') {
+            if (manageTab === 'interests') fetchConfigs();
+            else if (manageTab === 'methods') fetchTeachingMethods();
+            else if (manageTab === 'opportunities') fetchUniversityOpportunities();
+        } else if (formType === 'industry') {
+            if (industryTab === 'sectors') fetchSectors();
+            else if (industryTab === 'interests') fetchIndConfigs();
+        }
+    }, [formType, manageTab, industryTab]);
+
+    // ───────────────────────────────────────────────────────────────────────
+    // Student Form Handlers
+    // ───────────────────────────────────────────────────────────────────────
     const handleSaveConfig = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!configForm.interest_field.trim() || !configForm.skills.trim()) {
             alert('Please fill out all fields.');
             return;
         }
-
-        const skillsArray = configForm.skills
-            .split(',')
-            .map(s => s.trim())
-            .filter(s => s.length > 0);
-
+        const skillsArray = configForm.skills.split(',').map(s => s.trim()).filter(s => s.length > 0);
         try {
             await studentInterestService.saveConfig({
                 id: configForm.id,
@@ -126,7 +178,6 @@ export const ManageForms: React.FC = () => {
             alert('Please enter a teaching method name.');
             return;
         }
-
         try {
             await studentInterestService.saveTeachingMethod({
                 id: methodForm.id,
@@ -158,7 +209,6 @@ export const ManageForms: React.FC = () => {
             alert('Please enter a university opportunity name.');
             return;
         }
-
         try {
             await studentInterestService.saveUniversityOpportunity({
                 id: opportunityForm.id,
@@ -184,48 +234,195 @@ export const ManageForms: React.FC = () => {
         }
     };
 
-    return (
-        <div className="ai-analytics-page" style={{ minHeight: '100vh', background: '#F8FAFC' }}>
-            {/* Header Section */}
-            <div className="admin-page-header">
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                    <button
-                        className="cm-back-text-btn"
-                        onClick={() => navigate('/admin/ai-analytics')}
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#64748B', fontWeight: 600, fontSize: '14px', marginBottom: '8px', padding: 0 }}
-                    >
-                        <ArrowLeft size={16} /> Back to AI Analytics
-                    </button>
-                    <h1 className="admin-page-title">Manage Survey Configurations</h1>
-                    <p className="admin-page-subtitle">Configure interest areas, custom skills, teaching methods, and student support opportunities.</p>
+    // ───────────────────────────────────────────────────────────────────────
+    // Industry Form Handlers
+    // ───────────────────────────────────────────────────────────────────────
+    const handleSaveSector = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!sectorForm.sector_name.trim()) {
+            alert('Please enter an industry sector name.');
+            return;
+        }
+        try {
+            await industryAnalysisService.saveSector({
+                id: sectorForm.id,
+                sector_name: sectorForm.sector_name.trim()
+            });
+            alert('Industry sector saved successfully.');
+            setIsEditingSector(false);
+            setSectorForm({ id: undefined, sector_name: '' });
+            fetchSectors();
+        } catch (err: any) {
+            alert('Failed to save industry sector: ' + (err.response?.data?.message || err.message));
+        }
+    };
+
+    const handleDeleteSector = async (id: number) => {
+        if (!window.confirm('Are you sure you want to delete this industry sector?')) return;
+        try {
+            await industryAnalysisService.deleteSector(id);
+            alert('Industry sector deleted successfully.');
+            fetchSectors();
+        } catch (err: any) {
+            alert('Failed to delete industry sector: ' + (err.response?.data?.message || err.message));
+        }
+    };
+
+    const handleSaveIndConfig = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!indConfigForm.interest_field.trim() || !indConfigForm.skills.trim()) {
+            alert('Please fill out all fields.');
+            return;
+        }
+        const skillsArray = indConfigForm.skills.split(',').map(s => s.trim()).filter(s => s.length > 0);
+        try {
+            await industryAnalysisService.saveConfig({
+                id: indConfigForm.id,
+                interest_field: indConfigForm.interest_field.trim(),
+                skills: skillsArray
+            });
+            alert('Academic domain saved successfully.');
+            setIsEditingIndConfig(false);
+            setIndConfigForm({ id: undefined, interest_field: '', skills: '' });
+            fetchIndConfigs();
+        } catch (err: any) {
+            alert('Failed to save academic domain: ' + (err.response?.data?.message || err.message));
+        }
+    };
+
+    const handleDeleteIndConfig = async (id: number) => {
+        if (!window.confirm('Are you sure you want to delete this primary academic domain configuration?')) return;
+        try {
+            await industryAnalysisService.deleteConfig(id);
+            alert('Academic domain deleted successfully.');
+            fetchIndConfigs();
+        } catch (err: any) {
+            alert('Failed to delete configuration: ' + (err.response?.data?.message || err.message));
+        }
+    };
+
+    // ───────────────────────────────────────────────────────────────────────
+    // Render Selection Screen
+    // ───────────────────────────────────────────────────────────────────────
+    if (formType === null) {
+        return (
+            <div className="ai-analytics-page" style={{ minHeight: '100vh', background: '#F8FAFC' }}>
+                <div className="admin-page-header">
+                    <div>
+                        <button
+                            className="cm-back-text-btn"
+                            onClick={() => navigate('/admin/ai-analytics')}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#64748B', fontWeight: 600, fontSize: '14px', marginBottom: '8px', padding: 0 }}
+                        >
+                            <ArrowLeft size={16} /> Back to AI Analytics
+                        </button>
+                        <h1 className="admin-page-title">Manage Survey Configurations</h1>
+                        <p className="admin-page-subtitle">Configure interest fields, capability requirements, and dynamic option lists for the public surveys.</p>
+                    </div>
                 </div>
 
-                {!isEditingConfig && !isEditingMethod && !isEditingOpportunity && (
-                    <button
-                        className="admin-btn-primary"
-                        onClick={() => {
-                            if (manageTab === 'interests') {
-                                setIsEditingConfig(true);
-                                setConfigForm({ id: undefined, interest_field: '', skills: '' });
-                            } else if (manageTab === 'methods') {
-                                setIsEditingMethod(true);
-                                setMethodForm({ id: undefined, method_name: '' });
-                            } else {
-                                setIsEditingOpportunity(true);
-                                setOpportunityForm({ id: undefined, opportunity_name: '' });
-                            }
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '24px', maxWidth: '880px', margin: '32px auto 0 auto', padding: '0 20px' }}>
+                    
+                    {/* Student Interests Card */}
+                    <div 
+                        className="ai-roadmap-card" 
+                        onClick={() => { setFormType('student'); setManageTab('interests'); }}
+                        style={{ padding: '36px 28px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '20px', transition: 'transform 0.2s, box-shadow 0.2s', border: '1.5px solid #E2E8F0' }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = 'translateY(-4px)';
+                            e.currentTarget.style.borderColor = '#7C3AED';
+                            e.currentTarget.style.boxShadow = '0 12px 24px rgba(124, 58, 237, 0.08)';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = 'translateY(0)';
+                            e.currentTarget.style.borderColor = '#E2E8F0';
+                            e.currentTarget.style.boxShadow = 'none';
                         }}
                     >
-                        <Plus size={16} /> Add {manageTab === 'interests' ? 'Category' : (manageTab === 'methods' ? 'Method' : 'Opportunity')}
-                    </button>
-                )}
-            </div>
+                        <div style={{ width: '72px', height: '72px', borderRadius: '50%', backgroundColor: '#EDE9FE', color: '#7C3AED', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <GraduationCap size={36} />
+                        </div>
+                        <div>
+                            <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#0F172A', marginBottom: '8px' }}>Student Interest Form</h2>
+                            <p style={{ fontSize: '14px', color: '#64748B', lineHeight: '1.5' }}>
+                                Manage academic interest areas, dynamic associated skill list, training methods, and university opportunities.
+                            </p>
+                        </div>
+                    </div>
 
-            {/* Main Panel Content Card */}
-            <div className="ai-roadmap-card" style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                
-                {/* Tab Controls */}
-                {!isEditingConfig && !isEditingMethod && !isEditingOpportunity && (
+                    {/* Industry Requirements Card */}
+                    <div 
+                        className="ai-roadmap-card" 
+                        onClick={() => { setFormType('industry'); setIndustryTab('sectors'); }}
+                        style={{ padding: '36px 28px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '20px', transition: 'transform 0.2s, box-shadow 0.2s', border: '1.5px solid #E2E8F0' }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = 'translateY(-4px)';
+                            e.currentTarget.style.borderColor = '#10B981';
+                            e.currentTarget.style.boxShadow = '0 12px 24px rgba(16, 185, 129, 0.08)';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = 'translateY(0)';
+                            e.currentTarget.style.borderColor = '#E2E8F0';
+                            e.currentTarget.style.boxShadow = 'none';
+                        }}
+                    >
+                        <div style={{ width: '72px', height: '72px', borderRadius: '50%', backgroundColor: '#D1FAE5', color: '#10B981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Building size={36} />
+                        </div>
+                        <div>
+                            <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#0F172A', marginBottom: '8px' }}>Industry Requirements Form</h2>
+                            <p style={{ fontSize: '14px', color: '#64748B', lineHeight: '1.5' }}>
+                                Manage industry sectors, primary academic domains of interest, and the associated sub-disciplines for employers.
+                            </p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        );
+    }
+
+    // ───────────────────────────────────────────────────────────────────────
+    // Render Student Survey Form configuration tab
+    // ───────────────────────────────────────────────────────────────────────
+    if (formType === 'student') {
+        return (
+            <div className="ai-analytics-page" style={{ minHeight: '100vh', background: '#F8FAFC' }}>
+                <div className="admin-page-header">
+                    <div>
+                        <button
+                            className="cm-back-text-btn"
+                            onClick={() => setFormType(null)}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#64748B', fontWeight: 600, fontSize: '14px', marginBottom: '8px', padding: 0 }}
+                        >
+                            <ArrowLeft size={16} /> Back to Form Selection
+                        </button>
+                        <h1 className="admin-page-title">Configure Student Interest Form</h1>
+                        <p className="admin-page-subtitle">Configure dynamic interest fields, associated skills, teaching methods, and student support opportunities.</p>
+                    </div>
+
+                    {!isEditingConfig && !isEditingMethod && !isEditingOpportunity && (
+                        <button
+                            className="admin-btn-primary"
+                            onClick={() => {
+                                if (manageTab === 'interests') {
+                                    setIsEditingConfig(true);
+                                    setConfigForm({ id: undefined, interest_field: '', skills: '' });
+                                } else if (manageTab === 'methods') {
+                                    setIsEditingMethod(true);
+                                    setMethodForm({ id: undefined, method_name: '' });
+                                } else {
+                                    setIsEditingOpportunity(true);
+                                    setOpportunityForm({ id: undefined, opportunity_name: '' });
+                                }
+                            }}
+                        >
+                            <Plus size={16} /> Add {manageTab === 'interests' ? 'Category' : (manageTab === 'methods' ? 'Method' : 'Opportunity')}
+                        </button>
+                    )}
+                </div>
+
+                <div className="ai-roadmap-card" style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                     <div className="manage-tabs" style={{ display: 'flex', gap: '20px', borderBottom: '1px solid #E2E8F0', paddingBottom: '2px' }}>
                         <button
                             className={`manage-tab-btn ${manageTab === 'interests' ? 'active' : ''}`}
@@ -282,64 +479,400 @@ export const ManageForms: React.FC = () => {
                             University Opportunities
                         </button>
                     </div>
+
+                    {manageTab === 'interests' && (
+                        configsLoading ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 0', color: '#64748B', gap: '12px' }}>
+                                <RefreshCw className="animate-spin" size={24} />
+                                <span>Loading Academic Field Configurations...</span>
+                            </div>
+                        ) : isEditingConfig ? (
+                            <form onSubmit={handleSaveConfig} style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '600px' }}>
+                                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#0F172A' }}>
+                                    {configForm.id ? 'Edit Academic Interest Area' : 'Add New Academic Interest Area'}
+                                </h3>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                    <label style={{ fontSize: '13px', fontWeight: 600, color: '#475569' }}>Academic Area Name</label>
+                                    <input
+                                        type="text"
+                                        className="sync-modal-form-input"
+                                        placeholder="e.g. Computing & Information Technology"
+                                        value={configForm.interest_field}
+                                        onChange={e => setConfigForm(prev => ({ ...prev, interest_field: e.target.value }))}
+                                        required
+                                    />
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                    <label style={{ fontSize: '13px', fontWeight: 600, color: '#475569' }}>Associated Skills (Comma-separated)</label>
+                                    <textarea
+                                        className="sync-modal-form-input"
+                                        style={{ minHeight: '120px', padding: '12px', resize: 'vertical' }}
+                                        placeholder="e.g. Machine Learning, Neural Networks, PyTorch, TensorFlow"
+                                        value={configForm.skills}
+                                        onChange={e => setConfigForm(prev => ({ ...prev, skills: e.target.value }))}
+                                        required
+                                    />
+                                    <span style={{ fontSize: '12px', color: '#94A3B8' }}>Input a list of related skills separated by commas.</span>
+                                </div>
+                                <div className="sync-modal-form-actions" style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+                                    <button type="button" className="admin-btn-outline" onClick={() => setIsEditingConfig(false)}>
+                                        Cancel
+                                    </button>
+                                    <button type="submit" className="admin-btn-primary">
+                                        Save Configuration
+                                    </button>
+                                </div>
+                            </form>
+                        ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                {configs.length === 0 ? (
+                                    <div style={{ textAlign: 'center', padding: '40px 0', color: '#94A3B8' }}>No academic interest fields configured. Click "Add Category" to create one.</div>
+                                ) : (
+                                    configs.map(cfg => (
+                                        <div key={cfg.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '20px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '16px', gap: '20px' }}>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                <span style={{ fontSize: '16px', fontWeight: 700, color: '#0F172A' }}>{cfg.interest_field}</span>
+                                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                                    {cfg.skills.map((skill: string) => (
+                                                        <span key={skill} style={{ fontSize: '11px', fontWeight: 600, padding: '4px 10px', background: '#EDE9FE', color: '#7C3AED', borderRadius: '20px' }}>
+                                                            {skill}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <div style={{ display: 'flex', gap: '8px' }}>
+                                                <button
+                                                    className="admin-btn-outline"
+                                                    style={{ padding: '6px 12px', fontSize: '12px', height: '34px' }}
+                                                    onClick={() => {
+                                                        setIsEditingConfig(true);
+                                                        setConfigForm({
+                                                            id: cfg.id,
+                                                            interest_field: cfg.interest_field,
+                                                            skills: cfg.skills.join(', ')
+                                                        });
+                                                    }}
+                                                >
+                                                    Edit
+                                                </button>
+                                                <button
+                                                    className="admin-btn-outline"
+                                                    style={{ padding: '6px 12px', fontSize: '12px', height: '34px', color: '#EF4444', borderColor: '#FCA5A5' }}
+                                                    onClick={() => handleDeleteConfig(cfg.id)}
+                                                >
+                                                    Delete
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        )
+                    )}
+
+                    {manageTab === 'methods' && (
+                        methodsLoading ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 0', color: '#64748B', gap: '12px' }}>
+                                <RefreshCw className="animate-spin" size={24} />
+                                <span>Loading Teaching Methods...</span>
+                            </div>
+                        ) : isEditingMethod ? (
+                            <form onSubmit={handleSaveMethod} style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '600px' }}>
+                                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#0F172A' }}>
+                                    {methodForm.id ? 'Edit Teaching Method' : 'Add New Teaching Method'}
+                                </h3>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                    <label style={{ fontSize: '13px', fontWeight: 600, color: '#475569' }}>Teaching Method Name</label>
+                                    <input
+                                        type="text"
+                                        className="sync-modal-form-input"
+                                        placeholder="e.g. Practical Labs"
+                                        value={methodForm.method_name}
+                                        onChange={e => setMethodForm(prev => ({ ...prev, method_name: e.target.value }))}
+                                        required
+                                    />
+                                </div>
+                                <div className="sync-modal-form-actions" style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+                                    <button type="button" className="admin-btn-outline" onClick={() => setIsEditingMethod(false)}>
+                                        Cancel
+                                    </button>
+                                    <button type="submit" className="admin-btn-primary">
+                                        Save Method
+                                    </button>
+                                </div>
+                            </form>
+                        ) : (
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                                {teachingMethodsList.length === 0 ? (
+                                    <div style={{ textAlign: 'center', width: '100%', padding: '40px 0', color: '#94A3B8' }}>No teaching methods configured. Click "Add Method" to create one.</div>
+                                ) : (
+                                    teachingMethodsList.map(method => (
+                                        <div key={method.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 14px', background: '#F0F4FF', border: '1px solid #C7D2FE', borderRadius: '100px' }}>
+                                            <span style={{ fontSize: '14px', fontWeight: 600, color: '#3730A3' }}>{method.method_name}</span>
+                                            <button
+                                                style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', padding: '2px', borderRadius: '50%' }}
+                                                onClick={() => handleDeleteMethod(method.id)}
+                                                title="Delete"
+                                                onMouseEnter={e => (e.currentTarget.style.color = '#EF4444')}
+                                                onMouseLeave={e => (e.currentTarget.style.color = '#94A3B8')}
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        )
+                    )}
+
+                    {manageTab === 'opportunities' && (
+                        opportunitiesLoading ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 0', color: '#64748B', gap: '12px' }}>
+                                <RefreshCw className="animate-spin" size={24} />
+                                <span>Loading Opportunities...</span>
+                            </div>
+                        ) : isEditingOpportunity ? (
+                            <form onSubmit={handleSaveOpportunity} style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '600px' }}>
+                                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#0F172A' }}>
+                                    {opportunityForm.id ? 'Edit Opportunity Name' : 'Add New University Opportunity'}
+                                </h3>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                    <label style={{ fontSize: '13px', fontWeight: 600, color: '#475569' }}>Opportunity Title</label>
+                                    <input
+                                        type="text"
+                                        className="sync-modal-form-input"
+                                        placeholder="e.g. Industry Internships"
+                                        value={opportunityForm.opportunity_name}
+                                        onChange={e => setOpportunityForm(prev => ({ ...prev, opportunity_name: e.target.value }))}
+                                        required
+                                    />
+                                </div>
+                                <div className="sync-modal-form-actions" style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+                                    <button type="button" className="admin-btn-outline" onClick={() => setIsEditingOpportunity(false)}>
+                                        Cancel
+                                    </button>
+                                    <button type="submit" className="admin-btn-primary">
+                                        Save Opportunity
+                                    </button>
+                                </div>
+                            </form>
+                        ) : (
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                                {opportunitiesList.length === 0 ? (
+                                    <div style={{ textAlign: 'center', width: '100%', padding: '40px 0', color: '#94A3B8' }}>No university opportunities configured. Click "Add Opportunity" to create one.</div>
+                                ) : (
+                                    opportunitiesList.map(opp => (
+                                        <div key={opp.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 14px', background: '#FDF4FF', border: '1px solid #E9D5FF', borderRadius: '100px' }}>
+                                            <span style={{ fontSize: '14px', fontWeight: 600, color: '#7C3AED' }}>{opp.opportunity_name}</span>
+                                            <button
+                                                style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', padding: '2px', borderRadius: '50%' }}
+                                                onClick={() => handleDeleteOpportunity(opp.id)}
+                                                title="Delete"
+                                                onMouseEnter={e => (e.currentTarget.style.color = '#EF4444')}
+                                                onMouseLeave={e => (e.currentTarget.style.color = '#94A3B8')}
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        )
+                    )}
+                </div>
+            </div>
+        );
+    }
+
+    // ───────────────────────────────────────────────────────────────────────
+    // Render Industry Survey Form configuration tab
+    // ───────────────────────────────────────────────────────────────────────
+    return (
+        <div className="ai-analytics-page" style={{ minHeight: '100vh', background: '#F8FAFC' }}>
+            <div className="admin-page-header">
+                <div>
+                    <button
+                        className="cm-back-text-btn"
+                        onClick={() => setFormType(null)}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#64748B', fontWeight: 600, fontSize: '14px', marginBottom: '8px', padding: 0 }}
+                    >
+                        <ArrowLeft size={16} /> Back to Form Selection
+                    </button>
+                    <h1 className="admin-page-title">Configure Industry Requirements Form</h1>
+                    <p className="admin-page-subtitle">Configure industry sectors, primary academic domains, and associated sub-disciplines.</p>
+                </div>
+
+                {!isEditingSector && !isEditingIndConfig && (
+                    <button
+                        className="admin-btn-primary"
+                        onClick={() => {
+                            if (industryTab === 'sectors') {
+                                setIsEditingSector(true);
+                                setSectorForm({ id: undefined, sector_name: '' });
+                            } else {
+                                setIsEditingIndConfig(true);
+                                setIndConfigForm({ id: undefined, interest_field: '', skills: '' });
+                            }
+                        }}
+                        style={{ backgroundColor: '#10B981', borderColor: '#10B981' }}
+                    >
+                        <Plus size={16} /> Add {industryTab === 'sectors' ? 'Sector' : 'Academic Domain'}
+                    </button>
+                )}
+            </div>
+
+            <div className="ai-roadmap-card" style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div className="manage-tabs" style={{ display: 'flex', gap: '20px', borderBottom: '1px solid #E2E8F0', paddingBottom: '2px' }}>
+                    <button
+                        className={`manage-tab-btn ${industryTab === 'sectors' ? 'active' : ''}`}
+                        style={{
+                            padding: '12px 18px',
+                            fontSize: '15px',
+                            fontWeight: 600,
+                            border: 'none',
+                            borderBottom: industryTab === 'sectors' ? '2.5px solid #10B981' : '2.5px solid transparent',
+                            backgroundColor: 'transparent',
+                            color: industryTab === 'sectors' ? '#10B981' : '#64748b',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                            fontFamily: 'inherit'
+                        }}
+                        onClick={() => setIndustryTab('sectors')}
+                    >
+                        Industry Sectors
+                    </button>
+                    <button
+                        className={`manage-tab-btn ${industryTab === 'interests' ? 'active' : ''}`}
+                        style={{
+                            padding: '12px 18px',
+                            fontSize: '15px',
+                            fontWeight: 600,
+                            border: 'none',
+                            borderBottom: industryTab === 'interests' ? '2.5px solid #10B981' : '2.5px solid transparent',
+                            backgroundColor: 'transparent',
+                            color: industryTab === 'interests' ? '#10B981' : '#64748b',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                            fontFamily: 'inherit'
+                        }}
+                        onClick={() => setIndustryTab('interests')}
+                    >
+                        Academic Domains & Sub-Disciplines
+                    </button>
+                </div>
+
+                {/* Industry Sectors Tab Content */}
+                {industryTab === 'sectors' && (
+                    sectorsLoading ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 0', color: '#64748B', gap: '12px' }}>
+                            <RefreshCw className="animate-spin" size={24} />
+                            <span>Loading Industry Sectors...</span>
+                        </div>
+                    ) : isEditingSector ? (
+                        <form onSubmit={handleSaveSector} style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '600px' }}>
+                            <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#0F172A' }}>
+                                {sectorForm.id ? 'Edit Industry Sector' : 'Add New Industry Sector'}
+                            </h3>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                <label style={{ fontSize: '13px', fontWeight: 600, color: '#475569' }}>Sector Name</label>
+                                <input
+                                    type="text"
+                                    className="sync-modal-form-input"
+                                    placeholder="e.g. Information Technology"
+                                    value={sectorForm.sector_name}
+                                    onChange={e => setSectorForm(prev => ({ ...prev, sector_name: e.target.value }))}
+                                    required
+                                />
+                            </div>
+                            <div className="sync-modal-form-actions" style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+                                <button type="button" className="admin-btn-outline" onClick={() => setIsEditingSector(false)}>
+                                    Cancel
+                                </button>
+                                <button type="submit" className="admin-btn-primary" style={{ backgroundColor: '#10B981', borderColor: '#10B981' }}>
+                                    Save Sector
+                                </button>
+                            </div>
+                        </form>
+                    ) : (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                            {sectors.length === 0 ? (
+                                <div style={{ textAlign: 'center', width: '100%', padding: '40px 0', color: '#94A3B8' }}>No industry sectors configured. Click "Add Sector" to create one.</div>
+                            ) : (
+                                sectors.map(sec => (
+                                    <div key={sec.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 14px', background: '#ECFDF5', border: '1px solid #A7F3D0', borderRadius: '100px' }}>
+                                        <span style={{ fontSize: '14px', fontWeight: 600, color: '#047857' }}>{sec.sector_name}</span>
+                                        <button
+                                            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', padding: '2px', borderRadius: '50%' }}
+                                            onClick={() => handleDeleteSector(sec.id)}
+                                            title="Delete"
+                                            onMouseEnter={e => (e.currentTarget.style.color = '#EF4444')}
+                                            onMouseLeave={e => (e.currentTarget.style.color = '#94A3B8')}
+                                        >
+                                            <Trash2 size={14} />
+                                        </button>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    )
                 )}
 
-                {/* Tab 1 Content: Academic Fields & Skills */}
-                {manageTab === 'interests' && (
-                    configsLoading ? (
+                {/* Academic Domains & Sub-Disciplines Tab Content */}
+                {industryTab === 'interests' && (
+                    indConfigsLoading ? (
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 0', color: '#64748B', gap: '12px' }}>
                             <RefreshCw className="animate-spin" size={24} />
                             <span>Loading Academic Field Configurations...</span>
                         </div>
-                    ) : isEditingConfig ? (
-                        <form onSubmit={handleSaveConfig} style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '600px' }}>
+                    ) : isEditingIndConfig ? (
+                        <form onSubmit={handleSaveIndConfig} style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '600px' }}>
                             <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#0F172A' }}>
-                                {configForm.id ? 'Edit Academic Interest Area' : 'Add New Academic Interest Area'}
+                                {indConfigForm.id ? 'Edit Primary Academic Domain' : 'Add New Primary Academic Domain'}
                             </h3>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                <label style={{ fontSize: '13px', fontWeight: 600, color: '#475569' }}>Academic Area Name</label>
+                                <label style={{ fontSize: '13px', fontWeight: 600, color: '#475569' }}>Academic Domain Area</label>
                                 <input
                                     type="text"
                                     className="sync-modal-form-input"
-                                    placeholder="e.g. Artificial Intelligence"
-                                    value={configForm.interest_field}
-                                    onChange={e => setConfigForm(prev => ({ ...prev, interest_field: e.target.value }))}
+                                    placeholder="e.g. Computing & Information Technology"
+                                    value={indConfigForm.interest_field}
+                                    onChange={e => setIndConfigForm(prev => ({ ...prev, interest_field: e.target.value }))}
                                     required
                                 />
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                <label style={{ fontSize: '13px', fontWeight: 600, color: '#475569' }}>Associated Skills (Comma-separated)</label>
+                                <label style={{ fontSize: '13px', fontWeight: 600, color: '#475569' }}>Associated Sub-Disciplines (Comma-separated)</label>
                                 <textarea
                                     className="sync-modal-form-input"
                                     style={{ minHeight: '120px', padding: '12px', resize: 'vertical' }}
-                                    placeholder="e.g. Machine Learning, Neural Networks, PyTorch, TensorFlow"
-                                    value={configForm.skills}
-                                    onChange={e => setConfigForm(prev => ({ ...prev, skills: e.target.value }))}
+                                    placeholder="e.g. Computer Science, Software Engineering, Cybersecurity, Data Science"
+                                    value={indConfigForm.skills}
+                                    onChange={e => setIndConfigForm(prev => ({ ...prev, skills: e.target.value }))}
                                     required
                                 />
-                                <span style={{ fontSize: '12px', color: '#94A3B8' }}>Input a list of related skills separated by commas.</span>
+                                <span style={{ fontSize: '12px', color: '#94A3B8' }}>Input a list of sub-disciplines separated by commas.</span>
                             </div>
                             <div className="sync-modal-form-actions" style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
-                                <button type="button" className="admin-btn-outline" onClick={() => setIsEditingConfig(false)}>
+                                <button type="button" className="admin-btn-outline" onClick={() => setIsEditingIndConfig(false)}>
                                     Cancel
                                 </button>
-                                <button type="submit" className="admin-btn-primary">
+                                <button type="submit" className="admin-btn-primary" style={{ backgroundColor: '#10B981', borderColor: '#10B981' }}>
                                     Save Configuration
                                 </button>
                             </div>
                         </form>
                     ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                            {configs.length === 0 ? (
-                                <div style={{ textAlign: 'center', padding: '40px 0', color: '#94A3B8' }}>No academic interest fields configured. Click "Add Category" to create one.</div>
+                            {indConfigs.length === 0 ? (
+                                <div style={{ textAlign: 'center', padding: '40px 0', color: '#94A3B8' }}>No academic fields configured. Click "Add Academic Domain" to create one.</div>
                             ) : (
-                                configs.map(cfg => (
+                                indConfigs.map(cfg => (
                                     <div key={cfg.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '20px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '16px', gap: '20px' }}>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                             <span style={{ fontSize: '16px', fontWeight: 700, color: '#0F172A' }}>{cfg.interest_field}</span>
                                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                                                 {cfg.skills.map((skill: string) => (
-                                                    <span key={skill} style={{ fontSize: '11px', fontWeight: 600, padding: '4px 10px', background: '#EDE9FE', color: '#7C3AED', borderRadius: '20px' }}>
+                                                    <span key={skill} style={{ fontSize: '11px', fontWeight: 600, padding: '4px 10px', background: '#D1FAE5', color: '#047857', borderRadius: '20px' }}>
                                                         {skill}
                                                     </span>
                                                 ))}
@@ -350,8 +883,8 @@ export const ManageForms: React.FC = () => {
                                                 className="admin-btn-outline"
                                                 style={{ padding: '6px 12px', fontSize: '12px', height: '34px' }}
                                                 onClick={() => {
-                                                    setIsEditingConfig(true);
-                                                    setConfigForm({
+                                                    setIsEditingIndConfig(true);
+                                                    setIndConfigForm({
                                                         id: cfg.id,
                                                         interest_field: cfg.interest_field,
                                                         skills: cfg.skills.join(', ')
@@ -363,123 +896,11 @@ export const ManageForms: React.FC = () => {
                                             <button
                                                 className="admin-btn-outline"
                                                 style={{ padding: '6px 12px', fontSize: '12px', height: '34px', color: '#EF4444', borderColor: '#FCA5A5' }}
-                                                onClick={() => handleDeleteConfig(cfg.id)}
+                                                onClick={() => handleDeleteIndConfig(cfg.id)}
                                             >
                                                 Delete
                                             </button>
                                         </div>
-                                    </div>
-                                ))
-                            )}
-                        </div>
-                    )
-                )}
-
-                {/* Tab 2 Content: Suggested Teaching Methods */}
-                {manageTab === 'methods' && (
-                    methodsLoading ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 0', color: '#64748B', gap: '12px' }}>
-                            <RefreshCw className="animate-spin" size={24} />
-                            <span>Loading Teaching Methods...</span>
-                        </div>
-                    ) : isEditingMethod ? (
-                        <form onSubmit={handleSaveMethod} style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '600px' }}>
-                            <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#0F172A' }}>
-                                {methodForm.id ? 'Edit Teaching Method' : 'Add New Teaching Method'}
-                            </h3>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                <label style={{ fontSize: '13px', fontWeight: 600, color: '#475569' }}>Teaching Method Name</label>
-                                <input
-                                    type="text"
-                                    className="sync-modal-form-input"
-                                    placeholder="e.g. Practical Labs"
-                                    value={methodForm.method_name}
-                                    onChange={e => setMethodForm(prev => ({ ...prev, method_name: e.target.value }))}
-                                    required
-                                />
-                            </div>
-                            <div className="sync-modal-form-actions" style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
-                                <button type="button" className="admin-btn-outline" onClick={() => setIsEditingMethod(false)}>
-                                    Cancel
-                                </button>
-                                <button type="submit" className="admin-btn-primary">
-                                    Save Method
-                                </button>
-                            </div>
-                        </form>
-                    ) : (
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                            {teachingMethodsList.length === 0 ? (
-                                <div style={{ textAlign: 'center', width: '100%', padding: '40px 0', color: '#94A3B8' }}>No teaching methods configured. Click "Add Method" to create one.</div>
-                            ) : (
-                                teachingMethodsList.map(method => (
-                                    <div key={method.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 14px', background: '#F0F4FF', border: '1px solid #C7D2FE', borderRadius: '100px', transition: 'all 0.2s' }}>
-                                        <span style={{ fontSize: '14px', fontWeight: 600, color: '#3730A3' }}>{method.method_name}</span>
-                                        <button
-                                            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', padding: '2px', borderRadius: '50%', transition: 'color 0.2s' }}
-                                            onClick={() => handleDeleteMethod(method.id)}
-                                            title="Delete"
-                                            onMouseEnter={e => (e.currentTarget.style.color = '#EF4444')}
-                                            onMouseLeave={e => (e.currentTarget.style.color = '#94A3B8')}
-                                        >
-                                            <Trash2 size={14} />
-                                        </button>
-                                    </div>
-                                ))
-                            )}
-                        </div>
-                    )
-                )}
-
-                {/* Tab 3 Content: University Opportunities */}
-                {manageTab === 'opportunities' && (
-                    opportunitiesLoading ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 0', color: '#64748B', gap: '12px' }}>
-                            <RefreshCw className="animate-spin" size={24} />
-                            <span>Loading Opportunities...</span>
-                        </div>
-                    ) : isEditingOpportunity ? (
-                        <form onSubmit={handleSaveOpportunity} style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '600px' }}>
-                            <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#0F172A' }}>
-                                {opportunityForm.id ? 'Edit Opportunity Name' : 'Add New University Opportunity'}
-                            </h3>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                <label style={{ fontSize: '13px', fontWeight: 600, color: '#475569' }}>Opportunity Title</label>
-                                <input
-                                    type="text"
-                                    className="sync-modal-form-input"
-                                    placeholder="e.g. Industry Internships"
-                                    value={opportunityForm.opportunity_name}
-                                    onChange={e => setOpportunityForm(prev => ({ ...prev, opportunity_name: e.target.value }))}
-                                    required
-                                />
-                            </div>
-                            <div className="sync-modal-form-actions" style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
-                                <button type="button" className="admin-btn-outline" onClick={() => setIsEditingOpportunity(false)}>
-                                    Cancel
-                                </button>
-                                <button type="submit" className="admin-btn-primary">
-                                    Save Opportunity
-                                </button>
-                            </div>
-                        </form>
-                    ) : (
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                            {opportunitiesList.length === 0 ? (
-                                <div style={{ textAlign: 'center', width: '100%', padding: '40px 0', color: '#94A3B8' }}>No university opportunities configured. Click "Add Opportunity" to create one.</div>
-                            ) : (
-                                opportunitiesList.map(opp => (
-                                    <div key={opp.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 14px', background: '#FDF4FF', border: '1px solid #E9D5FF', borderRadius: '100px', transition: 'all 0.2s' }}>
-                                        <span style={{ fontSize: '14px', fontWeight: 600, color: '#7C3AED' }}>{opp.opportunity_name}</span>
-                                        <button
-                                            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', padding: '2px', borderRadius: '50%', transition: 'color 0.2s' }}
-                                            onClick={() => handleDeleteOpportunity(opp.id)}
-                                            title="Delete"
-                                            onMouseEnter={e => (e.currentTarget.style.color = '#EF4444')}
-                                            onMouseLeave={e => (e.currentTarget.style.color = '#94A3B8')}
-                                        >
-                                            <Trash2 size={14} />
-                                        </button>
                                     </div>
                                 ))
                             )}

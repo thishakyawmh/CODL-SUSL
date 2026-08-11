@@ -31,12 +31,27 @@ export const AIAnalytics: React.FC = () => {
     const [globalEmergingTech, setGlobalEmergingTech] = useState<string[]>([]);
     const [viewMode, setViewMode] = useState<'hub' | 'course' | 'common'>('hub');
 
-    const [showSyncModal, setShowSyncModal] = useState(false);
     const [syncing, setSyncing] = useState(false);
-    const [syncUrl, setSyncUrl] = useState('');
-    const [syncType, setSyncType] = useState<'student' | 'industry'>('student');
+    const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
 
+    // Toast notification state
+    const [toasts, setToasts] = useState<{ id: number; message: string; type: 'success' | 'error' | 'info' }[]>([]);
+    const toastIdRef = React.useRef(0);
 
+    // Confirmation modal state
+    const [confirmModal, setConfirmModal] = useState<{ open: boolean; onConfirm: () => void }>({ open: false, onConfirm: () => {} });
+
+    const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
+        const id = ++toastIdRef.current;
+        setToasts(prev => [...prev, { id, message, type }]);
+        setTimeout(() => {
+            setToasts(prev => prev.filter(t => t.id !== id));
+        }, 5000);
+    };
+
+    const dismissToast = (id: number) => {
+        setToasts(prev => prev.filter(t => t.id !== id));
+    };
 
     useEffect(() => {
         fetchPrograms();
@@ -51,6 +66,9 @@ export const AIAnalytics: React.FC = () => {
             if (globalData && globalData.emerging_technologies) {
                 setGlobalEmergingTech(globalData.emerging_technologies);
             }
+            if (globalData && globalData.last_sync_at) {
+                setLastSyncedAt(globalData.last_sync_at);
+            }
         } catch (err) {
             console.error('Failed to load programs', err);
         } finally {
@@ -58,35 +76,109 @@ export const AIAnalytics: React.FC = () => {
         }
     };
 
-    const handleSync = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!syncUrl) return;
-        setSyncing(true);
-        try {
-            const res = await aiAnalyticsService.syncGoogleSheet({ type: syncType, url: syncUrl });
-            alert(res.message);
-            setShowSyncModal(false);
-            setSyncUrl('');
-            // Refresh programs lists
-            fetchPrograms();
-        } catch (err: any) {
-            alert('Google Sheets Sync Failed: ' + (err.response?.data?.message || err.message));
-        } finally {
-            setSyncing(false);
-        }
+    const handleDirectSync = async () => {
+        setConfirmModal({
+            open: true,
+            onConfirm: async () => {
+                setConfirmModal({ open: false, onConfirm: () => {} });
+                setSyncing(true);
+                try {
+                    const res = await aiAnalyticsService.syncGoogleSheet();
+                    showToast(res.message || "Google Sheets sync completed successfully!", 'success');
+                    // Refresh programs lists
+                    fetchPrograms();
+                } catch (err: any) {
+                    showToast('Google Sheets Sync Failed: ' + (err.response?.data?.error || err.response?.data?.message || err.message), 'error');
+                } finally {
+                    setSyncing(false);
+                }
+            }
+        });
     };
 
     if (loading) {
         return (
-            <div className="loading-spinner-container">
-                <div className="loading-spinner"></div>
-                <p>Loading AI Roadmap...</p>
-            </div>
+            <>
+                {/* Toast must always be in the DOM */}
+                <div className="toast-container">
+                    {toasts.map(toast => (
+                        <div key={toast.id} className={`toast-notification toast-${toast.type}`} onClick={() => dismissToast(toast.id)}>
+                            <div className="toast-icon-wrap">
+                                {toast.type === 'success' && <CheckCircle size={20} />}
+                                {toast.type === 'error' && <AlertTriangle size={20} />}
+                                {toast.type === 'info' && <Activity size={20} />}
+                            </div>
+                            <span className="toast-message">{toast.message}</span>
+                            <button className="toast-dismiss" onClick={(e) => { e.stopPropagation(); dismissToast(toast.id); }}>&times;</button>
+                        </div>
+                    ))}
+                </div>
+                <div className="loading-spinner-container">
+                    <div className="loading-spinner"></div>
+                    <p>Loading AI Roadmap...</p>
+                </div>
+            </>
         );
     }
 
     return (
         <div className="ai-analytics-page">
+            {/* ===== FULL-PAGE SYNC OVERLAY ===== */}
+            {syncing && (
+                <div className="sync-overlay">
+                    <div className="sync-overlay-content">
+                        <div className="sync-overlay-spinner">
+                            <div className="sync-pulse-ring"></div>
+                            <div className="sync-pulse-ring delay-1"></div>
+                            <div className="sync-pulse-ring delay-2"></div>
+                            <Cloud size={36} className="sync-overlay-icon" />
+                        </div>
+                        <h2 className="sync-overlay-title">Syncing Data</h2>
+                        <p className="sync-overlay-desc">Downloading surveys from Google Sheets and running the AI matching pipeline. This may take 1–2 minutes.</p>
+                        <div className="sync-progress-bar">
+                            <div className="sync-progress-bar-fill"></div>
+                        </div>
+                        <span className="sync-overlay-hint">Please do not close this page.</span>
+                    </div>
+                </div>
+            )}
+
+            {/* ===== CONFIRMATION MODAL ===== */}
+            {confirmModal.open && (
+                <div className="confirm-modal-backdrop" onClick={() => setConfirmModal({ open: false, onConfirm: () => {} })}>
+                    <div className="confirm-modal-card" onClick={e => e.stopPropagation()}>
+                        <div className="confirm-modal-icon-wrap">
+                            <RefreshCw size={28} />
+                        </div>
+                        <h3 className="confirm-modal-title">Run Full Sync?</h3>
+                        <p className="confirm-modal-desc">
+                            This will download the latest Student and Industry survey sheets from Google Sheets, update local databases, and run the AI matching algorithms. The process may take 1–2 minutes.
+                        </p>
+                        <div className="confirm-modal-actions">
+                            <button className="confirm-modal-btn cancel" onClick={() => setConfirmModal({ open: false, onConfirm: () => {} })}>Cancel</button>
+                            <button className="confirm-modal-btn confirm" onClick={confirmModal.onConfirm}>
+                                <RefreshCw size={16} /> Yes, Sync Now
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ===== TOAST NOTIFICATIONS ===== */}
+            <div className="toast-container">
+                {toasts.map(toast => (
+                    <div key={toast.id} className={`toast-notification toast-${toast.type}`} onClick={() => dismissToast(toast.id)}>
+                        <div className="toast-icon-wrap">
+                            {toast.type === 'success' && <CheckCircle size={20} />}
+                            {toast.type === 'error' && <AlertTriangle size={20} />}
+                            {toast.type === 'info' && <Activity size={20} />}
+                        </div>
+                        <span className="toast-message">{toast.message}</span>
+                        <button className="toast-dismiss" onClick={(e) => { e.stopPropagation(); dismissToast(toast.id); }}>&times;</button>
+                    </div>
+                ))}
+            </div>
+
             {viewMode === 'course' && selectedCourse ? (
                 <ProgramDashboard course={selectedCourse} onBack={() => { setSelectedCourse(null); setViewMode('hub'); }} />
             ) : viewMode === 'common' ? (
@@ -96,56 +188,13 @@ export const AIAnalytics: React.FC = () => {
                     programs={programs}
                     globalEmergingTech={globalEmergingTech}
                     onSelect={(c) => { setSelectedCourse(c); setViewMode('course'); }}
-                    onOpenSync={() => setShowSyncModal(true)}
+                    onOpenSync={handleDirectSync}
                     onOpenManageForms={() => navigate('/admin/ai-analytics/manage-forms')}
                     onOpenCommonAnalytics={() => setViewMode('common')}
+                    syncing={syncing}
+                    lastSyncedAt={lastSyncedAt}
                 />
             )}
-
-            {/* Sync Modal */}
-            {showSyncModal && (
-                <div className="modal-backdrop" onClick={() => setShowSyncModal(false)}>
-                    <div className="modal-content-card" onClick={e => e.stopPropagation()}>
-                        <h3>Sync Google Sheets Data</h3>
-                        <p className="sync-modal-desc">Connect survey data to the AI NLP pipeline.</p>
-                        <form onSubmit={handleSync} className="sync-modal-form">
-                            <div className="sync-modal-form-group">
-                                <label className="sync-modal-form-label">Data Source Type</label>
-                                <select
-                                    className="sync-modal-form-select"
-                                    value={syncType}
-                                    onChange={(e) => setSyncType(e.target.value as any)}
-                                >
-                                    <option value="student">Student Interest Survey</option>
-                                    <option value="industry">Industry Gaps Audit</option>
-                                </select>
-                            </div>
-                            <div className="sync-modal-form-group">
-                                <label className="sync-modal-form-label">Google Sheet CSV URL</label>
-                                <input
-                                    type="url"
-                                    className="sync-modal-form-input"
-                                    placeholder="https://docs.google.com/spreadsheets/d/.../export?format=csv"
-                                    value={syncUrl}
-                                    onChange={(e) => setSyncUrl(e.target.value)}
-                                    required
-                                />
-                                <span className="sync-modal-form-tip">Must be a published CSV export link.</span>
-                            </div>
-                            <div className="sync-modal-form-actions">
-                                <button type="button" className="sync-modal-btn sync-modal-btn-secondary" onClick={() => setShowSyncModal(false)}>
-                                    Cancel
-                                </button>
-                                <button type="submit" className="sync-modal-btn sync-modal-btn-primary" disabled={syncing}>
-                                    {syncing ? 'Syncing Pipeline...' : 'Run Sync & Generate Cache'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-
-
         </div>
     );
 };
@@ -161,8 +210,10 @@ const ProgramHub: React.FC<{
     onSelect: (c: Course) => void,
     onOpenSync: () => void,
     onOpenManageForms: () => void,
-    onOpenCommonAnalytics: () => void
-}> = ({ programs, globalEmergingTech, onSelect, onOpenSync, onOpenManageForms, onOpenCommonAnalytics }) => {
+    onOpenCommonAnalytics: () => void,
+    syncing?: boolean,
+    lastSyncedAt?: string | null
+}> = ({ programs, globalEmergingTech, onSelect, onOpenSync, onOpenManageForms, onOpenCommonAnalytics, syncing, lastSyncedAt }) => {
     const [levelFilter, setLevelFilter] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -276,15 +327,20 @@ const ProgramHub: React.FC<{
                     </p>
                 </div>
                 {levelFilter === 'all' && !searchTerm && (
-                    <div className="admin-header-actions">
+                    <div className="admin-header-actions" style={{ gap: '12px' }}>
+                        {lastSyncedAt && (
+                            <span className="last-sync-badge" style={{ fontSize: '0.85rem', color: '#64748B', display: 'flex', alignItems: 'center', backgroundColor: '#F1F5F9', padding: '6px 12px', borderRadius: '6px', fontWeight: 500 }}>
+                                Last Sync: {new Date(lastSyncedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                        )}
                         <button className="admin-btn-outline" onClick={onOpenCommonAnalytics}>
                             <BarChart2 size={16} /> Common Student Analytics
                         </button>
                         <button className="admin-btn-outline" onClick={onOpenManageForms}>
                             <Database size={16} /> Manage Forms
                         </button>
-                        <button className="admin-btn-primary" onClick={onOpenSync}>
-                            <RefreshCw size={16} /> Sync Google Sheet Data
+                        <button className="admin-btn-primary" onClick={onOpenSync} disabled={syncing}>
+                            <RefreshCw size={16} className={syncing ? 'animate-spin' : ''} /> {syncing ? 'Syncing...' : 'Sync'}
                         </button>
                     </div>
                 )}
