@@ -430,4 +430,168 @@ class StudentInterestController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Get active dynamic configuration of industry sectors.
+     */
+    public function getIndustrySectors()
+    {
+        try {
+            $sectors = DB::connection('analytics')->table('industry_sectors_config')->get()->map(function ($s) {
+                return [
+                    'id' => $s->id,
+                    'sector_name' => $s->sector_name
+                ];
+            });
+
+            return response()->json($sectors);
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve industry sectors config: ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Create or update industry sector configuration (Admin).
+     */
+    public function storeIndustrySector(Request $request)
+    {
+        $validated = $request->validate([
+            'id' => 'nullable|integer',
+            'sector_name' => 'required|string',
+        ]);
+
+        try {
+            if (!empty($validated['id'])) {
+                DB::connection('analytics')->table('industry_sectors_config')
+                    ->where('id', $validated['id'])
+                    ->update([
+                        'sector_name' => $validated['sector_name'],
+                        'updated_at' => now()
+                    ]);
+                $id = $validated['id'];
+            } else {
+                $id = DB::connection('analytics')->table('industry_sectors_config')->insertGetId([
+                    'sector_name' => $validated['sector_name'],
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'id' => $id,
+                'message' => 'Industry sector saved successfully.'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to save industry sector config: ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Delete an industry sector configuration (Admin).
+     */
+    public function deleteIndustrySector($id)
+    {
+        try {
+            DB::connection('analytics')->table('industry_sectors_config')
+                ->where('id', $id)
+                ->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Industry sector configuration deleted successfully.'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to delete industry sector config: ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Get active dynamic configuration of industry academic interest fields and sub-disciplines.
+     */
+    public function getIndustryConfig()
+    {
+        try {
+            $configs = DB::connection('analytics')->table('industry_interests_config')->get()->map(function ($c) {
+                $skillsArray = array_filter(array_map('trim', explode(',', $c->skills)));
+                return [
+                    'id' => $c->id,
+                    'interest_field' => $c->interest_field,
+                    'skills' => array_values($skillsArray)
+                ];
+            });
+
+            return response()->json($configs);
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve industry survey config: ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Create or update industry interest field configuration (Admin).
+     */
+    public function storeIndustryConfig(Request $request)
+    {
+        $validated = $request->validate([
+            'id' => 'nullable|integer',
+            'interest_field' => 'required|string',
+            'skills' => 'required|array'
+        ]);
+
+        $skillsList = array_filter(array_map('trim', $validated['skills']));
+        $skillsString = implode(', ', $skillsList);
+
+        try {
+            if (!empty($validated['id'])) {
+                DB::connection('analytics')->table('industry_interests_config')
+                    ->where('id', $validated['id'])
+                    ->update([
+                        'interest_field' => $validated['interest_field'],
+                        'skills' => $skillsString,
+                        'updated_at' => now()
+                    ]);
+                $id = $validated['id'];
+            } else {
+                $id = DB::connection('analytics')->table('industry_interests_config')->insertGetId([
+                    'interest_field' => $validated['interest_field'],
+                    'skills' => $skillsString,
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'id' => $id,
+                'message' => 'Industry academic field configuration saved successfully.'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to save industry survey config: ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Delete an industry interest field configuration (Admin).
+     */
+    public function deleteIndustryConfig($id)
+    {
+        try {
+            DB::connection('analytics')->table('industry_interests_config')
+                ->where('id', $id)
+                ->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Industry academic field configuration deleted successfully.'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to delete industry survey config: ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
 }
