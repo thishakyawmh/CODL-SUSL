@@ -312,22 +312,22 @@ export const ManageForms: React.FC = () => {
                         <button
                             className="cm-back-text-btn"
                             onClick={() => navigate('/admin/ai-analytics')}
-                            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#64748B', fontWeight: 600, fontSize: '14px', marginBottom: '8px', padding: 0 }}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#64748B', fontWeight: 600, fontSize: '14px', marginBottom: '20px', padding: 0 }}
                         >
-                            <ArrowLeft size={16} /> Back to AI Analytics
+                            <ArrowLeft size={16} /> Back
                         </button>
                         <h1 className="admin-page-title">Manage Survey Configurations</h1>
                         <p className="admin-page-subtitle">Configure interest fields, capability requirements, and dynamic option lists for the public surveys.</p>
                     </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '24px', maxWidth: '880px', margin: '32px auto 0 auto', padding: '0 20px' }}>
-                    
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(460px, 1fr))', gap: '40px', maxWidth: '1100px', margin: '56px auto 0 auto', padding: '0 20px' }}>
+
                     {/* Student Interests Card */}
-                    <div 
-                        className="ai-roadmap-card" 
+                    <div
+                        className="ai-roadmap-card"
                         onClick={() => { setFormType('student'); setManageTab('interests'); }}
-                        style={{ padding: '36px 28px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '20px', transition: 'transform 0.2s, box-shadow 0.2s', border: '1.5px solid #E2E8F0' }}
+                        style={{ padding: '64px 44px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '28px', transition: 'transform 0.2s, box-shadow 0.2s', border: '1.5px solid #E2E8F0' }}
                         onMouseEnter={(e) => {
                             e.currentTarget.style.transform = 'translateY(-4px)';
                             e.currentTarget.style.borderColor = '#7C3AED';
@@ -339,22 +339,22 @@ export const ManageForms: React.FC = () => {
                             e.currentTarget.style.boxShadow = 'none';
                         }}
                     >
-                        <div style={{ width: '72px', height: '72px', borderRadius: '50%', backgroundColor: '#EDE9FE', color: '#7C3AED', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <GraduationCap size={36} />
+                        <div style={{ width: '100px', height: '100px', borderRadius: '50%', backgroundColor: '#EDE9FE', color: '#7C3AED', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <GraduationCap size={50} />
                         </div>
                         <div>
-                            <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#0F172A', marginBottom: '8px' }}>Student Interest Form</h2>
-                            <p style={{ fontSize: '14px', color: '#64748B', lineHeight: '1.5' }}>
+                            <h2 style={{ fontSize: '25px', fontWeight: 700, color: '#0F172A', marginBottom: '12px' }}>Student Interest Form</h2>
+                            <p style={{ fontSize: '16px', color: '#64748B', lineHeight: '1.6' }}>
                                 Manage academic interest areas, dynamic associated skill list, training methods, and university opportunities.
                             </p>
                         </div>
                     </div>
 
                     {/* Industry Requirements Card */}
-                    <div 
-                        className="ai-roadmap-card" 
+                    <div
+                        className="ai-roadmap-card"
                         onClick={() => { setFormType('industry'); setIndustryTab('sectors'); }}
-                        style={{ padding: '36px 28px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '20px', transition: 'transform 0.2s, box-shadow 0.2s', border: '1.5px solid #E2E8F0' }}
+                        style={{ padding: '64px 44px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '28px', transition: 'transform 0.2s, box-shadow 0.2s', border: '1.5px solid #E2E8F0' }}
                         onMouseEnter={(e) => {
                             e.currentTarget.style.transform = 'translateY(-4px)';
                             e.currentTarget.style.borderColor = '#10B981';
@@ -366,12 +366,12 @@ export const ManageForms: React.FC = () => {
                             e.currentTarget.style.boxShadow = 'none';
                         }}
                     >
-                        <div style={{ width: '72px', height: '72px', borderRadius: '50%', backgroundColor: '#D1FAE5', color: '#10B981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <Building size={36} />
+                        <div style={{ width: '100px', height: '100px', borderRadius: '50%', backgroundColor: '#D1FAE5', color: '#10B981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Building size={50} />
                         </div>
                         <div>
-                            <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#0F172A', marginBottom: '8px' }}>Industry Requirements Form</h2>
-                            <p style={{ fontSize: '14px', color: '#64748B', lineHeight: '1.5' }}>
+                            <h2 style={{ fontSize: '25px', fontWeight: 700, color: '#0F172A', marginBottom: '12px' }}>Industry Requirements Form</h2>
+                            <p style={{ fontSize: '16px', color: '#64748B', lineHeight: '1.6' }}>
                                 Manage industry sectors, primary academic domains of interest, and the associated sub-disciplines for employers.
                             </p>
                         </div>
@@ -393,9 +393,9 @@ export const ManageForms: React.FC = () => {
                         <button
                             className="cm-back-text-btn"
                             onClick={() => setFormType(null)}
-                            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#64748B', fontWeight: 600, fontSize: '14px', marginBottom: '8px', padding: 0 }}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#64748B', fontWeight: 600, fontSize: '14px', marginBottom: '20px', padding: 0 }}
                         >
-                            <ArrowLeft size={16} /> Back to Form Selection
+                            <ArrowLeft size={16} /> Back
                         </button>
                         <h1 className="admin-page-title">Configure Student Interest Form</h1>
                         <p className="admin-page-subtitle">Configure dynamic interest fields, associated skills, teaching methods, and student support opportunities.</p>
@@ -423,10 +423,12 @@ export const ManageForms: React.FC = () => {
                 </div>
 
                 <div className="ai-roadmap-card" style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    <div className="manage-tabs" style={{ display: 'flex', gap: '20px', borderBottom: '1px solid #E2E8F0', paddingBottom: '2px' }}>
+                    <div className="manage-tabs" style={{ display: 'flex', borderBottom: '1px solid #E2E8F0', paddingBottom: '2px', width: '100%' }}>
                         <button
                             className={`manage-tab-btn ${manageTab === 'interests' ? 'active' : ''}`}
                             style={{
+                                flex: 1,
+                                textAlign: 'center',
                                 padding: '12px 18px',
                                 fontSize: '15px',
                                 fontWeight: 600,
@@ -445,6 +447,8 @@ export const ManageForms: React.FC = () => {
                         <button
                             className={`manage-tab-btn ${manageTab === 'methods' ? 'active' : ''}`}
                             style={{
+                                flex: 1,
+                                textAlign: 'center',
                                 padding: '12px 18px',
                                 fontSize: '15px',
                                 fontWeight: 600,
@@ -463,6 +467,8 @@ export const ManageForms: React.FC = () => {
                         <button
                             className={`manage-tab-btn ${manageTab === 'opportunities' ? 'active' : ''}`}
                             style={{
+                                flex: 1,
+                                textAlign: 'center',
                                 padding: '12px 18px',
                                 fontSize: '15px',
                                 fontWeight: 600,
@@ -487,7 +493,7 @@ export const ManageForms: React.FC = () => {
                                 <span>Loading Academic Field Configurations...</span>
                             </div>
                         ) : isEditingConfig ? (
-                            <form onSubmit={handleSaveConfig} style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '600px' }}>
+                            <form onSubmit={handleSaveConfig} style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '700px', width: '100%', margin: '24px auto' }}>
                                 <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#0F172A' }}>
                                     {configForm.id ? 'Edit Academic Interest Area' : 'Add New Academic Interest Area'}
                                 </h3>
@@ -577,7 +583,7 @@ export const ManageForms: React.FC = () => {
                                 <span>Loading Teaching Methods...</span>
                             </div>
                         ) : isEditingMethod ? (
-                            <form onSubmit={handleSaveMethod} style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '600px' }}>
+                            <form onSubmit={handleSaveMethod} style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '700px', width: '100%', margin: '24px auto' }}>
                                 <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#0F172A' }}>
                                     {methodForm.id ? 'Edit Teaching Method' : 'Add New Teaching Method'}
                                 </h3>
@@ -632,7 +638,7 @@ export const ManageForms: React.FC = () => {
                                 <span>Loading Opportunities...</span>
                             </div>
                         ) : isEditingOpportunity ? (
-                            <form onSubmit={handleSaveOpportunity} style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '600px' }}>
+                            <form onSubmit={handleSaveOpportunity} style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '700px', width: '100%', margin: '24px auto' }}>
                                 <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#0F172A' }}>
                                     {opportunityForm.id ? 'Edit Opportunity Name' : 'Add New University Opportunity'}
                                 </h3>
@@ -694,9 +700,9 @@ export const ManageForms: React.FC = () => {
                     <button
                         className="cm-back-text-btn"
                         onClick={() => setFormType(null)}
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#64748B', fontWeight: 600, fontSize: '14px', marginBottom: '8px', padding: 0 }}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#64748B', fontWeight: 600, fontSize: '14px', marginBottom: '20px', padding: 0 }}
                     >
-                        <ArrowLeft size={16} /> Back to Form Selection
+                        <ArrowLeft size={16} /> Back
                     </button>
                     <h1 className="admin-page-title">Configure Industry Requirements Form</h1>
                     <p className="admin-page-subtitle">Configure industry sectors, primary academic domains, and associated sub-disciplines.</p>
@@ -722,10 +728,12 @@ export const ManageForms: React.FC = () => {
             </div>
 
             <div className="ai-roadmap-card" style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div className="manage-tabs" style={{ display: 'flex', gap: '20px', borderBottom: '1px solid #E2E8F0', paddingBottom: '2px' }}>
+                <div className="manage-tabs" style={{ display: 'flex', borderBottom: '1px solid #E2E8F0', paddingBottom: '2px', width: '100%' }}>
                     <button
                         className={`manage-tab-btn ${industryTab === 'sectors' ? 'active' : ''}`}
                         style={{
+                            flex: 1,
+                            textAlign: 'center',
                             padding: '12px 18px',
                             fontSize: '15px',
                             fontWeight: 600,
@@ -744,6 +752,8 @@ export const ManageForms: React.FC = () => {
                     <button
                         className={`manage-tab-btn ${industryTab === 'interests' ? 'active' : ''}`}
                         style={{
+                            flex: 1,
+                            textAlign: 'center',
                             padding: '12px 18px',
                             fontSize: '15px',
                             fontWeight: 600,
@@ -769,7 +779,7 @@ export const ManageForms: React.FC = () => {
                             <span>Loading Industry Sectors...</span>
                         </div>
                     ) : isEditingSector ? (
-                        <form onSubmit={handleSaveSector} style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '600px' }}>
+                        <form onSubmit={handleSaveSector} style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '700px', width: '100%', margin: '24px auto' }}>
                             <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#0F172A' }}>
                                 {sectorForm.id ? 'Edit Industry Sector' : 'Add New Industry Sector'}
                             </h3>
@@ -825,7 +835,7 @@ export const ManageForms: React.FC = () => {
                             <span>Loading Academic Field Configurations...</span>
                         </div>
                     ) : isEditingIndConfig ? (
-                        <form onSubmit={handleSaveIndConfig} style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '600px' }}>
+                        <form onSubmit={handleSaveIndConfig} style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '700px', width: '100%', margin: '24px auto' }}>
                             <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#0F172A' }}>
                                 {indConfigForm.id ? 'Edit Primary Academic Domain' : 'Add New Primary Academic Domain'}
                             </h3>
