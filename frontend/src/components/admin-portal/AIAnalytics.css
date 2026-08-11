@@ -984,6 +984,16 @@
     }
 }
 
+/* Custom responsive category grid that forces box-looking layout */
+.ai-category-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 24px;
+}
+
+@media screen and (min-width: 768px) {
+    .ai-category-grid {
+        grid-template-columns: repeat(2, 1fr);
 /* =========================================================
    FULL-PAGE SYNC OVERLAY
    ========================================================= */
