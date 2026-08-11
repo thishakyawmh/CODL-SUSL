@@ -4,10 +4,12 @@ namespace App\AI\Services;
 
 use App\AI\Models\StudentInterest;
 use App\AI\Models\IndustryRequirement;
+use Illuminate\Support\Facades\Log;
 
 class AnalyticsNLPService
 {
     protected $synonyms;
+    protected static $geminiCache = [];
 
     public function __construct()
     {
@@ -21,19 +23,24 @@ class AnalyticsNLPService
      */
     public function processAll(\App\Models\Course $course = null): array
     {
-        $studentSurveys = StudentInterest::all();
-        $industrySurveys = IndustryRequirement::all();
+        // Use memory-efficient cursors to process database rows one by one
+        $studentSurveys = StudentInterest::cursor();
+        $industrySurveys = IndustryRequirement::cursor();
 
-        $studentDomains = [];
-        $industryDomains = [];
-        $emergingTechnologies = [];
-        $skillGapsList = [];
+        $studentFrequencies = [];
+        $industryFrequencies = [];
+        $emergingTechnologiesCounts = [];
+        $skillGapsCounts = [];
+        $studentPrefsCounts = [];
+        $industryPracticesCounts = [];
 
-        // Learning preferences containers
-        $theoryPracticalScores = [];
-        $learningPreferences = [];
-        $academicPractices = [];
-        $certImportances = [];
+        // Theory/Practical preferred learning weighted average variables
+        $theoryPracticalSum = 0.0;
+        $theoryPracticalWeightSum = 0.0;
+
+        // Certification importance weighted average variables
+        $certImportanceSum = 0.0;
+        $certImportanceWeightSum = 0.0;
 
         // Helper to convert balance input (text or number) to a 1-5 score
         $parseBalance = function ($balance) {
@@ -89,7 +96,7 @@ class AnalyticsNLPService
             $profileDomains = array_unique($this->extractDomains($profileText));
             $courseFields = $this->classifyCourseFields($course);
 
-            // 1. Filter Student Surveys
+            // 1. Filter Student Surveys using memory-efficient cursor loop
             foreach ($studentSurveys as $survey) {
                 $interestScore = 0.0;
                 if (in_array($survey->primary_interest, $courseFields)) {
@@ -133,7 +140,7 @@ class AnalyticsNLPService
                 }
             }
 
-            // 2. Filter Industry Surveys
+            // 2. Filter Industry Surveys using memory-efficient cursor loop
             foreach ($industrySurveys as $survey) {
                 $interestScore = 0.0;
                 if (in_array($survey->primary_academic_field, $courseFields)) {
@@ -265,29 +272,26 @@ class AnalyticsNLPService
                 $domains = $this->extractDomains($skills);
                 $domains = $this->deduplicateDomains($domains);
 
-                $relevanceCount = (int) round($weight * 10);
-                for ($i = 0; $i < $relevanceCount; $i++) {
-                    $studentDomains = array_merge($studentDomains, $domains);
+                // Count each domain once per survey response weighted by interest score (No amplification bug)
+                foreach ($domains as $d) {
+                    $studentFrequencies[$d] = ($studentFrequencies[$d] ?? 0.0) + $weight;
                 }
 
                 if ($survey->new_program_suggestion) {
-                    for ($i = 0; $i < $relevanceCount; $i++) {
-                        $emergingTechnologies[] = $survey->new_program_suggestion;
-                    }
+                    $emergingTechnologiesCounts[$survey->new_program_suggestion] = ($emergingTechnologiesCounts[$survey->new_program_suggestion] ?? 0.0) + $weight;
                 }
 
                 if ($balance) {
                     $score = $parseBalance($balance);
-                    for ($i = 0; $i < $relevanceCount; $i++) {
-                        $theoryPracticalScores[] = $score;
-                    }
+                    $theoryPracticalSum += $score * $weight;
+                    $theoryPracticalWeightSum += $weight;
                 }
 
                 if ($methods) {
                     $prefs = array_map('trim', explode(',', $methods));
-                    for ($i = 0; $i < $relevanceCount; $i++) {
-                        foreach ($prefs as $p) {
-                            if ($p) $learningPreferences[] = $p;
+                    foreach ($prefs as $p) {
+                        if ($p) {
+                            $studentPrefsCounts[$p] = ($studentPrefsCounts[$p] ?? 0.0) + $weight;
                         }
                     }
                 }
@@ -302,60 +306,64 @@ class AnalyticsNLPService
                 $domains = $this->extractDomains($survey->required_skills);
                 $domains = $this->deduplicateDomains($domains);
 
-                $relevanceCount = (int) round($weight * 10);
-                for ($i = 0; $i < $relevanceCount; $i++) {
-                    $industryDomains = array_merge($industryDomains, $domains);
+                // Count each domain once per survey response weighted by interest score (No amplification bug)
+                foreach ($domains as $d) {
+                    $industryFrequencies[$d] = ($industryFrequencies[$d] ?? 0.0) + $weight;
                 }
 
                 if ($survey->emerging_fields) {
-                    for ($i = 0; $i < $relevanceCount; $i++) {
-                        $emergingTechnologies[] = $survey->emerging_fields;
-                    }
+                    $emergingTechnologiesCounts[$survey->emerging_fields] = ($emergingTechnologiesCounts[$survey->emerging_fields] ?? 0.0) + $weight;
                 }
 
                 if ($survey->graduate_skill_gaps) {
                     $gaps = $this->extractDomains($survey->graduate_skill_gaps);
-                    for ($i = 0; $i < $relevanceCount; $i++) {
-                        $skillGapsList = array_merge($skillGapsList, $gaps);
+                    foreach ($gaps as $g) {
+                        $skillGapsCounts[$g] = ($skillGapsCounts[$g] ?? 0.0) + $weight;
                     }
                 }
 
                 if ($survey->academic_practices) {
                     $practices = array_map('trim', explode(',', $survey->academic_practices));
-                    for ($i = 0; $i < $relevanceCount; $i++) {
-                        foreach ($practices as $p) {
-                            if ($p) $academicPractices[] = $p;
+                    foreach ($practices as $p) {
+                        if ($p) {
+                            $industryPracticesCounts[$p] = ($industryPracticesCounts[$p] ?? 0.0) + $weight;
                         }
                     }
                 }
 
                 if (isset($survey->certification_importance)) {
-                    for ($i = 0; $i < $relevanceCount; $i++) {
-                        $certImportances[] = $survey->certification_importance;
-                    }
+                    $certImportanceSum += (float) $survey->certification_importance * $weight;
+                    $certImportanceWeightSum += $weight;
                 }
             }
 
         } else {
-            // Global scope fallback
+            // Global scope fallback using memory-efficient cursor loop
             foreach ($studentSurveys as $survey) {
                 $text = implode(' ', [$survey->primary_interest, $survey->primary_skills, $survey->secondary_interest, $survey->secondary_skills, $survey->ternary_interest, $survey->ternary_skills]);
                 $domains = $this->extractDomains($text);
-                $studentDomains = array_merge($studentDomains, $domains);
+                $domains = $this->deduplicateDomains($domains);
+                foreach ($domains as $d) {
+                    $studentFrequencies[$d] = ($studentFrequencies[$d] ?? 0.0) + 1.0;
+                }
                 
                 if ($survey->new_program_suggestion) {
-                    $emergingTechnologies[] = $survey->new_program_suggestion;
+                    $emergingTechnologiesCounts[$survey->new_program_suggestion] = ($emergingTechnologiesCounts[$survey->new_program_suggestion] ?? 0.0) + 1.0;
                 }
 
                 if ($survey->primary_learning_balance) {
-                    $theoryPracticalScores[] = $parseBalance($survey->primary_learning_balance);
+                    $score = $parseBalance($survey->primary_learning_balance);
+                    $theoryPracticalSum += $score;
+                    $theoryPracticalWeightSum += 1.0;
                 }
 
                 $prefsText = implode(',', array_filter([$survey->primary_learning_methods, $survey->secondary_learning_methods, $survey->ternary_learning_methods]));
                 if ($prefsText) {
                     $prefs = array_map('trim', explode(',', $prefsText));
                     foreach ($prefs as $p) {
-                        if ($p) $learningPreferences[] = $p;
+                        if ($p) {
+                            $studentPrefsCounts[$p] = ($studentPrefsCounts[$p] ?? 0.0) + 1.0;
+                        }
                     }
                 }
             }
@@ -363,67 +371,69 @@ class AnalyticsNLPService
             foreach ($industrySurveys as $survey) {
                 $text = $survey->required_skills . ' ' . $survey->graduate_skill_gaps . ' ' . $survey->emerging_fields;
                 $domains = $this->extractDomains($text);
-                $industryDomains = array_merge($industryDomains, $domains);
+                $domains = $this->deduplicateDomains($domains);
+                foreach ($domains as $d) {
+                    $industryFrequencies[$d] = ($industryFrequencies[$d] ?? 0.0) + 1.0;
+                }
 
                 if ($survey->emerging_fields) {
-                    $emergingTechnologies[] = $survey->emerging_fields;
+                    $emergingTechnologiesCounts[$survey->emerging_fields] = ($emergingTechnologiesCounts[$survey->emerging_fields] ?? 0.0) + 1.0;
                 }
                 if ($survey->graduate_skill_gaps) {
-                    $skillGapsList = array_merge($skillGapsList, $this->extractDomains($survey->graduate_skill_gaps));
+                    $gaps = $this->extractDomains($survey->graduate_skill_gaps);
+                    foreach ($gaps as $g) {
+                        $skillGapsCounts[$g] = ($skillGapsCounts[$g] ?? 0.0) + 1.0;
+                    }
                 }
                 if ($survey->academic_practices) {
                     $practices = array_map('trim', explode(',', $survey->academic_practices));
                     foreach ($practices as $p) {
-                        if ($p) $academicPractices[] = $p;
+                        if ($p) {
+                            $industryPracticesCounts[$p] = ($industryPracticesCounts[$p] ?? 0.0) + 1.0;
+                        }
                     }
                 }
                 if (isset($survey->certification_importance)) {
-                    $certImportances[] = $survey->certification_importance;
+                    $certImportanceSum += (float) $survey->certification_importance;
+                    $certImportanceWeightSum += 1.0;
                 }
             }
         }
 
-        // 3. Count Frequencies
-        $studentFrequencies = $this->countFrequency($studentDomains);
-        $industryFrequencies = $this->countFrequency($industryDomains);
+        // Sort all accumulated frequencies
+        arsort($studentFrequencies);
+        arsort($industryFrequencies);
+        arsort($emergingTechnologiesCounts);
+        arsort($skillGapsCounts);
+        arsort($studentPrefsCounts);
+        arsort($industryPracticesCounts);
 
-        // 4. Calculate Jaccard Similarity (Overall match between supply and demand)
-        $jaccardResults = $this->calculateJaccardSimilarity($studentFrequencies, $industryFrequencies);
+        // 4. Calculate Weighted Jaccard Similarity (Overall match between supply and demand)
+        $jaccardResults = $this->calculateWeightedJaccard($studentFrequencies, $industryFrequencies);
 
         // 5. Structure distributions for the dashboard pie charts
         $studentDistribution = $this->formatDistribution($studentFrequencies);
         $industryDistribution = $this->formatDistribution($industryFrequencies);
 
-        // 6. Format emerging technologies and skill gaps
-        $emergingTechnologiesCounts = array_count_values($emergingTechnologies);
-        arsort($emergingTechnologiesCounts);
-        
-        $skillGapsCounts = array_count_values($skillGapsList);
-        arsort($skillGapsCounts);
-
         // 7. Process Learning Preferences Aggregates
-        $avgTheoryPractical = count($theoryPracticalScores) > 0 ? array_sum($theoryPracticalScores) / count($theoryPracticalScores) : 3.0;
-        $studentPracticalPercent = round(($avgTheoryPractical / 5) * 100);
+        $avgTheoryPractical = $theoryPracticalWeightSum > 0 ? $theoryPracticalSum / $theoryPracticalWeightSum : 3.0;
+        $studentPracticalPercent = (int) round(($avgTheoryPractical / 5) * 100);
         $studentTheoryPercent = 100 - $studentPracticalPercent;
 
-        $studentPrefsCounts = array_count_values($learningPreferences);
-        arsort($studentPrefsCounts);
         $studentPrefsFormatted = [];
         $totalPrefs = array_sum($studentPrefsCounts) ?: 1;
-        foreach (array_slice($studentPrefsCounts, 0, 5) as $name => $count) {
-            $studentPrefsFormatted[] = ['name' => $name, 'value' => round(($count / $totalPrefs) * 100)];
+        foreach (array_slice($studentPrefsCounts, 0, 5, true) as $name => $count) {
+            $studentPrefsFormatted[] = ['name' => $name, 'value' => (int) round(($count / $totalPrefs) * 100)];
         }
 
-        $industryPracticesCounts = array_count_values($academicPractices);
-        arsort($industryPracticesCounts);
         $industryPracticesFormatted = [];
         $totalPractices = array_sum($industryPracticesCounts) ?: 1;
-        foreach (array_slice($industryPracticesCounts, 0, 5) as $name => $count) {
-            $industryPracticesFormatted[] = ['name' => $name, 'value' => round(($count / $totalPractices) * 100)];
+        foreach (array_slice($industryPracticesCounts, 0, 5, true) as $name => $count) {
+            $industryPracticesFormatted[] = ['name' => $name, 'value' => (int) round(($count / $totalPractices) * 100)];
         }
 
-        $avgCertImportance = count($certImportances) > 0 ? array_sum($certImportances) / count($certImportances) : 3.0;
-        $certImportancePercent = round(($avgCertImportance / 5) * 100);
+        $avgCertImportance = $certImportanceWeightSum > 0 ? $certImportanceSum / $certImportanceWeightSum : 3.0;
+        $certImportancePercent = (int) round(($avgCertImportance / 5) * 100);
 
         // 8. Dynamic Curriculum Coverage & Gaps Analysis
         $curriculumDomains = [];
@@ -474,8 +484,8 @@ class AnalyticsNLPService
             $highDemandDomains = array_unique($highDemandDomains);
             $missingSubjects = array_values(array_diff($highDemandDomains, $curriculumDomains));
 
-            // Identify Outdated Subjects (Legacy Tech) & Low-Demand Subjects
-            $legacyKeywords = ['visual basic', 'flash', 'silverlight', 'cobol', 'dreamweaver', 'pascal', 'fortran'];
+            // Identify Outdated Subjects (Legacy Tech) & Low-Demand Subjects (Using config array)
+            $legacyKeywords = config('analytics.legacy_keywords', ['visual basic', 'flash', 'silverlight', 'cobol', 'dreamweaver', 'pascal', 'fortran']);
             foreach ($curriculumSubjects as $subject) {
                 $subLower = strtolower($subject['name']);
                 $isLegacy = false;
@@ -519,6 +529,18 @@ class AnalyticsNLPService
             $jaccardResults['overall_score'] = null;
         }
 
+        // Calculate separate match KPIs using Cosine Similarity of curriculum vs student/industry
+        $studentMatchScore = 0;
+        $industryMatchScore = 0;
+        if ($course) {
+            $studentMatchScore = (int) round($this->calculateCosineSimilarity($curriculumDomains, $studentFrequencies));
+            $industryMatchScore = (int) round($this->calculateCosineSimilarity($curriculumDomains, $industryFrequencies));
+        } else {
+            // Global scope fallback: just use the weighted Jaccard score
+            $studentMatchScore = $jaccardResults['overall_score'] ?? 0;
+            $industryMatchScore = $jaccardResults['overall_score'] ?? 0;
+        }
+
         return [
             'student_demand_distribution' => $studentDistribution,
             'industry_demand_distribution' => $industryDistribution,
@@ -546,11 +568,11 @@ class AnalyticsNLPService
             ],
 
             'kpis' => [
-                'studentMatch' => $jaccardResults['overall_score'] ?? 0,
-                'industryMatch' => $jaccardResults['overall_score'] ?? 0,
+                'studentMatch' => $studentMatchScore,
+                'industryMatch' => $industryMatchScore,
                 'alignment' => $coveragePercent,
                 'surveys' => $totalRelevant,
-                'companies' => count($relevantIndustrySurveys) > 0 ? count(array_unique(array_column(array_column($relevantIndustrySurveys, 'survey'), 'company_name'))) : 0,
+                'companies' => count($relevantIndustrySurveys) > 0 ? count(array_unique(array_filter(array_column(array_column($relevantIndustrySurveys, 'survey'), 'company_name')))) : 0,
                 'courses' => \App\Models\Course::count(),
                 'evidence_status' => $evidenceStatus,
                 'confidence' => $confidence,
@@ -599,29 +621,147 @@ class AnalyticsNLPService
         return array_diff($tokens, $stopWords);
     }
 
-    /**
-     * Maps normalized text to standard domains using the synonym dictionary.
-     */
+    public function preClassifySurveys(): void
+    {
+        $apiKey = env('GEMINI_API_KEY');
+        if (!$apiKey) {
+            return;
+        }
+
+        Log::info("Pre-classifying survey texts via Gemini API...");
+
+        $texts = [];
+        // Extract texts from student interests
+        foreach (\App\AI\Models\StudentInterest::cursor() as $survey) {
+            $t = trim(implode(' ', array_filter([
+                $survey->primary_skills,
+                $survey->secondary_skills,
+                $survey->ternary_skills,
+                $survey->new_program_suggestion
+            ])));
+            if ($t) $texts[] = $t;
+            if ($survey->primary_skills) $texts[] = trim($survey->primary_skills);
+            if ($survey->secondary_skills) $texts[] = trim($survey->secondary_skills);
+            if ($survey->ternary_skills) $texts[] = trim($survey->ternary_skills);
+        }
+
+        // Extract texts from industry requirements
+        foreach (\App\AI\Models\IndustryRequirement::cursor() as $survey) {
+            $t = trim(implode(' ', array_filter([
+                $survey->required_skills,
+                $survey->emerging_fields,
+                $survey->new_program_suggestion,
+                $survey->graduate_skill_gaps
+            ])));
+            if ($t) $texts[] = $t;
+            if ($survey->required_skills) $texts[] = trim($survey->required_skills);
+            if ($survey->graduate_skill_gaps) $texts[] = trim($survey->graduate_skill_gaps);
+        }
+
+        $uniqueTexts = array_values(array_unique(array_filter($texts)));
+        Log::info("Found " . count($uniqueTexts) . " unique survey texts to pre-classify.");
+
+        if (empty($uniqueTexts)) {
+            return;
+        }
+
+        $domainsList = array_keys($this->synonyms);
+        $chunks = array_chunk($uniqueTexts, 30); // Use 30 to stay within response token limits safely
+
+        foreach ($chunks as $chunkIndex => $chunk) {
+            Log::info("Sending batch " . ($chunkIndex + 1) . " of " . count($chunks) . " to Gemini...");
+            
+            try {
+                $payload = [];
+                foreach ($chunk as $idx => $txt) {
+                    $payload[] = ['id' => $idx, 'text' => $txt];
+                }
+
+                $prompt = "You are an expert curriculum alignment classifier. Your task is to analyze the following list of survey responses and map each response to one or more academic/industry domains from this allowed list:\n"
+                    . json_encode($domainsList) . "\n\n"
+                    . "Here are the survey responses to classify:\n"
+                    . json_encode($payload) . "\n\n"
+                    . "Response format requirement: Return a raw JSON array containing objects with keys 'text' (exact match to input text) and 'domains' (array of strings from the allowed list). Do not write any conversational intro/outro text, code blocks, or markdown. Output only the raw valid JSON array.";
+
+                $response = \Illuminate\Support\Facades\Http::post(
+                    "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" . $apiKey,
+                    [
+                        'contents' => [[
+                            'parts' => [[
+                                'text' => $prompt
+                            ]]
+                        ]],
+                        'generationConfig' => [
+                            'responseMimeType' => 'application/json'
+                        ]
+                    ]
+                );
+
+                if ($response->successful()) {
+                    $responseText = $response->json('candidates.0.content.parts.0.text');
+                    $results = json_decode(trim($responseText), true);
+                    if (is_array($results)) {
+                        foreach ($results as $res) {
+                            if (isset($res['text']) && isset($res['domains'])) {
+                                $cacheKey = md5(trim($res['text']));
+                                self::$geminiCache[$cacheKey] = array_values(array_unique(array_filter($res['domains'])));
+                            }
+                        }
+                    }
+                } else {
+                    Log::error("Gemini batch call failed with status: " . $response->status() . " Body: " . $response->body());
+                }
+            } catch (\Exception $e) {
+                Log::error("Error in Gemini batch pre-classification: " . $e->getMessage());
+            }
+
+            // Sleep 4 seconds between calls to respect the 15 RPM free-tier limit
+            if (count($chunks) > 1 && $chunkIndex < count($chunks) - 1) {
+                sleep(4);
+            }
+        }
+
+        Log::info("Pre-classification completed. Cached " . count(self::$geminiCache) . " classifications.");
+    }
+
     public function extractDomains(string $text): array
     {
         if (empty(trim($text))) {
             return [];
         }
 
+        $apiKey = env('GEMINI_API_KEY');
+        if ($apiKey) {
+            $cacheKey = md5(trim($text));
+            if (isset(self::$geminiCache[$cacheKey])) {
+                return self::$geminiCache[$cacheKey];
+            }
+        }
+
+        return $this->extractDomainsLocalRegex($text);
+    }
+
+    public function extractDomainsLocalRegex(string $text): array
+    {
         $normalized = $this->normalizeText($text);
         
         $matchedDomains = [];
 
         foreach ($this->synonyms as $domain => $keywords) {
             foreach ($keywords as $keyword) {
-                // If the keyword appears in the normalized text
-                if (str_contains($normalized, strtolower($keyword))) {
+                $normalizedKeyword = $this->normalizeText($keyword);
+                if (empty($normalizedKeyword)) {
+                    continue;
+                }
+                // Match with word boundaries to avoid false positives (e.g. 'ml' in 'html')
+                $pattern = '/\b' . preg_quote($normalizedKeyword, '/') . '\b/i';
+                if (preg_match($pattern, $normalized)) {
                     $matchedDomains[] = $domain;
                 }
             }
         }
 
-        return $matchedDomains;
+        return array_values(array_unique($matchedDomains));
     }
 
     /**
@@ -765,9 +905,7 @@ class AnalyticsNLPService
             'Agriculture' => ['agriculture', 'farming', 'crop', 'horticulture'],
             'Law' => ['law', 'legal', 'jurisprudence'],
             'Science' => ['science', 'chemistry', 'physics', 'biology', 'zoology', 'botany']
-        ];
-
-        $matchedFields = [];
+        ];        $matchedFields = [];
         foreach ($fields as $fieldName => $keywords) {
             foreach ($keywords as $kw) {
                 $pattern = '/\b' . preg_quote($kw, '/') . '\b/i';
@@ -783,5 +921,70 @@ class AnalyticsNLPService
         }
 
         return array_unique($matchedFields);
+    }
+
+    /**
+     * Calculates the cosine similarity between curriculum domains and survey frequency distribution.
+     */
+    protected function calculateCosineSimilarity(array $curriculumDomains, array $frequencies): float
+    {
+        if (empty($curriculumDomains) || empty($frequencies)) {
+            return 0.0;
+        }
+
+        $dotProduct = 0.0;
+        $normA = count($curriculumDomains); // Since each domain in curriculum has weight 1.0, sum of 1.0^2 is count.
+        $normB = 0.0;
+
+        foreach ($frequencies as $domain => $count) {
+            $normB += $count * $count;
+            if (in_array($domain, $curriculumDomains)) {
+                $dotProduct += 1.0 * $count;
+            }
+        }
+
+        if ($normA === 0 || $normB === 0.0) {
+            return 0.0;
+        }
+
+        return ($dotProduct / (sqrt($normA) * sqrt($normB))) * 100;
+    }
+
+    /**
+     * Calculates the weighted Jaccard similarity between two frequency distributions.
+     */
+    protected function calculateWeightedJaccard(array $setA, array $setB): array
+    {
+        $keysA = array_keys($setA);
+        $keysB = array_keys($setB);
+        $intersection = array_intersect($keysA, $keysB);
+        $union = array_unique(array_merge($keysA, $keysB));
+
+        $allKeys = array_unique(array_merge($keysA, $keysB));
+        if (empty($allKeys)) {
+            return [
+                'intersection' => [],
+                'union' => [],
+                'overall_score' => 0
+            ];
+        }
+
+        $sumMin = 0.0;
+        $sumMax = 0.0;
+
+        foreach ($allKeys as $key) {
+            $valA = $setA[$key] ?? 0.0;
+            $valB = $setB[$key] ?? 0.0;
+            $sumMin += min($valA, $valB);
+            $sumMax += max($valA, $valB);
+        }
+
+        $score = $sumMax > 0 ? ($sumMin / $sumMax) * 100 : 0.0;
+
+        return [
+            'intersection' => array_values($intersection),
+            'union' => array_values($union),
+            'overall_score' => (int) round($score)
+        ];
     }
 }

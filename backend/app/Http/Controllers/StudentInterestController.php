@@ -87,19 +87,29 @@ class StudentInterestController extends Controller
             // Remove token so it doesn't get sent to Google Sheets
             unset($validated['recaptcha_token']);
 
-            // Send to Google Sheets webhook asynchronously using validated payload keys
-            $webhookUrl = env('GOOGLE_SHEET_WEBHOOK_URL');
+            // Send to Google Sheets webhook asynchronously using validated payload keys with signature
+            $webhookUrl = env('GOOGLE_SHEET_STUDENT_WEBHOOK_URL') ?: env('GOOGLE_SHEET_WEBHOOK_URL');
             if ($webhookUrl) {
                 try {
-                    Http::timeout(5)->post($webhookUrl, $validated);
+                    $secret = env('GOOGLE_SHEETS_WEBHOOK_SECRET', 'secret_key');
+                    $signature = hash_hmac('sha256', json_encode($validated), $secret);
+                    $response = Http::timeout(5)->withHeaders([
+                        'X-Webhook-Signature' => $signature
+                    ])->post($webhookUrl, $validated);
+                    if (!$response->successful()) {
+                        Log::error('Student Google Sheet Webhook failed with status ' . $response->status() . ': ' . $response->body());
+                    } else {
+                        $resJson = $response->json();
+                        if (is_array($resJson) && isset($resJson['success']) && !$resJson['success']) {
+                            Log::error('Student Google Sheet Apps Script execution error: ' . ($resJson['error'] ?? 'Unknown script error'));
+                        }
+                    }
                 } catch (\Exception $sheetException) {
                     // Log error but do not disrupt student user experience
                     Log::error('Google Sheet Sync Error: ' . $sheetException->getMessage());
                 }
             }
 
-            // We bypass saving directly to the local database here to prevent database/schema mismatch issues.
-            // Data is synced to the database when the admin imports the Google Sheets CSV via the AI dashboard.
             return response()->json([
                 'success' => true,
                 'message' => 'Student academic interests recorded successfully.'
@@ -414,15 +424,35 @@ class StudentInterestController extends Controller
             $validated['survey_submitted_at'] = now();
             unset($validated['recaptcha_token']);
 
-            $industryAnalysis = \App\AI\Models\IndustryRequirement::create($validated);
+            // Send to Google Sheets webhook asynchronously using validated payload keys with signature
+            $webhookUrl = env('GOOGLE_SHEET_INDUSTRY_WEBHOOK_URL') ?: env('GOOGLE_SHEET_WEBHOOK_URL');
+            if ($webhookUrl) {
+                try {
+                    $secret = env('GOOGLE_SHEETS_WEBHOOK_SECRET', 'secret_key');
+                    $signature = hash_hmac('sha256', json_encode($validated), $secret);
+                    $response = Http::timeout(5)->withHeaders([
+                        'X-Webhook-Signature' => $signature
+                    ])->post($webhookUrl, $validated);
+                    if (!$response->successful()) {
+                        Log::error('Industry Google Sheet Webhook failed with status ' . $response->status() . ': ' . $response->body());
+                    } else {
+                        $resJson = $response->json();
+                        if (is_array($resJson) && isset($resJson['success']) && !$resJson['success']) {
+                            Log::error('Industry Google Sheet Apps Script execution error: ' . ($resJson['error'] ?? 'Unknown script error'));
+                        }
+                    }
+                } catch (\Exception $sheetException) {
+                    // Log error but do not disrupt user experience
+                    Log::error('Industry Google Sheet Sync Error: ' . $sheetException->getMessage());
+                }
+            }
 
             return response()->json([
                 'success' => true,
-                'message' => 'Industry requirements submitted successfully.',
-                'data' => $industryAnalysis
+                'message' => 'Industry requirements submitted successfully.'
             ], 201);
         } catch (\Exception $e) {
-            Log::error('Failed to save industry requirement: ' . $e->getMessage());
+            Log::error('Failed to submit industry requirement: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while saving industry requirements.',
