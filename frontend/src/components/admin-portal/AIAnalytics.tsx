@@ -556,6 +556,24 @@ const ProgramHub: React.FC<{
 /* =========================================================
    STATE B: PROGRAM-SPECIFIC DASHBOARD
    ========================================================= */
+const formatLastUpdated = (dateStr: string) => {
+    if (!dateStr) return 'N/A';
+    try {
+        const date = new Date(dateStr);
+        if (isNaN(date.getTime())) return dateStr;
+        return date.toLocaleString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+        }).replace(',', ' -');
+    } catch {
+        return dateStr;
+    }
+};
+
 const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ course, onBack }) => {
     const [loading, setLoading] = useState(true);
     const [overview, setOverview] = useState<any>(null);
@@ -1158,7 +1176,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                     <div className="flex items-center gap-2 mt-1.5" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginTop: '6px' }}>
                         {course.code && course.code.trim() && <span className="code-badge">{course.code}</span>}
                         <span className="text-slate-500 text-sm" style={{ fontWeight: 600 }}>{course.department}</span>
-                        <span className="text-slate-400 text-xs" style={{ marginLeft: '8px' }}>| Last Updated: {overview.last_generated}</span>
+                        <span className="text-slate-400 text-xs" style={{ marginLeft: '8px' }}>| Last Updated: {formatLastUpdated(overview.last_generated)}</span>
                     </div>
                 </div>
             </div>
@@ -1693,7 +1711,6 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '24px' }}>
-                        {/* Academic Entry Requirements Section */}
                         <div className="ai-chart-card" style={{ margin: 0, border: '1px solid #D1FAE5', background: 'linear-gradient(135deg, #ECFDF5 0%, #F0FDF4 100%)' }}>
                             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '20px' }}>
                                 <div style={{ background: '#D1FAE5', color: '#059669', borderRadius: '10px', padding: '8px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -2039,6 +2056,7 @@ interface GeoData {
     district_counts: Record<string, number>;
     education_levels: { name: string; value: number }[];
     industry_sectors: { name: string; value: number }[];
+    industry_domains: { name: string; value: number }[];
 }
 
 const InteractiveSriLankaMap: React.FC = () => {
@@ -2049,12 +2067,19 @@ const InteractiveSriLankaMap: React.FC = () => {
     const [allIslandSkills, setAllIslandSkills] = useState<{ name: string; score: number; percentage: number }[]>([]);
     const [loadingAllIslandSkills, setLoadingAllIslandSkills] = useState(false);
 
+    const [industrySelectedField, setIndustrySelectedField] = useState<string | null>(null);
+    const [industrySkills, setIndustrySkills] = useState<{ name: string; score: number; value: number; percentage: number }[]>([]);
+    const [loadingIndustrySkills, setLoadingIndustrySkills] = useState(false);
+
     useEffect(() => {
         aiAnalyticsService.getGeographyData().then(d => {
             setGeoData(d);
             setLoadingGeo(false);
             if (d?.all_island && d.all_island.length > 0) {
                 handleAllIslandFieldClick(d.all_island[0].name);
+            }
+            if (d?.industry_domains && d.industry_domains.length > 0) {
+                handleIndustryFieldClick(d.industry_domains[0].name);
             }
         }).catch(() => setLoadingGeo(false));
     }, []);
@@ -2080,6 +2105,17 @@ const InteractiveSriLankaMap: React.FC = () => {
             setAllIslandSkills(data.skills || []);
         } catch { setAllIslandSkills([]); }
         finally { setLoadingAllIslandSkills(false); }
+    };
+
+    const handleIndustryFieldClick = async (field: string) => {
+        setIndustrySelectedField(field);
+        setLoadingIndustrySkills(true);
+        setIndustrySkills([]);
+        try {
+            const data = await aiAnalyticsService.getIndustrySkills(field);
+            setIndustrySkills(data.skills || []);
+        } catch { setIndustrySkills([]); }
+        finally { setLoadingIndustrySkills(false); }
     };
 
     const allIslandPieData = (geoData?.all_island || []).slice(0, 8).map(f => ({ ...f, value: f.score }));
@@ -2319,6 +2355,78 @@ const InteractiveSriLankaMap: React.FC = () => {
                                             }} />
                                             <Legend layout="vertical" verticalAlign="middle" align="right" iconType="circle" iconSize={8}
                                                 formatter={(value) => <span style={{ fontSize: '11px', color: '#475569', fontWeight: 600, textTransform: 'capitalize' }}>{value}</span>} />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+
+            {/* Row 3: Industry Demand & Soft Skills */}
+            <div style={{ background: '#FFFFFF', borderRadius: '20px', border: '1px solid #E2E8F0', boxShadow: '0 4px 24px rgba(0,0,0,0.06)', padding: '28px', display: 'flex', flexDirection: 'column' }}>
+                {loadingGeo ? (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '360px' }}>
+                        <div style={{ width: '36px', height: '36px', borderRadius: '50%', border: '3px solid #E9D5FF', borderTopColor: '#7C3AED', animation: 'spin 0.9s linear infinite' }}></div>
+                    </div>
+                ) : (
+                    <div style={{ display: 'grid', gridTemplateColumns: industrySelectedField ? '1fr 1fr' : '1fr', gap: '32px', alignItems: 'flex-start' }}>
+                        <div>
+                            <h4 style={{ margin: '0 0 4px 0', fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>Primary Academic Domain of Interest (top 05)</h4>
+                            <p style={{ margin: '0 0 16px 0', fontSize: '12px', color: '#64748B', fontWeight: 500 }}>
+                                Click a slice to see the top soft skills requested for that field.
+                            </p>
+                            <ResponsiveContainer width="100%" height={340}>
+                                <PieChart>
+                                    <Pie data={geoData?.industry_domains || []} cx="50%" cy="50%" outerRadius={120} paddingAngle={3} dataKey="value"
+                                        onClick={(entry: any) => handleIndustryFieldClick(entry.name)} style={{ cursor: 'pointer' }}>
+                                        {(geoData?.industry_domains || []).map((entry, i) => (
+                                            <Cell key={i} fill={MAP_CHART_COLORS[i % MAP_CHART_COLORS.length]}
+                                                stroke={industrySelectedField === entry.name ? '#0F172A' : 'transparent'}
+                                                strokeWidth={industrySelectedField === entry.name ? 3 : 0}
+                                                opacity={industrySelectedField && industrySelectedField !== entry.name ? 0.45 : 1} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip content={({ active, payload }: any) => {
+                                        if (active && payload?.length) {
+                                            const p = payload[0].payload;
+                                            return <div style={{ background: '#1E293B', color: '#FFF', padding: '10px 14px', borderRadius: '10px', fontSize: '12px' }}><div style={{ fontWeight: 700 }}>{p.name}</div><div style={{ opacity: 0.85, marginTop: 4 }}>Responses count: {p.value}</div></div>;
+                                        }
+                                        return null;
+                                    }} />
+                                    <Legend layout="vertical" verticalAlign="middle" align="right" iconType="circle" iconSize={8}
+                                        formatter={(value) => <span style={{ fontSize: '11px', color: '#475569', fontWeight: 600 }}>{value}</span>} />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        </div>
+                        {industrySelectedField && (
+                            <div style={{ animation: 'fadeInRight 0.3s ease' }}>
+                                <h4 style={{ margin: '0 0 4px 0', fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>Top 7 Soft Skills for <span style={{ background: 'linear-gradient(135deg, #ECFDF5, #D1FAE5)', color: '#047857', padding: '2px 10px', borderRadius: '6px', fontWeight: 800 }}>{industrySelectedField}</span></h4>
+                                <p style={{ margin: '0 0 16px 0', fontSize: '12px', color: '#64748B', fontWeight: 500 }}>All Island · Industry Demands</p>
+                                {loadingIndustrySkills ? (
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '300px' }}>
+                                        <div style={{ width: '28px', height: '28px', borderRadius: '50%', border: '3px solid #E9D5FF', borderTopColor: '#7C3AED', animation: 'spin 0.9s linear infinite' }}></div>
+                                    </div>
+                                ) : industrySkills.length === 0 ? (
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '300px', color: '#64748B', fontSize: '13px' }}>No skill data found.</div>
+                                ) : (
+                                    <ResponsiveContainer width="100%" height={300}>
+                                        <PieChart>
+                                            <Pie data={industrySkills} cx="50%" cy="50%" innerRadius={50} outerRadius={85} paddingAngle={4} dataKey="value">
+                                                {industrySkills.map((entry, idx) => (
+                                                    <Cell key={`cell-ind-skill-${idx}`} fill={MAP_CHART_COLORS[(idx + 2) % MAP_CHART_COLORS.length]} />
+                                                ))}
+                                            </Pie>
+                                            <Tooltip content={({ active, payload }: any) => {
+                                                if (active && payload?.length) {
+                                                    const p = payload[0].payload;
+                                                    return <div style={{ background: '#1E293B', color: '#FFF', padding: '10px 14px', borderRadius: '10px', fontSize: '12px' }}><div style={{ fontWeight: 700 }}>{p.name}</div><div style={{ opacity: 0.85, marginTop: 4 }}>Demanded: {p.value} times ({p.percentage}%)</div></div>;
+                                                }
+                                                return null;
+                                            }} />
+                                            <Legend layout="vertical" verticalAlign="middle" align="right" iconType="circle" iconSize={8}
+                                                formatter={(value) => <span style={{ fontSize: '11px', color: '#475569', fontWeight: 600 }}>{value}</span>} />
                                         </PieChart>
                                     </ResponsiveContainer>
                                 )}
