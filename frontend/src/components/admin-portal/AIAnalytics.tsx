@@ -56,13 +56,13 @@ export const AIAnalytics: React.FC = () => {
     const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
     const [studentCount, setStudentCount] = useState<number>(0);
     const [industryCount, setIndustryCount] = useState<number>(0);
-    // educationLevels and districts removed — now fetched directly by InteractiveSriLankaMap
 
-    // Toast notification state
+
+
     const [toasts, setToasts] = useState<{ id: number; message: string; type: 'success' | 'error' | 'info' }[]>([]);
     const toastIdRef = React.useRef(0);
 
-    // Confirmation modal state
+
     const [confirmModal, setConfirmModal] = useState<{ open: boolean; onConfirm: () => void }>({ open: false, onConfirm: () => { } });
 
     const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
@@ -124,7 +124,7 @@ export const AIAnalytics: React.FC = () => {
                 try {
                     const res = await aiAnalyticsService.syncGoogleSheet();
                     showToast(res.message || "Google Sheets sync completed successfully!", 'success');
-                    // Refresh programs lists
+
                     fetchPrograms();
                 } catch (err: any) {
                     showToast('Google Sheets Sync Failed: ' + (err.response?.data?.error || err.response?.data?.message || err.message), 'error');
@@ -138,7 +138,7 @@ export const AIAnalytics: React.FC = () => {
     if (loading) {
         return (
             <>
-                {/* Toast must always be in the DOM */}
+                { }
                 <div className="toast-container">
                     {toasts.map(toast => (
                         <div key={toast.id} className={`toast-notification toast-${toast.type}`} onClick={() => dismissToast(toast.id)}>
@@ -162,7 +162,7 @@ export const AIAnalytics: React.FC = () => {
 
     return (
         <div className="ai-analytics-page">
-            {/* ===== FULL-PAGE SYNC OVERLAY ===== */}
+            { }
             {syncing && (
                 <div className="sync-overlay">
                     <div className="sync-overlay-content">
@@ -173,7 +173,7 @@ export const AIAnalytics: React.FC = () => {
                             <Cloud size={36} className="sync-overlay-icon" />
                         </div>
                         <h2 className="sync-overlay-title">Syncing Data</h2>
-                        <p className="sync-overlay-desc">Downloading surveys from Google Sheets and running the AI matching pipeline. This may take 1–2 minutes.</p>
+                        <p className="sync-overlay-desc">Downloading surveys from Google Sheets and running the AI matching pipeline. This may take few minutes.</p>
                         <div className="sync-progress-bar">
                             <div className="sync-progress-bar-fill"></div>
                         </div>
@@ -182,7 +182,7 @@ export const AIAnalytics: React.FC = () => {
                 </div>
             )}
 
-            {/* ===== CONFIRMATION MODAL ===== */}
+            { }
             {confirmModal.open && (
                 <div className="confirm-modal-backdrop" onClick={() => setConfirmModal({ open: false, onConfirm: () => { } })}>
                     <div className="confirm-modal-card" onClick={e => e.stopPropagation()}>
@@ -203,7 +203,7 @@ export const AIAnalytics: React.FC = () => {
                 </div>
             )}
 
-            {/* ===== TOAST NOTIFICATIONS ===== */}
+            { }
             <div className="toast-container">
                 {toasts.map(toast => (
                     <div key={toast.id} className={`toast-notification toast-${toast.type}`} onClick={() => dismissToast(toast.id)}>
@@ -243,9 +243,7 @@ export const AIAnalytics: React.FC = () => {
 
 
 
-/* =========================================================
-   STATE A: PROGRAM HUB (LANDING PAGE)
-   ========================================================= */
+
 const ProgramHub: React.FC<{
     programs: Course[],
     globalEmergingTech: string[],
@@ -358,7 +356,7 @@ const ProgramHub: React.FC<{
 
         return (
             <div className="programs-hub-container" style={{ padding: '0' }}>
-                {/* Header section identical to other pages with Sync button aligned on the right */}
+                { }
                 <div className="admin-page-header">
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
                         {(levelFilter !== 'all' || searchTerm !== '') && (
@@ -412,7 +410,7 @@ const ProgramHub: React.FC<{
                     )}
                 </div>
 
-                {/* Search Input Bar - only show when inside programme categories or a specific level */}
+                { }
                 {levelFilter !== 'all' && (
                     <div className="cm-filters">
                         <div className="cm-search" style={{ maxWidth: '100%' }}>
@@ -427,7 +425,7 @@ const ProgramHub: React.FC<{
                     </div>
                 )}
 
-                {/* Survey Records Analyzed Metric Cards + Programme-wise Analysis Entry */}
+                { }
                 {levelFilter === 'all' && !searchTerm && (
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', marginBottom: '20px' }}>
                         <div className="ai-chart-card" style={{ display: 'flex', alignItems: 'center', gap: '20px', padding: '20px 24px', margin: 0, borderLeft: '6px solid #7C3AED', background: '#FFFFFF', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.015)', borderRadius: '16px' }}>
@@ -483,19 +481,19 @@ const ProgramHub: React.FC<{
 
                 {levelFilter === 'all' && !searchTerm && (
                     <>
-                        {/* Second Row: Interactive Sri Lanka Map (full width) */}
+                        { }
                         <div style={{ marginBottom: '32px' }}>
                             <InteractiveSriLankaMap />
                         </div>
 
-                        {/* Third Row: University Opportunities Bar Chart */}
+                        { }
                         <div style={{ marginBottom: '32px' }}>
                             <UniversityOpportunitiesChart />
                         </div>
                     </>
                 )}
                 {levelFilter === 'categories_hub' && !searchTerm ? (
-                    /* Categories Hub: Show the 5 categories directly */
+
                     <div className="cm-categories-grid" style={{ margin: 0, padding: 0, boxShadow: 'none', border: 'none', background: 'transparent' }}>
                         {categories.map(cat => {
                             const count = getCount(cat.name);
@@ -515,7 +513,7 @@ const ProgramHub: React.FC<{
                         })}
                     </div>
                 ) : levelFilter !== 'all' ? (
-                    /* Course Content Grid displayed when category is selected or search term is entered */
+
                     <>
                         <div className="cm-grid">
                             {filteredPrograms.map(p => {
@@ -569,9 +567,7 @@ const ProgramHub: React.FC<{
         );
     };
 
-/* =========================================================
-   STATE B: PROGRAM-SPECIFIC DASHBOARD
-   ========================================================= */
+
 const formatLastUpdated = (dateStr: string) => {
     if (!dateStr) return 'N/A';
     try {
@@ -636,7 +632,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                 doc.text(text, x, y);
             };
 
-            // --- PAGE 1: TITLE & EXECUTIVE SUMMARY ---
+
             addText('ACADEMIC CURRICULUM ALIGNMENT REPORT', margin, { fontSize: 16, fontStyle: 'bold', color: 'purple' });
             y += 10;
 
@@ -748,30 +744,30 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
             const theory = overview.learning_preferences_data?.student_theory_percent || 0;
             const practical = overview.learning_preferences_data?.student_practical_percent || 0;
 
-            // Draw text labels above the bar
+
             addText(`Theory: ${theory}%`, margin + 10, { fontSize: 9, fontStyle: 'bold' });
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(9);
             doc.text(`Practical: ${practical}%`, margin + 110, y, { align: 'right' });
             y += 3;
 
-            // Draw horizontal split bar (Total width: 100mm, height: 6mm)
+
             const totalBarWidth = 100;
             const barHeight = 5;
             const theoryWidth = (theory / 100) * totalBarWidth;
             const practicalWidth = (practical / 100) * totalBarWidth;
 
-            // Background of bar
+
             doc.setFillColor(241, 245, 249);
             doc.rect(margin + 10, y, totalBarWidth, barHeight, 'F');
 
-            // Draw Theory portion
+
             if (theoryWidth > 0) {
                 doc.setFillColor(192, 132, 252);
                 doc.rect(margin + 10, y, theoryWidth, barHeight, 'F');
             }
 
-            // Draw Practical portion
+
             if (practicalWidth > 0) {
                 doc.setFillColor(124, 58, 237);
                 doc.rect(margin + 10 + theoryWidth, y, practicalWidth, barHeight, 'F');
@@ -788,7 +784,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                     addText(`${m.name}: ${m.value}%`, margin + 10, { fontSize: 9 });
                     y += 4;
 
-                    // Draw single progress bar chart
+
                     doc.setFillColor(241, 245, 249);
                     doc.rect(margin + 10, y, 90, 2, 'F');
                     doc.setFillColor(124, 58, 237);
@@ -800,7 +796,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                 y += 5;
             }
 
-            // --- PAGE 2: STUDENT & JOB MARKET ALIGNMENT ---
+
             doc.addPage();
             y = margin;
 
@@ -885,7 +881,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                 y += 5;
             }
 
-            // --- PAGE 3: ACADEMIC ENTRY REQUIREMENTS EVIDENCE ---
+
             doc.addPage();
             y = margin;
 
@@ -947,7 +943,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
 
             y += 4;
 
-            // --- PAGE 4: RECOMMENDATIONS ---
+
             doc.addPage();
             y = margin;
 
@@ -969,13 +965,13 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                     else doc.setFillColor(59, 130, 246);
                     doc.rect(margin, y, 2.5, 34, 'F');
 
-                    // Title
+
                     doc.setFont('helvetica', 'bold');
                     doc.setFontSize(10);
                     doc.setTextColor(15, 23, 42);
                     doc.text(`${rec.priority} Priority: ${rec.title}`, margin + 6, y + 5);
 
-                    // Description
+
                     doc.setFont('helvetica', 'normal');
                     doc.setFontSize(9);
                     doc.setTextColor(71, 85, 105);
@@ -983,11 +979,11 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                     const splitDesc = doc.splitTextToSize(descText, pageWidth - margin * 2 - 12);
                     doc.text(splitDesc, margin + 6, y + 11);
 
-                    // Impact
+
                     doc.setFont('helvetica', 'bold');
                     doc.text(`Impact: ${rec.impact}`, margin + 6, y + 23);
 
-                    // Source
+
                     doc.setFont('helvetica', 'normal');
                     doc.setFontSize(8.5);
                     doc.setTextColor(148, 163, 184);
@@ -997,7 +993,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                 });
             }
 
-            // --- PAGE 4: EXISTING CURRICULUM ---
+
             doc.addPage();
             y = margin;
 
@@ -1012,7 +1008,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                     y += 6;
 
                     if (sem.subjects && sem.subjects.length > 0) {
-                        // Header row
+
                         doc.setFont('helvetica', 'bold');
                         doc.setFontSize(8.5);
                         doc.setTextColor(100, 116, 139);
@@ -1024,7 +1020,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                         doc.line(margin + 10, y, pageWidth - margin - 10, y);
                         y += 5;
 
-                        // Items
+
                         sem.subjects.forEach((sub: any) => {
                             checkPageOverflow(8);
                             doc.setFont('helvetica', 'normal');
@@ -1048,7 +1044,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                 addText('Curriculum Subjects', margin + 5, { fontSize: 11, fontStyle: 'bold', color: 'purple' });
                 y += 6;
 
-                // Header row
+
                 doc.setFont('helvetica', 'bold');
                 doc.setFontSize(8.5);
                 doc.setTextColor(100, 116, 139);
@@ -1060,7 +1056,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                 doc.line(margin + 10, y, pageWidth - margin - 10, y);
                 y += 5;
 
-                // Items
+
                 fullCourseData.subjects.forEach((sub: any) => {
                     checkPageOverflow(8);
                     doc.setFont('helvetica', 'normal');
@@ -1146,7 +1142,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
 
     return (
         <div id="ai-analytics-report-content" className="space-y-8 pb-10" style={{ animation: 'fadeIn 0.3s ease' }}>
-            {/* Header */}
+            { }
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6" style={{ paddingBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '20px' }}>
                 <div style={{ width: '100%' }}>
                     <button
@@ -1196,7 +1192,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                     </div>
                 </div>
             </div>
-            {/* Tab Controls */}
+            { }
             <div
                 className="pdf-hide"
                 style={{
@@ -1302,11 +1298,11 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                 </button>
             </div>
 
-            {/* Tab 1: AI Insights */}
+            { }
             <div className="pdf-insights-section" style={{ display: activeTab === 'insights' ? 'flex' : 'none', flexDirection: 'column', gap: '36px' }}>
                 <h3 className="pdf-only-title" style={{ display: 'none', fontSize: '20px', fontWeight: 800, color: '#1E293B', borderBottom: '2px solid #E2E8F0', paddingBottom: '8px', marginBottom: '24px', marginTop: '24px' }}>I. AI Analytics & Survey Insights</h3>
 
-                {/* Category 1: Curriculum & Teaching Delivery */}
+                { }
                 <div className="category-section" style={{ background: '#FAF5FF50', border: '1px solid #7C3AED10', padding: '28px', borderRadius: '24px', boxShadow: '0 4px 20px rgba(124, 58, 237, 0.02)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -1343,7 +1339,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                             </div>
                         </div>
 
-                        {/* Score badge next to the title (right corner) */}
+                        { }
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', backgroundColor: '#F3E8FF70', padding: '10px 18px', borderRadius: '16px', border: '1px solid #7C3AED15' }}>
                             <span style={{ fontSize: '24px', fontWeight: 800, color: '#7C3AED', lineHeight: 1.1 }}>{overview.coverage_percent !== null ? `${overview.coverage_percent}%` : 'N/A'}</span>
                             <span style={{ fontSize: '12px', fontWeight: 500, color: '#6B21A8', marginTop: '4px' }}>Curriculum Coverage</span>

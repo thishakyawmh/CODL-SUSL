@@ -26,7 +26,7 @@ export const PublicSurveysHub: React.FC = () => {
                 </header>
 
                 <div className="ps-hub-choices">
-                    {/* Industry Survey Card */}
+                    { }
                     <div className="ps-choice-card industry" onClick={() => navigate('/survey/industry')}>
                         <div className="ps-choice-icon">
                             <Building2 size={32} />
@@ -40,7 +40,7 @@ export const PublicSurveysHub: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Student Survey Card */}
+                    { }
                     <div className="ps-choice-card student" onClick={() => navigate('/survey/student')}>
                         <div className="ps-choice-icon">
                             <GraduationCap size={32} />

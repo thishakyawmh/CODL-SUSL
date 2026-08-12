@@ -22,9 +22,9 @@ const getRoleLabel = (role: string) => {
     return role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
 };
 
-// ============================================================================
-// SVG Chart Subcomponents (Option 2: Recharts Library Integration)
-// ============================================================================
+
+
+
 
 interface MonthlyData {
     month: string;
@@ -36,7 +36,7 @@ interface LevelData {
     count: number;
 }
 
-// Custom Tooltip component for Recharts Area/Bar charts
+
 const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
         return (
@@ -59,7 +59,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     return null;
 };
 
-// EnrollmentTrendChart using Recharts
+
 const EnrollmentTrendChart: React.FC<{ data: MonthlyData[] }> = ({ data }) => {
     if (!data || data.length === 0) {
         return (
@@ -109,7 +109,7 @@ const EnrollmentTrendChart: React.FC<{ data: MonthlyData[] }> = ({ data }) => {
     );
 };
 
-// ProgramLevelChart using Recharts
+
 const ProgramLevelChart: React.FC<{ data: LevelData[] }> = ({ data }) => {
     const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
@@ -137,7 +137,7 @@ const ProgramLevelChart: React.FC<{ data: LevelData[] }> = ({ data }) => {
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', padding: '6px 0' }}>
-            {/* Pie Chart Container */}
+            { }
             <div style={{ width: 180, height: 180, position: 'relative', flexShrink: 0 }}>
                 <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
@@ -187,7 +187,7 @@ const ProgramLevelChart: React.FC<{ data: LevelData[] }> = ({ data }) => {
                 </div>
             </div>
 
-            {/* Legends at the Bottom */}
+            { }
             <div className="doughnut-legend-grid" style={{ width: '100%', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', marginTop: '4px' }}>
                 {data.map((entry, index) => {
                     const percent = total > 0 ? Math.round((entry.count / total) * 100) : 0;
@@ -214,7 +214,7 @@ const ProgramLevelChart: React.FC<{ data: LevelData[] }> = ({ data }) => {
     );
 };
 
-// GeographicHotspotsChart using Interactive SVG Sri Lanka District Map
+
 const GeographicHotspotsChart: React.FC<{ data: [string, number][] }> = ({ data }) => {
     const [hoveredLocation, setHoveredLocation] = useState<{ x: number, y: number, name: string, count: number } | null>(null);
 
@@ -226,10 +226,10 @@ const GeographicHotspotsChart: React.FC<{ data: [string, number][] }> = ({ data 
         );
     }
 
-    // Find max count to scale color intensity
+
     const maxCount = Math.max(...data.map(d => d[1]), 1);
 
-    // Map of district counts (case-insensitive key mapping)
+
     const districtCounts: Record<string, number> = {};
     data.forEach(([dist, count]) => {
         districtCounts[dist.toLowerCase().trim()] = count;
@@ -237,7 +237,7 @@ const GeographicHotspotsChart: React.FC<{ data: [string, number][] }> = ({ data 
 
     return (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '10px 0' }}>
-            {/* Interactive SVG Map of Sri Lanka */}
+            { }
             <div className="chart-container" style={{ width: '220px', height: '330px', position: 'relative', flexShrink: 0 }}>
                 <svg
                     viewBox={SriLankaMapData.viewBox}
@@ -249,8 +249,8 @@ const GeographicHotspotsChart: React.FC<{ data: [string, number][] }> = ({ data 
                         const nameLower = loc.name.toLowerCase().trim();
                         const count = districtCounts[nameLower] || 0;
 
-                        // Determine color intensity based on weight
-                        let fillColor = '#F1F5F9'; // Default light slate
+
+                        let fillColor = '#F1F5F9'; 
                         let strokeColor = '#CBD5E1';
                         let strokeWidth = '1';
 
@@ -298,7 +298,7 @@ const GeographicHotspotsChart: React.FC<{ data: [string, number][] }> = ({ data 
                     })}
                 </svg>
 
-                {/* Hover Tooltip */}
+                { }
                 {hoveredLocation && (
                     <div
                         className="chart-tooltip"
@@ -318,7 +318,7 @@ const GeographicHotspotsChart: React.FC<{ data: [string, number][] }> = ({ data 
                 )}
             </div>
 
-            {/* District Legend List */}
+            { }
             {data.length > 0 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginLeft: '16px', minWidth: '130px' }}>
                     {data.slice(0, 8).map(([dist, count], idx) => (
@@ -337,7 +337,7 @@ const GeographicHotspotsChart: React.FC<{ data: [string, number][] }> = ({ data 
     );
 };
 
-// ActivityFlowChart using Recharts
+
 const ActivityFlowChart: React.FC<{ data: any[] }> = ({ data }) => {
     if (!data || data.length === 0) {
         return (
@@ -391,9 +391,9 @@ const ActivityFlowChart: React.FC<{ data: any[] }> = ({ data }) => {
     );
 };
 
-// ============================================================================
-// Main AdminDashboard Component
-// ============================================================================
+
+
+
 
 export const AdminDashboard: React.FC = () => {
     const navigate = useNavigate();
@@ -600,7 +600,7 @@ export const AdminDashboard: React.FC = () => {
 
     return (
         <div className="admin-dashboard">
-            {/* Page Header */}
+            { }
             <div className="admin-page-header">
                 <div>
                     <h1 className="admin-page-title">Dashboard</h1>
@@ -608,7 +608,7 @@ export const AdminDashboard: React.FC = () => {
                 </div>
             </div>
 
-            {/* KPI Cards */}
+            { }
             <div className="admin-kpi-grid">
                 {kpiCards.map((card, idx) => (
                     <div className="admin-kpi-card" key={idx}>
@@ -628,7 +628,7 @@ export const AdminDashboard: React.FC = () => {
                 ))}
             </div>
 
-            {/* Row 1: Student Enrollment Trend (2fr) & Academic Program Share (1fr) */}
+            { }
             <div className="admin-dashboard-grid" style={{ gridTemplateColumns: '2.1fr 1fr', marginBottom: '28px' }}>
                 <div className="admin-card">
                     <div className="admin-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
@@ -666,7 +666,7 @@ export const AdminDashboard: React.FC = () => {
                     <EnrollmentTrendChart data={getFilteredTrendData()} />
                 </div>
 
-                {/* Program Level Share (Doughnut Chart) */}
+                { }
                 <div className="admin-card">
                     <div className="admin-card-header">
                         <h2><BookOpen size={20} /> Academic Program Share</h2>
@@ -675,14 +675,14 @@ export const AdminDashboard: React.FC = () => {
                 </div>
             </div>
 
-            {/* Row 2: Student Demographics (Full Width Column with Age Curve and Gender Gauge) */}
+            { }
             <div className="admin-dashboard-grid" style={{ gridTemplateColumns: '1fr', marginBottom: '28px' }}>
                 <div className="admin-card">
                     <div className="admin-card-header">
                         <h2><Users size={20} /> Student Demographics</h2>
                     </div>
                     <div style={{ display: 'flex', gap: '32px', flexWrap: 'wrap', justifyContent: 'space-around', alignItems: 'center', padding: '10px 0' }}>
-                        {/* Age Spread: Smooth Curve Line/Area Chart */}
+                        { }
                         <div style={{ flex: 1, minWidth: '280px', height: '220px' }}>
                             <h4 style={{ fontSize: '13px', fontWeight: 700, color: '#475569', marginBottom: '16px', textAlign: 'center' }}>Age Distribution (Ranges)</h4>
                             <ResponsiveContainer width="100%" height="100%">
@@ -702,7 +702,7 @@ export const AdminDashboard: React.FC = () => {
                             </ResponsiveContainer>
                         </div>
 
-                        {/* Gender Ratio: Clean Gauge */}
+                        { }
                         <div style={{ width: '280px', height: '220px', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
                             <h4 style={{ fontSize: '13px', fontWeight: 700, color: '#475569', marginBottom: '8px', textAlign: 'center' }}>Gender Distribution</h4>
                             <div style={{ width: '100%', height: '160px', position: 'relative' }}>
@@ -728,7 +728,7 @@ export const AdminDashboard: React.FC = () => {
                                     <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>Ratio</span>
                                 </div>
                             </div>
-                            {/* Legend labels */}
+                            { }
                             <div style={{ display: 'flex', gap: '16px', fontSize: '12px', fontWeight: 600, color: '#475569' }}>
                                 {demographics.genderRatio.map((g: any, idx: number) => (
                                     <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -742,9 +742,9 @@ export const AdminDashboard: React.FC = () => {
                 </div>
             </div>
 
-            {/* Row 3: Regional Hotspots & Recent Users */}
+            { }
             <div className="admin-dashboard-grid" style={{ gridTemplateColumns: 'auto 1fr', marginBottom: '28px' }}>
-                {/* Geographic Outreach (Map) */}
+                { }
                 <div className="admin-card">
                     <div className="admin-card-header">
                         <h2><MapPin size={20} /> Regional Hotspots</h2>
@@ -752,7 +752,7 @@ export const AdminDashboard: React.FC = () => {
                     <GeographicHotspotsChart data={topDistricts} />
                 </div>
 
-                {/* Recent Users */}
+                { }
                 <div className="admin-card">
                     <div className="admin-card-header">
                         <h2><Users size={20} /> Recent Users</h2>
@@ -782,7 +782,7 @@ export const AdminDashboard: React.FC = () => {
                 </div>
             </div>
 
-            {/* Row 4: Recent Activity - Full Width */}
+            { }
             <div className="admin-dashboard-grid" style={{ gridTemplateColumns: '1fr', marginBottom: '28px' }}>
                 <div className="admin-card">
                     <div className="admin-card-header">

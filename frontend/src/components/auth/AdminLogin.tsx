@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, MapPin, Phone, Mail, ShieldCheck, Eye, EyeOff, Monitor } from 'lucide-react';
 import { authService } from '../../services/apiService';
-import './LoginPortal.css'; // Reusing existing styles for consistency
+import './LoginPortal.css'; 
 
 export const AdminLogin: React.FC = () => {
     const navigate = useNavigate();
@@ -69,10 +69,10 @@ export const AdminLogin: React.FC = () => {
         try {
             const data = await authService.login({ login: loginId, password });
 
-            // Only staff/admin roles can log in from the staff portal
+
             const studentRoles = ['student', 'applicant'];
             if (studentRoles.includes(data.user.role)) {
-                // Immediately revoke the session — this portal is not for students
+
                 try { await authService.logout(); } catch (_) { }
                 setError('This portal is for staff only. Please use the Student Portal to sign in.');
                 setIsLoading(false);
@@ -115,7 +115,7 @@ export const AdminLogin: React.FC = () => {
 
     return (
         <div className="login-portal-wrapper">
-            {/* Left Side - Branding & Information */}
+            { }
             <div className="login-left-pane">
                 <div className="branding-container">
                     <div className="branding-header-group">
@@ -163,9 +163,9 @@ export const AdminLogin: React.FC = () => {
                 </div>
             </div>
 
-            {/* Right Side - Staff Authentication Form */}
+            { }
             <div className="login-right-pane">
-                {/* Mobile Branding & Welcome Header */}
+                { }
                 <div className="mobile-header-banner">
                     <div className="mobile-branding-header">
                         <img src={branding.logo} alt="Logo" className="mobile-branding-logo" />

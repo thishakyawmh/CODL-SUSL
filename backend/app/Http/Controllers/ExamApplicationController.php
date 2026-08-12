@@ -34,7 +34,7 @@ class ExamApplicationController extends Controller
             'postponement_details' => 'nullable|string',
         ]);
 
-        $validated['user_id'] = auth()->id() ?? 1; // Fallback in case of non-interactive testing
+        $validated['user_id'] = auth()->id() ?? 1; 
         $examApplication = ExamApplication::create($validated);
         \App\Http\Controllers\CourseController::clearManageCourseCache($examApplication->course_id);
 

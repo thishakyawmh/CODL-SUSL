@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Outlet, Navigate, useLocation } from 'react-router-dom';
 import { Monitor } from 'lucide-react';
 
-// --- Student Portal Imports ---
+
 import { Sidebar } from './components/student-portal/Sidebar';
 import { Dashboard } from './components/student-portal/Dashboard';
 import { CourseDetailsWrapper } from './components/student-portal/CourseDetailsWrapper';
@@ -30,7 +30,7 @@ import { StudentInterestForm } from './components/public/StudentInterestForm';
 import { IndustryAnalysisForm } from './components/public/IndustryAnalysisForm';
 
 
-// --- Admin Portal Imports ---
+
 import { AdminSidebar } from './components/admin-portal/AdminSidebar';
 import { AdminDashboard } from './components/admin-portal/AdminDashboard';
 import { AdminLogin } from './components/auth/AdminLogin';
@@ -51,12 +51,12 @@ import { TrackStudent } from './components/admin-portal/TrackStudent';
 import { HelpCenter } from './components/public/HelpCenter';
 
 
-// --- Common/Services Imports ---
+
 import { systemSettingService } from './services/apiService';
 import { MaintenancePage } from './components/common/MaintenancePage';
 import './App.css';
 
-// --- Helper Components ---
+
 const LayoutWithSidebar = () => {
   const location = useLocation();
   const isDashboard =
@@ -154,7 +154,7 @@ const TitleUpdater = () => {
   return null;
 };
 
-// --- Main App Component ---
+
 function App() {
   const [settings, setSettings] = useState(() => {
     const cached = localStorage.getItem('systemSettings');
@@ -209,7 +209,7 @@ function App() {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
 
-        {/* Applicant Dashboard Routes */}
+        { }
         <Route
           path="/applicant-dashboard"
           element={<ApplicantDashboard />}
@@ -229,7 +229,7 @@ function App() {
           />
         </Route>
 
-        {/* Super Admin Dashboard Routes */}
+        { }
         <Route path="/admin" element={<AdminLayout />}>
           <Route
             index
@@ -309,7 +309,7 @@ function App() {
           />
         </Route>
 
-        {/* Registered Student Dashboard Routes */}
+        { }
         <Route element={<LayoutWithSidebar />}>
           <Route
             path="/dashboard"

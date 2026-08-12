@@ -33,12 +33,12 @@ export const AdminSidebar: React.FC = () => {
     const handleSignOutConfirm = () => {
         setIsSignOutOpen(false);
         
-        // Clear local storage first
+
         sessionStorage.removeItem('token');
         sessionStorage.removeItem('user');
         sessionStorage.removeItem('adminRole');
         
-        // Call API in background
+
         authService.logout().catch(() => {});
         
         navigate('/staff/login', { replace: true });
@@ -143,7 +143,7 @@ export const AdminSidebar: React.FC = () => {
 
     return (
         <>
-            {/* Mobile Header */}
+            { }
             <div className="admin-mobile-header">
                 <div className="admin-logo-mobile">
                     <img src={branding.logo} alt="Logo" />
@@ -164,7 +164,7 @@ export const AdminSidebar: React.FC = () => {
             )}
 
             <div className={`admin-sidebar ${isMobileOpen ? 'open' : ''}`}>
-                {/* Header Comp */}
+                { }
                 <div className="admin-sidebar-header">
                     <div className="admin-sidebar-logo">
                         <img src={branding.logo} alt="Logo" />
@@ -208,7 +208,7 @@ export const AdminSidebar: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Navigation */}
+                { }
                 <div className="admin-nav-container">
                     <nav className="admin-nav">
                         <div className="admin-nav-group">

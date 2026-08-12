@@ -14,11 +14,11 @@ export const ResultSheet: React.FC<ResultSheetProps> = ({ isEmbedded, onViewGrad
     const { id, resultId: paramResultId, examId } = useParams();
     const resultId = paramResultId || examId;
     
-    // Handle context gracefully if results are embedded
+
     const context = useOutletContext<{ course: Course } | null>();
     const course = context?.course || ({ title: 'Course Details' } as any);
 
-    // Mock data based on resultId to simulate different states
+
     const isCompleted = resultId === '1' || resultId === '2';
 
     const examData = {

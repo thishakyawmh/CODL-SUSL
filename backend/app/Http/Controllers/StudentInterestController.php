@@ -10,9 +10,7 @@ use Illuminate\Support\Facades\Http;
 
 class StudentInterestController extends Controller
 {
-    /**
-     * Store a new student interest submission.
-     */
+     
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -22,31 +20,31 @@ class StudentInterestController extends Controller
             'province' => 'required|string',
             'district' => 'required|string',
 
-            // Primary details
+
             'primary_field' => 'required|string',
             'primary_skills' => 'required|string',
             'primary_teaching_methods' => 'required|string',
             'primary_theory_practical' => 'required|integer|min:1|max:5',
 
-            // Secondary details (Optional)
+
             'secondary_field' => 'nullable|string',
             'secondary_skills' => 'nullable|string',
             'secondary_teaching_methods' => 'nullable|string',
             'secondary_theory_practical' => 'nullable|integer|min:1|max:5',
 
-            // Ternary details (Optional)
+
             'third_field' => 'nullable|string',
             'third_skills' => 'nullable|string',
             'third_teaching_methods' => 'nullable|string',
             'third_theory_practical' => 'nullable|integer|min:1|max:5',
 
-            // Global questions
+
             'university_opportunities' => 'nullable|string',
             'new_program_suggestion' => 'nullable|string',
             'recaptcha_token' => 'nullable|string',
         ]);
 
-        // Verify reCAPTCHA if credentials are provided and not set to placeholder
+
         $recaptchaSecret = config('services.recaptcha.secret');
         if ($recaptchaSecret && $recaptchaSecret !== '6Ld_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx') {
             $token = $request->input('recaptcha_token');
@@ -76,18 +74,18 @@ class StudentInterestController extends Controller
                 }
             } catch (\Exception $verifyException) {
                 Log::error('reCAPTCHA verification error: ' . $verifyException->getMessage());
-                // Fallback: allow submission in case of API timeout/downtime to not disrupt real users
+
             }
         }
 
         try {
-            // Set timestamp of submission
+
             $validated['survey_submitted_at'] = now();
 
-            // Remove token so it doesn't get sent to Google Sheets
+
             unset($validated['recaptcha_token']);
 
-            // Send to Google Sheets webhook asynchronously using validated payload keys with signature
+
             $webhookUrl = config('services.google_sheets.student_webhook_url') ?: config('services.google_sheets.webhook_url');
             if ($webhookUrl) {
                 try {
@@ -105,7 +103,7 @@ class StudentInterestController extends Controller
                         }
                     }
                 } catch (\Exception $sheetException) {
-                    // Log error but do not disrupt student user experience
+
                     Log::error('Google Sheet Sync Error: ' . $sheetException->getMessage());
                 }
             }
@@ -125,14 +123,12 @@ class StudentInterestController extends Controller
         }
     }
 
-    /**
-     * Get active dynamic configuration of interest fields and skills.
-     */
+     
     public function getConfig()
     {
         try {
             $configs = DB::connection('analytics')->table('survey_interests_config')->get()->map(function ($c) {
-                // Split comma-separated skills into clean trimmed arrays
+
                 $skillsArray = array_filter(array_map('trim', explode(',', $c->skills)));
                 return [
                     'id' => $c->id,
@@ -148,9 +144,7 @@ class StudentInterestController extends Controller
         }
     }
 
-    /**
-     * Create or update interest field configuration (Admin).
-     */
+     
     public function storeConfig(Request $request)
     {
         $validated = $request->validate([
@@ -159,7 +153,7 @@ class StudentInterestController extends Controller
             'skills' => 'required|array'
         ]);
 
-        // Clean skills array and convert to comma-separated string
+
         $skillsList = array_filter(array_map('trim', $validated['skills']));
         $skillsString = implode(', ', $skillsList);
 
@@ -193,9 +187,7 @@ class StudentInterestController extends Controller
         }
     }
 
-    /**
-     * Delete an interest field configuration (Admin).
-     */
+     
     public function deleteConfig($id)
     {
         try {
@@ -213,9 +205,7 @@ class StudentInterestController extends Controller
         }
     }
 
-    /**
-     * Get active dynamic configuration of teaching methods.
-     */
+     
     public function getTeachingMethods()
     {
         try {
@@ -233,9 +223,7 @@ class StudentInterestController extends Controller
         }
     }
 
-    /**
-     * Create or update teaching method configuration (Admin).
-     */
+     
     public function storeTeachingMethod(Request $request)
     {
         $validated = $request->validate([
@@ -271,9 +259,7 @@ class StudentInterestController extends Controller
         }
     }
 
-    /**
-     * Delete a teaching method configuration (Admin).
-     */
+     
     public function deleteTeachingMethod($id)
     {
         try {
@@ -291,9 +277,7 @@ class StudentInterestController extends Controller
         }
     }
 
-    /**
-     * Get active university opportunities configuration.
-     */
+     
     public function getUniversityOpportunities()
     {
         try {
@@ -305,9 +289,7 @@ class StudentInterestController extends Controller
         }
     }
 
-    /**
-     * Create or update a university opportunity configuration (Admin).
-     */
+     
     public function storeUniversityOpportunity(Request $request)
     {
         $validated = $request->validate([
@@ -343,9 +325,7 @@ class StudentInterestController extends Controller
         }
     }
 
-    /**
-     * Delete a university opportunity configuration (Admin).
-     */
+     
     public function deleteUniversityOpportunity($id)
     {
         try {
@@ -363,9 +343,7 @@ class StudentInterestController extends Controller
         }
     }
 
-    /**
-     * Store a new industry analysis survey submission.
-     */
+     
     public function storeIndustry(Request $request)
     {
         $validated = $request->validate([
@@ -387,7 +365,7 @@ class StudentInterestController extends Controller
             'recaptcha_token' => 'nullable|string',
         ]);
 
-        // Verify reCAPTCHA if credentials are provided and not set to placeholder
+
         $recaptchaSecret = config('services.recaptcha.secret');
         if ($recaptchaSecret && $recaptchaSecret !== '6Ld_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx') {
             $token = $request->input('recaptcha_token');
@@ -424,7 +402,7 @@ class StudentInterestController extends Controller
             $validated['survey_submitted_at'] = now();
             unset($validated['recaptcha_token']);
 
-            // Send to Google Sheets webhook asynchronously using validated payload keys with signature
+
             $webhookUrl = config('services.google_sheets.industry_webhook_url') ?: config('services.google_sheets.webhook_url');
             if ($webhookUrl) {
                 try {
@@ -442,7 +420,7 @@ class StudentInterestController extends Controller
                         }
                     }
                 } catch (\Exception $sheetException) {
-                    // Log error but do not disrupt user experience
+
                     Log::error('Industry Google Sheet Sync Error: ' . $sheetException->getMessage());
                 }
             }
@@ -461,9 +439,7 @@ class StudentInterestController extends Controller
         }
     }
 
-    /**
-     * Get active dynamic configuration of industry sectors.
-     */
+     
     public function getIndustrySectors()
     {
         try {
@@ -481,9 +457,7 @@ class StudentInterestController extends Controller
         }
     }
 
-    /**
-     * Create or update industry sector configuration (Admin).
-     */
+     
     public function storeIndustrySector(Request $request)
     {
         $validated = $request->validate([
@@ -519,9 +493,7 @@ class StudentInterestController extends Controller
         }
     }
 
-    /**
-     * Delete an industry sector configuration (Admin).
-     */
+     
     public function deleteIndustrySector($id)
     {
         try {
@@ -539,9 +511,7 @@ class StudentInterestController extends Controller
         }
     }
 
-    /**
-     * Get active dynamic configuration of industry academic interest fields and sub-disciplines.
-     */
+     
     public function getIndustryConfig()
     {
         try {
@@ -561,9 +531,7 @@ class StudentInterestController extends Controller
         }
     }
 
-    /**
-     * Create or update industry interest field configuration (Admin).
-     */
+     
     public function storeIndustryConfig(Request $request)
     {
         $validated = $request->validate([
@@ -605,9 +573,7 @@ class StudentInterestController extends Controller
         }
     }
 
-    /**
-     * Delete an industry interest field configuration (Admin).
-     */
+     
     public function deleteIndustryConfig($id)
     {
         try {

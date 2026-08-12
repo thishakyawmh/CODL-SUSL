@@ -11,9 +11,7 @@ use Carbon\Carbon;
 
 class ExamResultController extends Controller
 {
-    /**
-     * Admin: list all exam results with relations.
-     */
+     
     public function index()
     {
         return response()->json(
@@ -21,18 +19,7 @@ class ExamResultController extends Controller
         );
     }
 
-    /**
-     * Admin: store grades for a subject and mark them as released.
-     * Expected payload:
-     * {
-     *   "course_id": 1,
-     *   "subject_id": 5,
-     *   "exam_id": 3,
-     *   "batch": "2024/01",
-     *   "semester": "1",
-     *   "grades": [{ "user_id": 12, "grade": "A" }, ...]
-     * }
-     */
+     
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -50,7 +37,7 @@ class ExamResultController extends Controller
 
         DB::beginTransaction();
         try {
-            // Upsert: update existing result for same course+subject+exam, or create new
+
             $examResult = ExamResult::updateOrCreate(
                 [
                     'course_id'  => $validated['course_id'],
@@ -67,7 +54,7 @@ class ExamResultController extends Controller
                 ]
             );
 
-            // Delete existing grades for this result then re-insert
+
             StudentGrade::where('exam_result_id', $examResult->id)->delete();
 
             $gradeRows = array_map(fn($g) => [
@@ -81,11 +68,11 @@ class ExamResultController extends Controller
 
             StudentGrade::insert($gradeRows);
 
-            // Synchronize postponed and reattempt student grades to their original exams' result sheets
+
             foreach ($validated['grades'] as $g) {
                 $userId = $g['user_id'];
                 
-                // 1. Postponements
+
                 $postponement = \App\Models\PostponementRequest::where('user_id', $userId)
                     ->where('assigned_exam_id', $examResult->exam_id)
                     ->where('status', 'assigned')
@@ -122,7 +109,7 @@ class ExamResultController extends Controller
                     }
                 }
                 
-                // 2. Reattempts
+
                 $reattempt = \App\Models\ReattemptRequest::where('user_id', $userId)
                     ->where('assigned_exam_id', $examResult->exam_id)
                     ->where('subject_id', $validated['subject_id'])
@@ -173,9 +160,7 @@ class ExamResultController extends Controller
         }
     }
 
-    /**
-     * Student: return only this authenticated user's grades across all released results.
-     */
+     
     public function myResults()
     {
         $userId = Auth::id();
@@ -211,9 +196,7 @@ class ExamResultController extends Controller
         return response()->json($grades);
     }
 
-    /**
-     * Admin: get all released exam results for a specific exam.
-     */
+     
     public function getByExam($examId)
     {
         $results = ExamResult::where('exam_id', $examId)

@@ -11,7 +11,7 @@ class CourseController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        // Only load lightweight relationships for listing — semesters.subjects loaded on show()
+
         $query = Course::with(['category', 'secretary', 'coordinator', 'batches'])->withCount(['batches', 'students']);
         
         if ($user && $user->role === 'secretary') {
@@ -19,7 +19,7 @@ class CourseController extends Controller
         } elseif ($user && $user->role === 'coordinator') {
             $query->where('coordinator_id', $user->id);
         } elseif ($user && $user->role === 'lecturer') {
-            // Filter courses where the lecturer has subject assignments in any batch OR is the batch instructor directly
+
             $assignedSubjectCourseIds = DB::table('batch_subject_instructor')
                 ->join('batches', 'batches.id', '=', 'batch_subject_instructor.batch_id')
                 ->where('batch_subject_instructor.instructor_id', $user->id)
@@ -67,7 +67,7 @@ class CourseController extends Controller
             $courseData = \Illuminate\Support\Arr::except($validated, ['semesters', 'subjects']);
             $course = Course::create($courseData);
 
-            // Handle Semesters (for Degree/Diploma/HND)
+
             if ($request->has('semesters')) {
                 foreach ($request->semesters as $semData) {
                     $semester = $course->semesters()->create(['name' => $semData['name']]);
@@ -84,7 +84,7 @@ class CourseController extends Controller
                 }
             }
 
-            // Handle flat subjects (for Certificates)
+
             if ($request->has('subjects')) {
                 foreach ($request->subjects as $subData) {
                     $course->subjects()->create([
@@ -150,7 +150,7 @@ class CourseController extends Controller
                 $courseData = \Illuminate\Support\Arr::except($validated, ['semesters', 'subjects']);
                 $course->update($courseData);
 
-                // Handle Semesters update (for Degree/Diploma/HND)
+
                 if ($request->has('semesters')) {
                     foreach ($course->semesters as $oldSem) {
                         $oldSem->subjects()->delete();
@@ -172,7 +172,7 @@ class CourseController extends Controller
                     }
                 }
 
-                // Handle flat subjects (for Certificates)
+
                 if ($request->has('subjects')) {
                     $course->subjects()->delete();
 
@@ -217,12 +217,10 @@ class CourseController extends Controller
         return response()->json(['message' => 'Course deleted successfully']);
     }
 
-    /**
-     * Public endpoint for applicants — returns courses with open intake + their batches.
-     */
+     
     public function publicIndex()
     {
-        // Auto-update expired upcoming batches to Active
+
         \App\Models\Batch::where('status', 'Upcoming')
             ->whereNotNull('registration_deadline')
             ->where('registration_deadline', '<', now()->toDateString())
@@ -272,7 +270,7 @@ class CourseController extends Controller
             $course->students()->syncWithoutDetaching([$user->id => ['batch' => $validated['batch']]]);
             self::clearManageCourseCache($id);
 
-            // Log admin activity
+
             $admin = $request->user();
             if ($admin) {
                 \App\Models\ActivityLog::log(
@@ -311,7 +309,7 @@ class CourseController extends Controller
             $course->students()->detach($user->id);
             self::clearManageCourseCache($id);
 
-            // Log admin activity
+
             $admin = $request->user();
             if ($admin) {
                 \App\Models\ActivityLog::log(
@@ -352,17 +350,15 @@ class CourseController extends Controller
         return response()->json($data);
     }
 
-    /**
-     * Helper to retrieve raw manage course data to resolve IDE lambda complexity limits.
-     */
+     
     private function getManageCourseDataRaw($courseId, $user): array
     {
         $course = Course::with(['category', 'secretary', 'coordinator', 'semesters.subjects', 'subjects'])->findOrFail($courseId);
         
         $enrolledStudents = $this->mapEnrolledStudents($course);
         
-        // Optimized: Removed the massive query fetching all system student/applicant users.
-        // The frontend now dynamically searches student records via dynamic API requests on-demand.
+
+
         $studentUsers = [];
             
         $lecturers = \App\Models\User::where('role', 'lecturer')
@@ -409,7 +405,7 @@ class CourseController extends Controller
 
     private function getBatchesForManageCourse($courseId, $user)
     {
-        // Auto-update expired upcoming batches to Active
+
         \App\Models\Batch::where('course_id', $courseId)
             ->where('status', 'Upcoming')
             ->whereNotNull('registration_deadline')
@@ -433,7 +429,7 @@ class CourseController extends Controller
             ->latest()
             ->get();
 
-        // Optimized: Batched instructor name lookup to resolve N+1 queries.
+
         $instructorIds = [];
         foreach ($batches as $batch) {
             foreach ($batch->subjects as $subject) {

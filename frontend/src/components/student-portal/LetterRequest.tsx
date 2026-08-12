@@ -15,7 +15,7 @@ export const LetterRequest: React.FC = () => {
     const [reason, setReason] = useState('');
     const [agreed, setAgreed] = useState(false);
 
-    // Profile fields
+
     const [nameWithInitials, setNameWithInitials] = useState('');
     const [address, setAddress] = useState('');
     const [phone, setPhone] = useState('');
@@ -196,24 +196,24 @@ export const LetterRequest: React.FC = () => {
         const level = req.approval_level;
         const status = req.status.toLowerCase();
 
-        // Step 1: Secretary
+
         if (stepNum === 1) {
             if (level >= 1) return { bg: '#EAFDF3', border: '#22C55E', color: '#16A34A', text: '✓' };
             if (status === 'rejected' && level === 0) return { bg: '#FEE2E2', border: '#EF4444', color: '#DC2626', text: '✗' };
-            return { bg: '#FFFBEB', border: '#F59E0B', color: '#D97706', text: '1' }; // Pending
+            return { bg: '#FFFBEB', border: '#F59E0B', color: '#D97706', text: '1' }; 
         }
-        // Step 2: Coordinator
+
         if (stepNum === 2) {
             if (level >= 2) return { bg: '#EAFDF3', border: '#22C55E', color: '#16A34A', text: '✓' };
             if (status === 'rejected' && level === 1) return { bg: '#FEE2E2', border: '#EF4444', color: '#DC2626', text: '✗' };
-            if (status === 'pending' && level === 1) return { bg: '#FFFBEB', border: '#F59E0B', color: '#D97706', text: '2' }; // Pending
-            return { bg: '#F1F5F9', border: '#CBD5E1', color: '#94A3B8', text: '2' }; // Waiting
+            if (status === 'pending' && level === 1) return { bg: '#FFFBEB', border: '#F59E0B', color: '#D97706', text: '2' }; 
+            return { bg: '#F1F5F9', border: '#CBD5E1', color: '#94A3B8', text: '2' }; 
         }
-        // Step 3: Director
+
         if (stepNum === 3) {
             if (status === 'approved') return { bg: '#EAFDF3', border: '#22C55E', color: '#16A34A', text: '✓' };
             if (status === 'rejected' && level === 2) return { bg: '#FEE2E2', border: '#EF4444', color: '#DC2626', text: '✗' };
-            if (status === 'pending' && level === 2) return { bg: '#FFFBEB', border: '#F59E0B', color: '#D97706', text: '3' }; // Pending
+            if (status === 'pending' && level === 2) return { bg: '#FFFBEB', border: '#F59E0B', color: '#D97706', text: '3' }; 
             return { bg: '#F1F5F9', border: '#CBD5E1', color: '#94A3B8', text: '3' };
         }
         return { bg: '#F1F5F9', border: '#CBD5E1', color: '#94A3B8', text: '' };
@@ -574,7 +574,7 @@ export const LetterRequest: React.FC = () => {
 
 
                                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '24px', background: '#F8FAFC', padding: '24px', borderRadius: '12px', border: '1px solid #E2E8F0', maxWidth: '800px' }}>
-                                            {/* Step 1: Secretary */}
+                                            { }
                                             {(() => {
                                                 const s = getStepStyle(1, req);
                                                 const stepStatus = getStepStatusText(1, req);
@@ -611,10 +611,10 @@ export const LetterRequest: React.FC = () => {
                                                 );
                                             })()}
 
-                                            {/* Connector 1 */}
+                                            { }
                                             <div style={{ flex: 0.5, height: '3px', background: req.approval_level >= 1 ? '#10B981' : '#E2E8F0', borderRadius: '2px', marginTop: '-24px' }}></div>
 
-                                            {/* Step 2: Coordinator */}
+                                            { }
                                             {(() => {
                                                 const s = getStepStyle(2, req);
                                                 const stepStatus = getStepStatusText(2, req);
@@ -654,7 +654,7 @@ export const LetterRequest: React.FC = () => {
 
                                             <div style={{ flex: 0.5, height: '3px', background: req.approval_level >= 2 ? '#10B981' : '#E2E8F0', borderRadius: '2px', marginTop: '-24px' }}></div>
 
-                                            {/* Step 3: Director */}
+                                            { }
                                             {(() => {
                                                 const s = getStepStyle(3, req);
                                                 const stepStatus = getStepStatusText(3, req);
