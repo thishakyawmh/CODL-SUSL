@@ -33,6 +33,8 @@ export const AIAnalytics: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [globalEmergingTech, setGlobalEmergingTech] = useState<string[]>([]);
     const [viewMode, setViewMode] = useState<'hub' | 'course'>('hub');
+    const [levelFilter, setLevelFilter] = useState('all');
+    const [searchTerm, setSearchTerm] = useState('');
 
     const [syncing, setSyncing] = useState(false);
     const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
@@ -213,6 +215,10 @@ export const AIAnalytics: React.FC = () => {
                     lastSyncedAt={lastSyncedAt}
                     studentCount={studentCount}
                     industryCount={industryCount}
+                    levelFilter={levelFilter}
+                    setLevelFilter={setLevelFilter}
+                    searchTerm={searchTerm}
+                    setSearchTerm={setSearchTerm}
                 />
             )}
         </div>
@@ -234,9 +240,25 @@ const ProgramHub: React.FC<{
     lastSyncedAt?: string | null,
     studentCount: number,
     industryCount: number,
-}> = ({ programs, globalEmergingTech, onSelect, onOpenSync, onOpenManageForms, syncing, lastSyncedAt, studentCount, industryCount }) => {
-    const [levelFilter, setLevelFilter] = useState('all');
-    const [searchTerm, setSearchTerm] = useState('');
+    levelFilter: string,
+    setLevelFilter: (val: string) => void,
+    searchTerm: string,
+    setSearchTerm: (val: string) => void,
+}> = ({
+    programs,
+    globalEmergingTech,
+    onSelect,
+    onOpenSync,
+    onOpenManageForms,
+    syncing,
+    lastSyncedAt,
+    studentCount,
+    industryCount,
+    levelFilter,
+    setLevelFilter,
+    searchTerm,
+    setSearchTerm
+}) => {
 
     const categories = [
         {
