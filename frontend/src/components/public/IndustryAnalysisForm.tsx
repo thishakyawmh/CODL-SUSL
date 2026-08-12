@@ -240,9 +240,7 @@ export function IndustryAnalysisForm() {
     }, []);
 
 
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
-    const backendUrl = import.meta.env.VITE_BACKEND_URL || (apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl);
-    const bannerImgUrl = `${backendUrl}/storage/industry-analysis.webp`;
+    const bannerImgUrl = "/images/industry-analysis.webp";
 
 
     const selectedDomainObj = academicDomains.find(d => d.interest_field === formData.primary_academic_field);
