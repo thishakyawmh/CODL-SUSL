@@ -9,10 +9,26 @@ import {
 import { aiAnalyticsService, courseService } from '../../services/apiService';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
-import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid, Sector } from 'recharts';
 // @ts-ignore
 import SriLankaMapData from '@svg-maps/sri-lanka';
 import './AIAnalytics.css';
+
+const renderActiveShape = (props: any) => {
+    const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } = props;
+    return (
+        <Sector
+            cx={cx}
+            cy={cy}
+            innerRadius={innerRadius}
+            outerRadius={outerRadius + 8}
+            startAngle={startAngle}
+            endAngle={endAngle}
+            fill={fill}
+            style={{ transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)', cursor: 'pointer' }}
+        />
+    );
+};
 
 interface Course {
     id: string;
@@ -2141,7 +2157,7 @@ const InteractiveSriLankaMap: React.FC = () => {
                     ) : (geoData?.education_levels || []).length === 0 ? (
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '340px', color: '#94A3B8', fontSize: '13px' }}>No education data available.</div>
                     ) : (
-                        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                             <ResponsiveContainer width="100%" height={320}>
                                 <PieChart>
                                     <defs>
@@ -2160,9 +2176,10 @@ const InteractiveSriLankaMap: React.FC = () => {
                                         outerRadius={110}
                                         paddingAngle={4}
                                         dataKey="value"
+                                        activeShape={renderActiveShape}
                                     >
                                         {(geoData?.education_levels || []).map((_, idx) => (
-                                            <Cell key={`cell-${idx}`} fill={`url(#${CHART_GRADIENTS[idx % CHART_GRADIENTS.length].id})`} />
+                                            <Cell key={`cell-${idx}`} fill={`url(#${CHART_GRADIENTS[idx % CHART_GRADIENTS.length].id})`} style={{ transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)', cursor: 'pointer', outline: 'none' }} />
                                         ))}
                                     </Pie>
                                     <Tooltip content={({ active, payload }: any) => {
@@ -2181,6 +2198,9 @@ const InteractiveSriLankaMap: React.FC = () => {
                                     }} />
                                 </PieChart>
                             </ResponsiveContainer>
+                            <div style={{ textAlign: 'center', fontSize: '11px', color: '#475569', marginTop: '12px', fontWeight: 500 }}>
+                                Hover slices to see percentages
+                            </div>
                         </div>
                     )}
                 </div>
@@ -2198,7 +2218,7 @@ const InteractiveSriLankaMap: React.FC = () => {
                     ) : (geoData?.industry_sectors || []).length === 0 ? (
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '340px', color: '#94A3B8', fontSize: '13px' }}>No industry sector data available.</div>
                     ) : (
-                        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                             <ResponsiveContainer width="100%" height={320}>
                                 <PieChart>
                                     <defs>
@@ -2217,9 +2237,10 @@ const InteractiveSriLankaMap: React.FC = () => {
                                         outerRadius={110}
                                         paddingAngle={4}
                                         dataKey="value"
+                                        activeShape={renderActiveShape}
                                     >
                                         {(geoData?.industry_sectors || []).map((_, idx) => (
-                                            <Cell key={`cell-ind-${idx}`} fill={`url(#${CHART_GRADIENTS[idx % CHART_GRADIENTS.length].id})`} />
+                                            <Cell key={`cell-ind-${idx}`} fill={`url(#${CHART_GRADIENTS[idx % CHART_GRADIENTS.length].id})`} style={{ transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)', cursor: 'pointer', outline: 'none' }} />
                                         ))}
                                     </Pie>
                                     <Tooltip content={({ active, payload }: any) => {
@@ -2238,6 +2259,9 @@ const InteractiveSriLankaMap: React.FC = () => {
                                     }} />
                                 </PieChart>
                             </ResponsiveContainer>
+                            <div style={{ textAlign: 'center', fontSize: '11px', color: '#475569', marginTop: '12px', fontWeight: 500 }}>
+                                Hover slices to see percentages
+                            </div>
                         </div>
                     )}
                 </div>
@@ -2305,19 +2329,30 @@ const InteractiveSriLankaMap: React.FC = () => {
                             </p>
                             <ResponsiveContainer width="100%" height={340}>
                                 <PieChart>
-                                    <Pie data={allIslandPieData} cx="50%" cy="50%" outerRadius={120} paddingAngle={3} dataKey="value"
+                                    <defs>
+                                        {CHART_GRADIENTS.map(g => (
+                                            <linearGradient id={g.id} key={g.id} x1="0" y1="0" x2="1" y2="1">
+                                                <stop offset="0%" stopColor={g.start} />
+                                                <stop offset="100%" stopColor={g.end} />
+                                            </linearGradient>
+                                        ))}
+                                    </defs>
+                                    <Pie data={allIslandPieData} cx="50%" cy="50%" innerRadius={60} outerRadius={110} paddingAngle={3} dataKey="value" activeShape={renderActiveShape}
                                         onClick={(entry: any) => handleAllIslandFieldClick(entry.name)} style={{ cursor: 'pointer' }}>
                                         {allIslandPieData.map((entry, i) => (
-                                            <Cell key={i} fill={MAP_CHART_COLORS[i % MAP_CHART_COLORS.length]}
+                                            <Cell key={i} fill={`url(#${CHART_GRADIENTS[i % CHART_GRADIENTS.length].id})`}
                                                 stroke={allIslandSelectedField === entry.name ? '#0F172A' : 'transparent'}
                                                 strokeWidth={allIslandSelectedField === entry.name ? 3 : 0}
-                                                opacity={allIslandSelectedField && allIslandSelectedField !== entry.name ? 0.45 : 1} />
+                                                opacity={allIslandSelectedField && allIslandSelectedField !== entry.name ? 0.45 : 1}
+                                                style={{ transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)', cursor: 'pointer', outline: 'none' }} />
                                         ))}
                                     </Pie>
                                     <Tooltip content={({ active, payload }: any) => {
                                         if (active && payload?.length) {
                                             const p = payload[0].payload;
-                                            return <div style={{ background: '#1E293B', color: '#FFF', padding: '10px 14px', borderRadius: '10px', fontSize: '12px' }}><div style={{ fontWeight: 700 }}>{p.name}</div><div style={{ opacity: 0.85, marginTop: 4 }}>Weighted score: {p.score}</div></div>;
+                                            const total = allIslandPieData.reduce((sum: number, item: any) => sum + (item.score || 0), 0);
+                                            const pct = total > 0 ? ((p.score / total) * 100).toFixed(1) : '0.0';
+                                            return <div style={{ background: '#1E293B', color: '#FFF', padding: '10px 14px', borderRadius: '10px', fontSize: '12px' }}><div style={{ fontWeight: 700 }}>{p.name}</div><div style={{ opacity: 0.85, marginTop: 4 }}>Weighted score: {p.score} ({pct}%)</div></div>;
                                         }
                                         return null;
                                     }} />
@@ -2325,11 +2360,15 @@ const InteractiveSriLankaMap: React.FC = () => {
                                         formatter={(value) => <span style={{ fontSize: '11px', color: '#475569', fontWeight: 600 }}>{value}</span>} />
                                 </PieChart>
                             </ResponsiveContainer>
+
                         </div>
                         {allIslandSelectedField && (
                             <div style={{ animation: 'fadeInRight 0.3s ease' }}>
                                 <h4 style={{ margin: '0 0 4px 0', fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>Top Skills for <span style={{ background: 'linear-gradient(135deg, #EDE9FE, #DDD6FE)', color: '#6D28D9', padding: '2px 10px', borderRadius: '6px', fontWeight: 800 }}>{allIslandSelectedField}</span></h4>
-                                <p style={{ margin: '0 0 16px 0', fontSize: '12px', color: '#64748B', fontWeight: 500 }}>All Island · All Education Levels</p>
+                                <p style={{ margin: '0 0 16px 0', fontSize: '12px', color: '#64748B', fontWeight: 500, lineHeight: '1.5' }}>
+
+                                    Student preference trends in selected field.
+                                </p>
                                 {loadingAllIslandSkills ? (
                                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '300px' }}>
                                         <div style={{ width: '28px', height: '28px', borderRadius: '50%', border: '3px solid #E9D5FF', borderTopColor: '#7C3AED', animation: 'spin 0.9s linear infinite' }}></div>
@@ -2337,22 +2376,33 @@ const InteractiveSriLankaMap: React.FC = () => {
                                 ) : allIslandSkills.length === 0 ? (
                                     <div style={{ textAlign: 'center', padding: '40px 0', color: '#94A3B8', fontSize: '13px' }}>No skill data found.</div>
                                 ) : (
-                                    <ResponsiveContainer width="100%" height={340}>
-                                        <PieChart>
-                                            <Pie data={allIslandSkills.map(s => ({ ...s, value: s.score }))} cx="50%" cy="50%" outerRadius={115} paddingAngle={2} dataKey="value">
-                                                {allIslandSkills.map((_, i) => <Cell key={i} fill={MAP_CHART_COLORS[i % MAP_CHART_COLORS.length]} />)}
-                                            </Pie>
-                                            <Tooltip content={({ active, payload }: any) => {
-                                                if (active && payload?.length) {
-                                                    const p = payload[0].payload;
-                                                    return <div style={{ background: '#1E293B', color: '#FFF', padding: '10px 14px', borderRadius: '10px', fontSize: '12px' }}><div style={{ fontWeight: 700, textTransform: 'capitalize' }}>{p.name}</div><div style={{ opacity: 0.85, marginTop: 4 }}>{p.percentage}% · score {p.score}</div></div>;
-                                                }
-                                                return null;
-                                            }} />
-                                            <Legend layout="vertical" verticalAlign="middle" align="right" iconType="circle" iconSize={8}
-                                                formatter={(value) => <span style={{ fontSize: '11px', color: '#475569', fontWeight: 600, textTransform: 'capitalize' }}>{value}</span>} />
-                                        </PieChart>
-                                    </ResponsiveContainer>
+                                    <>
+                                        <ResponsiveContainer width="100%" height={340}>
+                                            <PieChart>
+                                                <defs>
+                                                    {CHART_GRADIENTS.map(g => (
+                                                        <linearGradient id={g.id} key={g.id} x1="0" y1="0" x2="1" y2="1">
+                                                            <stop offset="0%" stopColor={g.start} />
+                                                            <stop offset="100%" stopColor={g.end} />
+                                                        </linearGradient>
+                                                    ))}
+                                                </defs>
+                                                <Pie data={allIslandSkills.map(s => ({ ...s, value: s.score }))} cx="50%" cy="50%" innerRadius={70} outerRadius={105} paddingAngle={2} dataKey="value" activeShape={renderActiveShape}>
+                                                    {allIslandSkills.map((_, i) => <Cell key={i} fill={`url(#${CHART_GRADIENTS[i % CHART_GRADIENTS.length].id})`} style={{ transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)', cursor: 'pointer', outline: 'none' }} />)}
+                                                </Pie>
+                                                <Tooltip content={({ active, payload }: any) => {
+                                                    if (active && payload?.length) {
+                                                        const p = payload[0].payload;
+                                                        return <div style={{ background: '#1E293B', color: '#FFF', padding: '10px 14px', borderRadius: '10px', fontSize: '12px' }}><div style={{ fontWeight: 700, textTransform: 'capitalize' }}>{p.name}</div><div style={{ opacity: 0.85, marginTop: 4 }}>{p.percentage}% · score {p.score}</div></div>;
+                                                    }
+                                                    return null;
+                                                }} />
+                                                <Legend layout="vertical" verticalAlign="middle" align="right" iconType="circle" iconSize={8}
+                                                    formatter={(value) => <span style={{ fontSize: '11px', color: '#475569', fontWeight: 600, textTransform: 'capitalize' }}>{value}</span>} />
+                                            </PieChart>
+                                        </ResponsiveContainer>
+
+                                    </>
                                 )}
                             </div>
                         )}
@@ -2369,25 +2419,36 @@ const InteractiveSriLankaMap: React.FC = () => {
                 ) : (
                     <div style={{ display: 'grid', gridTemplateColumns: industrySelectedField ? '1fr 1fr' : '1fr', gap: '32px', alignItems: 'flex-start' }}>
                         <div>
-                            <h4 style={{ margin: '0 0 4px 0', fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>Primary Academic Domain of Interest (top 05)</h4>
+                            <h4 style={{ margin: '0 0 4px 0', fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>Primary Academic Domain of Interest (Top 05)</h4>
                             <p style={{ margin: '0 0 16px 0', fontSize: '12px', color: '#64748B', fontWeight: 500 }}>
                                 Click a slice to see the top soft skills requested for that field.
                             </p>
                             <ResponsiveContainer width="100%" height={340}>
                                 <PieChart>
-                                    <Pie data={geoData?.industry_domains || []} cx="50%" cy="50%" outerRadius={120} paddingAngle={3} dataKey="value"
+                                    <defs>
+                                        {CHART_GRADIENTS.map(g => (
+                                            <linearGradient id={g.id} key={g.id} x1="0" y1="0" x2="1" y2="1">
+                                                <stop offset="0%" stopColor={g.start} />
+                                                <stop offset="100%" stopColor={g.end} />
+                                            </linearGradient>
+                                        ))}
+                                    </defs>
+                                    <Pie data={geoData?.industry_domains || []} cx="50%" cy="50%" innerRadius={60} outerRadius={110} paddingAngle={3} dataKey="value" activeShape={renderActiveShape}
                                         onClick={(entry: any) => handleIndustryFieldClick(entry.name)} style={{ cursor: 'pointer' }}>
                                         {(geoData?.industry_domains || []).map((entry, i) => (
-                                            <Cell key={i} fill={MAP_CHART_COLORS[i % MAP_CHART_COLORS.length]}
+                                            <Cell key={i} fill={`url(#${CHART_GRADIENTS[i % CHART_GRADIENTS.length].id})`}
                                                 stroke={industrySelectedField === entry.name ? '#0F172A' : 'transparent'}
                                                 strokeWidth={industrySelectedField === entry.name ? 3 : 0}
-                                                opacity={industrySelectedField && industrySelectedField !== entry.name ? 0.45 : 1} />
+                                                opacity={industrySelectedField && industrySelectedField !== entry.name ? 0.45 : 1}
+                                                style={{ transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)', cursor: 'pointer', outline: 'none' }} />
                                         ))}
                                     </Pie>
                                     <Tooltip content={({ active, payload }: any) => {
                                         if (active && payload?.length) {
                                             const p = payload[0].payload;
-                                            return <div style={{ background: '#1E293B', color: '#FFF', padding: '10px 14px', borderRadius: '10px', fontSize: '12px' }}><div style={{ fontWeight: 700 }}>{p.name}</div><div style={{ opacity: 0.85, marginTop: 4 }}>Responses count: {p.value}</div></div>;
+                                            const total = (geoData?.industry_domains || []).reduce((sum: number, item: any) => sum + (item.value || 0), 0);
+                                            const pct = total > 0 ? ((p.value / total) * 100).toFixed(1) : '0.0';
+                                            return <div style={{ background: '#1E293B', color: '#FFF', padding: '10px 14px', borderRadius: '10px', fontSize: '12px' }}><div style={{ fontWeight: 700 }}>{p.name}</div><div style={{ opacity: 0.85, marginTop: 4 }}>Responses count: {p.value} ({pct}%)</div></div>;
                                         }
                                         return null;
                                     }} />
@@ -2395,11 +2456,15 @@ const InteractiveSriLankaMap: React.FC = () => {
                                         formatter={(value) => <span style={{ fontSize: '11px', color: '#475569', fontWeight: 600 }}>{value}</span>} />
                                 </PieChart>
                             </ResponsiveContainer>
+
                         </div>
                         {industrySelectedField && (
                             <div style={{ animation: 'fadeInRight 0.3s ease' }}>
-                                <h4 style={{ margin: '0 0 4px 0', fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>Top 7 Soft Skills for <span style={{ background: 'linear-gradient(135deg, #ECFDF5, #D1FAE5)', color: '#047857', padding: '2px 10px', borderRadius: '6px', fontWeight: 800 }}>{industrySelectedField}</span></h4>
-                                <p style={{ margin: '0 0 16px 0', fontSize: '12px', color: '#64748B', fontWeight: 500 }}>All Island · Industry Demands</p>
+                                <h4 style={{ margin: '0 0 4px 0', fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>Top 7 Sub Skills for <span style={{ background: 'linear-gradient(135deg, #ECFDF5, #D1FAE5)', color: '#047857', padding: '2px 10px', borderRadius: '6px', fontWeight: 800 }}>{industrySelectedField}</span></h4>
+                                <p style={{ margin: '0 0 16px 0', fontSize: '12px', color: '#64748B', fontWeight: 500, lineHeight: '1.5' }}>
+                                    Employer skill requirements across the job market.<br />
+                                    Shows the most requested technical tools and practical competencies demanded by Sri Lankan industries.
+                                </p>
                                 {loadingIndustrySkills ? (
                                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '300px' }}>
                                         <div style={{ width: '28px', height: '28px', borderRadius: '50%', border: '3px solid #E9D5FF', borderTopColor: '#7C3AED', animation: 'spin 0.9s linear infinite' }}></div>
@@ -2407,24 +2472,35 @@ const InteractiveSriLankaMap: React.FC = () => {
                                 ) : industrySkills.length === 0 ? (
                                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '300px', color: '#64748B', fontSize: '13px' }}>No skill data found.</div>
                                 ) : (
-                                    <ResponsiveContainer width="100%" height={300}>
-                                        <PieChart>
-                                            <Pie data={industrySkills} cx="50%" cy="50%" innerRadius={50} outerRadius={85} paddingAngle={4} dataKey="value">
-                                                {industrySkills.map((entry, idx) => (
-                                                    <Cell key={`cell-ind-skill-${idx}`} fill={MAP_CHART_COLORS[(idx + 2) % MAP_CHART_COLORS.length]} />
-                                                ))}
-                                            </Pie>
-                                            <Tooltip content={({ active, payload }: any) => {
-                                                if (active && payload?.length) {
-                                                    const p = payload[0].payload;
-                                                    return <div style={{ background: '#1E293B', color: '#FFF', padding: '10px 14px', borderRadius: '10px', fontSize: '12px' }}><div style={{ fontWeight: 700 }}>{p.name}</div><div style={{ opacity: 0.85, marginTop: 4 }}>Demanded: {p.value} times ({p.percentage}%)</div></div>;
-                                                }
-                                                return null;
-                                            }} />
-                                            <Legend layout="vertical" verticalAlign="middle" align="right" iconType="circle" iconSize={8}
-                                                formatter={(value) => <span style={{ fontSize: '11px', color: '#475569', fontWeight: 600 }}>{value}</span>} />
-                                        </PieChart>
-                                    </ResponsiveContainer>
+                                    <>
+                                        <ResponsiveContainer width="100%" height={300}>
+                                            <PieChart>
+                                                <defs>
+                                                    {CHART_GRADIENTS.map(g => (
+                                                        <linearGradient id={g.id} key={g.id} x1="0" y1="0" x2="1" y2="1">
+                                                            <stop offset="0%" stopColor={g.start} />
+                                                            <stop offset="100%" stopColor={g.end} />
+                                                        </linearGradient>
+                                                    ))}
+                                                </defs>
+                                                <Pie data={industrySkills} cx="50%" cy="50%" innerRadius={70} outerRadius={105} paddingAngle={4} dataKey="value" activeShape={renderActiveShape}>
+                                                    {industrySkills.map((entry, idx) => (
+                                                        <Cell key={`cell-ind-skill-${idx}`} fill={`url(#${CHART_GRADIENTS[(idx + 2) % CHART_GRADIENTS.length].id})`} style={{ transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)', cursor: 'pointer', outline: 'none' }} />
+                                                    ))}
+                                                </Pie>
+                                                <Tooltip content={({ active, payload }: any) => {
+                                                    if (active && payload?.length) {
+                                                        const p = payload[0].payload;
+                                                        return <div style={{ background: '#1E293B', color: '#FFF', padding: '10px 14px', borderRadius: '10px', fontSize: '12px' }}><div style={{ fontWeight: 700 }}>{p.name}</div><div style={{ opacity: 0.85, marginTop: 4 }}>Demanded: {p.value} times ({p.percentage}%)</div></div>;
+                                                    }
+                                                    return null;
+                                                }} />
+                                                <Legend layout="vertical" verticalAlign="middle" align="right" iconType="circle" iconSize={8}
+                                                    formatter={(value) => <span style={{ fontSize: '11px', color: '#475569', fontWeight: 600 }}>{value}</span>} />
+                                            </PieChart>
+                                        </ResponsiveContainer>
+
+                                    </>
                                 )}
                             </div>
                         )}
