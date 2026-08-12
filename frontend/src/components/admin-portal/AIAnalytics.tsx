@@ -2423,7 +2423,7 @@ const InteractiveSriLankaMap: React.FC = () => {
                 ) : (
                     <div style={{ display: 'grid', gridTemplateColumns: industrySelectedField ? '1fr 1fr' : '1fr', gap: '32px', alignItems: 'flex-start' }}>
                         <div>
-                            <h4 style={{ margin: '0 0 4px 0', fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>Primary Academic Domain of Interest (top 05)</h4>
+                            <h4 style={{ margin: '0 0 4px 0', fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>Primary Academic Domain of Interest (Top 05)</h4>
                             <p style={{ margin: '0 0 16px 0', fontSize: '12px', color: '#64748B', fontWeight: 500 }}>
                                 Click a slice to see the top soft skills requested for that field.
                             </p>
