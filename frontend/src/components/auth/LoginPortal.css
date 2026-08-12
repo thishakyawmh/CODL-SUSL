@@ -125,9 +125,14 @@
     z-index: 1;
     color: rgba(255, 255, 255, 0.4);
     font-size: 13px;
+    line-height: 1.5;
     padding-top: 32px;
     margin-top: 60px;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.pane-footer p {
+    line-height: inherit;
 }
 
 .pane-footer-content {
