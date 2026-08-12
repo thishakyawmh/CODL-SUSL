@@ -810,11 +810,71 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                 y += 5;
             }
 
-            // --- PAGE 3: RECOMMENDATIONS ---
+            // --- PAGE 3: ACADEMIC ENTRY REQUIREMENTS EVIDENCE ---
             doc.addPage();
             y = margin;
 
-            addText('IV. AI ACTIONABLE RECOMMENDATIONS', margin, { fontSize: 14, fontStyle: 'bold', color: 'purple' });
+            addText('IV. ACADEMIC ENTRY REQUIREMENTS EVIDENCE', margin, { fontSize: 14, fontStyle: 'bold', color: 'purple' });
+            y += 10;
+
+            if (academicEntry && academicEntry.accepted_industry_count > 0) {
+                addText(`Relevant Employers: ${academicEntry.accepted_industry_count}`, margin + 5, { fontSize: 10, fontStyle: 'bold' });
+                y += 6;
+                addText(`Education Specified Rate: ${academicEntry.education_requirement_count}/${academicEntry.accepted_industry_count} employers`, margin + 5, { fontSize: 10 });
+                y += 6;
+                addText(`GPA/Result Specified Rate: ${academicEntry.result_requirement_count}/${academicEntry.accepted_industry_count} employers`, margin + 5, { fontSize: 10 });
+                y += 10;
+
+                addText('Minimum Education Required (Employer Distribution):', margin + 5, { fontSize: 10, fontStyle: 'bold' });
+                y += 7;
+                if (academicEntry.education_distribution && academicEntry.education_distribution.length > 0) {
+                    academicEntry.education_distribution.forEach((item: any) => {
+                        checkPageOverflow(15);
+                        addText(`${item.label}: ${item.percentage}% (${item.count} response${item.count !== 1 ? 's' : ''})`, margin + 10, { fontSize: 9 });
+                        y += 4;
+
+                        doc.setFillColor(241, 245, 249);
+                        doc.rect(margin + 10, y, 90, 2, 'F');
+                        doc.setFillColor(5, 150, 105);
+                        doc.rect(margin + 10, y, (item.percentage / 100) * 90, 2, 'F');
+                        y += 6;
+                    });
+                } else {
+                    addText('No education requirement distribution data.', margin + 10, { fontSize: 9, color: 'gray' });
+                    y += 5;
+                }
+                y += 4;
+
+                addText('Minimum Expected GPA / Result Class (Employer Distribution):', margin + 5, { fontSize: 10, fontStyle: 'bold' });
+                y += 7;
+                if (academicEntry.result_distribution && academicEntry.result_distribution.length > 0) {
+                    academicEntry.result_distribution.forEach((item: any) => {
+                        checkPageOverflow(15);
+                        addText(`${item.label}: ${item.percentage}% (${item.count} response${item.count !== 1 ? 's' : ''})`, margin + 10, { fontSize: 9 });
+                        y += 4;
+
+                        doc.setFillColor(241, 245, 249);
+                        doc.rect(margin + 10, y, 90, 2, 'F');
+                        doc.setFillColor(3, 105, 161);
+                        doc.rect(margin + 10, y, (item.percentage / 100) * 90, 2, 'F');
+                        y += 6;
+                    });
+                } else {
+                    addText('No GPA/Result requirement distribution data.', margin + 10, { fontSize: 9, color: 'gray' });
+                    y += 5;
+                }
+            } else {
+                addText('No academic entry requirements data from industry surveys.', margin + 5, { fontSize: 10, color: 'gray' });
+                y += 5;
+            }
+
+            y += 4;
+
+            // --- PAGE 4: RECOMMENDATIONS ---
+            doc.addPage();
+            y = margin;
+
+            addText('V. AI ACTIONABLE RECOMMENDATIONS', margin, { fontSize: 14, fontStyle: 'bold', color: 'purple' });
             y += 10;
 
             if (!recommendations || recommendations.length === 0) {
@@ -1484,7 +1544,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                                     );
                                 })()}
                                 {/* Preferred Learning & Training Methods */}
-                                <div className="ai-chart-card" style={{ margin: 0 }}>
+                                <div className="ai-chart-card" style={{ marginTop: '20px' }}>
                                     <h4>Preferred Learning & Training Methods</h4>
                                     <p className="text-slate-400 text-xs mb-4" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Teaching and training modes preferred by applicants and employers ranked by weighted overall demand (70% Industry / 30% Student).</p>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '12px' }}>
@@ -1632,7 +1692,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                                         ))}
                                     </div>
 
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                                         <div style={{ background: '#FFFFFF', borderRadius: '14px', padding: '16px 18px', border: '1px solid #D1FAE5' }}>
                                             <div style={{ fontSize: '11px', fontWeight: 700, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                                 <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: '#059669' }} />
