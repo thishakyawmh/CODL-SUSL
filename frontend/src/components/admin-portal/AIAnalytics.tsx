@@ -568,6 +568,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
     const [emergingTech, setEmergingTech] = useState<string[]>([]);
     const [activeTab, setActiveTab] = useState<'insights' | 'recommendations' | 'curriculum'>('insights');
     const [fullCourseData, setFullCourseData] = useState<any>(null);
+    const [academicEntry, setAcademicEntry] = useState<any>(null);
 
     const handleDownloadPDF = async () => {
         if (!overview) return;
@@ -948,14 +949,15 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
         const fetchDashboardData = async () => {
             setLoading(true);
             try {
-                const [ov, st, ind, gap, rec, tech, fullCourse] = await Promise.all([
+                const [ov, st, ind, gap, rec, tech, fullCourse, acEntry] = await Promise.all([
                     aiAnalyticsService.getOverview(course.id).catch(() => null),
                     aiAnalyticsService.getStudentInterest(course.id).catch(() => null),
                     aiAnalyticsService.getIndustryGap(course.id).catch(() => null),
                     aiAnalyticsService.getSkillGap(course.id).catch(() => null),
                     aiAnalyticsService.getRecommendations(course.id).catch(() => []),
                     aiAnalyticsService.getEmergingTechnologies(course.id).catch(() => []),
-                    courseService.getById(course.id).catch(() => null)
+                    courseService.getById(course.id).catch(() => null),
+                    aiAnalyticsService.getAcademicEntryRequirements(course.id).catch(() => null)
                 ]);
 
                 setOverview(ov);
@@ -965,6 +967,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                 setRecommendations(rec || []);
                 setEmergingTech(tech || []);
                 setFullCourseData(fullCourse);
+                setAcademicEntry(acEntry);
             } catch (err) {
                 console.error("Error loading program dashboard", err);
             } finally {
@@ -1622,6 +1625,144 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                                     <div className="text-center text-slate-400 py-6 text-sm">Insufficient data points.</div>
                                 )}
                             </div>
+                        </div>
+
+                        {/* Academic Entry Requirements Section */}
+                        <div className="ai-chart-card" style={{ margin: 0, border: '1px solid #D1FAE5', background: 'linear-gradient(135deg, #ECFDF5 0%, #F0FDF4 100%)' }}>
+                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '20px' }}>
+                                <div style={{ background: '#D1FAE5', color: '#059669', borderRadius: '10px', padding: '8px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                    <div style={{ fontSize: '15px', fontWeight: 800, color: '#064E3B', marginBottom: '2px' }}>Academic Entry Requirements</div>
+                                    <div style={{ fontSize: '12px', color: '#047857', fontWeight: 500 }}>Minimum academic qualifications and result expectations reported by program-relevant employers.</div>
+                                </div>
+                                {academicEntry && (
+                                    <div style={{
+                                        fontSize: '11px', fontWeight: 700, padding: '3px 10px', borderRadius: '20px',
+                                        background: academicEntry.evidence_confidence === 'sufficient' ? '#D1FAE5' : '#FEF9C3',
+                                        color: academicEntry.evidence_confidence === 'sufficient' ? '#065F46' : '#854D0E',
+                                        border: `1px solid ${academicEntry.evidence_confidence === 'sufficient' ? '#6EE7B7' : '#FDE047'}`,
+                                        whiteSpace: 'nowrap', flexShrink: 0, alignSelf: 'flex-start', marginTop: '2px'
+                                    }}>
+                                        {academicEntry.evidence_confidence === 'sufficient' ? '✓ Sufficient Evidence' : '⚠ Limited Evidence'}
+                                    </div>
+                                )}
+                            </div>
+
+                            {(!academicEntry || academicEntry.accepted_industry_count === 0) ? (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '18px 20px' }}>
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                                    <span style={{ fontSize: '13px', color: '#64748B', fontWeight: 500 }}>No sufficient program-specific industry evidence.</span>
+                                </div>
+                            ) : (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                        {[
+                                            { label: 'Relevant Employers', value: academicEntry.accepted_industry_count },
+                                            { label: 'Education Specified', value: `${academicEntry.education_requirement_count}/${academicEntry.accepted_industry_count}` },
+                                            { label: 'Result Specified', value: `${academicEntry.result_requirement_count}/${academicEntry.accepted_industry_count}` },
+                                        ].map((pill) => (
+                                            <div key={pill.label} style={{ background: '#FFFFFF', border: '1px solid #D1FAE5', borderRadius: '10px', padding: '6px 14px', display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '90px' }}>
+                                                <span style={{ fontSize: '16px', fontWeight: 800, color: '#059669', lineHeight: 1.1 }}>{pill.value}</span>
+                                                <span style={{ fontSize: '10px', color: '#6B7280', fontWeight: 600, textAlign: 'center', marginTop: '2px' }}>{pill.label}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
+                                        <div style={{ background: '#FFFFFF', borderRadius: '14px', padding: '16px 18px', border: '1px solid #D1FAE5' }}>
+                                            <div style={{ fontSize: '11px', fontWeight: 700, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: '#059669' }} />
+                                                Minimum Education Required
+                                            </div>
+                                            {(academicEntry.education_distribution || []).length === 0 ? (
+                                                <p style={{ fontSize: '12px', color: '#94A3B8', margin: 0 }}>No education requirement data.</p>
+                                            ) : (
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                                    {(academicEntry.education_distribution as Array<{ label: string; count: number; percentage: number }>).map((item) => (
+                                                        <div key={item.label}>
+                                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 600, color: '#1E293B', marginBottom: '4px' }}>
+                                                                <span>{item.label}</span>
+                                                                <span style={{ color: '#059669', fontWeight: 700 }}>{item.percentage}%</span>
+                                                            </div>
+                                                            <div style={{ height: '7px', borderRadius: '999px', background: '#D1FAE5', overflow: 'hidden' }}>
+                                                                <div style={{ height: '100%', borderRadius: '999px', background: 'linear-gradient(90deg, #059669, #34D399)', width: `${item.percentage}%`, transition: 'width 0.6s ease' }} />
+                                                            </div>
+                                                            <div style={{ fontSize: '10px', color: '#94A3B8', marginTop: '2px', textAlign: 'right' }}>{item.count} response{item.count !== 1 ? 's' : ''}</div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div style={{ background: '#FFFFFF', borderRadius: '14px', padding: '16px 18px', border: '1px solid #D1FAE5' }}>
+                                            <div style={{ fontSize: '11px', fontWeight: 700, color: '#0369A1', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: '#0369A1' }} />
+                                                Minimum Expected GPA / Result Class
+                                            </div>
+                                            {(academicEntry.result_distribution || []).length === 0 ? (
+                                                <p style={{ fontSize: '12px', color: '#94A3B8', margin: 0 }}>No result/GPA requirement data.</p>
+                                            ) : (
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                                    {(academicEntry.result_distribution as Array<{ label: string; count: number; percentage: number }>).map((item) => (
+                                                        <div key={item.label}>
+                                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 600, color: '#1E293B', marginBottom: '4px' }}>
+                                                                <span>{item.label}</span>
+                                                                <span style={{ color: '#0369A1', fontWeight: 700 }}>{item.percentage}%</span>
+                                                            </div>
+                                                            <div style={{ height: '7px', borderRadius: '999px', background: '#DBEAFE', overflow: 'hidden' }}>
+                                                                <div style={{ height: '100%', borderRadius: '999px', background: 'linear-gradient(90deg, #0369A1, #38BDF8)', width: `${item.percentage}%`, transition: 'width 0.6s ease' }} />
+                                                            </div>
+                                                            <div style={{ fontSize: '10px', color: '#94A3B8', marginTop: '2px', textAlign: 'right' }}>{item.count} response{item.count !== 1 ? 's' : ''}</div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {academicEntry.cross_analysis && Object.keys(academicEntry.cross_analysis).length > 0 && (
+                                        <div style={{ background: '#FFFFFF', borderRadius: '14px', padding: '16px 18px', border: '1px solid #E0F2FE' }}>
+                                            <div style={{ fontSize: '11px', fontWeight: 700, color: '#7C3AED', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '12px' }}>
+                                                Qualification × Result Cross-Analysis
+                                            </div>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                                {Object.entries(academicEntry.cross_analysis as Record<string, Array<{ label: string; count: number; percentage: number }>>)
+                                                    .filter(([, results]) => results.length > 0)
+                                                    .map(([eduLabel, results]) => (
+                                                        <div key={eduLabel}>
+                                                            <div style={{ fontSize: '12px', fontWeight: 700, color: '#374151', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                                <span style={{ display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', background: '#7C3AED', flexShrink: 0 }} />
+                                                                {eduLabel}
+                                                            </div>
+                                                            <div style={{ paddingLeft: '14px', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                                                {results.map((r) => (
+                                                                    <span key={r.label} style={{
+                                                                        background: 'linear-gradient(135deg, #EDE9FE, #DDD6FE)',
+                                                                        color: '#6D28D9', fontSize: '11px', fontWeight: 600,
+                                                                        padding: '3px 10px', borderRadius: '20px',
+                                                                        border: '1px solid #C4B5FD'
+                                                                    }}>
+                                                                        {r.label} — {r.percentage}%
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    ))
+                                                }
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {academicEntry.summary && (
+                                        <div style={{ background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: '12px', padding: '14px 16px', display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: '2px' }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="8"/><line x1="12" y1="12" x2="12" y2="16"/></svg>
+                                            <p style={{ margin: 0, fontSize: '12.5px', color: '#065F46', lineHeight: 1.65, fontWeight: 500 }}>{academicEntry.summary}</p>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

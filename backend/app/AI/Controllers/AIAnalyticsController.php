@@ -114,6 +114,14 @@ class AIAnalyticsController extends Controller
         return response()->json($cache->emerging_technologies);
     }
 
+    public function getAcademicEntryRequirements($courseId)
+    {
+        $cache = $this->getCacheForCourse($courseId);
+        if (!$cache) return response()->json(null);
+
+        return response()->json($cache->academic_entry_requirements);
+    }
+
     public function getGlobalOverview(AnalyticsNLPService $nlpService)
     {
         $analytics = $nlpService->processAll(null);
