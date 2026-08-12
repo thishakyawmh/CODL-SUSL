@@ -1892,14 +1892,14 @@ const InteractiveSriLankaMap: React.FC = () => {
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '340px', color: '#94A3B8', fontSize: '13px' }}>No education data available.</div>
                     ) : (
                         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <ResponsiveContainer width="100%" height={300}>
+                            <ResponsiveContainer width="100%" height={260}>
                                 <PieChart>
                                     <Pie
                                         data={geoData?.education_levels}
                                         cx="50%"
                                         cy="50%"
-                                        innerRadius={60}
-                                        outerRadius={95}
+                                        innerRadius={50}
+                                        outerRadius={75}
                                         paddingAngle={4}
                                         dataKey="value"
                                     >
@@ -1922,16 +1922,17 @@ const InteractiveSriLankaMap: React.FC = () => {
                                         return null;
                                     }} />
                                     <Legend
-                                        layout="vertical"
-                                        verticalAlign="middle"
-                                        align="right"
+                                        layout="horizontal"
+                                        verticalAlign="bottom"
+                                        align="center"
                                         iconType="circle"
                                         iconSize={8}
+                                        wrapperStyle={{ paddingTop: '12px', lineHeight: '22px' }}
                                         formatter={(value) => {
                                             const total = (geoData?.education_levels || []).reduce((sum, item) => sum + item.value, 0);
                                             const item = (geoData?.education_levels || []).find(e => e.name === value);
                                             const pct = item && total > 0 ? ((item.value / total) * 100).toFixed(1) : '0.0';
-                                            return <span style={{ fontSize: '12px', color: '#475569', fontWeight: 600 }}>{value} ({pct}%)</span>;
+                                            return <span style={{ fontSize: '11px', color: '#475569', fontWeight: 600 }}>{value} ({pct}%)</span>;
                                         }}
                                     />
                                 </PieChart>
@@ -1954,14 +1955,14 @@ const InteractiveSriLankaMap: React.FC = () => {
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '340px', color: '#94A3B8', fontSize: '13px' }}>No industry sector data available.</div>
                     ) : (
                         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <ResponsiveContainer width="100%" height={300}>
+                            <ResponsiveContainer width="100%" height={260}>
                                 <PieChart>
                                     <Pie
                                         data={geoData?.industry_sectors}
                                         cx="50%"
                                         cy="50%"
-                                        innerRadius={60}
-                                        outerRadius={95}
+                                        innerRadius={50}
+                                        outerRadius={75}
                                         paddingAngle={4}
                                         dataKey="value"
                                     >
@@ -1984,16 +1985,17 @@ const InteractiveSriLankaMap: React.FC = () => {
                                         return null;
                                     }} />
                                     <Legend
-                                        layout="vertical"
-                                        verticalAlign="middle"
-                                        align="right"
+                                        layout="horizontal"
+                                        verticalAlign="bottom"
+                                        align="center"
                                         iconType="circle"
                                         iconSize={8}
+                                        wrapperStyle={{ paddingTop: '12px', lineHeight: '22px' }}
                                         formatter={(value) => {
                                             const total = (geoData?.industry_sectors || []).reduce((sum, item) => sum + item.value, 0);
                                             const item = (geoData?.industry_sectors || []).find(e => e.name === value);
                                             const pct = item && total > 0 ? ((item.value / total) * 100).toFixed(1) : '0.0';
-                                            return <span style={{ fontSize: '12px', color: '#475569', fontWeight: 600 }}>{value} ({pct}%)</span>;
+                                            return <span style={{ fontSize: '11px', color: '#475569', fontWeight: 600 }}>{value} ({pct}%)</span>;
                                         }}
                                     />
                                 </PieChart>
