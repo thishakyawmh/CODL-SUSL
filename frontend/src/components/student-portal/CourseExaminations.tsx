@@ -57,7 +57,7 @@ export const CourseExaminations: React.FC = () => {
     const [activeTab, setActiveTab] = React.useState<'regular' | 'postponements'>('regular');
     const [showToast, setShowToast] = React.useState(false);
 
-    // Postponements & Reattempts state
+
     const [showApplyDropdown, setShowApplyDropdown] = React.useState(false);
     const [selectedAppType, setSelectedAppType] = React.useState<'postponement' | 'reattempt' | null>(null);
     const [postponeForm, setPostponeForm] = React.useState({
@@ -145,13 +145,13 @@ export const CourseExaminations: React.FC = () => {
                 const isBatchMatch = exam.batch === activeBatch || exam.batch_name === activeBatch;
                 if (!isBatchMatch) return false;
 
-                // Check if student is assigned to this exam
+
                 let isAssigned = false;
                 if (exam.regulars && Array.isArray(exam.regulars)) {
                     isAssigned = exam.regulars.map((uid: any) => uid.toString()).includes(currentUserId);
                 }
 
-                // Check if student already has an application
+
                 const hasApp = apps.some((app: any) =>
                     app.exam_id?.toString() === exam.id?.toString() ||
                     (app.exam_title && exam.title && app.exam_title.trim().toLowerCase() === exam.title.trim().toLowerCase())
@@ -183,7 +183,7 @@ export const CourseExaminations: React.FC = () => {
                     rejectionReason: app.rejection_reason
                 };
 
-                // Map to matched exam ID, stringified exam_id, and raw title for maximum robustness
+
                 appsMapped[examId] = mappedObj;
                 if (matchingExam) {
                     appsMapped[matchingExam.id.toString()] = mappedObj;
@@ -250,7 +250,7 @@ export const CourseExaminations: React.FC = () => {
     }, [course.id]);
 
     React.useEffect(() => {
-        // Update last visited timestamp to clear notification badges
+
         localStorage.setItem(`exams_lastVisited_${course.id}`, Date.now().toString());
         fetchAllData();
     }, [course.id, fetchAllData]);
@@ -258,7 +258,7 @@ export const CourseExaminations: React.FC = () => {
     React.useEffect(() => {
         if (location.state?.toastSuccess) {
             setShowToast(true);
-            // Clear location state to prevent double trigger
+
             navigate(location.pathname, { replace: true });
 
             const timer = setTimeout(() => {
@@ -431,7 +431,7 @@ export const CourseExaminations: React.FC = () => {
                                 const appStatus = application?.status || 'Not Applied';
                                 const appStatusLower = appStatus.toLowerCase();
 
-                                // Check if the application deadline has been reached/passed
+
                                 const isDeadlinePassed = (() => {
                                     if (!exam.deadline) return false;
                                     try {
@@ -443,13 +443,13 @@ export const CourseExaminations: React.FC = () => {
                                     }
                                 })();
 
-                                // If deadline has passed and exam status is open, automatically treat as closed
+
                                 const baseStatus = (isDeadlinePassed && (exam.status === 'Registration Open' || exam.status === 'Registrations are Open' || exam.status === 'Open'))
                                     ? 'Registrations are Closed'
                                     : exam.status;
 
-                                // Determine display status based on the specific 5 levels requested
-                                let effectiveStatus = 'Yet to release results'; // Default fallback
+
+                                let effectiveStatus = 'Yet to release results'; 
 
                                 if (baseStatus === 'Results Released') {
                                     effectiveStatus = 'Result Released';
@@ -590,9 +590,9 @@ export const CourseExaminations: React.FC = () => {
                     </div>
                 ) : (
                     <div className="animate-fade-in">
-                        {/* Apply FAB is rendered outside below */}
+                        { }
 
-                        {/* Postponement Instructions */}
+                        { }
                         {selectedAppType === 'postponement' && (
                             <div className="animate-fade-in" style={{ width: '100%', background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '24px', padding: '32px', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.02)', boxSizing: 'border-box' }}>
                                 <h3 style={{ margin: '0 0 24px 0', fontSize: '20px', fontWeight: 800, color: '#0F172A' }}>Postponement Application Instructions</h3>
@@ -640,7 +640,7 @@ export const CourseExaminations: React.FC = () => {
                             </div>
                         )}
 
-                        {/* Reattempt Instructions */}
+                        { }
                         {selectedAppType === 'reattempt' && (
                             <div className="animate-fade-in" style={{ width: '100%', background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '24px', padding: '32px', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.02)', boxSizing: 'border-box' }}>
                                 <h3 style={{ margin: '0 0 24px 0', fontSize: '20px', fontWeight: 800, color: '#0F172A' }}>Reattempt Application Instructions</h3>
@@ -688,7 +688,7 @@ export const CourseExaminations: React.FC = () => {
                             </div>
                         )}
 
-                        {/* Applications Cards */}
+                        { }
                         {selectedAppType === null && (
                             <div className="exam-strips-list">
                                 {postApplications.map(app => {
@@ -800,7 +800,7 @@ export const CourseExaminations: React.FC = () => {
                 )}
             </div>
 
-            {/* Application Status Modal */}
+            { }
             {showStatusModal && (
                 <div className="status-tracker-overlay" onClick={() => setShowStatusModal(null)}>
                     <div className="status-tracker-modal" onClick={e => e.stopPropagation()}>
@@ -877,7 +877,7 @@ export const CourseExaminations: React.FC = () => {
                 </div>
             )}
 
-            {/* Exam Details Modal */}
+            { }
             {showDetailsModal && (
                 <div className="status-tracker-overlay" onClick={() => setShowDetailsModal(null)}>
                     <div className="status-tracker-modal details" onClick={e => e.stopPropagation()}>
@@ -897,7 +897,7 @@ export const CourseExaminations: React.FC = () => {
                         <div className="tracker-content">
                             {showDetailsModal.type === 'postponement' || showDetailsModal.type === 'reattempt' ? (
                                 <div>
-                                    {/* Request Summary - compact header */}
+                                    { }
                                     <div className="details-request-summary">
                                         <div className="summary-left-group">
                                             <span style={{ fontSize: '11px', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase' as const }}>Application</span>
@@ -916,7 +916,7 @@ export const CourseExaminations: React.FC = () => {
                                     </div>
 
                                     {showDetailsModal.status === 'Assigned' && showDetailsModal.assignedExam ? (
-                                        /* Full Assigned Exam Details — matches regular exam view */
+                                         
                                         <div>
                                             <div className="exam-details-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
                                                 <div className="detail-box" style={{ gridColumn: '1 / -1' }}>
@@ -968,7 +968,7 @@ export const CourseExaminations: React.FC = () => {
                                             )}
                                         </div>
                                     ) : (
-                                        /* Non-assigned request — show basic details */
+                                         
                                         <div>
                                             <div style={{ overflow: 'hidden', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
                                                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '14px' }}>
@@ -1049,7 +1049,7 @@ export const CourseExaminations: React.FC = () => {
                                         onClick={() => {
                                             setShowDetailsModal(null);
                                             setActiveTab('regular');
-                                            // Find the linked exam and navigate to its results
+
                                             const linkedExam = scheduledExams.find(e => e.id === showDetailsModal.linkedExamId);
                                             if (linkedExam) {
                                                 localStorage.setItem(`viewed_results_${studentRegNo}_${showDetailsModal.linkedExamId}`, 'true');

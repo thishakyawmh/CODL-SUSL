@@ -9,10 +9,7 @@ use Illuminate\Support\Facades\DB;
 
 class StatsController extends Controller
 {
-    /**
-     * Get all admin stats in a SINGLE optimized query instead of 12+ separate COUNT queries.
-     * This reduces remote Azure DB roundtrips from ~12 to 1.
-     */
+     
     public function getAdminStats(Request $request)
     {
         $stats = $this->fetchAllStats($request->user());
@@ -69,7 +66,7 @@ class StatsController extends Controller
                 ];
             });
 
-        // Trailing 36 months enrollment trend (database-agnostic aggregation)
+
         $enrollments = DB::table('user_courses')
             ->select('created_at')
             ->where('created_at', '>=', now()->subMonths(35)->startOfMonth()->toDateTimeString())
@@ -95,7 +92,7 @@ class StatsController extends Controller
         }
         $monthlyEnrollments = array_values($monthlyData);
 
-        // Trailing 30 days daily enrollment trend
+
         $dailyEnrollments = DB::table('user_courses')
             ->select('created_at')
             ->where('created_at', '>=', now()->subDays(29)->startOfDay()->toDateTimeString())
@@ -121,7 +118,7 @@ class StatsController extends Controller
         }
         $dailyEnrollmentsList = array_values($dailyData);
 
-        // Student level distribution (Degree, Diploma, etc.)
+
         $levelDistribution = Course::join('user_courses', 'courses.id', '=', 'user_courses.course_id')
             ->select('courses.level', DB::raw('count(*) as count'))
             ->groupBy('courses.level')
@@ -133,7 +130,7 @@ class StatsController extends Controller
                 ];
             });
 
-        // Trailing 30 days hourly activity logs (database-agnostic aggregation)
+
         $logs = DB::table('activity_logs')
             ->select('created_at')
             ->where('created_at', '>=', now()->subDays(30)->toDateTimeString())
@@ -158,7 +155,7 @@ class StatsController extends Controller
         }
         $activityFlow = array_values($hourlyData);
 
-        // Student demographics calculations (Age spread & Gender ratio)
+
         $students = DB::table('users')
             ->where('role', 'student')
             ->select('dob', 'sex')
@@ -198,12 +195,12 @@ class StatsController extends Controller
                         $ageSpread['35+']++;
                     }
                 } catch (\Exception $e) {
-                    // Ignore parsing errors
+
                 }
             }
         }
 
-        // Mock data fallback if database is not populated yet
+
         if ($ageSpread['18-24'] === 0 && $ageSpread['25-34'] === 0 && $ageSpread['35+'] === 0) {
             $ageSpread = [
                 '18-24' => 45,
@@ -254,10 +251,7 @@ class StatsController extends Controller
         return response()->json($logs);
     }
 
-    /**
-     * Fetch all stats in a single database roundtrip using a UNION query.
-     * Filter pending requests based on the user's role and assigned courses.
-     */
+     
     private function fetchAllStats($user = null): array
     {
         $role = $user ? $user->role : null;
@@ -320,7 +314,7 @@ class StatsController extends Controller
             $stats[$row->metric] = (int) $row->val;
         }
 
-        // Calculate total pending approvals from already-fetched values
+
         $stats['totalPendingApprovals'] = 
             ($stats['pendingApplications'] ?? 0) +
             ($stats['pendingLetters'] ?? 0) +
@@ -333,12 +327,12 @@ class StatsController extends Controller
 
     public function getSystemHealthStats(\Illuminate\Http\Request $request)
     {
-        $timeframe = $request->query('timeframe', '1d'); // Default to 24 hours / 1 day
+        $timeframe = $request->query('timeframe', '1d'); 
         
         $data = [];
         
         if ($timeframe === '12h') {
-            // Last 12 hours, hourly intervals
+
             $start = now()->subHours(11)->startOfHour();
             for ($i = 0; $i < 12; $i++) {
                 $time = $start->copy()->addHours($i);
@@ -360,7 +354,7 @@ class StatsController extends Controller
                 }
             }
         } elseif ($timeframe === '1d') {
-            // Last 24 hours, hourly intervals
+
             $start = now()->subHours(23)->startOfHour();
             for ($i = 0; $i < 24; $i++) {
                 $time = $start->copy()->addHours($i);
@@ -382,7 +376,7 @@ class StatsController extends Controller
                 }
             }
         } elseif ($timeframe === '1w') {
-            // Last 7 days, daily intervals
+
             $start = now()->subDays(6)->startOfDay();
             for ($i = 0; $i < 7; $i++) {
                 $time = $start->copy()->addDays($i);
@@ -404,7 +398,7 @@ class StatsController extends Controller
                 }
             }
         } elseif ($timeframe === '6m') {
-            // Last 6 months, monthly intervals
+
             $start = now()->subMonths(5)->startOfMonth();
             for ($i = 0; $i < 6; $i++) {
                 $time = $start->copy()->addMonths($i);
@@ -426,7 +420,7 @@ class StatsController extends Controller
                 }
             }
         } elseif ($timeframe === '1y') {
-            // Last 12 months, monthly intervals
+
             $start = now()->subMonths(11)->startOfMonth();
             for ($i = 0; $i < 12; $i++) {
                 $time = $start->copy()->addMonths($i);

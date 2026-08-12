@@ -13,7 +13,7 @@ const ExaminationResults: React.FC = () => {
     const [exam, setExam] = useState<{ title: string }>({ title: 'Examination Results' });
     const [results, setResults] = useState<any[]>([]);
     
-    // Retrieve active student details
+
     const userStr = sessionStorage.getItem('user');
     let currentUser = null;
     if (userStr) {
@@ -139,44 +139,44 @@ const ExaminationResults: React.FC = () => {
         const fetchResultsData = async () => {
             setLoading(true);
             try {
-                // 1. Fetch course details to get the real title
+
                 const courseData = await courseService.getById(id!);
                 if (courseData) {
                     setCourseTitle(courseData.title);
                 }
 
-                // 2. Fetch exams to get the exam title
+
                 const examsData = await examService.getByCourse(id!);
                 const targetExam = examsData.find((e: any) => e.id.toString() === examId?.toString());
                 if (targetExam) {
                     setExam({ title: targetExam.title });
                 }
 
-                // 3. Fetch student examinations data to get postponement/reattempt requests
+
                 const studentExamsData = await courseService.getStudentExaminationsData(id!);
                 const postponements = studentExamsData.postponement_requests || [];
                 const reattempts = studentExamsData.reattempt_requests || [];
 
-                // 4. Fetch user grades from backend
+
                 const myGrades = await examResultService.getMyResults();
                 
-                // Filter direct grades for this course and this exam
+
                 const directGrades = myGrades.filter((g: any) => 
                     g.exam_result?.course?.id?.toString() === id?.toString() &&
                     g.exam_result?.exam?.id?.toString() === examId?.toString()
                 );
 
-                // Filter indirect grades (postponed/reattempted to another exam)
+
                 const indirectGrades = myGrades.filter((g: any) => {
                     if (g.exam_result?.course?.id?.toString() !== id?.toString()) return false;
                     const gradeExamId = g.exam_result?.exam?.id?.toString();
                     if (!gradeExamId || gradeExamId === examId?.toString()) return false;
 
-                    // Is there a postponement request from this exam to that grade's exam?
+
                     const isPostponed = postponements.some((p: any) => {
                         const pOriginalTitle = p.exam_title || '';
                         
-                        // Fuzzy title match
+
                         const cleanPTitle = pOriginalTitle.toLowerCase().replace(/[^a-z0-9]/g, '');
                         const cleanTargetTitle = (targetExam?.title || '').toLowerCase().replace(/[^a-z0-9]/g, '');
                         const matchesOriginal = cleanPTitle.includes(cleanTargetTitle) || cleanTargetTitle.includes(cleanPTitle);
@@ -201,11 +201,11 @@ const ExaminationResults: React.FC = () => {
 
                     if (isPostponed) return true;
 
-                    // Is there a reattempt request from this exam for this subject to that grade's exam?
+
                     const isReattempted = reattempts.some((r: any) => {
                         const rOriginalTitle = r.exam_title || '';
                         
-                        // Fuzzy title match
+
                         const cleanRTitle = rOriginalTitle.toLowerCase().replace(/[^a-z0-9]/g, '');
                         const cleanTargetTitle = (targetExam?.title || '').toLowerCase().replace(/[^a-z0-9]/g, '');
                         const matchesOriginal = cleanRTitle.includes(cleanTargetTitle) || cleanTargetTitle.includes(cleanRTitle);
@@ -219,7 +219,7 @@ const ExaminationResults: React.FC = () => {
                     return isReattempted;
                 });
 
-                // Map to UI results shape
+
                 const gradesList = ['F', 'E', 'D', 'C-', 'C', 'C+', 'B-', 'B', 'B+', 'A-', 'A', 'A+'];
                 
                 const mapGradeRow = (g: any, isIndirect: boolean, typeLabel?: string) => {
@@ -249,12 +249,12 @@ const ExaminationResults: React.FC = () => {
                          const attemptNo = matchingReattempt.attempt || 2;
                          label = `Attempt ${attemptNo}`;
                      } else {
-                         label = ''; // Clear label/reason for postponements
+                         label = ''; 
                      }
                      return mapGradeRow(g, true, label);
                  });
 
-                 // Merge: indirect grades overwrite/update direct grades
+
                  const mergedMap: Record<string, any> = {};
                  mappedDirect.forEach((row: any) => {
                      mergedMap[row.code] = row;

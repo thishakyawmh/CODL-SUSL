@@ -46,12 +46,12 @@ export const ApplicantDashboard: React.FC = () => {
     const handleSignOutConfirm = () => {
         setIsSignOutOpen(false);
 
-        // Clear local storage first
+
         sessionStorage.removeItem('token');
         sessionStorage.removeItem('user');
         sessionStorage.removeItem('adminRole');
 
-        // Call API in background
+
         authService.logout().catch(() => { });
 
         navigate('/login', { replace: true });
@@ -63,7 +63,7 @@ export const ApplicantDashboard: React.FC = () => {
 
     return (
         <div className="applicant-workspace-container">
-            {/* Header */}
+            { }
             <header className="workspace-header">
                 <div className="header-brand">
                     <div className="brand-icon">
@@ -90,7 +90,7 @@ export const ApplicantDashboard: React.FC = () => {
                 </div>
             </header>
 
-            {/* Main Content */}
+            { }
             <main className="workspace-main">
                 {isNestedRoute ? (
                     <Outlet context={{ hasApplication, fetchApplications }} />

@@ -14,7 +14,7 @@ export const CreateExam: React.FC = () => {
     const isEditing = !!examId;
     const navigate = useNavigate();
     
-    // Course info
+
     const courseId = id;
     const [course, setCourse] = useState<AdminCourse | null>(null);
     const [isLoadingCourse, setIsLoadingCourse] = useState(true);
@@ -80,19 +80,19 @@ export const CreateExam: React.FC = () => {
     const [subjects, setSubjects] = useState<Subject[]>([]);
     const shouldSkipSubjectsSync = React.useRef(false);
 
-    // Set default batch once course is loaded
+
     useEffect(() => {
         if (course && !examBatch) {
             setExamBatch(batchFromUrl || course.batches[0] || 'Batch 01');
         }
     }, [course, batchFromUrl, examBatch]);
 
-    // Student selection state (kept to preserve DB assignments when editing/updating)
+
     const [selectedRegulars, setSelectedRegulars] = useState<string[]>([]);
     const [selectedReattempts, setSelectedReattempts] = useState<string[]>([]);
     const [selectedPostponements, setSelectedPostponements] = useState<string[]>([]);
 
-    // Auto switch status based on deadline
+
     useEffect(() => {
         if (examDeadline) {
             const today = new Date().toISOString().split('T')[0];
@@ -104,7 +104,7 @@ export const CreateExam: React.FC = () => {
         }
     }, [examDeadline]);
 
-    // Load subjects when semester or type changes
+
     useEffect(() => {
         if (shouldSkipSubjectsSync.current) {
             shouldSkipSubjectsSync.current = false;
@@ -128,7 +128,7 @@ export const CreateExam: React.FC = () => {
         setSubjects(subjects.filter((_, i) => i !== idx));
     };
 
-    // Load existing exam data if editing
+
     useEffect(() => {
         if (isEditing && examId) {
             const fetchExam = async () => {

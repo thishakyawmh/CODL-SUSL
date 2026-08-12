@@ -61,7 +61,7 @@ export const CreateCourse: React.FC = () => {
     const [instructors, setInstructors] = useState<RemoteUser[]>([]);
     const [isLoading, setIsLoading] = useState(false);
 
-    // Common Fields
+
     const [commonData, setCommonData] = useState({
         name: '',
         code: '',
@@ -78,13 +78,13 @@ export const CreateCourse: React.FC = () => {
     const [facultySelect, setFacultySelect] = useState('Faculty of Computing');
     const [customFaculty, setCustomFaculty] = useState('');
 
-    // Specific Fields
+
     const [semesterCount, setSemesterCount] = useState(1);
     const [semesters, setSemesters] = useState<Semester[]>([{ subjects: [{ code: '', name: '', credits: '' }] }]);
     const [diplomaSubjects, setDiplomaSubjects] = useState<Subject[]>([{ code: '', name: '', credits: '' }]);
 
     useEffect(() => {
-        // Fetch Categories and Instructors
+
         const fetchData = async () => {
             setIsLoading(true);
             try {
@@ -98,15 +98,15 @@ export const CreateCourse: React.FC = () => {
                 ));
 
                 if (isEdit && id) {
-                    // 1. Try mock data first
+
                     let courseData = mockAdminCourses.find(c => String(c.id) === String(id));
 
-                    // 2. If not found in mock, load from API
+
                     if (!courseData) {
                         try {
                             const fetched = await courseService.getById(id);
                             if (fetched) {
-                                // Map backend structure to frontend structure
+
                                 courseData = {
                                     id: fetched.id.toString(),
                                     title: fetched.title,
@@ -245,7 +245,7 @@ export const CreateCourse: React.FC = () => {
         setIsLoading(true);
 
         try {
-            // Find category ID based on level
+
             const category = categories.find(c => c.name === courseType);
 
             const payload: any = {
@@ -261,7 +261,7 @@ export const CreateCourse: React.FC = () => {
                 category_id: category ? category.id : null,
             };
 
-            // Structure data based on course level
+
             if (['Degree', 'Higher National Diploma'].includes(courseType)) {
                 payload.semesters = semesters.map((sem, idx) => ({
                     name: `Semester ${idx + 1}`,
@@ -353,7 +353,7 @@ export const CreateCourse: React.FC = () => {
             </div>
 
             <form className="create-course-form" onSubmit={handleSubmit}>
-                {/* Section 0: Course Category */}
+                { }
                 <div className="form-section-card" style={{ border: '2px solid #7C3AED20', background: '#F5F3FF40' }}>
                     <div className="section-header">
                         <Layers size={20} color="#7C3AED" />
@@ -367,7 +367,7 @@ export const CreateCourse: React.FC = () => {
                                 onChange={(e) => {
                                     const type = e.target.value as any;
                                     setCourseType(type);
-                                    // Set default durations
+
                                     if (type === 'Degree') setCommonData(prev => ({ ...prev, duration: '3 Years' }));
                                     else if (type === 'Higher National Diploma') setCommonData(prev => ({ ...prev, duration: '2 Years' }));
                                     else if (type === 'Diploma') setCommonData(prev => ({ ...prev, duration: '1 Year' }));
@@ -386,7 +386,7 @@ export const CreateCourse: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Section 1: Basic Information */}
+                { }
                 <div className="form-section-card">
                     <div className="section-header">
                         <BookOpen size={20} />
@@ -507,7 +507,7 @@ export const CreateCourse: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Section 3: Academic Structure (Dynamic) */}
+                { }
                 {!['Certificate', 'Advanced Certificate'].includes(courseType) && (
                     <div className="form-section-card">
                         <div className="section-header">

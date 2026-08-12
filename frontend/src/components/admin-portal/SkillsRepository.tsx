@@ -32,12 +32,12 @@ export const SkillsRepository: React.FC = () => {
     const [courses, setCourses] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     
-    // Filters
+
     const [searchTerm, setSearchTerm] = useState('');
     const [categoryFilter, setCategoryFilter] = useState('all');
     const [courseFilter, setCourseFilter] = useState('all');
     
-    // Editing Category state
+
     const [editingSkillId, setEditingSkillId] = useState<number | null>(null);
     const [tempCategory, setTempCategory] = useState('');
 
@@ -75,7 +75,7 @@ export const SkillsRepository: React.FC = () => {
         }
     };
 
-    // Filter Skills
+
     const filteredSkills = skills.filter(item => {
         const matchesSearch = item.skill.toLowerCase().includes(searchTerm.toLowerCase()) ||
             (item.subject?.name || '').toLowerCase().includes(searchTerm.toLowerCase());
@@ -85,7 +85,7 @@ export const SkillsRepository: React.FC = () => {
         return matchesSearch && matchesCategory && matchesCourse;
     });
 
-    // Compute Category distribution for custom SVG chart
+
     const categoryCounts = CATEGORIES.reduce((acc, cat) => {
         acc[cat] = skills.filter(s => s.category === cat).length;
         return acc;
@@ -109,7 +109,7 @@ export const SkillsRepository: React.FC = () => {
                 </div>
             </div>
 
-            {/* Top KPI row */}
+            { }
             <div className="sr-kpi-row">
                 <div className="sr-kpi-card">
                     <div className="kpi-icon total"><Tag size={20} /></div>
@@ -138,7 +138,7 @@ export const SkillsRepository: React.FC = () => {
                 </div>
             </div>
 
-            {/* Custom SVG Analytics */}
+            { }
             <div className="sr-analytics-box">
                 <div className="srab-header">
                     <BarChart2 size={16} />
@@ -161,7 +161,7 @@ export const SkillsRepository: React.FC = () => {
                 </div>
             </div>
 
-            {/* Filters Row */}
+            { }
             <div className="sr-filters-row">
                 <div className="filter-item search">
                     <Search size={16} />
@@ -194,7 +194,7 @@ export const SkillsRepository: React.FC = () => {
                 </div>
             </div>
 
-            {/* Skills Table */}
+            { }
             <div className="sr-table-card">
                 {isLoading ? (
                     <div className="sr-loading-state">

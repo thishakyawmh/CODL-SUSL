@@ -8,9 +8,7 @@ use Illuminate\Support\Facades\Schema;
 
 class DatabaseTableController extends Controller
 {
-    /**
-     * Get list of all database tables and their row counts.
-     */
+     
     public function getTables(Request $request)
     {
         if ($request->user()->role !== 'super_admin') {
@@ -20,7 +18,7 @@ class DatabaseTableController extends Controller
         $tables = Schema::getTables();
         $result = [];
         
-        // System tables to exclude/protect
+
         $excludeTables = [
             'migrations', 
             'failed_jobs', 
@@ -64,9 +62,7 @@ class DatabaseTableController extends Controller
         return response()->json($result);
     }
 
-    /**
-     * Get records of a specific table.
-     */
+     
     public function getTableData(Request $request, $tableName)
     {
         if ($request->user()->role !== 'super_admin') {
@@ -95,7 +91,7 @@ class DatabaseTableController extends Controller
             return response()->json(['message' => 'Table not found.'], 404);
         }
 
-        // Limit to 200 rows for view safety
+
         $data = DB::table($tableName)->orderBy('id', 'desc')->limit(200)->get();
         $columns = Schema::getColumnListing($tableName);
 
@@ -106,9 +102,7 @@ class DatabaseTableController extends Controller
         ]);
     }
 
-    /**
-     * Delete a record from a specific table.
-     */
+     
     public function deleteRecord(Request $request, $tableName, $id)
     {
         if ($request->user()->role !== 'super_admin') {

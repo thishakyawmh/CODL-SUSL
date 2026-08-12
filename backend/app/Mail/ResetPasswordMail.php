@@ -15,9 +15,7 @@ class ResetPasswordMail extends Mailable
     public $token;
     public $resetUrl;
 
-    /**
-     * Create a new message instance.
-     */
+     
     public function __construct(User $user, string $token)
     {
         $this->user = $user;
@@ -27,9 +25,7 @@ class ResetPasswordMail extends Mailable
         $this->resetUrl = rtrim($frontendUrl, '/') . '/reset-password?token=' . $token . '&email=' . urlencode($user->email);
     }
 
-    /**
-     * Build the message.
-     */
+     
     public function build()
     {
         return $this->subject('Reset Your Password - CODL SUSL')

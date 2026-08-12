@@ -33,7 +33,7 @@ export const AcademicProgressTab: React.FC<AcademicProgressTabProps> = ({
 
                     return (
                         <div key={idx} style={{ background: '#FFFFFF', borderRadius: '12px', border: '1px solid #E2E8F0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
-                            {/* Accordion Header */}
+                            { }
                             <button
                                 onClick={() => onToggleCourse(courseName)}
                                 style={{
@@ -68,7 +68,7 @@ export const AcademicProgressTab: React.FC<AcademicProgressTabProps> = ({
                                 </div>
                             </button>
 
-                            {/* Accordion Content */}
+                            { }
                             {isExpanded && (
                                 <div style={{ padding: '24px' }}>
                                     <h4 style={{ fontSize: '15px', fontWeight: 700, color: '#334155', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>

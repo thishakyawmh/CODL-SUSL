@@ -1,6 +1,6 @@
-// =============================================
-// Mock Data for Super Admin Panel
-// =============================================
+
+
+
 
 export interface User {
     id: string;
@@ -45,7 +45,7 @@ export interface CourseApplication {
     phone: string;
     district: string;
     approvalStages: ApprovalStage[];
-    // Extended fields
+
     dob?: string;
     sex?: string;
     civilStatus?: string;
@@ -76,13 +76,13 @@ export interface LetterRequestAdmin {
     requestDate: string;
     status: 'pending' | 'approved' | 'rejected';
     approvalStages: ApprovalStage[];
-    // Extended fields
+
     address?: string;
     phone?: string;
     nic?: string;
     year?: string;
     batch?: string;
-    statusPrefix?: string; // Mr, Mrs, Ms, Rev
+    statusPrefix?: string; 
 }
 
 export interface PostponementRequestAdmin {
@@ -96,7 +96,7 @@ export interface PostponementRequestAdmin {
     status: 'pending' | 'approved' | 'rejected';
     medicalCert: boolean;
     approvalStages: ApprovalStage[];
-    // Extended fields
+
     exams?: { subject: string; type: string; date: string }[];
     batch?: string;
 }
@@ -111,7 +111,7 @@ export interface ExamApplicationAdmin {
     applicationDate: string;
     status: 'pending' | 'approved' | 'rejected';
     approvalStages: ApprovalStage[];
-    // Extended fields
+
     statusPrefix?: string;
     nameWithInitials?: string;
     nameDenotedByInitials?: string;
@@ -179,7 +179,7 @@ export interface AdminBatch {
     maxEnrollments: string;
     subtitle: string;
     status: string;
-    subjects?: BatchSubject[]; // Subjects with batch-level instructor assignments
+    subjects?: BatchSubject[]; 
 }
 
 export interface AdminCourse {
@@ -193,10 +193,10 @@ export interface AdminCourse {
     secretary: string | null;
     totalStudents: number;
     activeStudents: number;
-    batches: string[]; // Batch names for backward compatibility
+    batches: string[]; 
     batchesCount?: number;
     createdDate: string;
-    // Academic Structure — subjects defined at course level (no instructor)
+
     semesters?: Semester[];
     diplomaSubjects?: Subject[];
     coordinator?: string;
@@ -228,7 +228,7 @@ export interface ActivityLog {
     type: 'approval' | 'user' | 'course' | 'system' | 'grade';
 }
 
-// ===================== MOCK DATA =====================
+
 
 export const mockUsers: User[] = [];
 
@@ -283,7 +283,7 @@ export const mockRoleConfigs: RoleConfig[] = [
 
 export const mockActivityLogs: ActivityLog[] = [];
 
-// Stats / KPI helpers
+
 export const getAdminStats = () => ({
     totalStudents: mockUsers.filter(u => u.role === 'student').length,
     activeStudents: mockUsers.filter(u => u.role === 'student' && u.status === 'active').length,
@@ -347,7 +347,7 @@ export const getCurrentAdminUser = () => {
 export const getInitials = (name: string) => {
     if (!name) return 'U';
     const parts = name.trim().split(/\s+/);
-    // Filter out common academic / administrative titles
+
     const cleanParts = parts.filter(p => !['dr.', 'mr.', 'mrs.', 'ms.', 'prof.', 'rev.', 'dr', 'mr', 'mrs', 'ms', 'prof', 'rev'].includes(p.toLowerCase()));
     if (cleanParts.length >= 2) {
         return (cleanParts[0][0] + cleanParts[cleanParts.length - 1][0]).toUpperCase();
@@ -358,24 +358,24 @@ export const getInitials = (name: string) => {
 };
 
 export const getAvatarColor = (name: string) => {
-    if (!name) return '#7C3AED'; // default purple
+    if (!name) return '#7C3AED'; 
     const hash = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
     const colors = [
-        '#7C3AED', // Purple
-        '#2563EB', // Blue
-        '#059669', // Emerald
-        '#D97706', // Amber
-        '#DC2626', // Red
-        '#0891B2', // Cyan
-        '#DB2777', // Pink
-        '#4F46E5', // Indigo
+        '#7C3AED', 
+        '#2563EB', 
+        '#059669', 
+        '#D97706', 
+        '#DC2626', 
+        '#0891B2', 
+        '#DB2777', 
+        '#4F46E5', 
     ];
 };
 
 export const getFullAvatarUrl = (avatar: string | null | undefined): string => {
     if (!avatar) return '';
 
-    // Resolve dynamic host for local and external testing
+
     const currentHost = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
 
     let resolvedAvatar = avatar;

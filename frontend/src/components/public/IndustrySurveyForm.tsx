@@ -171,7 +171,7 @@ export const IndustrySurveyForm: React.FC = () => {
                 </header>
 
                 <form onSubmit={handleSubmit} className="ps-survey-form">
-                    {/* Section 1: Company Profile */}
+                    { }
                     <div className="ps-form-section">
                         <h2>1. Company Profile</h2>
                         
@@ -221,7 +221,7 @@ export const IndustrySurveyForm: React.FC = () => {
                         )}
                     </div>
 
-                    {/* Section 2: In-Demand Job Roles */}
+                    { }
                     <div className="ps-form-section">
                         <h2>2. In-Demand Job Roles</h2>
                         <p className="ps-section-desc">Add one or more job roles that your company is actively recruiting or expects to recruit soon.</p>
@@ -282,7 +282,7 @@ export const IndustrySurveyForm: React.FC = () => {
                         )}
                     </div>
 
-                    {/* Section 3: Required Skills & Competencies */}
+                    { }
                     <div className="ps-form-section">
                         <h2>3. Required Skills & Competencies</h2>
                         <p className="ps-section-desc">Select the primary technical skills graduates need to possess for these roles.</p>
@@ -341,7 +341,7 @@ export const IndustrySurveyForm: React.FC = () => {
                         )}
                     </div>
 
-                    {/* Section 4: Demand Level */}
+                    { }
                     <div className="ps-form-section">
                         <h2>4. Priority & Demand Level</h2>
                         <p className="ps-section-desc">Estimate the overall intensity of your hiring requirements for these skills.</p>

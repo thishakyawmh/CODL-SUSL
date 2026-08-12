@@ -15,7 +15,7 @@ class UserController extends Controller
         if ($request->has('role')) {
             $query->where('role', $request->role);
         }
-        // Only load courses relationship if specifically needed (e.g., student listing)
+
         if ($request->boolean('with_courses', false) || $request->input('role') === 'student') {
             $query->with('courses:id,title,code');
         }
@@ -169,7 +169,7 @@ class UserController extends Controller
 
         $user = $request->user();
 
-        // Delete old avatar if it exists in storage
+
         if ($user->avatar) {
             $oldFilename = basename($user->avatar);
             if (Storage::disk('public')->exists('avatars/' . $oldFilename)) {
@@ -272,7 +272,7 @@ class UserController extends Controller
             return response()->json(['message' => 'User does not have an associated NIC number.'], 422);
         }
 
-        $user->password = $user->nic; // Will be auto-hashed by model casts
+        $user->password = $user->nic; 
         $user->save();
 
         return response()->json(['message' => 'Password reset successfully.']);

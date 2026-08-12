@@ -44,7 +44,7 @@ export const CourseDetails: React.FC = () => {
                 console.error("Failed to fetch student batch for announcements:", e);
             }
 
-            // 1. Fetch course announcements
+
             try {
                 const data = await announcementService.getAll({ course_id: course.id, batch: activeBatch });
                 const processed = data.map((ann: any) => {
@@ -69,7 +69,7 @@ export const CourseDetails: React.FC = () => {
                 console.error("Failed to fetch course announcements:", err);
             }
 
-            // 2. Calculate new counts
+
             const lastVisitedMaterials = localStorage.getItem(`materials_lastVisited_${course.id}`);
             const lastVisitedMaterialsTs = lastVisitedMaterials ? parseInt(lastVisitedMaterials, 10) : 0;
 

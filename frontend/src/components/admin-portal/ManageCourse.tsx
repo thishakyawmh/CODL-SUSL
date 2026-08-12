@@ -82,12 +82,12 @@ export const ManageCourse: React.FC = () => {
     const location = useLocation();
     const navigate = useNavigate();
 
-    // Parse URL query parameters
+
     const queryParams = new URLSearchParams(location.search);
     const urlBatch = queryParams.get('batch') || null;
     const urlSection = queryParams.get('section') || null;
 
-    // Helper to push state to URL
+
     const updateNavigation = (batch: string | null, section: string | null) => {
         let url = `/admin/courses/manage/${id}`;
         const params: string[] = [];
@@ -103,7 +103,7 @@ export const ManageCourse: React.FC = () => {
         navigate(url);
     };
 
-    // Find the course
+
     const [course, setCourse] = useState<AdminCourse | null>(null);
     const [isLoadingCourse, setIsLoadingCourse] = useState(true);
     const [realStudents, setRealStudents] = useState<any[]>([]);
@@ -125,7 +125,7 @@ export const ManageCourse: React.FC = () => {
         try {
             const data = await courseService.getManageCourseData(id, { signal });
 
-            // 1. Course details
+
             if (data.course) {
                 const mapped: AdminCourse = {
                     id: data.course.id.toString(),
@@ -159,22 +159,22 @@ export const ManageCourse: React.FC = () => {
                 setCourse(mapped);
             }
 
-            // 2. Real students
+
             if (data.student_users) {
                 setRealStudents(data.student_users);
             }
 
-            // 3. Enrolled students
+
             if (data.enrolled_students) {
                 setEnrolledStudents(data.enrolled_students);
             }
 
-            // 4. Real lecturers
+
             if (data.lecturers) {
                 setRealLecturers(data.lecturers);
             }
 
-            // 5. Batches
+
             if (data.batches) {
                 const mappedBatches = data.batches.map((b: any) => ({
                     id: b.id,
@@ -198,12 +198,12 @@ export const ManageCourse: React.FC = () => {
                 setBatches(mappedBatches);
             }
 
-            // 6. Exams
+
             if (data.exams) {
                 setExams(data.exams);
             }
 
-            // 7. Announcements
+
             if (data.announcements) {
                 const courseAnns = data.announcements.map((ann: any) => ({
                     id: ann.id,
@@ -218,7 +218,7 @@ export const ManageCourse: React.FC = () => {
                 setAnnouncementsList(courseAnns);
             }
 
-            // 8. Enrollment Requests
+
             if (data.enrollment_requests) {
                 const formattedEnrollments = data.enrollment_requests.map((app: any) => ({
                     id: `APP-${new Date(app.created_at).getFullYear()}-${app.id.toString().padStart(4, '0')}`,
@@ -239,7 +239,7 @@ export const ManageCourse: React.FC = () => {
                 setEnrollmentRequests(formattedEnrollments);
             }
 
-            // 9. Approval Requests
+
             const mappedApps = (data.exam_applications || []).map((app: any) => {
                 const name = app.user?.full_name || app.user?.name || 'Student';
                 const studentNumber = app.user?.student_number || 'CODL/2404';
@@ -438,7 +438,7 @@ export const ManageCourse: React.FC = () => {
         };
     }, [id]);
 
-    // Form State (Details)
+
     const [courseType, setCourseType] = useState<'Degree' | 'Higher National Diploma' | 'Diploma' | 'Advanced Certificate' | 'Certificate'>('Degree');
     const [commonData, setCommonData] = useState({
         name: '',
@@ -497,7 +497,7 @@ export const ManageCourse: React.FC = () => {
             setBatches(newBatches);
             setShowBatchModal(false);
 
-            // Reset form
+
             const nextNum = newBatches.length + 1;
             setBatchForm({
                 name: `Batch ${nextNum.toString().padStart(2, '0')}`,
@@ -516,7 +516,7 @@ export const ManageCourse: React.FC = () => {
         }
     };
 
-    // Specific Fields
+
     const [semesterCount, setSemesterCount] = useState(1);
     const [semesters, setSemesters] = useState<Semester[]>([{ subjects: [{ code: '', name: '', credits: '' }] }]);
     const [diplomaSubjects, setDiplomaSubjects] = useState<Subject[]>([{ code: '', name: '', credits: '' }]);
@@ -545,7 +545,7 @@ export const ManageCourse: React.FC = () => {
 
     const getFilteredEnrollmentRequests = () => {
         return enrollmentRequests.filter(req => {
-            // Role level filtering
+
             if (userRole === 'coordinator') {
                 if (req.rawApp && req.rawApp.approval_level < 1) return false;
             }
@@ -553,14 +553,14 @@ export const ManageCourse: React.FC = () => {
                 if (req.rawApp && req.rawApp.approval_level < 2) return false;
             }
 
-            // Type filtering (new vs existing)
+
             if (enrollmentTypeFilter !== 'all') {
                 const reqTypeLower = (req.type || '').toLowerCase();
                 if (enrollmentTypeFilter === 'new' && reqTypeLower !== 'new') return false;
                 if (enrollmentTypeFilter === 'existing' && reqTypeLower !== 'existing') return false;
             }
 
-            // Search query (name or reg no / id)
+
             if (enrollmentSearchQuery.trim()) {
                 const query = enrollmentSearchQuery.toLowerCase();
                 const nameMatch = (req.name || '').toLowerCase().includes(query);
@@ -614,10 +614,10 @@ export const ManageCourse: React.FC = () => {
         return subjectName;
     };
 
-    // Navigation State
+
     const [activeSection, _setActiveSection] = useState<'details' | 'exams' | 'results' | 'students' | 'materials' | 'enrollment_req' | 'approvals_req' | 'announcements' | 'waitlist' | null>(urlSection as any);
 
-    // Sync from URL changes (like Back/Forward buttons or refresh)
+
     useEffect(() => {
         _setSelectedBatch(urlBatch);
         if (urlBatch && !urlSection && userRole === 'lecturer') {
@@ -628,7 +628,7 @@ export const ManageCourse: React.FC = () => {
         }
     }, [urlBatch, urlSection, userRole]);
 
-    // Redefine setter functions to push state to URL and update state synchronously
+
     function setSelectedBatch(batch: string | null) {
         _setSelectedBatch(batch);
         if (batch && userRole === 'lecturer') {
@@ -644,7 +644,7 @@ export const ManageCourse: React.FC = () => {
         updateNavigation(selectedBatch, section);
     }
 
-    // Announcement States
+
     const [annTitle, setAnnTitle] = useState('');
     const [annContent, setAnnContent] = useState('');
     const [annType, setAnnType] = useState('Notice');
@@ -725,13 +725,13 @@ export const ManageCourse: React.FC = () => {
         );
     };
 
-    // Course Materials State
+
     const [materialsViewState, setMaterialsViewState] = useState<'semesters' | 'modules' | 'resources'>('semesters');
     const [materialsSelectedSemesterId, setMaterialsSelectedSemesterId] = useState<number | null>(null);
     const [materialsSelectedModuleId, setMaterialsSelectedModuleId] = useState<string | null>(null);
     const [materialsSemesters, setMaterialsSemesters] = useState<any[]>([]);
 
-    // Filtered materials semesters for lecturer
+
     const currentLecturerSubjectNames = (selectedBatch && userRole === 'lecturer')
         ? (() => {
             const batch = batches.find(b => b.name === selectedBatch);
@@ -764,7 +764,7 @@ export const ManageCourse: React.FC = () => {
             .filter(sem => sem.modules.length > 0)
         : materialsSemesters;
 
-    // Filtered batches for lecturer to show only batches where they teach a subject OR are assigned directly as batch instructor
+
     const displayedBatches = (userRole === 'lecturer')
         ? batches.filter(b => {
             const isBatchInstructor = (b as any).lecturerId?.toString() === currentAdminUser.id?.toString();
@@ -780,7 +780,7 @@ export const ManageCourse: React.FC = () => {
         })
         : batches;
 
-    // Auto-select semester if the lecturer is assigned to subjects in only one semester
+
     useEffect(() => {
         if (activeSection === 'materials' && userRole === 'lecturer' && materialsViewState === 'semesters') {
             if (filteredMaterialsSemesters.length === 1) {
@@ -813,7 +813,7 @@ export const ManageCourse: React.FC = () => {
                 }
                 const updated = await batchService.update(id!, targetBatch.id, payload);
 
-                // Update local batches state
+
                 setBatches(prev => prev.map(b => b.id === targetBatch.id ? {
                     ...b,
                     materials: updated.materials
@@ -825,7 +825,7 @@ export const ManageCourse: React.FC = () => {
         }
     };
 
-    // Load materials from selected batch
+
     useEffect(() => {
         if (!selectedBatch || batches.length === 0) return;
         const currentBatch = batches.find(b => b.name === selectedBatch);
@@ -836,7 +836,7 @@ export const ManageCourse: React.FC = () => {
                 setMaterialsSemesters(currentBatch.materials);
             }
         } else {
-            // Generate empty structure
+
             let generated: any[] = [];
             if (['Certificate', 'Advanced Certificate'].includes(courseType)) {
                 generated = [
@@ -910,7 +910,7 @@ export const ManageCourse: React.FC = () => {
 
 
 
-    // Automatically skip semester/subject view for Certificate and Advanced Certificate courses
+
     useEffect(() => {
         if (activeSection === 'materials') {
             if (['Certificate', 'Advanced Certificate'].includes(courseType)) {
@@ -929,7 +929,7 @@ export const ManageCourse: React.FC = () => {
     const [editingMaterial, setEditingMaterial] = useState<any | null>(null);
     const [editingMaterialOriginalTitle, setEditingMaterialOriginalTitle] = useState<string>('');
 
-    // Request Management State
+
     const [enrollmentRequests, setEnrollmentRequests] = useState<any[]>([]);
     const [approvalRequests, setApprovalRequests] = useState<any[]>([]);
     const [isLoadingApprovals, setIsLoadingApprovals] = useState(false);
@@ -940,7 +940,7 @@ export const ManageCourse: React.FC = () => {
                     const response = await courseApplicationService.approve(requestId);
                     toast.success('Application approved successfully!');
 
-                    // If application fully approved, add user to enrolled students list
+
                     if (response.status === 'approved' && response.user) {
                         const newStudent: EnrolledStudent = {
                             id: String(response.user.student_number || response.user.id),
@@ -968,7 +968,7 @@ export const ManageCourse: React.FC = () => {
                 toast.error(err.response?.data?.message || 'Failed to update application');
             }
         } else {
-            // Find the request
+
             const req = approvalRequests.find(r => r.id === requestId);
             if (!req) return;
 
@@ -1094,15 +1094,15 @@ export const ManageCourse: React.FC = () => {
         setShowDetailsModal(true);
     };
 
-    // Helpers
+
     const materialsActiveSemester = filteredMaterialsSemesters.find(s => s.id === materialsSelectedSemesterId) || null;
     const materialsActiveModule = materialsActiveSemester?.modules.find((m: any) => m.id === materialsSelectedModuleId) || null;
 
-    // Delete Confirmation State
+
     const [confirmConfig, setConfirmConfig] = useState<{ show: boolean, title: string, message: string, action: () => any }>({ show: false, title: '', message: '', action: () => { } });
     const [isConfirmActionProcessing, setIsConfirmActionProcessing] = useState(false);
 
-    // Students State
+
     const [searchQuery, setSearchQuery] = useState('');
     const [enrollmentSearchQuery, setEnrollmentSearchQuery] = useState('');
     const [enrollmentTypeFilter, setEnrollmentTypeFilter] = useState<'all' | 'new' | 'existing'>('all');
@@ -1138,7 +1138,7 @@ export const ManageCourse: React.FC = () => {
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [enrolledStudents, setEnrolledStudents] = useState<EnrolledStudent[]>([]);
 
-    // Results State
+
     const [selectedExamForResult, setSelectedExamForResult] = useState<string | null>(null);
     const [selectedSubjectForResult, setSelectedSubjectForResult] = useState<string | null>(null);
     const [isExporting, setIsExporting] = useState(false);
@@ -1322,7 +1322,7 @@ export const ManageCourse: React.FC = () => {
         const studentNotes = new Map<string, string>();
         const studentAttempts = new Map<string, number>();
 
-        // 1. Regular exam applications (must be approved, real application, and matching this exam + subject)
+
         approvalRequests.forEach(req => {
             if (req.status === 'approved' && req.isRealApplication) {
                 const isExamMatch = req.examKey?.toString() === selectedExamForResult.toString() ||
@@ -1338,7 +1338,7 @@ export const ManageCourse: React.FC = () => {
             }
         });
 
-        // 2. Postponement requests (must be approved and assigned to this exam + include this subject)
+
         waitlistPostponements.forEach((req: any) => {
             if (req.status === 'approved' || req.status === 'assigned') {
                 const isAssigned = req.raw?.assigned_exam_id?.toString() === selectedExamForResult.toString();
@@ -1356,7 +1356,7 @@ export const ManageCourse: React.FC = () => {
             }
         });
 
-        // 3. Reattempt requests (must be approved and assigned to this exam + match this subject)
+
         waitlistReattempts.forEach((req: any) => {
             if (req.status === 'approved' || req.status === 'assigned') {
                 const isAssigned = req.raw?.assigned_exam_id?.toString() === selectedExamForResult.toString();
@@ -1374,7 +1374,7 @@ export const ManageCourse: React.FC = () => {
             }
         });
 
-        // Also check approvalRequests for reattempts type
+
         approvalRequests.forEach(req => {
             if (req.status === 'approved' && req.type === 'reattempts') {
                 const isExamMatch = req.examKey?.toString() === selectedExamForResult.toString() ||
@@ -1390,13 +1390,13 @@ export const ManageCourse: React.FC = () => {
             }
         });
 
-        // Remove overlapping IDs to avoid double listing (prioritize: Reattempt > Postponement > Regular)
+
         postponementIds.forEach(id => regularIds.delete(id));
         reattemptIds.forEach(id => { regularIds.delete(id); postponementIds.delete(id); });
 
         const categorized: { id: string; name: string; displayName: string; email: string; studentType: 'Regular' | 'Postponement' | 'Reattempt'; attempt: number; specialNote: string }[] = [];
 
-        // Sorting each category in ascending order by Student ID / registration number
+
         const sortedRegular = Array.from(regularIds).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
         const sortedPostponement = Array.from(postponementIds).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
         const sortedReattempt = Array.from(reattemptIds).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
@@ -1589,7 +1589,7 @@ export const ManageCourse: React.FC = () => {
             return;
         }
 
-        // 1. Find subject id
+
         let subjectId: number | null = null;
         if (course) {
             if (course.semesters) {
@@ -1614,7 +1614,7 @@ export const ManageCourse: React.FC = () => {
             return;
         }
 
-        // 2. Map studentId to user_id
+
         const mappedGrades = importedResults.map(r => {
             const studentUser = enrolledStudents.find(
                 s => s.student_number === r.studentId || String(s.id) === r.studentId || String(s.real_id) === r.studentId || s.email === r.studentId
@@ -1631,7 +1631,7 @@ export const ManageCourse: React.FC = () => {
         const semesterVal = (selectedExam as any)?.semester?.toString() || '1';
 
         try {
-            // 3. Save to database
+
             await examResultService.create({
                 course_id: Number(id),
                 subject_id: subjectId,
@@ -1642,7 +1642,7 @@ export const ManageCourse: React.FC = () => {
                 grades: mappedGrades
             });
 
-            // 4. Update exam status on database
+
             const nextReleasedSubjects = [...new Set([...releasedSubjects, selectedSubjectForResult])];
             setReleasedSubjects(nextReleasedSubjects);
 
@@ -1732,7 +1732,7 @@ export const ManageCourse: React.FC = () => {
         }
     }, [course]);
 
-    // Sync batch data to form when entering details section
+
     useEffect(() => {
         if (selectedBatch && activeSection === 'details') {
             const currentBatch = batches.find(b => b.name === selectedBatch);
@@ -1748,7 +1748,7 @@ export const ManageCourse: React.FC = () => {
                     lecturerName: (currentBatch as any).lecturerName || ''
                 }));
 
-                // Set batch subjects
+
                 if (currentBatch.subjects && currentBatch.subjects.length > 0) {
                     setBatchSubjects(currentBatch.subjects);
                 } else {
@@ -1848,7 +1848,7 @@ export const ManageCourse: React.FC = () => {
                         status: commonData.status,
                         instructor_id: commonData.lecturerId || null
                     };
-                    // Include subject-lecturer assignments if any subjects have IDs
+
                     const subjectsWithIds = batchSubjects.filter(bs => bs.subjectId);
                     if (subjectsWithIds.length > 0) {
                         payload.subjects = subjectsWithIds.map(bs => ({
@@ -1886,7 +1886,7 @@ export const ManageCourse: React.FC = () => {
                     return;
                 }
             } else {
-                // If it's a mock batch (no id), just update state
+
                 const updatedBatches = batches.map(b => {
                     if (b.name === selectedBatch) {
                         return {
@@ -1996,7 +1996,7 @@ export const ManageCourse: React.FC = () => {
             return;
         }
 
-        // Check if student ID already enrolled
+
         if (enrolledStudents.some(s => s.id === enrollForm.id)) {
             toast.error('This student is already enrolled in this course.');
             return;
@@ -2029,10 +2029,10 @@ export const ManageCourse: React.FC = () => {
             return;
         }
 
-        // CSV Headers
+
         const headers = ['Student ID', 'Student Name', 'Email', 'Phone', 'Enrollment Date', 'Batch'];
 
-        // Convert student objects to CSV rows
+
         const csvRows = filteredStudents.map(student => [
             `"${student.id || ''}"`,
             `"${(student.displayName || student.name || '').replace(/"/g, '""')}"`,
@@ -2042,16 +2042,16 @@ export const ManageCourse: React.FC = () => {
             `"${student.batch || 'N/A'}"`
         ]);
 
-        // Combine headers and rows
+
         const csvContent = [headers.join(','), ...csvRows.map(row => row.join(','))].join('\n');
 
-        // Create Blob and trigger download
+
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.setAttribute("href", url);
 
-        // Construct filename: course code and batch
+
         const courseStr = course?.code ? course.code.replace(/[^a-zA-Z0-9-_]/g, '_') : 'course';
         const batchStr = selectedBatch ? selectedBatch.toString().replace(/[^a-zA-Z0-9-_]/g, '_') : 'all';
         const dateStr = new Date().toISOString().split('T')[0];
@@ -2251,7 +2251,7 @@ export const ManageCourse: React.FC = () => {
             } else {
                 const examText = waitlistForm.examTitle || (waitlistForm.examId ? exams.find(e => e.id.toString() === waitlistForm.examId.toString())?.title : '') || 'Exam';
                 if (isEdit && editingWaitlistRecord) {
-                    // Editing an existing single reattempt request
+
                     const subLabel = waitlistForm.selectedSubjects[0];
                     const subjId = findSubjectIdInCourse(subLabel);
                     if (!subjId) {
@@ -2274,7 +2274,7 @@ export const ManageCourse: React.FC = () => {
                     await reattemptRequestService.update(editingWaitlistRecord.id, payload);
                     toast.success('Reattempt request updated successfully');
                 } else {
-                    // Creating new reattempt request(s) - one per selected subject
+
                     for (let i = 0; i < waitlistForm.selectedSubjects.length; i++) {
                         const subLabel = waitlistForm.selectedSubjects[i];
                         const subjId = findSubjectIdInCourse(subLabel);
@@ -2717,7 +2717,7 @@ export const ManageCourse: React.FC = () => {
 
             {selectedBatch && activeSection === null && (
                 <div className="management-nav-container">
-                    {/* Row 0: Request Management (Special Multi-Action Card) */}
+                    { }
                     <div className="nav-button-card" onClick={() => setActiveSection('enrollment_req')}>
                         <div style={{
                             position: 'absolute',
@@ -2758,7 +2758,7 @@ export const ManageCourse: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Row 1: Exam and Result Management */}
+                    { }
                     <div className="nav-button-card" onClick={() => setActiveSection('exams')}>
                         <div className="nav-card-icon" style={{ background: '#E0F2FE', color: '#0284C7' }}>
                             <Calendar size={28} />
@@ -2785,7 +2785,7 @@ export const ManageCourse: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Row 2: Course Configuration and Enrolled Students */}
+                    { }
                     <div className="nav-button-card" onClick={() => setActiveSection('students')}>
                         <div className="nav-card-icon" style={{ background: '#FEF2F2', color: '#DC2626' }}>
                             <Users size={28} />
@@ -2812,7 +2812,7 @@ export const ManageCourse: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Row 3: Course Materials */}
+                    { }
                     <div className="nav-button-card" onClick={() => setActiveSection('materials')}>
                         <div className="nav-card-icon" style={{ background: '#FFF7ED', color: '#EA580C' }}>
                             <Layers size={28} />
@@ -2961,13 +2961,13 @@ export const ManageCourse: React.FC = () => {
                         </div>
                     )}
 
-                    {/* 1. Edit Details Section */}
+                    { }
                     {activeSection === 'details' && (
                         <>
                             <div className="manage-section-main-card">
                                 <div className="section-card-content">
 
-                                    {/* Section 1: Basic Information */}
+                                    { }
                                     <div className="form-section-card no-shadow">
                                         <div className="section-header">
                                             <BookOpen size={18} />
@@ -3027,7 +3027,7 @@ export const ManageCourse: React.FC = () => {
                                         </div>
                                     </div>
 
-                                    {/* Section 2: Academic Structure */}
+                                    { }
                                     {!['Certificate', 'Advanced Certificate'].includes(courseType) && (
                                         <div className="form-section-card no-shadow">
                                             <div className="section-header">
@@ -3194,7 +3194,7 @@ export const ManageCourse: React.FC = () => {
                         </>
                     )}
 
-                    {/* 2. Manage Exams Section */}
+                    { }
                     {activeSection === 'exams' && (
                         <>
                             <div style={{ padding: '0 4px' }}>
@@ -3244,7 +3244,7 @@ export const ManageCourse: React.FC = () => {
                                                         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                                                         position: 'relative'
                                                     }} className="premium-exam-square-card" onClick={() => openExamDotMenu === exam.id && setOpenExamDotMenu(null)}>
-                                                        {/* Header: Icon and Status Badge */}
+                                                        { }
                                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
                                                             <div style={{
                                                                 width: '50px',
@@ -3282,7 +3282,7 @@ export const ManageCourse: React.FC = () => {
                                                             })()}</div>
                                                         </div>
 
-                                                        {/* Content */}
+                                                        { }
                                                         <div style={{ flex: 1 }}>
                                                             <div style={{
                                                                 fontSize: '11px',
@@ -3310,7 +3310,7 @@ export const ManageCourse: React.FC = () => {
                                                             </div>
                                                         </div>
 
-                                                        {/* Footer Actions: Manage Students + Three-dot menu */}
+                                                        { }
                                                         <div style={{ marginTop: '28px', display: 'flex', gap: '12px', alignItems: 'center' }}>
                                                             <button
                                                                 className="admin-btn-primary"
@@ -3335,7 +3335,7 @@ export const ManageCourse: React.FC = () => {
                                                                 <Users size={16} />
                                                                 Manage Students
                                                             </button>
-                                                            {/* Three-dot menu */}
+                                                            { }
                                                             <div style={{ position: 'relative' }}>
                                                                 <button
                                                                     style={{
@@ -3445,7 +3445,7 @@ export const ManageCourse: React.FC = () => {
 
 
 
-                    {/* 3. Manage Results Section */}
+                    { }
                     {activeSection === 'results' && (
                         <>
                             {!selectedExamForResult ? (
@@ -3497,7 +3497,7 @@ export const ManageCourse: React.FC = () => {
                                                     boxShadow: '0 1px 3px rgba(0,0,0,0.02), 0 10px 25px -10px rgba(0,0,0,0.05)',
                                                     position: 'relative'
                                                 }}>
-                                                    {/* Header: Icon and Status Badge */}
+                                                    { }
                                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
                                                         <div style={{
                                                             width: '50px',
@@ -3522,7 +3522,7 @@ export const ManageCourse: React.FC = () => {
                                                         }}>{resolvedStatus === 'Results Released' ? 'RESULTS RELEASED' : (resolvedStatus === 'Result Updated' ? 'PARTIALLY RELEASED' : 'YET TO RELEASE')}</div>
                                                     </div>
 
-                                                    {/* Content */}
+                                                    { }
                                                     <div style={{ flex: 1 }}>
                                                         <div style={{ fontSize: '11px', fontWeight: 800, padding: '4px 10px', borderRadius: '6px', background: '#F1F5F9', color: '#64748B', textTransform: 'uppercase', display: 'inline-block', marginBottom: '12px' }}>{exam.type}</div>
                                                         <h4 style={{ fontSize: '19px', fontWeight: 800, color: '#0F172A', margin: '0 0 24px 0', lineHeight: 1.3 }}>{exam.title}</h4>
@@ -3538,7 +3538,7 @@ export const ManageCourse: React.FC = () => {
                                                         </div>
                                                     </div>
 
-                                                    {/* Action */}
+                                                    { }
                                                     <div style={{ marginTop: '28px' }}>
                                                         <button
                                                             className="admin-btn-primary"
@@ -3664,7 +3664,7 @@ export const ManageCourse: React.FC = () => {
                                                             </div>
                                                         </div>
 
-                                                        {/* Tab headers */}
+                                                        { }
                                                         {(() => {
                                                             const allStudents = getEligibleStudentsForResults();
                                                             return (
@@ -3735,7 +3735,7 @@ export const ManageCourse: React.FC = () => {
                                                         })()}
 
                                                         <div className="form-section-card" style={{ marginTop: '16px', padding: '24px', background: '#FFFFFF', borderRadius: '16px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.06)' }}>
-                                                            {/* Card Header */}
+                                                            { }
                                                             {(() => {
                                                                 const allStudents = getEligibleStudentsForResults();
                                                                 const studentsInActiveTab = allStudents.filter(s => s.studentType === activeResultTab);
@@ -3842,7 +3842,7 @@ export const ManageCourse: React.FC = () => {
                                                                             </div>
                                                                         </div>
 
-                                                                        {/* Search Input */}
+                                                                        { }
                                                                         <div style={{ position: 'relative', marginBottom: '16px' }}>
                                                                             <input
                                                                                 type="text"
@@ -4047,7 +4047,7 @@ export const ManageCourse: React.FC = () => {
                         </>
                     )}
 
-                    {/* 4. Enrolled Students Section */}
+                    { }
                     {activeSection === 'students' && (
                         <>
                             <div className="manage-section-main-card">
@@ -4153,11 +4153,11 @@ export const ManageCourse: React.FC = () => {
                         </>
                     )}
 
-                    {/* 5. Course Materials Section */}
+                    { }
                     {activeSection === 'materials' && (
                         <div className="manage-section-main-card" style={{ background: 'transparent', border: 'none', boxShadow: 'none' }}>
                             <div className="section-card-content" style={{ padding: 0 }}>
-                                {/* VIEW 1: Semesters */}
+                                { }
                                 {materialsViewState === 'semesters' && (
                                     <div className="semester-selection-view">
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
@@ -4212,7 +4212,7 @@ export const ManageCourse: React.FC = () => {
                                     </div>
                                 )}
 
-                                {/* VIEW 2: Modules */}
+                                { }
                                 {materialsViewState === 'modules' && materialsActiveSemester && (
                                     <div className="modules-view">
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
@@ -4249,7 +4249,7 @@ export const ManageCourse: React.FC = () => {
                                     </div>
                                 )}
 
-                                {/* VIEW 3: Resources */}
+                                { }
                                 {materialsViewState === 'resources' && materialsActiveModule && (
                                     <div className="resources-view">
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
@@ -4264,7 +4264,7 @@ export const ManageCourse: React.FC = () => {
                                             </div>
                                         </div>
 
-                                        {/* Downloadable Resources List */}
+                                        { }
                                         <div style={{ marginBottom: '32px' }}>
                                             <h4 style={{ fontSize: '16px', fontWeight: 700, color: '#475569', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                 <FileText size={18} /> Downloads
@@ -4360,7 +4360,7 @@ export const ManageCourse: React.FC = () => {
                                             )}
                                         </div>
 
-                                        {/* Videos List */}
+                                        { }
                                         <div>
                                             <h4 style={{ fontSize: '16px', fontWeight: 700, color: '#475569', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                 <Video size={18} /> Lesson Recordings
@@ -4461,7 +4461,7 @@ export const ManageCourse: React.FC = () => {
                         </div>
                     )}
 
-                    {/* 6. Enrollment Requests Section */}
+                    { }
                     {activeSection === 'enrollment_req' && (
                         <div className="section-content-fade">
                             <div className="modern-admin-card" style={{ padding: '0', background: 'transparent', border: 'none', boxShadow: 'none' }}>
@@ -4602,7 +4602,7 @@ export const ManageCourse: React.FC = () => {
                         </div>
                     )}
 
-                    {/* 7. Application Approvals Section */}
+                    { }
                     {activeSection === 'approvals_req' && (
                         <div className="section-content-fade">
                             <div className="admin-page-top-card" style={{ background: '#FFFFFF', padding: '32px', borderRadius: '24px', marginBottom: '24px', border: '1px solid rgba(0,0,0,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -4716,7 +4716,7 @@ export const ManageCourse: React.FC = () => {
 
 
 
-            {/* 8. Waitlist Section */}
+            { }
             {activeSection === 'waitlist' && (
                 <div className="section-content-fade">
                     <div className="admin-page-top-card" style={{ background: '#FFFFFF', padding: '32px', borderRadius: '24px', marginBottom: '24px', border: '1px solid rgba(0,0,0,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -4906,7 +4906,7 @@ export const ManageCourse: React.FC = () => {
                 </div>
             )}
 
-            {/* Add Student to Waitlist Modal */}
+            { }
             {showWaitlistAddModal && (
                 <div className="cm-modal-overlay" style={{ zIndex: 1100 }} onClick={() => setShowWaitlistAddModal(false)}>
                     <div className="cm-modal" style={{ maxWidth: '600px' }} onClick={e => e.stopPropagation()}>
@@ -5282,7 +5282,7 @@ export const ManageCourse: React.FC = () => {
                                         </div>
                                     )}
 
-                                    {/* dynamic checkboxes section */}
+                                    { }
                                     {(() => {
                                         const selectedExam = waitlistForm.type === 'postponement'
                                             ? exams.find(e => e.title === waitlistForm.examTitle)
@@ -5394,7 +5394,7 @@ export const ManageCourse: React.FC = () => {
                 </div>
             )}
 
-            {/* Exam creation is now handled in a separate page */}
+            { }
 
             {confirmConfig.show && (
                 <div className="cm-modal-overlay" style={{ zIndex: 1100 }}>
@@ -5850,7 +5850,7 @@ export const ManageCourse: React.FC = () => {
                                     });
                                 }
 
-                                // Sync the updated semesters list to the DB batch materials!
+
                                 const payload = {
                                     name: targetBatch.name,
                                     start_date: targetBatch.startDate,
@@ -5864,7 +5864,7 @@ export const ManageCourse: React.FC = () => {
                                 await batchService.update(id!, targetBatch.id, payload);
                                 setMaterialsSemesters(updatedSemesters);
 
-                                // Update the batch state
+
                                 setBatches(prev => prev.map(b => b.id === targetBatch.id ? { ...b, materials: updatedSemesters } : b));
 
                                 toast.success(editingMaterial ? 'Course material updated successfully in database!' : 'Course material added successfully to database!');
@@ -6296,7 +6296,7 @@ export const ManageCourse: React.FC = () => {
                                 <div className="detail-item" style={{ gridColumn: 'span 2', marginTop: '20px', padding: '20px', background: '#F8FAFC', borderRadius: '16px', border: '1px solid #E2E8F0' }}>
                                     <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', marginBottom: '16px', letterSpacing: '0.05em' }}>Approval Workflow Progress</label>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', position: 'relative' }}>
-                                        {/* Connector Line */}
+                                        { }
                                         <div style={{ position: 'absolute', top: '12px', left: '10%', right: '10%', height: '2px', background: '#E2E8F0', zIndex: 0 }}></div>
 
                                         {[
@@ -6352,10 +6352,10 @@ export const ManageCourse: React.FC = () => {
                                                     title: "Delete Approval Request",
                                                     message: "Are you sure you want to delete this approval request completely? This action cannot be undone.",
                                                     action: async () => {
-                                                        // 1. Delete from state
+
                                                         setApprovalRequests(prev => prev.filter(r => r.id !== selectedRequestDetails.id));
 
-                                                        // 2. Delete from database based on type
+
                                                         try {
                                                             if (selectedRequestDetails.isRealApplication) {
                                                                 await examApplicationService.delete(selectedRequestDetails.realId);
