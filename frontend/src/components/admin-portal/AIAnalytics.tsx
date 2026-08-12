@@ -241,15 +241,9 @@ const ProgramHub: React.FC<{
     studentCount: number,
     industryCount: number,
     levelFilter: string,
-<<<<<<< HEAD
     setLevelFilter: React.Dispatch<React.SetStateAction<string>>,
     searchTerm: string,
     setSearchTerm: React.Dispatch<React.SetStateAction<string>>,
-=======
-    setLevelFilter: (val: string) => void,
-    searchTerm: string,
-    setSearchTerm: (val: string) => void,
->>>>>>> 7f384fee808c4f4c8fb6fa7af462c425c6ac15a8
 }> = ({
     programs,
     globalEmergingTech,
@@ -1178,17 +1172,9 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                             <div className="category-icon-box purple">
                                 <BookOpen size={20} />
                             </div>
-<<<<<<< HEAD
                             <div className="category-title-text">
                                 <h3>Curriculum & Delivery Insights</h3>
                                 <p>Analysis of curriculum scope, subject coverage, delivery split, and curriculum anomalies</p>
-                                
-=======
-                            <div>
-                                <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#4C1D95', margin: 0 }}>Curriculum & Delivery Insights</h3>
-                                <p style={{ fontSize: '13px', color: '#6B21A8', margin: '2px 0 0 0', fontWeight: 500 }}>Analysis of curriculum scope, subject coverage, delivery split, and curriculum anomalies</p>
-
->>>>>>> 7f384fee808c4f4c8fb6fa7af462c425c6ac15a8
                                 {overview.kpis && (
                                     <div className={`evidence-alert-badge ${overview.kpis.evidence_status === 'insufficient' ? 'insufficient' : 'sufficient'}`}>
                                         <span>📢</span>
@@ -1440,49 +1426,41 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                                 <h4 className="ai-card-title">Theory vs Practical Split</h4>
                                 <p className="ai-card-subtitle">Student preference ratio derived from survey responses.</p>
 
-                                {(() => {
-                                    const theory = overview.learning_preferences_data?.student_theory_percent || 0;
-                                    const practical = overview.learning_preferences_data?.student_practical_percent || 0;
-
-                                    return (
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '20px' }}>
-                                            {/* Horizontal Split Bar */}
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: 700, color: '#475569' }}>
-                                                    <span>Theory ({theory}%)</span>
-                                                    <span>Practical ({practical}%)</span>
-                                                </div>
-                                                <div style={{ width: '100%', height: '24px', borderRadius: '12px', display: 'flex', overflow: 'hidden', backgroundColor: '#F1F5F9', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.06)' }}>
-                                                    {theory > 0 && (
-                                                        <div style={{ width: `${theory}%`, backgroundColor: '#C084FC', height: '100%', transition: 'all 0.5s ease' }} />
-                                                    )}
-                                                    {practical > 0 && (
-                                                        <div style={{ width: `${practical}%`, backgroundColor: '#7C3AED', height: '100%', transition: 'all 0.5s ease' }} />
-                                                    )}
-                                                </div>
-                                            </div>
-
-                                            <div style={{ display: 'flex', justifyContent: 'center', gap: '32px', width: '100%', marginTop: '10px' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
-                                                    <span style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#C084FC', display: 'inline-block' }}></span>
-                                                    <span style={{ color: '#475569', fontWeight: 600 }}>Theory:</span>
-                                                    <span style={{ fontWeight: 800, color: '#1E293B' }}>{theory}%</span>
-                                                </div>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
-                                                    <span style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#7C3AED', display: 'inline-block' }}></span>
-                                                    <span style={{ color: '#475569', fontWeight: 600 }}>Practical:</span>
-                                                    <span style={{ fontWeight: 800, color: '#1E293B' }}>{practical}%</span>
-                                                </div>
-                                            </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '20px' }}>
+                                    {/* Horizontal Split Bar */}
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: 700, color: '#475569' }}>
+                                            <span>Theory ({overview.learning_preferences_data?.student_theory_percent || 0}%)</span>
+                                            <span>Practical ({overview.learning_preferences_data?.student_practical_percent || 0}%)</span>
                                         </div>
-                                    );
-                                })()}
+                                        <div style={{ width: '100%', height: '24px', borderRadius: '12px', display: 'flex', overflow: 'hidden', backgroundColor: '#F1F5F9', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.06)' }}>
+                                            {(overview.learning_preferences_data?.student_theory_percent || 0) > 0 && (
+                                                <div style={{ width: `${overview.learning_preferences_data?.student_theory_percent || 0}%`, backgroundColor: '#C084FC', height: '100%', transition: 'all 0.5s ease' }} />
+                                            )}
+                                            {(overview.learning_preferences_data?.student_practical_percent || 0) > 0 && (
+                                                <div style={{ width: `${overview.learning_preferences_data?.student_practical_percent || 0}%`, backgroundColor: '#7C3AED', height: '100%', transition: 'all 0.5s ease' }} />
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div style={{ display: 'flex', justifyContent: 'center', gap: '32px', width: '100%', marginTop: '10px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
+                                            <span style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#C084FC', display: 'inline-block' }}></span>
+                                            <span style={{ color: '#475569', fontWeight: 600 }}>Theory:</span>
+                                            <span style={{ fontWeight: 800, color: '#1E293B' }}>{overview.learning_preferences_data?.student_theory_percent || 0}%</span>
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
+                                            <span style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#7C3AED', display: 'inline-block' }}></span>
+                                            <span style={{ color: '#475569', fontWeight: 600 }}>Practical:</span>
+                                            <span style={{ fontWeight: 800, color: '#1E293B' }}>{overview.learning_preferences_data?.student_practical_percent || 0}%</span>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     )}
                 </div>
 
-<<<<<<< HEAD
                 {/* Category 2: Combined Demand & Learning Preferences */}
                 <div className="category-section category-indigo">
                     <div className="category-header">
@@ -1493,24 +1471,10 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                             <div className="category-title-text">
                                 <h3>Combined Demand & Learning Preferences</h3>
                                 <p>Analysis of curriculum gaps and preferred academic training methods across student and industry databases</p>
-=======
-
-                {/* Category 3: Industry & Market Requirements */}
-                <div className="category-section" style={{ background: '#ECFDF550', border: '1px solid #05966910', padding: '28px', borderRadius: '24px', boxShadow: '0 4px 20px rgba(5, 150, 105, 0.02)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <div style={{ backgroundColor: '#D1FAE5', color: '#059669', padding: '10px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <Award size={20} />
-                            </div>
-                            <div>
-                                <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#064E3B', margin: 0 }}>Industry & Market Requirements</h3>
-                                <p style={{ fontSize: '13px', color: '#047857', margin: '2px 0 0 0', fontWeight: 500 }}>Alignment of student curriculum skills against job market requirements and expected practices</p>
->>>>>>> 7f384fee808c4f4c8fb6fa7af462c425c6ac15a8
                             </div>
                         </div>
 
                         {/* Score badge next to the title (right corner) */}
-<<<<<<< HEAD
                         <div className="category-score-badge">
                             <span className="score-val">{overview.kpis.alignment !== null ? `${overview.kpis.alignment}%` : 'N/A'}</span>
                             <span className="score-label">Overall Curriculum Alignment</span>
@@ -1578,63 +1542,6 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                                             <p style={{ margin: 0, color: '#64748B', fontSize: '12px', fontStyle: 'italic' }}>
                                                 🎯 {m.industry_evidence}
                                             </p>
-=======
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', backgroundColor: '#D1FAE570', padding: '10px 18px', borderRadius: '16px', border: '1px solid #05966915' }}>
-                            <span style={{ fontSize: '24px', fontWeight: 800, color: '#059669', lineHeight: 1.1 }}>{overview.kpis.industryMatch !== null ? `${overview.kpis.industryMatch}%` : 'N/A'}</span>
-                            <span style={{ fontSize: '12px', fontWeight: 500, color: '#064E3B', marginTop: '4px' }}>Industry Requirement Match</span>
-                        </div>
-                    </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '24px' }}>
-                        {/* Graduate Skill Shortages */}
-                        <div className="ai-chart-card" style={{ borderLeft: '5px solid #EF4444', margin: 0 }}>
-                            <h4 className="flex items-center gap-2 text-red-700 font-bold" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                                <AlertTriangle size={18} className="text-red-500" /> Graduate Skill Shortages
-                            </h4>
-                            <p className="text-slate-400 text-xs mb-4" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Industry reported graduate capability deficits.</p>
-                            {skillGap && skillGap.missing_skills && skillGap.missing_skills.length > 0 ? (
-                                <div className="tag-container">
-                                    {skillGap.missing_skills.map((skill: string, idx: number) => (
-                                        <span key={idx} className="tag missing">{skill}</span>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="flex items-center justify-center p-6 bg-green-50 text-green-700 rounded-lg border border-green-200 gap-2" style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: '#F0FDF4', color: '#15803D', border: '1px solid #BBF7D0', padding: '16px', borderRadius: '12px' }}>
-                                    <CheckCircle size={20} />
-                                    <span>No graduate capability deficits reported.</span>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Industry Gaps (Top Demands) */}
-                        <div className="ai-chart-card" style={{ margin: 0 }}>
-                            <h4>Industry Gaps (Top Demands)</h4>
-                            <p className="text-slate-400 text-sm mb-4" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Technologies most heavily requested by employers.</p>
-                            <div className="ai-chart-body">
-                                {industryData && industryData.length > 0 ? (
-                                    industryData.slice(0, 6).map((d: any) => (
-                                        <div key={d.name} className="chart-bar-row">
-                                            <div className="label"><span>{d.name}</span> <span>{d.value}%</span></div>
-                                            <div className="bar-bg"><div className="bar-fill indigo" style={{ width: `${d.value}%` }}></div></div>
->>>>>>> 7f384fee808c4f4c8fb6fa7af462c425c6ac15a8
-                                        </div>
-                                    ))
-                                ) : (
-                                    <div className="text-center text-slate-400 py-6 text-sm">Insufficient data points.</div>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Industry Expected Practices */}
-                        <div className="ai-chart-card" style={{ margin: 0 }}>
-                            <h4>Industry Expected Practices</h4>
-                            <p className="text-slate-400 text-xs mb-4" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Academic training methods requested by graduate employers.</p>
-                            <div className="ai-chart-body" style={{ marginTop: '12px' }}>
-                                {overview.learning_preferences_data?.industry_practices && overview.learning_preferences_data?.industry_practices.length > 0 ? (
-                                    overview.learning_preferences_data.industry_practices.map((p: any, idx: number) => (
-                                        <div key={idx} className="chart-bar-row">
-                                            <div className="label"><span>{p.name}</span> <span>{p.value}%</span></div>
-                                            <div className="bar-bg"><div className="bar-fill indigo" style={{ width: `${p.value}%` }}></div></div>
                                         </div>
                                     ))
                                 ) : (
