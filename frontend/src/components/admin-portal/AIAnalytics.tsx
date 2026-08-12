@@ -2323,7 +2323,7 @@ const InteractiveSriLankaMap: React.FC = () => {
                                             </linearGradient>
                                         ))}
                                     </defs>
-                                    <Pie data={allIslandPieData} cx="50%" cy="50%" innerRadius={70} outerRadius={110} paddingAngle={3} dataKey="value"
+                                    <Pie data={allIslandPieData} cx="50%" cy="50%" innerRadius={60} outerRadius={110} paddingAngle={3} dataKey="value"
                                         onClick={(entry: any) => handleAllIslandFieldClick(entry.name)} style={{ cursor: 'pointer' }}>
                                         {allIslandPieData.map((entry, i) => (
                                             <Cell key={i} fill={`url(#${CHART_GRADIENTS[i % CHART_GRADIENTS.length].id})`}
@@ -2374,7 +2374,7 @@ const InteractiveSriLankaMap: React.FC = () => {
                                                         </linearGradient>
                                                     ))}
                                                 </defs>
-                                                <Pie data={allIslandSkills.map(s => ({ ...s, value: s.score }))} cx="50%" cy="50%" innerRadius={85} outerRadius={105} paddingAngle={2} dataKey="value">
+                                                <Pie data={allIslandSkills.map(s => ({ ...s, value: s.score }))} cx="50%" cy="50%" innerRadius={70} outerRadius={105} paddingAngle={2} dataKey="value">
                                                     {allIslandSkills.map((_, i) => <Cell key={i} fill={`url(#${CHART_GRADIENTS[i % CHART_GRADIENTS.length].id})`} />)}
                                                 </Pie>
                                                 <Tooltip content={({ active, payload }: any) => {
@@ -2422,7 +2422,7 @@ const InteractiveSriLankaMap: React.FC = () => {
                                             </linearGradient>
                                         ))}
                                     </defs>
-                                    <Pie data={geoData?.industry_domains || []} cx="50%" cy="50%" innerRadius={70} outerRadius={110} paddingAngle={3} dataKey="value"
+                                    <Pie data={geoData?.industry_domains || []} cx="50%" cy="50%" innerRadius={60} outerRadius={110} paddingAngle={3} dataKey="value"
                                         onClick={(entry: any) => handleIndustryFieldClick(entry.name)} style={{ cursor: 'pointer' }}>
                                         {(geoData?.industry_domains || []).map((entry, i) => (
                                             <Cell key={i} fill={`url(#${CHART_GRADIENTS[i % CHART_GRADIENTS.length].id})`}
@@ -2473,7 +2473,7 @@ const InteractiveSriLankaMap: React.FC = () => {
                                                         </linearGradient>
                                                     ))}
                                                 </defs>
-                                                <Pie data={industrySkills} cx="50%" cy="50%" innerRadius={85} outerRadius={105} paddingAngle={4} dataKey="value">
+                                                <Pie data={industrySkills} cx="50%" cy="50%" innerRadius={70} outerRadius={105} paddingAngle={4} dataKey="value">
                                                     {industrySkills.map((entry, idx) => (
                                                         <Cell key={`cell-ind-skill-${idx}`} fill={`url(#${CHART_GRADIENTS[(idx + 2) % CHART_GRADIENTS.length].id})`} />
                                                     ))}
