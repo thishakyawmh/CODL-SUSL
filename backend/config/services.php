@@ -35,4 +35,21 @@ return [
         ],
     ],
 
+    'gemini' => [
+        'key' => env('GEMINI_API_KEY'),
+    ],
+
+    'recaptcha' => [
+        'secret' => env('RECAPTCHA_SECRET_KEY'),
+    ],
+
+    'google_sheets' => [
+        'student_webhook_url' => env('GOOGLE_SHEET_STUDENT_WEBHOOK_URL'),
+        'industry_webhook_url' => env('GOOGLE_SHEET_INDUSTRY_WEBHOOK_URL'),
+        'webhook_url' => env('GOOGLE_SHEET_WEBHOOK_URL'),
+        'webhook_secret' => env('GOOGLE_SHEETS_WEBHOOK_SECRET', 'secret_key'),
+        'student_url' => env('GOOGLE_SHEET_STUDENT_URL'),
+        'industry_url' => env('GOOGLE_SHEET_INDUSTRY_URL'),
+    ],
+
 ];

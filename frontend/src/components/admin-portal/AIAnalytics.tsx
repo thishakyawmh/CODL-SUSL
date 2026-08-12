@@ -383,11 +383,9 @@ const ProgramHub: React.FC<{
                     </div>
                     {levelFilter === 'all' && !searchTerm && (
                         <div className="admin-header-actions" style={{ gap: '12px' }}>
-                            {lastSyncedAt && (
-                                <span className="last-sync-badge" style={{ fontSize: '0.85rem', color: '#64748B', display: 'flex', alignItems: 'center', backgroundColor: '#F1F5F9', padding: '6px 12px', borderRadius: '6px', fontWeight: 500 }}>
-                                    Last Sync: {new Date(lastSyncedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                                </span>
-                            )}
+                            <span className="last-sync-badge" style={{ fontSize: '0.85rem', color: '#64748B', display: 'flex', alignItems: 'center', backgroundColor: '#F1F5F9', padding: '6px 12px', borderRadius: '6px', fontWeight: 500 }}>
+                                Last Sync: {lastSyncedAt ? new Date(lastSyncedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Never Synced'}
+                            </span>
                             <button className="admin-btn-outline" onClick={onOpenManageForms}>
                                 <Database size={16} /> Manage Forms
                             </button>
@@ -1978,6 +1976,17 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
 
 const MAP_CHART_COLORS = ['#7C3AED', '#3B82F6', '#10B981', '#EC4899', '#F59E0B', '#06B6D4', '#EF4444', '#8B5CF6'];
 
+const CHART_GRADIENTS = [
+    { id: 'grad-violet', start: '#A78BFA', end: '#7C3AED' },
+    { id: 'grad-blue', start: '#60A5FA', end: '#2563EB' },
+    { id: 'grad-green', start: '#34D399', end: '#059669' },
+    { id: 'grad-pink', start: '#F472B6', end: '#DB2777' },
+    { id: 'grad-amber', start: '#FBBF24', end: '#D97706' },
+    { id: 'grad-cyan', start: '#22D3EE', end: '#0891B2' },
+    { id: 'grad-red', start: '#F87171', end: '#DC2626' },
+    { id: 'grad-purple', start: '#C084FC', end: '#9333EA' },
+];
+
 interface GeoData {
     by_province: Record<string, Record<string, { name: string; score: number }[]>>;
     all_island: { name: string; score: number }[];
@@ -2055,19 +2064,27 @@ const InteractiveSriLankaMap: React.FC = () => {
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '340px', color: '#94A3B8', fontSize: '13px' }}>No education data available.</div>
                     ) : (
                         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <ResponsiveContainer width="100%" height={260}>
+                            <ResponsiveContainer width="100%" height={320}>
                                 <PieChart>
+                                    <defs>
+                                        {CHART_GRADIENTS.map(g => (
+                                            <linearGradient id={g.id} key={g.id} x1="0" y1="0" x2="1" y2="1">
+                                                <stop offset="0%" stopColor={g.start} />
+                                                <stop offset="100%" stopColor={g.end} />
+                                            </linearGradient>
+                                        ))}
+                                    </defs>
                                     <Pie
                                         data={geoData?.education_levels}
                                         cx="50%"
                                         cy="50%"
-                                        innerRadius={50}
-                                        outerRadius={75}
+                                        innerRadius={70}
+                                        outerRadius={110}
                                         paddingAngle={4}
                                         dataKey="value"
                                     >
                                         {(geoData?.education_levels || []).map((_, idx) => (
-                                            <Cell key={`cell-${idx}`} fill={MAP_CHART_COLORS[idx % MAP_CHART_COLORS.length]} />
+                                            <Cell key={`cell-${idx}`} fill={`url(#${CHART_GRADIENTS[idx % CHART_GRADIENTS.length].id})`} />
                                         ))}
                                     </Pie>
                                     <Tooltip content={({ active, payload }: any) => {
@@ -2084,20 +2101,6 @@ const InteractiveSriLankaMap: React.FC = () => {
                                         }
                                         return null;
                                     }} />
-                                    <Legend
-                                        layout="horizontal"
-                                        verticalAlign="bottom"
-                                        align="center"
-                                        iconType="circle"
-                                        iconSize={8}
-                                        wrapperStyle={{ paddingTop: '12px', lineHeight: '22px' }}
-                                        formatter={(value) => {
-                                            const total = (geoData?.education_levels || []).reduce((sum, item) => sum + item.value, 0);
-                                            const item = (geoData?.education_levels || []).find(e => e.name === value);
-                                            const pct = item && total > 0 ? ((item.value / total) * 100).toFixed(1) : '0.0';
-                                            return <span style={{ fontSize: '11px', color: '#475569', fontWeight: 600 }}>{value} ({pct}%)</span>;
-                                        }}
-                                    />
                                 </PieChart>
                             </ResponsiveContainer>
                         </div>
@@ -2118,19 +2121,27 @@ const InteractiveSriLankaMap: React.FC = () => {
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '340px', color: '#94A3B8', fontSize: '13px' }}>No industry sector data available.</div>
                     ) : (
                         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <ResponsiveContainer width="100%" height={260}>
+                            <ResponsiveContainer width="100%" height={320}>
                                 <PieChart>
+                                    <defs>
+                                        {CHART_GRADIENTS.map(g => (
+                                            <linearGradient id={g.id} key={g.id} x1="0" y1="0" x2="1" y2="1">
+                                                <stop offset="0%" stopColor={g.start} />
+                                                <stop offset="100%" stopColor={g.end} />
+                                            </linearGradient>
+                                        ))}
+                                    </defs>
                                     <Pie
                                         data={geoData?.industry_sectors}
                                         cx="50%"
                                         cy="50%"
-                                        innerRadius={50}
-                                        outerRadius={75}
+                                        innerRadius={70}
+                                        outerRadius={110}
                                         paddingAngle={4}
                                         dataKey="value"
                                     >
                                         {(geoData?.industry_sectors || []).map((_, idx) => (
-                                            <Cell key={`cell-ind-${idx}`} fill={MAP_CHART_COLORS[idx % MAP_CHART_COLORS.length]} />
+                                            <Cell key={`cell-ind-${idx}`} fill={`url(#${CHART_GRADIENTS[idx % CHART_GRADIENTS.length].id})`} />
                                         ))}
                                     </Pie>
                                     <Tooltip content={({ active, payload }: any) => {
@@ -2147,20 +2158,6 @@ const InteractiveSriLankaMap: React.FC = () => {
                                         }
                                         return null;
                                     }} />
-                                    <Legend
-                                        layout="horizontal"
-                                        verticalAlign="bottom"
-                                        align="center"
-                                        iconType="circle"
-                                        iconSize={8}
-                                        wrapperStyle={{ paddingTop: '12px', lineHeight: '22px' }}
-                                        formatter={(value) => {
-                                            const total = (geoData?.industry_sectors || []).reduce((sum, item) => sum + item.value, 0);
-                                            const item = (geoData?.industry_sectors || []).find(e => e.name === value);
-                                            const pct = item && total > 0 ? ((item.value / total) * 100).toFixed(1) : '0.0';
-                                            return <span style={{ fontSize: '11px', color: '#475569', fontWeight: 600 }}>{value} ({pct}%)</span>;
-                                        }}
-                                    />
                                 </PieChart>
                             </ResponsiveContainer>
                         </div>
