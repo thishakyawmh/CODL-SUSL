@@ -1983,6 +1983,7 @@ interface GeoData {
     district_counts: Record<string, number>;
     education_levels: { name: string; value: number }[];
     industry_sectors: { name: string; value: number }[];
+    industry_domains: { name: string; value: number }[];
 }
 
 const InteractiveSriLankaMap: React.FC = () => {
