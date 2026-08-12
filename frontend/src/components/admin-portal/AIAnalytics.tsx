@@ -2203,7 +2203,7 @@ const InteractiveSriLankaMap: React.FC = () => {
                                 </PieChart>
                             </ResponsiveContainer>
                             <div style={{ textAlign: 'center', fontSize: '11px', color: '#475569', marginTop: '12px', fontWeight: 500 }}>
-                                💡 Hover slices to see percentages
+                                Hover slices to see percentages
                             </div>
                         </div>
                     )}
@@ -2264,7 +2264,7 @@ const InteractiveSriLankaMap: React.FC = () => {
                                 </PieChart>
                             </ResponsiveContainer>
                             <div style={{ textAlign: 'center', fontSize: '11px', color: '#475569', marginTop: '12px', fontWeight: 500 }}>
-                                💡 Hover slices to see percentages
+                                Hover slices to see percentages
                             </div>
                         </div>
                     )}
@@ -2364,16 +2364,14 @@ const InteractiveSriLankaMap: React.FC = () => {
                                         formatter={(value) => <span style={{ fontSize: '11px', color: '#475569', fontWeight: 600 }}>{value}</span>} />
                                 </PieChart>
                             </ResponsiveContainer>
-                            <div style={{ textAlign: 'center', fontSize: '11px', color: '#475569', marginTop: '12px', fontWeight: 500 }}>
-                                💡 Hover slices to see percentages
-                            </div>
+
                         </div>
                         {allIslandSelectedField && (
                             <div style={{ animation: 'fadeInRight 0.3s ease' }}>
                                 <h4 style={{ margin: '0 0 4px 0', fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>Top Skills for <span style={{ background: 'linear-gradient(135deg, #EDE9FE, #DDD6FE)', color: '#6D28D9', padding: '2px 10px', borderRadius: '6px', fontWeight: 800 }}>{allIslandSelectedField}</span></h4>
                                 <p style={{ margin: '0 0 16px 0', fontSize: '12px', color: '#64748B', fontWeight: 500, lineHeight: '1.5' }}>
 
-                                    Shows student preference trends in this particular field across all districts and education levels.
+                                    Student preference trends in selected field.
                                 </p>
                                 {loadingAllIslandSkills ? (
                                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '300px' }}>
@@ -2407,9 +2405,7 @@ const InteractiveSriLankaMap: React.FC = () => {
                                                     formatter={(value) => <span style={{ fontSize: '11px', color: '#475569', fontWeight: 600, textTransform: 'capitalize' }}>{value}</span>} />
                                             </PieChart>
                                         </ResponsiveContainer>
-                                        <div style={{ textAlign: 'center', fontSize: '11px', color: '#475569', marginTop: '12px', fontWeight: 500 }}>
-                                            💡 Hover slices to see percentages
-                                        </div>
+
                                     </>
                                 )}
                             </div>
@@ -2464,9 +2460,7 @@ const InteractiveSriLankaMap: React.FC = () => {
                                         formatter={(value) => <span style={{ fontSize: '11px', color: '#475569', fontWeight: 600 }}>{value}</span>} />
                                 </PieChart>
                             </ResponsiveContainer>
-                            <div style={{ textAlign: 'center', fontSize: '11px', color: '#475569', marginTop: '12px', fontWeight: 500 }}>
-                                💡 Hover slices to see percentages
-                            </div>
+
                         </div>
                         {industrySelectedField && (
                             <div style={{ animation: 'fadeInRight 0.3s ease' }}>
@@ -2509,9 +2503,7 @@ const InteractiveSriLankaMap: React.FC = () => {
                                                     formatter={(value) => <span style={{ fontSize: '11px', color: '#475569', fontWeight: 600 }}>{value}</span>} />
                                             </PieChart>
                                         </ResponsiveContainer>
-                                        <div style={{ textAlign: 'center', fontSize: '11px', color: '#475569', marginTop: '12px', fontWeight: 500 }}>
-                                            💡 Hover slices to see percentages
-                                        </div>
+
                                     </>
                                 )}
                             </div>
