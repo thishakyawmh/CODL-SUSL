@@ -1589,44 +1589,6 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '24px' }}>
-                        {/* Graduate Skill Shortages */}
-                        <div className="ai-chart-card" style={{ borderLeft: '5px solid #EF4444', margin: 0 }}>
-                            <h4 className="flex items-center gap-2 text-red-700 font-bold" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                                <AlertTriangle size={18} className="text-red-500" /> Graduate Skill Shortages
-                            </h4>
-                            <p className="text-slate-400 text-xs mb-4" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Industry reported graduate capability deficits.</p>
-                            {skillGap && skillGap.missing_skills && skillGap.missing_skills.length > 0 ? (
-                                <div className="tag-container">
-                                    {skillGap.missing_skills.map((skill: string, idx: number) => (
-                                        <span key={idx} className="tag missing">{skill}</span>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="flex items-center justify-center p-6 bg-green-50 text-green-700 rounded-lg border border-green-200 gap-2" style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: '#F0FDF4', color: '#15803D', border: '1px solid #BBF7D0', padding: '16px', borderRadius: '12px' }}>
-                                    <CheckCircle size={20} />
-                                    <span>No graduate capability deficits reported.</span>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Industry Gaps (Top Demands) */}
-                        <div className="ai-chart-card" style={{ margin: 0 }}>
-                            <h4>Industry Gaps (Top Demands)</h4>
-                            <p className="text-slate-400 text-sm mb-4" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Technologies most heavily requested by employers.</p>
-                            <div className="ai-chart-body">
-                                {industryData && industryData.length > 0 ? (
-                                    industryData.slice(0, 6).map((d: any) => (
-                                        <div key={d.name} className="chart-bar-row">
-                                            <div className="label"><span>{d.name}</span> <span>{d.value}%</span></div>
-                                            <div className="bar-bg"><div className="bar-fill indigo" style={{ width: `${d.value}%` }}></div></div>
-                                        </div>
-                                    ))
-                                ) : (
-                                    <div className="text-center text-slate-400 py-6 text-sm">Insufficient data points.</div>
-                                )}
-                            </div>
-                        </div>
-
                         {/* Academic Entry Requirements Section */}
                         <div className="ai-chart-card" style={{ margin: 0, border: '1px solid #D1FAE5', background: 'linear-gradient(135deg, #ECFDF5 0%, #F0FDF4 100%)' }}>
                             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '20px' }}>
