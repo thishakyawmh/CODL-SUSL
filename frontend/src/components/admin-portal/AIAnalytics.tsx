@@ -636,30 +636,67 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
             addText('II. CURRICULUM & DELIVERY INSIGHTS', margin, { fontSize: 12, fontStyle: 'bold', color: 'purple' });
             y += 8;
 
+            checkPageOverflow(25);
             addText('Missing Core Subjects:', margin + 5, { fontSize: 10, fontStyle: 'bold' });
             y += 5;
-            const missingText = overview.missing_subjects && overview.missing_subjects.length > 0
-                ? overview.missing_subjects.join(', ')
-                : 'None';
-            const splitMissing = doc.splitTextToSize(missingText, pageWidth - margin * 2 - 10);
-            doc.setFont('helvetica', 'normal');
-            doc.setFontSize(10);
-            doc.text(splitMissing, margin + 10, y);
-            y += (splitMissing.length * 5) + 4;
+            if (overview.missing_subjects && overview.missing_subjects.length > 0) {
+                overview.missing_subjects.forEach((sub: any) => {
+                    checkPageOverflow(15);
+                    const name = typeof sub === 'string' ? sub : (sub.name || 'N/A');
+                    const classification = typeof sub === 'string' ? '' : ` (${sub.classification || ''})`;
+                    const combinedPct = typeof sub === 'string' ? '' : ` - ${sub.combined_pct || 0}% Combined Score`;
+                    
+                    addText(`- ${name}${classification}${combinedPct}`, margin + 10, { fontSize: 9.5, fontStyle: 'bold' });
+                    y += 5;
 
+                    if (typeof sub === 'object' && sub !== null && sub.explanation) {
+                        checkPageOverflow(15);
+                        const splitExplanation = doc.splitTextToSize(`Insight: ${sub.explanation}`, pageWidth - margin * 2 - 20);
+                        doc.setFont('helvetica', 'normal');
+                        doc.setFontSize(9);
+                        doc.setTextColor(100, 116, 139);
+                        doc.text(splitExplanation, margin + 15, y);
+                        y += (splitExplanation.length * 4.5) + 3;
+                    }
+                });
+            } else {
+                addText('None', margin + 10, { fontSize: 9.5, fontStyle: 'normal' });
+                y += 5;
+            }
+
+            checkPageOverflow(25);
             addText('Curriculum Anomalies:', margin + 5, { fontSize: 10, fontStyle: 'bold' });
             y += 5;
             let anomaliesFound = false;
             if (overview.outdated_subjects && overview.outdated_subjects.length > 0) {
-                overview.outdated_subjects.forEach((sub: any) => {
-                    addText(`- Outdated Subject: ${sub.code} ${sub.name} (Legacy Technology Warning)`, margin + 10, { fontSize: 9, fontStyle: 'normal', color: 'red' });
+                overview.outdated_subjects.forEach((anomaly: any) => {
+                    checkPageOverflow(15);
+                    const subject = anomaly.affected_subject || (anomaly.code ? `${anomaly.code} ${anomaly.name}` : 'N/A');
+                    const type = anomaly.anomaly_type || 'Legacy Technology Warning';
+                    const exp = anomaly.explanation || '';
+                    const color = type === 'Curriculum Modernization' ? 'red' : 'gray';
+                    
+                    addText(`- ${type}: ${subject}`, margin + 10, { fontSize: 9, fontStyle: 'bold', color });
                     y += 5;
+                    if (exp) {
+                        checkPageOverflow(12);
+                        const splitExp = doc.splitTextToSize(exp, pageWidth - margin * 2 - 20);
+                        doc.setFont('helvetica', 'normal');
+                        doc.setFontSize(8.5);
+                        doc.setTextColor(100, 116, 139);
+                        doc.text(splitExp, margin + 15, y);
+                        y += (splitExp.length * 4.5) + 3;
+                    }
                     anomaliesFound = true;
                 });
             }
             if (overview.low_demand_subjects && overview.low_demand_subjects.length > 0) {
                 overview.low_demand_subjects.forEach((sub: any) => {
-                    addText(`- Low Demand Subject: ${sub.code} ${sub.name} (Less than 5% demand)`, margin + 10, { fontSize: 9, fontStyle: 'normal', color: 'gray' });
+                    checkPageOverflow(12);
+                    const code = sub.code || '';
+                    const name = sub.name || '';
+                    const reason = sub.reason || sub.explanation || 'Less than 5% demand';
+                    addText(`- Low Demand Subject: ${code} ${name} (${reason})`, margin + 10, { fontSize: 9, fontStyle: 'normal', color: 'gray' });
                     y += 5;
                     anomaliesFound = true;
                 });
@@ -670,6 +707,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
             }
             y += 4;
 
+            checkPageOverflow(25);
             addText(`Preferred Learning Delivery Split:`, margin + 5, { fontSize: 10, fontStyle: 'bold' });
             y += 7;
 
@@ -707,6 +745,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
 
             y += barHeight + 8;
 
+            checkPageOverflow(30);
             addText('Student Preferred Learning Methods:', margin + 5, { fontSize: 10, fontStyle: 'bold' });
             y += 7;
             if (overview.learning_preferences_data?.student_methods && overview.learning_preferences_data?.student_methods.length > 0) {
@@ -734,6 +773,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
             addText('III. STUDENT & JOB MARKET ALIGNMENT INSIGHTS', margin, { fontSize: 14, fontStyle: 'bold', color: 'purple' });
             y += 10;
 
+            checkPageOverflow(30);
             addText('Top Student Fields of Demand (Survey Results):', margin + 5, { fontSize: 10, fontStyle: 'bold' });
             y += 7;
             if (studentData && studentData.length > 0) {
@@ -754,6 +794,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
             }
             y += 4;
 
+            checkPageOverflow(30);
             addText('Top Job Market Technology Requirements (Employer Gaps):', margin + 5, { fontSize: 10, fontStyle: 'bold' });
             y += 7;
             if (industryData && industryData.length > 0) {
@@ -774,6 +815,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
             }
             y += 4;
 
+            checkPageOverflow(25);
             addText('Graduate Skill Shortages (Employer Reported Deficits):', margin + 5, { fontSize: 10, fontStyle: 'bold' });
             y += 7;
             if (skillGap && skillGap.missing_skills && skillGap.missing_skills.length > 0) {
@@ -789,6 +831,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
             }
             y += 4;
 
+            checkPageOverflow(30);
             addText('Industry Expected Practices (Employer Request Rates):', margin + 5, { fontSize: 10, fontStyle: 'bold' });
             y += 7;
             if (overview.learning_preferences_data?.industry_practices && overview.learning_preferences_data?.industry_practices.length > 0) {
@@ -823,6 +866,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                 addText(`GPA/Result Specified Rate: ${academicEntry.result_requirement_count}/${academicEntry.accepted_industry_count} employers`, margin + 5, { fontSize: 10 });
                 y += 10;
 
+                checkPageOverflow(30);
                 addText('Minimum Education Required (Employer Distribution):', margin + 5, { fontSize: 10, fontStyle: 'bold' });
                 y += 7;
                 if (academicEntry.education_distribution && academicEntry.education_distribution.length > 0) {
@@ -843,6 +887,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                 }
                 y += 4;
 
+                checkPageOverflow(30);
                 addText('Minimum Expected GPA / Result Class (Employer Distribution):', margin + 5, { fontSize: 10, fontStyle: 'bold' });
                 y += 7;
                 if (academicEntry.result_distribution && academicEntry.result_distribution.length > 0) {
@@ -922,7 +967,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
             doc.addPage();
             y = margin;
 
-            addText('V. EXISTING CURRICULUM STRUCTURE', margin, { fontSize: 14, fontStyle: 'bold', color: 'purple' });
+            addText('VI. EXISTING CURRICULUM STRUCTURE', margin, { fontSize: 14, fontStyle: 'bold', color: 'purple' });
             y += 10;
 
             if (fullCourseData?.semesters && fullCourseData.semesters.length > 0) {
@@ -965,6 +1010,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                     y += 4;
                 });
             } else if (fullCourseData?.subjects && fullCourseData.subjects.length > 0) {
+                checkPageOverflow(25);
                 addText('Curriculum Subjects', margin + 5, { fontSize: 11, fontStyle: 'bold', color: 'purple' });
                 y += 6;
 
