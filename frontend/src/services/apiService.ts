@@ -583,6 +583,10 @@ export const aiAnalyticsService = {
         const response = await api.get(`/admin/ai-analytics/geography/skills?${params.toString()}`);
         return response.data;
     },
+    getIndustrySkills: async (field: string) => {
+        const response = await api.get(`/admin/ai-analytics/industry/skills?field=${encodeURIComponent(field)}`);
+        return response.data;
+    },
     getUniversityOpportunities: async () => {
         const response = await api.get('/admin/ai-analytics/university-opportunities');
         return response.data;
