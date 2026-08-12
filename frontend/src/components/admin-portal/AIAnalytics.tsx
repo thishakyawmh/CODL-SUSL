@@ -663,7 +663,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                     const name = typeof sub === 'string' ? sub : (sub.name || 'N/A');
                     const classification = typeof sub === 'string' ? '' : ` (${sub.classification || ''})`;
                     const combinedPct = typeof sub === 'string' ? '' : ` - ${sub.combined_pct || 0}% Combined Score`;
-                    
+
                     addText(`- ${name}${classification}${combinedPct}`, margin + 10, { fontSize: 9.5, fontStyle: 'bold' });
                     y += 5;
 
@@ -693,7 +693,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                     const type = anomaly.anomaly_type || 'Legacy Technology Warning';
                     const exp = anomaly.explanation || '';
                     const color = type === 'Curriculum Modernization' ? 'red' : 'gray';
-                    
+
                     addText(`- ${type}: ${subject}`, margin + 10, { fontSize: 9, fontStyle: 'bold', color });
                     y += 5;
                     if (exp) {
@@ -1714,7 +1714,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                         <div className="ai-chart-card" style={{ margin: 0, border: '1px solid #D1FAE5', background: 'linear-gradient(135deg, #ECFDF5 0%, #F0FDF4 100%)' }}>
                             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '20px' }}>
                                 <div style={{ background: '#D1FAE5', color: '#059669', borderRadius: '10px', padding: '8px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z" /><path d="M6 12v5c3 3 9 3 12 0v-5" /></svg>
                                 </div>
                                 <div style={{ flex: 1 }}>
                                     <div style={{ fontSize: '15px', fontWeight: 800, color: '#064E3B', marginBottom: '2px' }}>Academic Entry Requirements</div>
@@ -1735,7 +1735,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
 
                             {(!academicEntry || academicEntry.accepted_industry_count === 0) ? (
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '18px 20px' }}>
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
                                     <span style={{ fontSize: '13px', color: '#64748B', fontWeight: 500 }}>No sufficient program-specific industry evidence.</span>
                                 </div>
                             ) : (
@@ -1840,7 +1840,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
 
                                     {academicEntry.summary && (
                                         <div style={{ background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: '12px', padding: '14px 16px', display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
-                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: '2px' }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="8"/><line x1="12" y1="12" x2="12" y2="16"/></svg>
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: '2px' }}><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="8" /><line x1="12" y1="12" x2="12" y2="16" /></svg>
                                             <p style={{ margin: 0, fontSize: '12.5px', color: '#065F46', lineHeight: 1.65, fontWeight: 500 }}>{academicEntry.summary}</p>
                                         </div>
                                     )}
@@ -2341,7 +2341,10 @@ const InteractiveSriLankaMap: React.FC = () => {
                         {allIslandSelectedField && (
                             <div style={{ animation: 'fadeInRight 0.3s ease' }}>
                                 <h4 style={{ margin: '0 0 4px 0', fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>Top Skills for <span style={{ background: 'linear-gradient(135deg, #EDE9FE, #DDD6FE)', color: '#6D28D9', padding: '2px 10px', borderRadius: '6px', fontWeight: 800 }}>{allIslandSelectedField}</span></h4>
-                                <p style={{ margin: '0 0 16px 0', fontSize: '12px', color: '#64748B', fontWeight: 500 }}>Nationwide Student Interests (All education levels)</p>
+                                <p style={{ margin: '0 0 16px 0', fontSize: '12px', color: '#64748B', fontWeight: 500, lineHeight: '1.5' }}>
+
+                                    Shows student preference trends in this particular field across all districts and education levels.
+                                </p>
                                 {loadingAllIslandSkills ? (
                                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '300px' }}>
                                         <div style={{ width: '28px', height: '28px', borderRadius: '50%', border: '3px solid #E9D5FF', borderTopColor: '#7C3AED', animation: 'spin 0.9s linear infinite' }}></div>
@@ -2427,7 +2430,10 @@ const InteractiveSriLankaMap: React.FC = () => {
                         {industrySelectedField && (
                             <div style={{ animation: 'fadeInRight 0.3s ease' }}>
                                 <h4 style={{ margin: '0 0 4px 0', fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>Top 7 Sub Skills for <span style={{ background: 'linear-gradient(135deg, #ECFDF5, #D1FAE5)', color: '#047857', padding: '2px 10px', borderRadius: '6px', fontWeight: 800 }}>{industrySelectedField}</span></h4>
-                                <p style={{ margin: '0 0 16px 0', fontSize: '12px', color: '#64748B', fontWeight: 500 }}>National Industry Requirements (All sectors combined)</p>
+                                <p style={{ margin: '0 0 16px 0', fontSize: '12px', color: '#64748B', fontWeight: 500, lineHeight: '1.5' }}>
+                                    Employer skill requirements across the job market.<br />
+                                    Shows the most requested technical tools and practical competencies demanded by Sri Lankan industries.
+                                </p>
                                 {loadingIndustrySkills ? (
                                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '300px' }}>
                                         <div style={{ width: '28px', height: '28px', borderRadius: '50%', border: '3px solid #E9D5FF', borderTopColor: '#7C3AED', animation: 'spin 0.9s linear infinite' }}></div>
