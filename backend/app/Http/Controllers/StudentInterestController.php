@@ -47,7 +47,7 @@ class StudentInterestController extends Controller
         ]);
 
         // Verify reCAPTCHA if credentials are provided and not set to placeholder
-        $recaptchaSecret = env('RECAPTCHA_SECRET_KEY');
+        $recaptchaSecret = config('services.recaptcha.secret');
         if ($recaptchaSecret && $recaptchaSecret !== '6Ld_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx') {
             $token = $request->input('recaptcha_token');
             if (!$token) {
@@ -88,10 +88,10 @@ class StudentInterestController extends Controller
             unset($validated['recaptcha_token']);
 
             // Send to Google Sheets webhook asynchronously using validated payload keys with signature
-            $webhookUrl = env('GOOGLE_SHEET_STUDENT_WEBHOOK_URL') ?: env('GOOGLE_SHEET_WEBHOOK_URL');
+            $webhookUrl = config('services.google_sheets.student_webhook_url') ?: config('services.google_sheets.webhook_url');
             if ($webhookUrl) {
                 try {
-                    $secret = env('GOOGLE_SHEETS_WEBHOOK_SECRET', 'secret_key');
+                    $secret = config('services.google_sheets.webhook_secret', 'secret_key');
                     $signature = hash_hmac('sha256', json_encode($validated), $secret);
                     $response = Http::timeout(5)->withHeaders([
                         'X-Webhook-Signature' => $signature
@@ -388,7 +388,7 @@ class StudentInterestController extends Controller
         ]);
 
         // Verify reCAPTCHA if credentials are provided and not set to placeholder
-        $recaptchaSecret = env('RECAPTCHA_SECRET_KEY');
+        $recaptchaSecret = config('services.recaptcha.secret');
         if ($recaptchaSecret && $recaptchaSecret !== '6Ld_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx') {
             $token = $request->input('recaptcha_token');
             if (!$token) {
@@ -425,10 +425,10 @@ class StudentInterestController extends Controller
             unset($validated['recaptcha_token']);
 
             // Send to Google Sheets webhook asynchronously using validated payload keys with signature
-            $webhookUrl = env('GOOGLE_SHEET_INDUSTRY_WEBHOOK_URL') ?: env('GOOGLE_SHEET_WEBHOOK_URL');
+            $webhookUrl = config('services.google_sheets.industry_webhook_url') ?: config('services.google_sheets.webhook_url');
             if ($webhookUrl) {
                 try {
-                    $secret = env('GOOGLE_SHEETS_WEBHOOK_SECRET', 'secret_key');
+                    $secret = config('services.google_sheets.webhook_secret', 'secret_key');
                     $signature = hash_hmac('sha256', json_encode($validated), $secret);
                     $response = Http::timeout(5)->withHeaders([
                         'X-Webhook-Signature' => $signature

@@ -77,6 +77,24 @@ class AnalyticsNLPService
         $curriculumDomains = [];
         $curriculumAvailable = false;
 
+        // Initialize variables to avoid undefined variable warnings when $course is null
+        $studentDistribution = [];
+        $industryDistribution = [];
+        $jaccardResults = ['intersection' => [], 'union' => [], 'overall_score' => null];
+        $coveragePercent = null;
+        $missingSubjects = [];
+        $curriculumAnomalies = [];
+        $studentTheoryPercent = null;
+        $studentPracticalPercent = null;
+        $studentPrefsFormatted = [];
+        $industryPracticesFormatted = [];
+        $certImportancePercent = null;
+        $avgStudentRelevance = 0.0;
+        $avgIndustryRelevance = 0.0;
+        $studentAudit = [];
+        $industryAudit = [];
+        $domainMatrix = [];
+
         if ($course) {
             // Build Program Profile from real database data only
             $course->loadMissing('semesters.subjects', 'category');
@@ -1060,7 +1078,7 @@ class AnalyticsNLPService
 
     public function preClassifySurveys(): void
     {
-        $apiKey = env('GEMINI_API_KEY');
+        $apiKey = config('services.gemini.key');
         if (!$apiKey) {
             return;
         }
@@ -1168,7 +1186,7 @@ class AnalyticsNLPService
         }
 
         $domains = [];
-        $apiKey = env('GEMINI_API_KEY');
+        $apiKey = config('services.gemini.key');
         if ($apiKey) {
             $cacheKey = md5(trim($text));
             if (isset(self::$geminiCache[$cacheKey])) {

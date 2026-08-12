@@ -517,11 +517,11 @@ class AIAnalyticsController extends Controller
         
         // If neither type nor sheet_url is provided, perform a dual sync using configured .env URLs
         if (!$request->has('type') && !$request->has('sheet_url') && !$request->has('url')) {
-            $studentUrl = env('GOOGLE_SHEET_STUDENT_URL');
-            $industryUrl = env('GOOGLE_SHEET_INDUSTRY_URL');
+            $studentUrl = config('services.google_sheets.student_url');
+            $industryUrl = config('services.google_sheets.industry_url');
 
             if (!$studentUrl || !$industryUrl) {
-                return response()->json(['error' => 'Google Sheets URLs are not fully configured in .env. Please set GOOGLE_SHEET_STUDENT_URL and GOOGLE_SHEET_INDUSTRY_URL.'], 422);
+                return response()->json(['error' => 'Google Sheets URLs are not fully configured in config/services.php. Please set GOOGLE_SHEET_STUDENT_URL and GOOGLE_SHEET_INDUSTRY_URL.'], 422);
             }
 
             $studentResult = $this->executeSingleSync('student', $studentUrl);
