@@ -61,6 +61,11 @@ class ProcessAnalyticsPipelineJob implements ShouldQueue
                 $kpis['low_demand_subjects'] = $analytics['low_demand_subjects'] ?? [];
                 $kpis['learning_preferences_data'] = $analytics['learning_preferences_data'] ?? null;
 
+                // Delete existing caches for this course first to ensure clean regeneration
+                AnalyticsCache::where('scope_type', 'program')
+                    ->where('scope_id', $course->id)
+                    ->delete();
+
                 AnalyticsCache::create([
                     'scope_type' => 'program',
                     'scope_id' => $course->id,

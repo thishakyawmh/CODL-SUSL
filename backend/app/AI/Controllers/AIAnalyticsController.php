@@ -55,7 +55,7 @@ class AIAnalyticsController extends Controller
 
         return response()->json([
             'kpis' => $cache->kpis,
-            'last_generated' => $cache->generated_at->format('M j, Y - g:i A'),
+            'last_generated' => $cache->generated_at->toIso8601String(),
             'coverage_percent' => isset($cache->kpis['coverage_percent']) ? $cache->kpis['coverage_percent'] : null,
             'missing_subjects' => $cache->kpis['missing_subjects'] ?? [],
             'outdated_subjects' => $cache->kpis['outdated_subjects'] ?? [],
@@ -272,12 +272,30 @@ class AIAnalyticsController extends Controller
             ->values()
             ->toArray();
 
+        // Get top 5 primary academic fields from industry requirements
+        $topDomains = IndustryRequirement::select('primary_academic_field', \DB::raw('count(*) as count'))
+            ->whereNotNull('primary_academic_field')
+            ->where('primary_academic_field', '!=', '')
+            ->groupBy('primary_academic_field')
+            ->orderBy('count', 'desc')
+            ->limit(5)
+            ->get()
+            ->map(function($item) {
+                return [
+                    'name' => trim($item->primary_academic_field),
+                    'value' => (int) $item->count
+                ];
+            })
+            ->values()
+            ->toArray();
+
         return response()->json([
-            'by_province'     => $formattedProvince,
-            'all_island'      => $formattedAllIsland,
-            'district_counts' => $districtCounts,
+            'by_province'      => $formattedProvince,
+            'all_island'       => $formattedAllIsland,
+            'district_counts'  => $districtCounts,
             'education_levels' => $formattedEducationLevels,
             'industry_sectors' => $industrySectors,
+            'industry_domains' => $topDomains,
         ]);
     }
 
@@ -341,6 +359,56 @@ class AIAnalyticsController extends Controller
             return [
                 'name'       => $name,
                 'score'      => round($score, 2),
+                'percentage' => round(($score / $total) * 100, 1),
+            ];
+        }, array_keys($top), array_values($top));
+
+        return response()->json([
+            'field'  => $field,
+            'skills' => $result,
+        ]);
+    }
+
+    /**
+     * Get top 7 skills/practices for a specific primary academic field from industry requirements.
+     */
+    public function getIndustrySkills(Request $request)
+    {
+        $field = trim($request->query('field', ''));
+
+        if (!$field) {
+            return response()->json(['error' => 'field parameter is required'], 422);
+        }
+
+        $rows = DB::connection('analytics')->table('industry_requirements')
+            ->select('required_skills')
+            ->where('primary_academic_field', $field)
+            ->get();
+
+        $skillScores = [];
+
+        foreach ($rows as $row) {
+            if (empty(trim($row->required_skills ?? ''))) continue;
+
+            $skills = array_map('trim', explode(',', $row->required_skills));
+            foreach ($skills as $skill) {
+                $skill = trim($skill);
+                if (!$skill) continue;
+                // Capitalize first letter of each word for clean presentation
+                $skillFormatted = ucwords(strtolower($skill));
+                $skillScores[$skillFormatted] = ($skillScores[$skillFormatted] ?? 0) + 1;
+            }
+        }
+
+        arsort($skillScores);
+        $top = array_slice($skillScores, 0, 7, true);
+        $total = array_sum($top) ?: 1;
+
+        $result = array_map(function($name, $score) use ($total) {
+            return [
+                'name'  => $name,
+                'score' => $score,
+                'value' => $score,
                 'percentage' => round(($score / $total) * 100, 1),
             ];
         }, array_keys($top), array_values($top));
@@ -468,7 +536,7 @@ class AIAnalyticsController extends Controller
 
             // Trigger Background NLP Processing Pipeline
             try {
-                \App\Jobs\ProcessAnalyticsPipelineJob::dispatch();
+                \App\Jobs\ProcessAnalyticsPipelineJob::dispatchSync();
             } catch (\Exception $e) {
                 \Log::error('Failed to dispatch ProcessAnalyticsPipelineJob: ' . $e->getMessage());
             }
@@ -501,7 +569,7 @@ class AIAnalyticsController extends Controller
 
         // Trigger Background NLP Processing Pipeline
         try {
-            \App\Jobs\ProcessAnalyticsPipelineJob::dispatch();
+            \App\Jobs\ProcessAnalyticsPipelineJob::dispatchSync();
         } catch (\Exception $e) {
             \Log::error('Failed to dispatch ProcessAnalyticsPipelineJob: ' . $e->getMessage());
         }
