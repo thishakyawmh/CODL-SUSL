@@ -733,6 +733,9 @@ class AnalyticsNLPService
             $industryMatchScore = (int) round($this->calculateCosineSimilarity($curriculumDomains, $industryFrequencies));
         }
 
+        // Compute Academic Entry Requirements as secondary aggregation over the SAME accepted industry records
+        $academicEntryRequirements = $course ? $this->computeAcademicEntryRequirements($relevantIndustrySurveys) : null;
+
         return [
             'student_demand_distribution' => $studentDistribution,
             'industry_demand_distribution' => $industryDistribution,
@@ -778,8 +781,251 @@ class AnalyticsNLPService
                 'student_surveys' => $studentAudit,
                 'industry_surveys' => $industryAudit,
                 'domain_matrix' => $domainMatrix,
-            ]
+            ],
+            'academic_entry_requirements' => $academicEntryRequirements
         ];
+    }
+
+
+    /**
+     * Compute education and result-class distributions from the already-accepted industry records.
+     *
+     * @param  array  $relevantIndustrySurveys
+     * @return array
+     */
+    private function computeAcademicEntryRequirements(array $relevantIndustrySurveys): array
+    {
+        $accepted = count($relevantIndustrySurveys);
+
+        if ($accepted === 0) {
+            return [
+                'accepted_industry_count'     => 0,
+                'education_requirement_count' => 0,
+                'result_requirement_count'    => 0,
+                'education_distribution'      => [],
+                'result_distribution'         => [],
+                'cross_analysis'              => [],
+                'evidence_confidence'         => 'insufficient',
+                'summary'                     => 'No sufficient program-specific industry evidence.',
+            ];
+        }
+
+        $eduCounts = [];
+        $resultCounts = [];
+        $crossCounts = [];
+
+        $eduSpecifiedCount = 0;
+        $resultSpecifiedCount = 0;
+
+        foreach ($relevantIndustrySurveys as $item) {
+            $survey = $item['survey'];
+
+            $eduLabel = $this->normalizeMinimumQualification($survey->minimum_qualification ?? '');
+            $resultLabel = $this->normalizeMinimumResult($survey->minimum_degree_result ?? '');
+
+            $eduCounts[$eduLabel] = ($eduCounts[$eduLabel] ?? 0) + 1;
+            if ($eduLabel !== 'Not Specified') {
+                $eduSpecifiedCount++;
+            }
+
+            $resultCounts[$resultLabel] = ($resultCounts[$resultLabel] ?? 0) + 1;
+            if ($resultLabel !== 'Not Specified') {
+                $resultSpecifiedCount++;
+            }
+
+            if (!isset($crossCounts[$eduLabel])) {
+                $crossCounts[$eduLabel] = [];
+            }
+            $crossCounts[$eduLabel][$resultLabel] = ($crossCounts[$eduLabel][$resultLabel] ?? 0) + 1;
+        }
+
+        arsort($eduCounts);
+        $educationDistribution = [];
+        foreach ($eduCounts as $label => $count) {
+            $educationDistribution[] = [
+                'label'      => $label,
+                'count'      => $count,
+                'percentage' => round(($count / $accepted) * 100, 1),
+            ];
+        }
+
+        arsort($resultCounts);
+        $resultDistribution = [];
+        foreach ($resultCounts as $label => $count) {
+            $resultDistribution[] = [
+                'label'      => $label,
+                'count'      => $count,
+                'percentage' => round(($count / $accepted) * 100, 1),
+            ];
+        }
+
+        $crossAnalysis = [];
+        foreach ($crossCounts as $eduLabel => $resultMap) {
+            $eduTotal = $eduCounts[$eduLabel];
+            arsort($resultMap);
+            $crossAnalysis[$eduLabel] = [];
+            foreach ($resultMap as $resultLabel => $cnt) {
+                $crossAnalysis[$eduLabel][] = [
+                    'label'      => $resultLabel,
+                    'count'      => $cnt,
+                    'percentage' => round(($cnt / $eduTotal) * 100, 1),
+                ];
+            }
+        }
+
+        $minThreshold = config('analytics.thresholds.min_industry_responses', 5);
+        $evidenceConfidence = $accepted >= $minThreshold ? 'sufficient' : 'limited';
+
+        $summary = $this->buildAcademicEntrySummary(
+            $accepted,
+            $eduSpecifiedCount,
+            $resultSpecifiedCount,
+            $educationDistribution,
+            $resultDistribution,
+            $evidenceConfidence
+        );
+
+        return [
+            'accepted_industry_count'     => $accepted,
+            'education_requirement_count' => $eduSpecifiedCount,
+            'result_requirement_count'    => $resultSpecifiedCount,
+            'education_distribution'      => $educationDistribution,
+            'result_distribution'         => $resultDistribution,
+            'cross_analysis'              => $crossAnalysis,
+            'evidence_confidence'         => $evidenceConfidence,
+            'summary'                     => $summary,
+        ];
+    }
+
+    private function normalizeMinimumQualification(string $raw): string
+    {
+        $raw = trim($raw);
+        if ($raw === '' || strtolower($raw) === 'n/a' || strtolower($raw) === 'none') {
+            return 'Not Specified';
+        }
+
+        $lower = strtolower($raw);
+
+        if (str_contains($lower, 'phd') || str_contains($lower, 'doctor') || str_contains($lower, 'doctoral')) {
+            return 'Doctoral Degree';
+        }
+        if (str_contains($lower, 'master') || str_contains($lower, "master's") || $lower === 'msc' || $lower === 'mba') {
+            return "Master's Degree";
+        }
+        if (str_contains($lower, 'higher national diploma') || $lower === 'hnd') {
+            return 'Higher National Diploma';
+        }
+        if (
+            str_contains($lower, 'bachelor') ||
+            str_contains($lower, "bachelor's") ||
+            str_contains($lower, 'bsc') ||
+            str_contains($lower, 'b.sc') ||
+            str_contains($lower, 'ba ') ||
+            $lower === 'degree' ||
+            str_contains($lower, 'undergraduate')
+        ) {
+            return "Bachelor's Degree";
+        }
+        if (str_contains($lower, 'diploma')) {
+            return 'Diploma';
+        }
+        if (str_contains($lower, 'certificate') || str_contains($lower, 'cert')) {
+            return 'Certificate';
+        }
+
+        return 'Other';
+    }
+
+    private function normalizeMinimumResult(string $raw): string
+    {
+        $raw = trim($raw);
+        if ($raw === '' || strtolower($raw) === 'n/a' || strtolower($raw) === 'none') {
+            return 'Not Specified';
+        }
+
+        $lower = strtolower($raw);
+
+        if (preg_match('/gpa\s*[:\-]?\s*3\.5/i', $raw) || preg_match('/3\.5\+/i', $raw)) {
+            return 'GPA 3.5+';
+        }
+        if (preg_match('/gpa\s*[:\-]?\s*3\.[0-4]/i', $raw) || preg_match('/3\.0\+/i', $raw) || preg_match('/gpa\s*[:\-]?\s*3\.0/i', $raw)) {
+            return 'GPA 3.0+';
+        }
+        if (preg_match('/gpa\s*[:\-]?\s*[0-9]/i', $raw)) {
+            return 'GPA (Other)';
+        }
+
+        if (str_contains($lower, 'first class') || str_contains($lower, '1st class') || $lower === 'first') {
+            return 'First Class';
+        }
+        if (str_contains($lower, 'upper second') || str_contains($lower, '2:1') || str_contains($lower, '2.1')) {
+            return 'Upper Second Class (2:1)';
+        }
+        if (str_contains($lower, 'lower second') || str_contains($lower, '2:2') || str_contains($lower, '2.2')) {
+            return 'Lower Second Class (2:2)';
+        }
+        if (str_contains($lower, 'pass') || str_contains($lower, 'third class') || str_contains($lower, '3rd class')) {
+            return 'Pass Class';
+        }
+        if (str_contains($lower, 'distinction')) {
+            return 'Distinction';
+        }
+        if (str_contains($lower, 'merit')) {
+            return 'Merit';
+        }
+
+        return 'Other';
+    }
+
+    private function buildAcademicEntrySummary(
+        int $accepted,
+        int $eduSpecifiedCount,
+        int $resultSpecifiedCount,
+        array $educationDistribution,
+        array $resultDistribution,
+        string $evidenceConfidence
+    ): string {
+        if ($accepted === 0) {
+            return 'No sufficient program-specific industry evidence.';
+        }
+
+        $limitedNote = $evidenceConfidence === 'limited'
+            ? ' Note: evidence is limited due to the small number of accepted responses.'
+            : '';
+
+        $topEdu = !empty($educationDistribution) ? $educationDistribution[0] : null;
+        $topResult = !empty($resultDistribution) ? $resultDistribution[0] : null;
+
+        $parts = [];
+
+        if ($topEdu && $topEdu['label'] !== 'Not Specified') {
+            $parts[] = "Among the {$accepted} industry responses considered relevant to this program, "
+                . "{$topEdu['label']} was the most frequently reported minimum qualification "
+                . "({$topEdu['percentage']}% of accepted responses; {$eduSpecifiedCount} of {$accepted} responses specified a qualification).";
+        } else {
+            $parts[] = "Among the {$accepted} relevant industry responses, "
+                . "minimum academic qualification data is largely unspecified ({$eduSpecifiedCount} responses provided a value).";
+        }
+
+        if ($topResult && $topResult['label'] !== 'Not Specified') {
+            $second = isset($resultDistribution[1]) && $resultDistribution[1]['label'] !== 'Not Specified'
+                ? " {$resultDistribution[1]['label']} was also observed at {$resultDistribution[1]['percentage']}%."
+                : '';
+            $parts[] = "The most frequently reported minimum result expectation was "
+                . "{$topResult['label']}, appearing in {$topResult['percentage']}% of accepted responses"
+                . " ({$resultSpecifiedCount} of {$accepted} responses specified a result expectation).{$second}";
+        } else {
+            $parts[] = "Minimum result/GPA expectation data is largely unspecified across these {$accepted} responses ({$resultSpecifiedCount} responses provided a value).";
+        }
+
+        if (count($educationDistribution) > 1) {
+            $labels = array_slice(array_column($educationDistribution, 'label'), 1, 3);
+            $parts[] = 'Other education levels reported include: ' . implode(', ', $labels) . '.';
+        }
+
+        $parts[] = 'Requirements therefore reflect the observed distribution within the accepted program-relevant industry responses and should not be treated as universal minimum thresholds.' . $limitedNote;
+
+        return implode(' ', $parts);
     }
 
     /**

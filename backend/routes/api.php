@@ -88,6 +88,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/admin/ai-analytics/{courseId}/skill-gap', [AIAnalyticsController::class, 'getSkillGap']);
         Route::get('/admin/ai-analytics/{courseId}/emerging-technologies', [AIAnalyticsController::class, 'getEmergingTechnologies']);
         Route::get('/admin/ai-analytics/{courseId}/export', [AIAnalyticsController::class, 'exportCSV']);
+        Route::get('/admin/ai-analytics/{courseId}/academic-entry', [AIAnalyticsController::class, 'getAcademicEntryRequirements']);
         Route::get('/admin/ai-analytics/surveys', [AIAnalyticsController::class, 'getSurveys']);
         Route::post('/admin/ai-analytics/surveys', [AIAnalyticsController::class, 'storeSurvey']);
         Route::get('/admin/ai-analytics/geography', [AIAnalyticsController::class, 'getGeographyData']);
