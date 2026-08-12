@@ -9,7 +9,7 @@ import {
 import { aiAnalyticsService, courseService } from '../../services/apiService';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
-import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
+import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 // @ts-ignore
 import SriLankaMapData from '@svg-maps/sri-lanka';
 import './AIAnalytics.css';
@@ -32,7 +32,7 @@ export const AIAnalytics: React.FC = () => {
     const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
     const [loading, setLoading] = useState(true);
     const [globalEmergingTech, setGlobalEmergingTech] = useState<string[]>([]);
-    const [viewMode, setViewMode] = useState<'hub' | 'course' | 'common'>('hub');
+    const [viewMode, setViewMode] = useState<'hub' | 'course'>('hub');
 
     const [syncing, setSyncing] = useState(false);
     const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
@@ -191,8 +191,6 @@ export const AIAnalytics: React.FC = () => {
 
             {viewMode === 'course' && selectedCourse ? (
                 <ProgramDashboard course={selectedCourse} onBack={() => { setSelectedCourse(null); setViewMode('hub'); }} />
-            ) : viewMode === 'common' ? (
-                <CommonAnalyticsDashboard onBack={() => setViewMode('hub')} />
             ) : (
                 <ProgramHub
                     programs={programs}
@@ -200,7 +198,6 @@ export const AIAnalytics: React.FC = () => {
                     onSelect={(c) => { setSelectedCourse(c); setViewMode('course'); }}
                     onOpenSync={handleDirectSync}
                     onOpenManageForms={() => navigate('/admin/ai-analytics/manage-forms')}
-                    onOpenCommonAnalytics={() => setViewMode('common')}
                     syncing={syncing}
                     lastSyncedAt={lastSyncedAt}
                     studentCount={studentCount}
@@ -222,12 +219,11 @@ const ProgramHub: React.FC<{
     onSelect: (c: Course) => void,
     onOpenSync: () => void,
     onOpenManageForms: () => void,
-    onOpenCommonAnalytics: () => void,
     syncing?: boolean,
     lastSyncedAt?: string | null,
     studentCount: number,
     industryCount: number,
-}> = ({ programs, globalEmergingTech, onSelect, onOpenSync, onOpenManageForms, onOpenCommonAnalytics, syncing, lastSyncedAt, studentCount, industryCount }) => {
+}> = ({ programs, globalEmergingTech, onSelect, onOpenSync, onOpenManageForms, syncing, lastSyncedAt, studentCount, industryCount }) => {
     const [levelFilter, setLevelFilter] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -347,9 +343,6 @@ const ProgramHub: React.FC<{
                                 Last Sync: {new Date(lastSyncedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                             </span>
                         )}
-                        <button className="admin-btn-outline" onClick={onOpenCommonAnalytics}>
-                            <BarChart2 size={16} /> Common Student Analytics
-                        </button>
                         <button className="admin-btn-outline" onClick={onOpenManageForms}>
                             <Database size={16} /> Manage Forms
                         </button>
@@ -402,6 +395,11 @@ const ProgramHub: React.FC<{
                     {/* Second Row: Interactive Sri Lanka Map (full width) */}
                     <div style={{ marginBottom: '32px' }}>
                         <InteractiveSriLankaMap />
+                    </div>
+
+                    {/* Third Row: University Opportunities Bar Chart */}
+                    <div style={{ marginBottom: '32px' }}>
+                        <UniversityOpportunitiesChart />
                     </div>
                 </>
             )}
@@ -1580,157 +1578,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
     );
 };
 
-/* =========================================================
-   COMMON STUDENT ANALYTICS COMPONENTS
-   ========================================================= */
 
-const DonutChart: React.FC<{
-    data: any[],
-    onSliceClick: (fieldName: string) => void,
-    selectedField: string | null
-}> = ({ data, onSliceClick, selectedField }) => {
-    const radius = 70;
-    const circumference = 2 * Math.PI * radius;
-    let accumulatedPercent = 0;
-
-    const colors = [
-        '#7C3AED', // Purple
-        '#3B82F6', // Blue
-        '#10B981', // Emerald
-        '#EC4899', // Pink
-        '#F59E0B', // Amber
-        '#06B6D4', // Cyan
-        '#94A3B8'  // Slate
-    ];
-
-    return (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
-            <div style={{ position: 'relative', width: '220px', height: '220px' }}>
-                <svg width="220" height="220" viewBox="0 0 200 200" style={{ transform: 'rotate(-90deg)' }}>
-                    {data.map((item, index) => {
-                        const percent = item.value;
-                        const strokeLength = (percent / 100) * circumference;
-                        const strokeOffset = circumference - ((accumulatedPercent / 100) * circumference);
-                        accumulatedPercent += percent;
-
-                        const color = colors[index % colors.length];
-                        const isSelected = selectedField === item.name;
-
-                        return (
-                            <circle
-                                key={item.name}
-                                cx="100"
-                                cy="100"
-                                r={radius}
-                                fill="transparent"
-                                stroke={color}
-                                strokeWidth={isSelected ? "22" : "16"}
-                                strokeDasharray={`${strokeLength} ${circumference}`}
-                                strokeDashoffset={strokeOffset}
-                                style={{
-                                    transition: 'all 0.3s ease',
-                                    cursor: 'pointer',
-                                    opacity: selectedField ? (isSelected ? 1.0 : 0.4) : 0.95
-                                }}
-                                onMouseEnter={(e) => {
-                                    if (!isSelected) e.currentTarget.style.opacity = '1.0';
-                                }}
-                                onMouseLeave={(e) => {
-                                    if (!isSelected && selectedField) e.currentTarget.style.opacity = '0.4';
-                                    else if (!isSelected) e.currentTarget.style.opacity = '0.95';
-                                }}
-                                onClick={() => onSliceClick(item.name)}
-                            >
-                                <title>{item.name}: {item.count} responses ({item.value}%)</title>
-                            </circle>
-                        );
-                    })}
-                    <circle cx="100" cy="100" r={radius - 12} fill="#FFFFFF" />
-                </svg>
-                <div style={{
-                    position: 'absolute',
-                    top: '50%',
-                    left: '50%',
-                    transform: 'translate(-50%, -50%)',
-                    textAlign: 'center',
-                    pointerEvents: 'none'
-                }}>
-                    <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                        Selected Field
-                    </span>
-                    <div style={{ fontSize: '14px', fontWeight: '900', color: '#1E293B', marginTop: '2px', maxWidth: '140px', lineHeight: 1.2 }}>
-                        {selectedField || "Click a slice"}
-                    </div>
-                </div>
-            </div>
-            <div style={{ marginTop: '20px', display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center', maxWidth: '340px' }}>
-                {data.map((item, index) => {
-                    const color = colors[index % colors.length];
-                    const isSelected = selectedField === item.name;
-                    return (
-                        <div
-                            key={item.name}
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                                fontSize: '12px',
-                                fontWeight: isSelected ? '700' : '500',
-                                color: isSelected ? '#1E293B' : '#64748B',
-                                cursor: 'pointer'
-                            }}
-                            onClick={() => onSliceClick(item.name)}
-                        >
-                            <span style={{ display: 'inline-block', width: '10px', height: '10px', borderRadius: '50%', backgroundColor: color }}></span>
-                            <span>{item.name} ({item.value}%)</span>
-                        </div>
-                    );
-                })}
-            </div>
-        </div>
-    );
-};
-
-const FieldSkillDrilldown: React.FC<{
-    field: string,
-    skillsData: any[],
-    loading: boolean
-}> = ({ field, skillsData, loading }) => {
-    return (
-        <div className="ai-chart-card" style={{ borderLeft: '5px solid #10B981' }}>
-            <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#065F46', fontWeight: '800' }}>
-                <Sparkles size={18} className="text-emerald-500" /> Skill Demand for {field}
-            </h4>
-            <p className="text-slate-400 text-xs mb-4" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>
-                Normalized skill/domain demand filtered strictly by students interested in {field}.
-            </p>
-            {loading ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center', padding: '48px 0' }}>
-                    <div className="loading-spinner small"></div>
-                    <span className="text-sm text-slate-400">Loading skill demands...</span>
-                </div>
-            ) : (
-                <div className="ai-chart-body" style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {skillsData && skillsData.length > 0 ? (
-                        skillsData.map((s: any, idx: number) => (
-                            <div key={idx} className="chart-bar-row">
-                                <div className="label">
-                                    <span>{s.name}</span>
-                                    <span>{s.count} ({s.value}%)</span>
-                                </div>
-                                <div className="bar-bg">
-                                    <div className="bar-fill emerald" style={{ width: `${s.value}%` }}></div>
-                                </div>
-                            </div>
-                        ))
-                    ) : (
-                        <div className="text-center text-slate-400 py-6 text-sm">No skill demand data for this field.</div>
-                    )}
-                </div>
-            )}
-        </div>
-    );
-};
 
 // ─── District → Province lookup ─────────────────────────────────────────────
 const DISTRICT_TO_PROVINCE: Record<string, string> = {
@@ -1746,19 +1594,13 @@ const DISTRICT_TO_PROVINCE: Record<string, string> = {
 };
 
 const PROVINCE_COLORS: Record<string, string> = {
-    'Western':       '#7C3AED',
-    'Central':       '#2563EB',
-    'Southern':      '#059669',
-    'Northern':      '#DC2626',
-    'Eastern':       '#D97706',
-    'North Western': '#0891B2',
-    'North Central': '#7C3AED',
-    'Uva':           '#DB2777',
-    'Sabaragamuwa':  '#65A30D',
+    'Western': '#7C3AED', 'Central': '#2563EB', 'Southern': '#059669',
+    'Northern': '#DC2626', 'Eastern': '#D97706', 'North Western': '#0891B2',
+    'North Central': '#7C3AED', 'Uva': '#DB2777', 'Sabaragamuwa': '#65A30D',
 };
 
 const EDU_ORDER = ['Undergraduate', 'Advanced Level', 'Diploma Holder', 'Ordinary Level', 'Not Specified'];
-const CHART_COLORS = ['#7C3AED', '#3B82F6', '#10B981', '#EC4899', '#F59E0B', '#06B6D4', '#EF4444', '#8B5CF6'];
+const MAP_CHART_COLORS = ['#7C3AED', '#3B82F6', '#10B981', '#EC4899', '#F59E0B', '#06B6D4', '#EF4444', '#8B5CF6'];
 
 interface GeoData {
     by_province: Record<string, Record<string, { name: string; score: number }[]>>;
@@ -1769,37 +1611,27 @@ interface GeoData {
 const InteractiveSriLankaMap: React.FC = () => {
     const [geoData, setGeoData] = useState<GeoData | null>(null);
     const [loadingGeo, setLoadingGeo] = useState(true);
-
-    // Map hover/click state
     const [hoveredDistrict, setHoveredDistrict] = useState<string | null>(null);
     const [selectedProvince, setSelectedProvince] = useState<string | null>(null);
     const [allIslandMode, setAllIslandMode] = useState(false);
-
-    // Panel 1 state: selected field for skills drill-down
     const [selectedField, setSelectedField] = useState<string | null>(null);
     const [selectedEduLevel, setSelectedEduLevel] = useState<string | null>(null);
-
-    // Panel 2: skills
     const [skills, setSkills] = useState<{ name: string; score: number; percentage: number }[]>([]);
     const [loadingSkills, setLoadingSkills] = useState(false);
-
-    // All Island pie selection
     const [allIslandSelectedField, setAllIslandSelectedField] = useState<string | null>(null);
     const [allIslandSkills, setAllIslandSkills] = useState<{ name: string; score: number; percentage: number }[]>([]);
     const [loadingAllIslandSkills, setLoadingAllIslandSkills] = useState(false);
 
     useEffect(() => {
         aiAnalyticsService.getGeographyData().then(d => {
-            setGeoData(d);
-            setLoadingGeo(false);
+            setGeoData(d); setLoadingGeo(false);
         }).catch(() => setLoadingGeo(false));
     }, []);
 
     const districtCounts = geoData?.district_counts || {};
     const maxCount = Math.max(...Object.values(districtCounts), 1);
 
-    const getProvinceForDistrict = (name: string) =>
-        DISTRICT_TO_PROVINCE[name.toLowerCase()] || null;
+    const getProvinceForDistrict = (name: string) => DISTRICT_TO_PROVINCE[name.toLowerCase()] || null;
 
     const getColorForDistrict = (name: string) => {
         const province = getProvinceForDistrict(name);
@@ -1808,7 +1640,7 @@ const InteractiveSriLankaMap: React.FC = () => {
         const ratio = count / maxCount;
         const base = PROVINCE_COLORS[province || ''] || '#7C3AED';
         if (ratio < 0.25) return `${base}40`;
-        if (ratio < 0.5)  return `${base}80`;
+        if (ratio < 0.5) return `${base}80`;
         if (ratio < 0.75) return `${base}BB`;
         return base;
     };
@@ -1831,11 +1663,8 @@ const InteractiveSriLankaMap: React.FC = () => {
         try {
             const data = await aiAnalyticsService.getGeographySkills(field, selectedProvince || '', eduLevel);
             setSkills(data.skills || []);
-        } catch (e) {
-            setSkills([]);
-        } finally {
-            setLoadingSkills(false);
-        }
+        } catch { setSkills([]); }
+        finally { setLoadingSkills(false); }
     };
 
     const handleAllIslandFieldClick = async (field: string) => {
@@ -1845,73 +1674,32 @@ const InteractiveSriLankaMap: React.FC = () => {
         try {
             const data = await aiAnalyticsService.getGeographySkills(field);
             setAllIslandSkills(data.skills || []);
-        } catch (e) {
-            setAllIslandSkills([]);
-        } finally {
-            setLoadingAllIslandSkills(false);
-        }
+        } catch { setAllIslandSkills([]); }
+        finally { setLoadingAllIslandSkills(false); }
     };
 
-    // Prepare all-island pie data
-    const allIslandPieData = (geoData?.all_island || []).slice(0, 8).map(f => ({
-        ...f,
-        value: f.score,
-    }));
-
-    const provinceData = selectedProvince && geoData?.by_province[selectedProvince]
-        ? geoData.by_province[selectedProvince]
-        : null;
-
-    // Sorted education levels for this province
+    const allIslandPieData = (geoData?.all_island || []).slice(0, 8).map(f => ({ ...f, value: f.score }));
+    const provinceData = selectedProvince && geoData?.by_province[selectedProvince] ? geoData.by_province[selectedProvince] : null;
     const sortedEduLevels = provinceData
-        ? EDU_ORDER.filter(e => provinceData[e]).concat(
-            Object.keys(provinceData).filter(e => !EDU_ORDER.includes(e))
-          )
+        ? EDU_ORDER.filter(e => provinceData[e]).concat(Object.keys(provinceData).filter(e => !EDU_ORDER.includes(e)))
         : [];
 
+    const mapTooltipStyle: React.CSSProperties = {
+        position: 'absolute', bottom: '8px', left: '50%', transform: 'translateX(-50%)',
+        background: '#1E293B', color: '#FFF', padding: '6px 12px', borderRadius: '8px',
+        fontSize: '11px', fontWeight: 600, boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+        pointerEvents: 'none', whiteSpace: 'nowrap', zIndex: 10,
+    };
+
     return (
-        <div style={{
-            background: '#FFFFFF',
-            borderRadius: '20px',
-            border: '1px solid #E2E8F0',
-            boxShadow: '0 4px 24px rgba(0,0,0,0.06)',
-            padding: '28px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '0',
-        }}>
-            {/* Header */}
+        <div style={{ background: '#FFFFFF', borderRadius: '20px', border: '1px solid #E2E8F0', boxShadow: '0 4px 24px rgba(0,0,0,0.06)', padding: '28px', display: 'flex', flexDirection: 'column' }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '24px' }}>
                 <div>
-                    <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>
-                        Geographic Interest Distribution
-                    </h4>
-                    <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#64748B', fontWeight: 500 }}>
-                        Click a district to explore academic interests by education level. Click a field to see top skills.
-                    </p>
+                    <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>Geographic Interest Distribution</h4>
+                    <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#64748B', fontWeight: 500 }}>Click a district to explore academic interests by education level. Click a field to see top skills.</p>
                 </div>
-                <button
-                    onClick={() => {
-                        setAllIslandMode(!allIslandMode);
-                        setSelectedProvince(null);
-                        setSelectedField(null);
-                        setAllIslandSelectedField(null);
-                        setAllIslandSkills([]);
-                        setSkills([]);
-                    }}
-                    style={{
-                        padding: '8px 18px',
-                        borderRadius: '10px',
-                        border: allIslandMode ? '2px solid #7C3AED' : '1.5px solid #CBD5E1',
-                        background: allIslandMode ? '#7C3AED' : '#FFFFFF',
-                        color: allIslandMode ? '#FFFFFF' : '#475569',
-                        fontWeight: 700,
-                        fontSize: '12px',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease',
-                        whiteSpace: 'nowrap',
-                    }}
-                >
+                <button onClick={() => { setAllIslandMode(!allIslandMode); setSelectedProvince(null); setSelectedField(null); setAllIslandSelectedField(null); setAllIslandSkills([]); setSkills([]); }}
+                    style={{ padding: '8px 18px', borderRadius: '10px', border: allIslandMode ? '2px solid #7C3AED' : '1.5px solid #CBD5E1', background: allIslandMode ? '#7C3AED' : '#FFFFFF', color: allIslandMode ? '#FFFFFF' : '#475569', fontWeight: 700, fontSize: '12px', cursor: 'pointer', transition: 'all 0.2s ease', whiteSpace: 'nowrap' }}>
                     🌐 All Island
                 </button>
             </div>
@@ -1924,66 +1712,35 @@ const InteractiveSriLankaMap: React.FC = () => {
                     </div>
                 </div>
             ) : allIslandMode ? (
-                /* ── ALL ISLAND MODE ────────────────────────────────────────── */
                 <div style={{ display: 'grid', gridTemplateColumns: allIslandSelectedField ? '1fr 1fr' : '1fr', gap: '32px', alignItems: 'flex-start' }}>
-                    {/* Pie Chart 1: Top Fields */}
                     <div>
-                        <p style={{ margin: '0 0 16px 0', fontSize: '13px', fontWeight: 700, color: '#374151' }}>
-                            Top Interest Fields — All Island
-                            <span style={{ fontSize: '11px', fontWeight: 500, color: '#94A3B8', marginLeft: '8px' }}>click a slice to see skills</span>
-                        </p>
+                        <p style={{ margin: '0 0 16px 0', fontSize: '13px', fontWeight: 700, color: '#374151' }}>Top Interest Fields — All Island <span style={{ fontSize: '11px', fontWeight: 500, color: '#94A3B8', marginLeft: '8px' }}>click a slice to see skills</span></p>
                         <ResponsiveContainer width="100%" height={340}>
                             <PieChart>
-                                <Pie
-                                    data={allIslandPieData}
-                                    cx="50%" cy="50%"
-                                    outerRadius={120}
-                                    paddingAngle={3}
-                                    dataKey="value"
-                                    onClick={(entry: any) => handleAllIslandFieldClick(entry.name)}
-                                    style={{ cursor: 'pointer' }}
-                                >
-                                    {allIslandPieData.map((_, i) => (
-                                        <Cell
-                                            key={i}
-                                            fill={CHART_COLORS[i % CHART_COLORS.length]}
-                                            stroke={allIslandSelectedField === allIslandPieData[i]?.name ? '#0F172A' : 'transparent'}
-                                            strokeWidth={allIslandSelectedField === allIslandPieData[i]?.name ? 3 : 0}
-                                            opacity={allIslandSelectedField && allIslandSelectedField !== allIslandPieData[i]?.name ? 0.45 : 1}
-                                        />
+                                <Pie data={allIslandPieData} cx="50%" cy="50%" outerRadius={120} paddingAngle={3} dataKey="value"
+                                    onClick={(entry: any) => handleAllIslandFieldClick(entry.name)} style={{ cursor: 'pointer' }}>
+                                    {allIslandPieData.map((entry, i) => (
+                                        <Cell key={i} fill={MAP_CHART_COLORS[i % MAP_CHART_COLORS.length]}
+                                            stroke={allIslandSelectedField === entry.name ? '#0F172A' : 'transparent'}
+                                            strokeWidth={allIslandSelectedField === entry.name ? 3 : 0}
+                                            opacity={allIslandSelectedField && allIslandSelectedField !== entry.name ? 0.45 : 1} />
                                     ))}
                                 </Pie>
-                                <Tooltip
-                                    content={({ active, payload }) => {
-                                        if (active && payload?.length) {
-                                            const p = payload[0].payload;
-                                            return (
-                                                <div style={{ background: '#1E293B', color: '#FFF', padding: '10px 14px', borderRadius: '10px', fontSize: '12px' }}>
-                                                    <div style={{ fontWeight: 700 }}>{p.name}</div>
-                                                    <div style={{ opacity: 0.85, marginTop: 4 }}>Weighted score: {p.score}</div>
-                                                </div>
-                                            );
-                                        }
-                                        return null;
-                                    }}
-                                />
-                                <Legend
-                                    layout="vertical" verticalAlign="middle" align="right"
-                                    iconType="circle" iconSize={8}
-                                    formatter={(value) => (
-                                        <span style={{ fontSize: '11px', color: '#475569', fontWeight: 600 }}>{value}</span>
-                                    )}
-                                />
+                                <Tooltip content={({ active, payload }: any) => {
+                                    if (active && payload?.length) {
+                                        const p = payload[0].payload;
+                                        return <div style={{ background: '#1E293B', color: '#FFF', padding: '10px 14px', borderRadius: '10px', fontSize: '12px' }}><div style={{ fontWeight: 700 }}>{p.name}</div><div style={{ opacity: 0.85, marginTop: 4 }}>Weighted score: {p.score}</div></div>;
+                                    }
+                                    return null;
+                                }} />
+                                <Legend layout="vertical" verticalAlign="middle" align="right" iconType="circle" iconSize={8}
+                                    formatter={(value) => <span style={{ fontSize: '11px', color: '#475569', fontWeight: 600 }}>{value}</span>} />
                             </PieChart>
                         </ResponsiveContainer>
                     </div>
-
-                    {/* Pie Chart 2: Top Skills for selected field */}
                     {allIslandSelectedField && (
                         <div style={{ animation: 'fadeInRight 0.3s ease' }}>
-                            <p style={{ margin: '0 0 6px 0', fontSize: '13px', fontWeight: 700, color: '#374151' }}>
-                                Top Skills for "{allIslandSelectedField}"
-                            </p>
+                            <p style={{ margin: '0 0 6px 0', fontSize: '13px', fontWeight: 700, color: '#374151' }}>Top Skills for "{allIslandSelectedField}"</p>
                             <p style={{ margin: '0 0 16px 0', fontSize: '11px', color: '#94A3B8' }}>All Island · All Education Levels</p>
                             {loadingAllIslandSkills ? (
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '300px' }}>
@@ -1994,38 +1751,18 @@ const InteractiveSriLankaMap: React.FC = () => {
                             ) : (
                                 <ResponsiveContainer width="100%" height={340}>
                                     <PieChart>
-                                        <Pie
-                                            data={allIslandSkills.map(s => ({ ...s, value: s.score }))}
-                                            cx="50%" cy="50%"
-                                            outerRadius={115}
-                                            paddingAngle={2}
-                                            dataKey="value"
-                                        >
-                                            {allIslandSkills.map((_, i) => (
-                                                <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                                            ))}
+                                        <Pie data={allIslandSkills.map(s => ({ ...s, value: s.score }))} cx="50%" cy="50%" outerRadius={115} paddingAngle={2} dataKey="value">
+                                            {allIslandSkills.map((_, i) => <Cell key={i} fill={MAP_CHART_COLORS[i % MAP_CHART_COLORS.length]} />)}
                                         </Pie>
-                                        <Tooltip
-                                            content={({ active, payload }) => {
-                                                if (active && payload?.length) {
-                                                    const p = payload[0].payload;
-                                                    return (
-                                                        <div style={{ background: '#1E293B', color: '#FFF', padding: '10px 14px', borderRadius: '10px', fontSize: '12px' }}>
-                                                            <div style={{ fontWeight: 700, textTransform: 'capitalize' }}>{p.name}</div>
-                                                            <div style={{ opacity: 0.85, marginTop: 4 }}>{p.percentage}% · score {p.score}</div>
-                                                        </div>
-                                                    );
-                                                }
-                                                return null;
-                                            }}
-                                        />
-                                        <Legend
-                                            layout="vertical" verticalAlign="middle" align="right"
-                                            iconType="circle" iconSize={8}
-                                            formatter={(value) => (
-                                                <span style={{ fontSize: '11px', color: '#475569', fontWeight: 600, textTransform: 'capitalize' }}>{value}</span>
-                                            )}
-                                        />
+                                        <Tooltip content={({ active, payload }: any) => {
+                                            if (active && payload?.length) {
+                                                const p = payload[0].payload;
+                                                return <div style={{ background: '#1E293B', color: '#FFF', padding: '10px 14px', borderRadius: '10px', fontSize: '12px' }}><div style={{ fontWeight: 700, textTransform: 'capitalize' }}>{p.name}</div><div style={{ opacity: 0.85, marginTop: 4 }}>{p.percentage}% · score {p.score}</div></div>;
+                                            }
+                                            return null;
+                                        }} />
+                                        <Legend layout="vertical" verticalAlign="middle" align="right" iconType="circle" iconSize={8}
+                                            formatter={(value) => <span style={{ fontSize: '11px', color: '#475569', fontWeight: 600, textTransform: 'capitalize' }}>{value}</span>} />
                                     </PieChart>
                                 </ResponsiveContainer>
                             )}
@@ -2033,134 +1770,64 @@ const InteractiveSriLankaMap: React.FC = () => {
                     )}
                 </div>
             ) : (
-                /* ── PROVINCE MAP MODE ──────────────────────────────────────── */
                 <div style={{ display: 'grid', gridTemplateColumns: selectedProvince ? '220px 1fr 1fr' : '220px 1fr', gap: '24px', alignItems: 'flex-start' }}>
-                    {/* Sri Lanka SVG Map */}
                     <div style={{ position: 'relative' }}>
-                        <svg
-                            viewBox={SriLankaMapData.viewBox}
-                            style={{ width: '100%', maxHeight: '400px', cursor: 'pointer' }}
-                        >
+                        <svg viewBox={SriLankaMapData.viewBox} style={{ width: '100%', maxHeight: '400px', cursor: 'pointer' }}>
                             {SriLankaMapData.locations.map((loc: any) => {
                                 const province = getProvinceForDistrict(loc.name);
                                 const isSelected = province === selectedProvince;
                                 const isHovered = hoveredDistrict === loc.name;
                                 return (
-                                    <path
-                                        key={loc.id}
-                                        d={loc.path}
-                                        fill={getColorForDistrict(loc.name)}
+                                    <path key={loc.id} d={loc.path} fill={getColorForDistrict(loc.name)}
                                         stroke={isSelected ? '#0F172A' : isHovered ? '#7C3AED' : '#FFFFFF'}
                                         strokeWidth={isSelected ? '2.5' : isHovered ? '2' : '1'}
                                         style={{ transition: 'all 0.18s ease', outline: 'none' }}
                                         onMouseEnter={() => setHoveredDistrict(loc.name)}
                                         onMouseLeave={() => setHoveredDistrict(null)}
-                                        onClick={() => handleDistrictClick(loc.name)}
-                                    >
+                                        onClick={() => handleDistrictClick(loc.name)}>
                                         <title>{loc.name}{province ? ` (${province})` : ''}: {districtCounts[loc.name] || 0} applicants</title>
                                     </path>
                                 );
                             })}
                         </svg>
-                        {/* Hover tooltip */}
-                        {hoveredDistrict && (
-                            <div style={{
-                                position: 'absolute', bottom: '8px', left: '50%',
-                                transform: 'translateX(-50%)',
-                                background: '#1E293B', color: '#FFF',
-                                padding: '6px 12px', borderRadius: '8px',
-                                fontSize: '11px', fontWeight: 600,
-                                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                                pointerEvents: 'none', whiteSpace: 'nowrap', zIndex: 10,
-                            }}>
-                                {hoveredDistrict} · {districtCounts[hoveredDistrict] || 0} applicants
-                            </div>
-                        )}
-                        {/* Province color legend */}
+                        {hoveredDistrict && <div style={mapTooltipStyle}>{hoveredDistrict} · {districtCounts[hoveredDistrict] || 0} applicants</div>}
                         <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                             {Object.entries(PROVINCE_COLORS).map(([p, c]) => (
                                 <div key={p} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '10px', color: '#475569' }}>
-                                    <div style={{ width: '10px', height: '10px', borderRadius: '3px', background: c, flexShrink: 0 }} />
-                                    {p}
+                                    <div style={{ width: '10px', height: '10px', borderRadius: '3px', background: c, flexShrink: 0 }} />{p}
                                 </div>
                             ))}
                         </div>
                     </div>
 
-                    {/* Panel 1: Interest breakdown by education level */}
                     {selectedProvince && provinceData && (
-                        <div style={{
-                            background: '#F8FAFC',
-                            borderRadius: '14px',
-                            border: '1px solid #E2E8F0',
-                            padding: '20px',
-                            animation: 'fadeInRight 0.25s ease',
-                            maxHeight: '520px',
-                            overflowY: 'auto',
-                        }}>
+                        <div style={{ background: '#F8FAFC', borderRadius: '14px', border: '1px solid #E2E8F0', padding: '20px', animation: 'fadeInRight 0.25s ease', maxHeight: '520px', overflowY: 'auto' }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
                                 <div>
-                                    <h5 style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: '#0F172A' }}>
-                                        {selectedProvince} Province
-                                    </h5>
-                                    <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#64748B' }}>
-                                        Top interest fields · click a field to see skills
-                                    </p>
+                                    <h5 style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: '#0F172A' }}>{selectedProvince} Province</h5>
+                                    <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#64748B' }}>Top interest fields · click a field to see skills</p>
                                 </div>
-                                <button
-                                    onClick={() => { setSelectedProvince(null); setSelectedField(null); setSkills([]); }}
-                                    style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', color: '#94A3B8', lineHeight: 1 }}
-                                >
-                                    ×
-                                </button>
+                                <button onClick={() => { setSelectedProvince(null); setSelectedField(null); setSkills([]); }}
+                                    style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', color: '#94A3B8', lineHeight: 1 }}>×</button>
                             </div>
-
                             {sortedEduLevels.map(eduLevel => {
                                 const fields = provinceData[eduLevel] || [];
                                 return (
                                     <div key={eduLevel} style={{ marginBottom: '16px' }}>
-                                        <div style={{
-                                            fontSize: '11px', fontWeight: 700,
-                                            color: '#7C3AED', textTransform: 'uppercase',
-                                            letterSpacing: '0.5px', marginBottom: '8px',
-                                            display: 'flex', alignItems: 'center', gap: '6px',
-                                        }}>
-                                            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#7C3AED' }} />
-                                            {eduLevel}
+                                        <div style={{ fontSize: '11px', fontWeight: 700, color: '#7C3AED', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#7C3AED' }} />{eduLevel}
                                         </div>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                             {fields.slice(0, 3).map((f, idx) => {
                                                 const isActive = selectedField === f.name && selectedEduLevel === eduLevel;
                                                 return (
-                                                    <button
-                                                        key={idx}
-                                                        onClick={() => handleFieldClick(f.name, eduLevel)}
-                                                        style={{
-                                                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                                            padding: '8px 12px', borderRadius: '8px', cursor: 'pointer',
-                                                            border: isActive ? '1.5px solid #7C3AED' : '1px solid #E2E8F0',
-                                                            background: isActive ? '#EDE9FE' : '#FFFFFF',
-                                                            textAlign: 'left', transition: 'all 0.15s ease',
-                                                            width: '100%',
-                                                        }}
-                                                    >
+                                                    <button key={idx} onClick={() => handleFieldClick(f.name, eduLevel)}
+                                                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderRadius: '8px', cursor: 'pointer', border: isActive ? '1.5px solid #7C3AED' : '1px solid #E2E8F0', background: isActive ? '#EDE9FE' : '#FFFFFF', textAlign: 'left', transition: 'all 0.15s ease', width: '100%' }}>
                                                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                            <span style={{
-                                                                width: '20px', height: '20px', borderRadius: '50%',
-                                                                background: CHART_COLORS[idx],
-                                                                color: '#FFF', fontSize: '10px', fontWeight: 700,
-                                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                                flexShrink: 0,
-                                                            }}>
-                                                                {idx + 1}
-                                                            </span>
-                                                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#1E293B' }}>
-                                                                {f.name}
-                                                            </span>
+                                                            <span style={{ width: '20px', height: '20px', borderRadius: '50%', background: MAP_CHART_COLORS[idx], color: '#FFF', fontSize: '10px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{idx + 1}</span>
+                                                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#1E293B' }}>{f.name}</span>
                                                         </div>
-                                                        <span style={{ fontSize: '11px', color: '#94A3B8', fontWeight: 600 }}>
-                                                            {f.score}
-                                                        </span>
+                                                        <span style={{ fontSize: '11px', color: '#94A3B8', fontWeight: 600 }}>{f.score}</span>
                                                     </button>
                                                 );
                                             })}
@@ -2171,70 +1838,41 @@ const InteractiveSriLankaMap: React.FC = () => {
                         </div>
                     )}
 
-                    {/* Panel 2: Skills drill-down */}
                     {selectedProvince && selectedField && (
-                        <div style={{
-                            background: '#F8FAFC',
-                            borderRadius: '14px',
-                            border: '1px solid #E2E8F0',
-                            padding: '20px',
-                            animation: 'fadeInRight 0.25s ease',
-                        }}>
+                        <div style={{ background: '#F8FAFC', borderRadius: '14px', border: '1px solid #E2E8F0', padding: '20px', animation: 'fadeInRight 0.25s ease' }}>
                             <div style={{ marginBottom: '16px' }}>
-                                <h5 style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: '#0F172A' }}>
-                                    Top Skills
-                                </h5>
-                                <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#64748B' }}>
-                                    {selectedField} · {selectedEduLevel}
-                                </p>
+                                <h5 style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: '#0F172A' }}>Top Skills</h5>
+                                <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#64748B' }}>{selectedField} · {selectedEduLevel}</p>
                             </div>
-
                             {loadingSkills ? (
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px' }}>
                                     <div style={{ width: '28px', height: '28px', borderRadius: '50%', border: '3px solid #E9D5FF', borderTopColor: '#7C3AED', animation: 'spin 0.9s linear infinite' }}></div>
                                 </div>
                             ) : skills.length === 0 ? (
-                                <div style={{ textAlign: 'center', padding: '40px 0', color: '#94A3B8', fontSize: '13px' }}>
-                                    No skill data for this field.
-                                </div>
+                                <div style={{ textAlign: 'center', padding: '40px 0', color: '#94A3B8', fontSize: '13px' }}>No skill data for this field.</div>
                             ) : (
                                 <>
                                     <ResponsiveContainer width="100%" height={220}>
                                         <PieChart>
-                                            <Pie
-                                                data={skills.map(s => ({ ...s, value: s.score }))}
-                                                cx="50%" cy="50%"
-                                                outerRadius={85}
-                                                paddingAngle={2}
-                                                dataKey="value"
-                                            >
-                                                {skills.map((_, i) => (
-                                                    <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                                                ))}
+                                            <Pie data={skills.map(s => ({ ...s, value: s.score }))} cx="50%" cy="50%" outerRadius={85} paddingAngle={2} dataKey="value">
+                                                {skills.map((_, i) => <Cell key={i} fill={MAP_CHART_COLORS[i % MAP_CHART_COLORS.length]} />)}
                                             </Pie>
-                                            <Tooltip
-                                                content={({ active, payload }) => {
-                                                    if (active && payload?.length) {
-                                                        const p = payload[0].payload;
-                                                        return (
-                                                            <div style={{ background: '#1E293B', color: '#FFF', padding: '8px 12px', borderRadius: '8px', fontSize: '11px' }}>
-                                                                <div style={{ fontWeight: 700, textTransform: 'capitalize' }}>{p.name}</div>
-                                                                <div style={{ opacity: 0.8, marginTop: 2 }}>{p.percentage}%</div>
-                                                            </div>
-                                                        );
-                                                    }
-                                                    return null;
-                                                }}
-                                            />
+                                            <Tooltip content={({ active, payload }: any) => {
+                                                if (active && payload?.length) {
+                                                    const p = payload[0].payload;
+                                                    return <div style={{ background: '#1E293B', color: '#FFF', padding: '8px 12px', borderRadius: '8px', fontSize: '11px' }}><div style={{ fontWeight: 700, textTransform: 'capitalize' }}>{p.name}</div><div style={{ opacity: 0.8, marginTop: 2 }}>{p.percentage}%</div></div>;
+                                                }
+                                                return null;
+                                            }} />
                                         </PieChart>
                                     </ResponsiveContainer>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}>
                                         {skills.map((s, i) => (
                                             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                <div style={{ width: '10px', height: '10px', borderRadius: '3px', background: CHART_COLORS[i % CHART_COLORS.length], flexShrink: 0 }} />
+                                                <div style={{ width: '10px', height: '10px', borderRadius: '3px', background: MAP_CHART_COLORS[i % MAP_CHART_COLORS.length], flexShrink: 0 }} />
                                                 <span style={{ fontSize: '12px', color: '#1E293B', fontWeight: 600, textTransform: 'capitalize', flex: 1 }}>{s.name}</span>
                                                 <div style={{ height: '6px', borderRadius: '3px', background: '#EDE9FE', flex: 2, overflow: 'hidden' }}>
-                                                    <div style={{ height: '100%', width: `${s.percentage}%`, background: CHART_COLORS[i % CHART_COLORS.length], borderRadius: '3px' }} />
+                                                    <div style={{ height: '100%', width: `${s.percentage}%`, background: MAP_CHART_COLORS[i % MAP_CHART_COLORS.length], borderRadius: '3px' }} />
                                                 </div>
                                                 <span style={{ fontSize: '11px', color: '#94A3B8', fontWeight: 600, minWidth: '36px', textAlign: 'right' }}>{s.percentage}%</span>
                                             </div>
@@ -2245,20 +1883,11 @@ const InteractiveSriLankaMap: React.FC = () => {
                         </div>
                     )}
 
-                    {/* Empty state hint when no province selected */}
                     {!selectedProvince && (
-                        <div style={{
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            flexDirection: 'column', gap: '12px', color: '#94A3B8',
-                            padding: '40px',
-                        }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '12px', color: '#94A3B8', padding: '40px' }}>
                             <div style={{ fontSize: '40px' }}>🗺️</div>
-                            <p style={{ margin: 0, fontSize: '13px', fontWeight: 600, textAlign: 'center' }}>
-                                Click a district on the map<br />to explore academic interests
-                            </p>
-                            <p style={{ margin: 0, fontSize: '11px', textAlign: 'center' }}>
-                                Or use "All Island" to see<br />a full pie chart overview
-                            </p>
+                            <p style={{ margin: 0, fontSize: '13px', fontWeight: 600, textAlign: 'center' }}>Click a district on the map<br />to explore academic interests</p>
+                            <p style={{ margin: 0, fontSize: '11px', textAlign: 'center' }}>Or use "All Island" to see<br />a full pie chart overview</p>
                         </div>
                     )}
                 </div>
@@ -2267,275 +1896,203 @@ const InteractiveSriLankaMap: React.FC = () => {
     );
 };
 
-const HighDemandSkills: React.FC<{ skills: any[] }> = ({ skills }) => {
+/* =========================================================
+   UNIVERSITY OPPORTUNITIES BAR CHART
+   ========================================================= */
+
+const UNI_OPP_COLORS = [
+    '#7C3AED', '#3B82F6', '#10B981', '#EC4899',
+    '#F59E0B', '#06B6D4', '#EF4444', '#8B5CF6',
+    '#0EA5E9', '#84CC16', '#F97316', '#6366F1',
+];
+
+// Sub-components defined OUTSIDE to prevent infinite re-renders
+const UniOppBar = (props: any) => {
+    const { x, y, width, height, fill, isHovered } = props;
+    const depth = 7;
+    if (height <= 0) return null;
     return (
-        <div className="ai-chart-card" style={{ borderLeft: '5px solid #F59E0B' }}>
-            <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#78350F', fontWeight: '800' }}>
-                <TrendingUp size={18} className="text-amber-500" /> High-Demand Skills
-            </h4>
-            <p className="text-slate-400 text-xs mb-4" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Ranked horizontal bar chart of high-growth / high-demand skill domains.</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {skills && skills.length > 0 ? (
-                    skills.map((s: any, idx: number) => (
-                        <div key={idx} className="chart-bar-row">
-                            <div className="label">
-                                <span>#{s.rank} {s.name}</span>
-                                <span>{s.count} ({s.percentage}%)</span>
-                            </div>
-                            <div className="bar-bg">
-                                <div className="bar-fill amber" style={{ width: `${s.percentage}%` }}></div>
-                            </div>
-                        </div>
-                    ))
-                ) : (
-                    <div className="text-center text-slate-400 py-6 text-sm">Insufficient data points.</div>
-                )}
-            </div>
-        </div>
+        <g>
+            <rect x={x} y={y} width={width} height={height} fill={fill} rx={3}
+                style={{ filter: isHovered ? 'brightness(1.18)' : 'none', transition: 'filter 0.15s ease' }} />
+            <polygon points={`${x + width},${y} ${x + width + depth},${y - depth / 2} ${x + width + depth},${y + height - depth / 2} ${x + width},${y + height}`}
+                fill={fill + '99'} />
+            <polygon points={`${x},${y} ${x + depth},${y - depth / 2} ${x + width + depth},${y - depth / 2} ${x + width},${y}`}
+                fill={fill + 'DD'} />
+        </g>
     );
 };
 
-const OpportunitiesExpected: React.FC<{ opportunities: any[] }> = ({ opportunities }) => {
-    return (
-        <div className="ai-chart-card">
-            <h4>University Opportunities Students Expect</h4>
-            <p className="text-slate-400 text-xs mb-4" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Recurring opportunity themes grouped dynamically from survey feedback.</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {opportunities && opportunities.length > 0 ? (
-                    opportunities.map((o: any, idx: number) => (
-                        <div key={idx} className="chart-bar-row">
-                            <div className="label"><span>{o.name}</span> <span>{o.count} ({o.percentage}%)</span></div>
-                            <div className="bar-bg"><div className="bar-fill blue" style={{ width: `${o.percentage}%` }}></div></div>
-                        </div>
-                    ))
-                ) : (
-                    <div className="text-center text-slate-400 py-6 text-sm">Insufficient data points.</div>
-                )}
-            </div>
-        </div>
-    );
-};
-
-const BalanceDonutChart: React.FC<{ data: any[] }> = ({ data }) => {
-    const activeData = data.filter(item => item.count > 0);
-    const radius = 60;
-    const circumference = 2 * Math.PI * radius;
-    let accumulatedPercent = 0;
-
-    const colorMap: { [key: string]: string } = {
-        '1 (100% Theory)': '#EF4444',
-        '2 (Mostly Theory)': '#F59E0B',
-        '3 (Balanced)': '#3B82F6',
-        '4 (Mostly Practical)': '#10B981',
-        '5 (100% Practical)': '#7C3AED'
-    };
-
-    if (activeData.length === 0) {
-        return <div className="text-center text-slate-400 py-6 text-sm">No data available.</div>;
-    }
-
-    return (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around', gap: '20px', width: '100%', flexWrap: 'wrap', marginTop: '10px' }}>
-            <div style={{ position: 'relative', width: '130px', height: '130px' }}>
-                <svg width="130" height="130" viewBox="0 0 140 140" style={{ transform: 'rotate(-90deg)' }}>
-                    {activeData.map((item) => {
-                        const percent = item.percentage;
-                        const strokeLength = (percent / 100) * circumference;
-                        const strokeOffset = circumference - ((accumulatedPercent / 100) * circumference);
-                        accumulatedPercent += percent;
-
-                        const color = colorMap[item.label] || '#94A3B8';
-
-                        return (
-                            <circle
-                                key={item.label}
-                                cx="70"
-                                cy="70"
-                                r={radius}
-                                fill="transparent"
-                                stroke={color}
-                                strokeWidth="12"
-                                strokeDasharray={`${strokeLength} ${circumference}`}
-                                strokeDashoffset={strokeOffset}
-                                style={{ opacity: 0.95 }}
-                            >
-                                <title>{item.label}: {item.count} responses ({item.percentage}%)</title>
-                            </circle>
-                        );
-                    })}
-                    <circle cx="70" cy="70" r={radius - 8} fill="#FFFFFF" />
-                </svg>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                {activeData.map((item) => {
-                    const color = colorMap[item.label] || '#94A3B8';
-                    return (
-                        <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#475569', fontWeight: 600 }}>
-                            <span style={{ display: 'inline-block', width: '10px', height: '10px', borderRadius: '3px', backgroundColor: color }}></span>
-                            <span>{item.label}: {item.count} ({item.percentage}%)</span>
-                        </div>
-                    );
-                })}
-            </div>
-        </div>
-    );
-};
-
-const LearningPreferences: React.FC<{ methods: any[], balance: any[] }> = ({ methods, balance }) => {
-    return (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
-            {/* Preferred Learning Methods */}
-            <div className="ai-chart-card">
-                <h4>Preferred Learning Methods</h4>
-                <p className="text-slate-400 text-xs mb-4" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Ranked teaching modes selected by students in surveys.</p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {methods && methods.length > 0 ? (
-                        methods.map((m: any, idx: number) => (
-                            <div key={idx} className="chart-bar-row">
-                                <div className="label"><span>{m.name}</span> <span>{m.count} ({m.percentage}%)</span></div>
-                                <div className="bar-bg"><div className="bar-fill purple" style={{ width: `${m.percentage}%` }}></div></div>
-                            </div>
-                        ))
-                    ) : (
-                        <div className="text-center text-slate-400 py-6 text-sm">Insufficient data points.</div>
-                    )}
+const UniOppTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+        const d = payload[0].payload;
+        return (
+            <div style={{ background: '#1E293B', color: '#FFF', padding: '10px 16px', borderRadius: '10px', fontSize: '13px', boxShadow: '0 8px 24px rgba(0,0,0,0.2)', lineHeight: 1.6 }}>
+                <div style={{ fontWeight: 700, marginBottom: '4px' }}>{d.name}</div>
+                <div style={{ opacity: 0.85 }}>
+                    <span style={{ fontWeight: 700, fontSize: '16px', color: '#A78BFA' }}>{d.percentage}%</span>
+                    <span style={{ marginLeft: '8px', fontSize: '11px', opacity: 0.7 }}>({d.count} responses)</span>
                 </div>
             </div>
+        );
+    }
+    return null;
+};
 
-            {/* Learning Balance Donut Chart */}
-            <div className="ai-chart-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <h4 style={{ alignSelf: 'flex-start' }}>Learning Balance Distribution</h4>
-                <p className="text-slate-400 text-xs mb-4" style={{ alignSelf: 'flex-start', margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Proportional breakdown of theory vs practical learning preferences.</p>
-                <BalanceDonutChart data={balance} />
-            </div>
-        </div>
+const UniOppXTick = ({ x, y, payload }: any) => {
+    const words = String(payload.value).split(' ');
+    const lines: string[] = [];
+    let current = '';
+    for (const w of words) {
+        if ((current + ' ' + w).trim().length > 14) { lines.push(current.trim()); current = w; }
+        else { current = (current + ' ' + w).trim(); }
+    }
+    if (current) lines.push(current);
+    return (
+        <g transform={`translate(${x},${y})`}>
+            {lines.map((line, i) => (
+                <text key={i} x={0} y={0} dy={14 + i * 13} textAnchor="middle" fill="#64748B" fontSize={10} fontWeight={500}>{line}</text>
+            ))}
+        </g>
     );
 };
 
-const CommonAnalyticsDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+const UniversityOpportunitiesChart: React.FC = () => {
+
+    const [data, setData] = useState<{ name: string; count: number; percentage: number }[]>([]);
     const [loading, setLoading] = useState(true);
-    const [data, setData] = useState<any>(null);
-    const [selectedField, setSelectedField] = useState<string | null>(null);
-    const [drilldownData, setDrilldownData] = useState<any[]>([]);
-    const [drilldownLoading, setDrilldownLoading] = useState(false);
+    const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
     useEffect(() => {
-        const fetchCommonOverview = async () => {
-            setLoading(true);
-            try {
-                const res = await aiAnalyticsService.getCommonOverview();
-                setData(res);
-                if (res.overall_demand && res.overall_demand.length > 0) {
-                    const firstField = res.overall_demand[0].name;
-                    setSelectedField(firstField);
-                    fetchDrilldown(firstField);
-                }
-            } catch (err) {
-                console.error("Failed to load common student analytics", err);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchCommonOverview();
+        aiAnalyticsService.getUniversityOpportunities()
+            .then(d => { setData(d); setLoading(false); })
+            .catch(() => setLoading(false));
     }, []);
 
-    const fetchDrilldown = async (field: string) => {
-        if (field === 'Other') {
-            setDrilldownData([]);
-            return;
-        }
-        setDrilldownLoading(true);
-        try {
-            const res = await aiAnalyticsService.getCommonDrilldown(field);
-            setDrilldownData(res);
-        } catch (err) {
-            console.error("Failed to load drilldown data", err);
-        } finally {
-            setDrilldownLoading(false);
-        }
-    };
-
-    const handleSliceClick = (field: string) => {
-        setSelectedField(field);
-        fetchDrilldown(field);
-    };
-
-    if (loading) {
-        return (
-            <div className="loading-spinner-container">
-                <div className="loading-spinner"></div>
-                <p>Aggregating University-wide Student Analytics...</p>
-            </div>
-        );
-    }
-
-    if (!data || data.total_surveys === 0) {
-        return (
-            <div style={{ animation: 'fadeIn 0.3s ease' }}>
-                <button
-                    className="cm-back-text-btn"
-                    onClick={onBack}
-                    style={{ marginBottom: '24px' }}
-                >
-                    <ArrowLeft size={16} /> Back to Programs
-                </button>
-                <div className="card-empty-state">
-                    <Database size={54} style={{ color: '#94A3B8', marginBottom: '16px' }} />
-                    <h3>No Common Student Analytics Available</h3>
-                    <p>There are currently no student interest surveys loaded in the database.</p>
-                    <p>Please return to the hub and sync the Google Sheets data.</p>
-                </div>
-            </div>
-        );
-    }
-
     return (
-        <div className="space-y-8 pb-10" style={{ animation: 'fadeIn 0.3s ease', display: 'flex', flexDirection: 'column', gap: '32px' }}>
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-6" style={{ borderBottom: '1px solid #E2E8F0', paddingBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '20px' }}>
-                <div>
-                    <button
-                        className="cm-back-text-btn"
-                        onClick={onBack}
-                        style={{ marginBottom: '16px' }}
-                    >
-                        <ArrowLeft size={16} /> Back to Programs
-                    </button>
-                    <h1 className="admin-page-title">Common Student Analytics</h1>
-                    <p className="text-slate-500 text-sm mt-1" style={{ fontWeight: 600 }}>University-wide student demand and academic interest insights across {data.total_surveys} surveys.</p>
+        <div style={{
+            background: '#FFFFFF',
+            borderRadius: '20px',
+            border: '1px solid #E2E8F0',
+            boxShadow: '0 4px 24px rgba(0,0,0,0.06)',
+            padding: '28px',
+        }}>
+            {/* Header */}
+            <div style={{ marginBottom: '24px' }}>
+                <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>
+                    University Opportunities Students Expect
+                </h4>
+                <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#64748B', fontWeight: 500 }}>
+                    Recurring opportunity themes grouped directly from survey responses · hover for percentage.
+                </p>
+            </div>
+
+            {loading ? (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '280px' }}>
+                    <div style={{ textAlign: 'center' }}>
+                        <div style={{ width: '36px', height: '36px', borderRadius: '50%', border: '3px solid #E9D5FF', borderTopColor: '#7C3AED', animation: 'spin 0.9s linear infinite', margin: '0 auto 12px auto' }}></div>
+                        <span style={{ fontSize: '13px', color: '#94A3B8' }}>Loading opportunity data…</span>
+                    </div>
                 </div>
-            </div>
+            ) : data.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '60px 0', color: '#94A3B8', fontSize: '13px' }}>No data available.</div>
+            ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: '32px', alignItems: 'center' }}>
+                    {/* Bar Chart */}
+                    <ResponsiveContainer width="100%" height={320}>
+                        <BarChart
+                            data={data}
+                            margin={{ top: 20, right: 32, left: 0, bottom: 60 }}
+                            barCategoryGap="28%"
+                            onMouseLeave={() => setActiveIndex(null)}
+                        >
+                            <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
+                            <XAxis
+                                dataKey="name"
+                                tick={<UniOppXTick />}
+                                tickLine={false}
+                                axisLine={{ stroke: '#E2E8F0' }}
+                                interval={0}
+                            />
+                            <YAxis
+                                tickLine={false}
+                                axisLine={false}
+                                tick={{ fontSize: 10, fill: '#94A3B8' }}
+                                tickFormatter={(v) => `${v}%`}
+                            />
+                            <Tooltip content={<UniOppTooltip />} cursor={false} />
+                            <Bar
+                                dataKey="percentage"
+                                shape={(props: any) => <UniOppBar {...props} fill={UNI_OPP_COLORS[props.index % UNI_OPP_COLORS.length]} isHovered={activeIndex === props.index} />}
+                                onMouseEnter={(_: any, index: number) => setActiveIndex(index)}
+                            >
+                                {data.map((_, i) => (
+                                    <Cell
+                                        key={i}
+                                        fill={UNI_OPP_COLORS[i % UNI_OPP_COLORS.length]}
+                                    />
+                                ))}
+                            </Bar>
+                        </BarChart>
+                    </ResponsiveContainer>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
-                <div className="ai-chart-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    <h4 style={{ alignSelf: 'flex-start' }}>Overall Student Demand by Academic Field</h4>
-                    <p className="text-slate-400 text-xs mb-6" style={{ alignSelf: 'flex-start', margin: '0 0 24px 0', fontSize: '12px', fontWeight: 500 }}>
-                        Click a slice of the donut to drill down into field-specific skill demands.
-                    </p>
-                    <DonutChart
-                        data={data.overall_demand}
-                        onSliceClick={handleSliceClick}
-                        selectedField={selectedField}
-                    />
+                    {/* Ranked list panel */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {data.map((item, i) => (
+                            <div
+                                key={i}
+                                onMouseEnter={() => setActiveIndex(i)}
+                                onMouseLeave={() => setActiveIndex(null)}
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '12px',
+                                    padding: '10px 14px',
+                                    borderRadius: '10px',
+                                    background: activeIndex === i ? '#F5F3FF' : '#F8FAFC',
+                                    border: activeIndex === i ? '1.5px solid #7C3AED' : '1px solid #E2E8F0',
+                                    cursor: 'default',
+                                    transition: 'all 0.15s ease',
+                                }}
+                            >
+                                {/* Rank badge */}
+                                <div style={{
+                                    width: '26px', height: '26px', borderRadius: '8px',
+                                    background: UNI_OPP_COLORS[i % UNI_OPP_COLORS.length],
+                                    color: '#FFF', fontSize: '11px', fontWeight: 800,
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    flexShrink: 0,
+                                }}>
+                                    {i + 1}
+                                </div>
+                                {/* Label + bar */}
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{ fontSize: '12px', fontWeight: 700, color: '#1E293B', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                        {item.name}
+                                    </div>
+                                    <div style={{ height: '5px', borderRadius: '3px', background: '#E2E8F0', overflow: 'hidden' }}>
+                                        <div style={{
+                                            height: '100%',
+                                            width: `${item.percentage}%`,
+                                            background: UNI_OPP_COLORS[i % UNI_OPP_COLORS.length],
+                                            borderRadius: '3px',
+                                            transition: 'width 0.4s ease',
+                                        }} />
+                                    </div>
+                                </div>
+                                {/* Percentage */}
+                                <span style={{ fontSize: '13px', fontWeight: 800, color: UNI_OPP_COLORS[i % UNI_OPP_COLORS.length], minWidth: '48px', textAlign: 'right' }}>
+                                    {item.percentage}%
+                                </span>
+                                <span style={{ fontSize: '10px', color: '#94A3B8', minWidth: '28px', textAlign: 'right' }}>
+                                    ({item.count})
+                                </span>
+                            </div>
+                        ))}
+                    </div>
                 </div>
-
-                <FieldSkillDrilldown
-                    field={selectedField || "None"}
-                    skillsData={drilldownData}
-                    loading={drilldownLoading}
-                />
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
-                <HighDemandSkills skills={data.high_demand_skills} />
-                <OpportunitiesExpected opportunities={data.opportunities} />
-            </div>
-
-            <div>
-                <h3 className="text-xl font-bold text-slate-800 mb-4" style={{ fontSize: '18px', fontWeight: '800', marginBottom: '16px' }}>
-                    Learning Preferences
-                </h3>
-                <LearningPreferences methods={data.learning_methods} balance={data.learning_balance} />
-            </div>
+            )}
         </div>
     );
 };
+

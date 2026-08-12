@@ -310,6 +310,42 @@ class AIAnalyticsController extends Controller
     }
 
     /**
+     * Count university_opportunities values directly from student_interests.
+     * Values are comma-separated in the column. No NLP — pure counting.
+     */
+    public function getUniversityOpportunities()
+    {
+        $rows = DB::connection('analytics')
+            ->table('student_interests')
+            ->whereNotNull('university_opportunities')
+            ->where('university_opportunities', '!=', '')
+            ->pluck('university_opportunities');
+
+        $counts = [];
+        foreach ($rows as $raw) {
+            $items = array_map('trim', explode(',', $raw));
+            foreach ($items as $item) {
+                $item = trim($item);
+                if (!$item) continue;
+                $counts[$item] = ($counts[$item] ?? 0) + 1;
+            }
+        }
+
+        arsort($counts);
+        $total = array_sum($counts) ?: 1;
+
+        $result = array_map(function ($name, $count) use ($total) {
+            return [
+                'name'       => $name,
+                'count'      => $count,
+                'percentage' => round(($count / $total) * 100, 1),
+            ];
+        }, array_keys($counts), array_values($counts));
+
+        return response()->json(array_values($result));
+    }
+
+    /**
      * Store a manual survey.
      */
     public function storeSurvey(Request $request)

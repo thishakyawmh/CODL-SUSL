@@ -579,6 +579,10 @@ export const aiAnalyticsService = {
         const response = await api.get(`/admin/ai-analytics/geography/skills?${params.toString()}`);
         return response.data;
     },
+    getUniversityOpportunities: async () => {
+        const response = await api.get('/admin/ai-analytics/university-opportunities');
+        return response.data;
+    },
 };
 
 export const curriculumAlignmentService = {
