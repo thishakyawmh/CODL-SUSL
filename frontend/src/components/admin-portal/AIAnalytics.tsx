@@ -175,7 +175,7 @@ export const AIAnalytics: React.FC = () => {
                         </div>
                         <h3 className="confirm-modal-title">Run Full Sync?</h3>
                         <p className="confirm-modal-desc">
-                            This will download the latest Student and Industry survey sheets from Google Sheets, update local databases, and run the AI matching algorithms. The process may take 1–2 minutes.
+                            This will download the latest Student and Industry survey sheets from Google Sheets, update local databases, and run the AI matching algorithms. The process may take few minutes.
                         </p>
                         <div className="confirm-modal-actions">
                             <button className="confirm-modal-btn cancel" onClick={() => setConfirmModal({ open: false, onConfirm: () => { } })}>Cancel</button>
@@ -260,300 +260,300 @@ const ProgramHub: React.FC<{
     setSearchTerm
 }) => {
 
-    const categories = [
-        {
-            name: 'Degree',
-            desc: '4-Year Academic Programs',
-            icon: GraduationCap,
-            color: '#7C3AED',
-            filter: (p: Course) => p.level.toLowerCase().includes('degree')
-        },
-        {
-            name: 'Higher National Diploma',
-            desc: 'Advanced Professional Diplomas',
-            icon: Layers,
-            color: '#F59E0B',
-            filter: (p: Course) => p.level.toLowerCase().includes('higher national') || p.level.toLowerCase().includes('hnd')
-        },
-        {
-            name: 'Diploma',
-            desc: '1-2 Year Specialized Courses',
-            icon: BookOpen,
-            color: '#3B82F6',
-            filter: (p: Course) => p.level.toLowerCase().includes('diploma') && !p.level.toLowerCase().includes('higher national') && !p.level.toLowerCase().includes('hnd')
-        },
-        {
-            name: 'Advanced Certificate',
-            desc: 'Intermediate Level Certifications',
-            icon: Award,
-            color: '#EC4899',
-            filter: (p: Course) => p.level.toLowerCase().includes('advanced certificate')
-        },
-        {
-            name: 'Certificate',
-            desc: 'Short-term Skill Programs',
-            icon: Award,
-            color: '#10B981',
-            filter: (p: Course) => p.level.toLowerCase().includes('certificate') && !p.level.toLowerCase().includes('advanced')
-        }
-    ];
+        const categories = [
+            {
+                name: 'Degree',
+                desc: '4-Year Academic Programs',
+                icon: GraduationCap,
+                color: '#7C3AED',
+                filter: (p: Course) => p.level.toLowerCase().includes('degree')
+            },
+            {
+                name: 'Higher National Diploma',
+                desc: 'Advanced Professional Diplomas',
+                icon: Layers,
+                color: '#F59E0B',
+                filter: (p: Course) => p.level.toLowerCase().includes('higher national') || p.level.toLowerCase().includes('hnd')
+            },
+            {
+                name: 'Diploma',
+                desc: '1-2 Year Specialized Courses',
+                icon: BookOpen,
+                color: '#3B82F6',
+                filter: (p: Course) => p.level.toLowerCase().includes('diploma') && !p.level.toLowerCase().includes('higher national') && !p.level.toLowerCase().includes('hnd')
+            },
+            {
+                name: 'Advanced Certificate',
+                desc: 'Intermediate Level Certifications',
+                icon: Award,
+                color: '#EC4899',
+                filter: (p: Course) => p.level.toLowerCase().includes('advanced certificate')
+            },
+            {
+                name: 'Certificate',
+                desc: 'Short-term Skill Programs',
+                icon: Award,
+                color: '#10B981',
+                filter: (p: Course) => p.level.toLowerCase().includes('certificate') && !p.level.toLowerCase().includes('advanced')
+            }
+        ];
 
-    const getCount = (name: string) => {
-        const cat = categories.find(c => c.name === name);
-        if (!cat) return 0;
-        return programs.filter(cat.filter).length;
-    };
+        const getCount = (name: string) => {
+            const cat = categories.find(c => c.name === name);
+            if (!cat) return 0;
+            return programs.filter(cat.filter).length;
+        };
 
-    const filteredPrograms = programs.filter(p => {
-        const matchesSearch = !searchTerm ||
-            p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            p.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            p.department.toLowerCase().includes(searchTerm.toLowerCase());
+        const filteredPrograms = programs.filter(p => {
+            const matchesSearch = !searchTerm ||
+                p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                p.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                p.department.toLowerCase().includes(searchTerm.toLowerCase());
 
-        if (levelFilter === 'all' || levelFilter === 'categories_hub') {
-            return matchesSearch;
-        } else {
-            const activeCat = categories.find(c => c.name === levelFilter);
-            return matchesSearch && (activeCat ? activeCat.filter(p) : true);
-        }
-    });
+            if (levelFilter === 'all' || levelFilter === 'categories_hub') {
+                return matchesSearch;
+            } else {
+                const activeCat = categories.find(c => c.name === levelFilter);
+                return matchesSearch && (activeCat ? activeCat.filter(p) : true);
+            }
+        });
 
-    const getLevelColor = (level: string) => {
-        switch (level) {
-            case 'Degree': return { bg: '#EDE9FE', text: '#7C3AED' };
-            case 'Diploma': return { bg: '#DBEAFE', text: '#2563EB' };
-            case 'Higher National Diploma': return { bg: '#FEF3C7', text: '#D97706' };
-            case 'Advanced Certificate': return { bg: '#FCE7F3', text: '#DB2777' };
-            case 'Certificate': return { bg: '#CCFBF1', text: '#0D9488' };
-            default: return { bg: '#F1F5F9', text: '#475569' };
-        }
-    };
+        const getLevelColor = (level: string) => {
+            switch (level) {
+                case 'Degree': return { bg: '#EDE9FE', text: '#7C3AED' };
+                case 'Diploma': return { bg: '#DBEAFE', text: '#2563EB' };
+                case 'Higher National Diploma': return { bg: '#FEF3C7', text: '#D97706' };
+                case 'Advanced Certificate': return { bg: '#FCE7F3', text: '#DB2777' };
+                case 'Certificate': return { bg: '#CCFBF1', text: '#0D9488' };
+                default: return { bg: '#F1F5F9', text: '#475569' };
+            }
+        };
 
-    const formatDate = (dateString?: string) => {
-        if (!dateString) return 'Not Available';
-        try {
-            const d = new Date(dateString);
-            if (isNaN(d.getTime())) return 'Not Available';
-            return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-        } catch (e) {
-            return 'Not Available';
-        }
-    };
+        const formatDate = (dateString?: string) => {
+            if (!dateString) return 'Not Available';
+            try {
+                const d = new Date(dateString);
+                if (isNaN(d.getTime())) return 'Not Available';
+                return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            } catch (e) {
+                return 'Not Available';
+            }
+        };
 
-    return (
-        <div className="programs-hub-container" style={{ padding: '0' }}>
-            {/* Header section identical to other pages with Sync button aligned on the right */}
-            <div className="admin-page-header">
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                    {(levelFilter !== 'all' || searchTerm !== '') && (
-                        <button
-                            className="cm-back-text-btn"
-                            onClick={() => {
-                                if (levelFilter !== 'categories_hub' && levelFilter !== 'all' && !searchTerm) {
-                                    setLevelFilter('categories_hub');
-                                } else {
-                                    setLevelFilter('all');
-                                    setSearchTerm('');
-                                }
-                            }}
-                        >
-                            <ArrowLeft size={18} /> Back
-                        </button>
-                    )}
-                    <h1 className="admin-page-title">
-                        {searchTerm
-                            ? `Search Results for "${searchTerm}"`
-                            : levelFilter === 'categories_hub'
-                                ? "Programme-wise Analysis"
-                                : levelFilter !== 'all'
-                                    ? `${levelFilter} Programs`
-                                    : "AI Analytics Workspace"
-                        }
-                    </h1>
-                    <p className="admin-page-subtitle">
-                        {searchTerm
-                            ? "Explore and analyze our educational program categories."
-                            : levelFilter === 'categories_hub'
-                                ? "Explore curriculum alignment, technology gaps, and AI recommendations by qualification level."
-                                : levelFilter !== 'all'
-                                    ? `Explore and analyze course alignments under ${levelFilter} category.`
-                                    : "Analyze curriculum alignment against student interest surveys and industry capability audits."
-                        }
-                    </p>
-                </div>
-                {levelFilter === 'all' && !searchTerm && (
-                    <div className="admin-header-actions" style={{ gap: '12px' }}>
-                        {lastSyncedAt && (
-                            <span className="last-sync-badge" style={{ fontSize: '0.85rem', color: '#64748B', display: 'flex', alignItems: 'center', backgroundColor: '#F1F5F9', padding: '6px 12px', borderRadius: '6px', fontWeight: 500 }}>
-                                Last Sync: {new Date(lastSyncedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                            </span>
+        return (
+            <div className="programs-hub-container" style={{ padding: '0' }}>
+                {/* Header section identical to other pages with Sync button aligned on the right */}
+                <div className="admin-page-header">
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                        {(levelFilter !== 'all' || searchTerm !== '') && (
+                            <button
+                                className="cm-back-text-btn"
+                                onClick={() => {
+                                    if (levelFilter !== 'categories_hub' && levelFilter !== 'all' && !searchTerm) {
+                                        setLevelFilter('categories_hub');
+                                    } else {
+                                        setLevelFilter('all');
+                                        setSearchTerm('');
+                                    }
+                                }}
+                            >
+                                <ArrowLeft size={18} /> Back
+                            </button>
                         )}
-                        <button className="admin-btn-outline" onClick={onOpenManageForms}>
-                            <Database size={16} /> Manage Forms
-                        </button>
-                        <button className="admin-btn-primary" onClick={onOpenSync} disabled={syncing}>
-                            <RefreshCw size={16} className={syncing ? 'animate-spin' : ''} /> {syncing ? 'Syncing...' : 'Sync'}
-                        </button>
+                        <h1 className="admin-page-title">
+                            {searchTerm
+                                ? `Search Results for "${searchTerm}"`
+                                : levelFilter === 'categories_hub'
+                                    ? "Programme-wise Analysis"
+                                    : levelFilter !== 'all'
+                                        ? `${levelFilter} Programs`
+                                        : "AI Analytics Workspace"
+                            }
+                        </h1>
+                        <p className="admin-page-subtitle">
+                            {searchTerm
+                                ? "Explore and analyze our educational program categories."
+                                : levelFilter === 'categories_hub'
+                                    ? "Explore curriculum alignment, technology gaps, and AI recommendations by qualification level."
+                                    : levelFilter !== 'all'
+                                        ? `Explore and analyze course alignments under ${levelFilter} category.`
+                                        : "Analyze curriculum alignment against student interest surveys and industry capability audits."
+                            }
+                        </p>
+                    </div>
+                    {levelFilter === 'all' && !searchTerm && (
+                        <div className="admin-header-actions" style={{ gap: '12px' }}>
+                            {lastSyncedAt && (
+                                <span className="last-sync-badge" style={{ fontSize: '0.85rem', color: '#64748B', display: 'flex', alignItems: 'center', backgroundColor: '#F1F5F9', padding: '6px 12px', borderRadius: '6px', fontWeight: 500 }}>
+                                    Last Sync: {new Date(lastSyncedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                            )}
+                            <button className="admin-btn-outline" onClick={onOpenManageForms}>
+                                <Database size={16} /> Manage Forms
+                            </button>
+                            <button className="admin-btn-primary" onClick={onOpenSync} disabled={syncing}>
+                                <RefreshCw size={16} className={syncing ? 'animate-spin' : ''} /> {syncing ? 'Syncing...' : 'Sync'}
+                            </button>
+                        </div>
+                    )}
+                </div>
+
+                {/* Search Input Bar - only show when inside programme categories or a specific level */}
+                {levelFilter !== 'all' && (
+                    <div className="cm-filters">
+                        <div className="cm-search" style={{ maxWidth: '100%' }}>
+                            <Search size={18} />
+                            <input
+                                type="text"
+                                placeholder="Search for any course, degree or code..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
                     </div>
                 )}
-            </div>
 
-            {/* Search Input Bar - only show when inside programme categories or a specific level */}
-            {levelFilter !== 'all' && (
-                <div className="cm-filters">
-                    <div className="cm-search" style={{ maxWidth: '100%' }}>
-                        <Search size={18} />
-                        <input
-                            type="text"
-                            placeholder="Search for any course, degree or code..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                    </div>
-                </div>
-            )}
-
-            {/* Survey Records Analyzed Metric Cards + Programme-wise Analysis Entry */}
-            {levelFilter === 'all' && !searchTerm && (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', marginBottom: '20px' }}>
-                    <div className="ai-chart-card" style={{ display: 'flex', alignItems: 'center', gap: '20px', padding: '20px 24px', margin: 0, borderLeft: '6px solid #7C3AED', background: '#FFFFFF', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.015)', borderRadius: '16px' }}>
-                        <div style={{ backgroundColor: '#F3E8FF', color: '#7C3AED', padding: '12px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <Users size={28} />
-                        </div>
-                        <div>
-                            <span style={{ fontSize: '11px', color: '#64748B', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Student Interests Analyzed</span>
-                            <h2 style={{ fontSize: '28px', fontWeight: 900, color: '#0F172A', margin: '4px 0 0 0', lineHeight: 1 }}>{studentCount}</h2>
-                        </div>
-                    </div>
-
-                    <div className="ai-chart-card" style={{ display: 'flex', alignItems: 'center', gap: '20px', padding: '20px 24px', margin: 0, borderLeft: '6px solid #10B981', background: '#FFFFFF', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.015)', borderRadius: '16px' }}>
-                        <div style={{ backgroundColor: '#D1FAE5', color: '#10B981', padding: '12px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <Award size={28} />
-                        </div>
-                        <div>
-                            <span style={{ fontSize: '11px', color: '#64748B', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Industry Audits Analyzed</span>
-                            <h2 style={{ fontSize: '28px', fontWeight: 900, color: '#0F172A', margin: '4px 0 0 0', lineHeight: 1 }}>{industryCount}</h2>
-                        </div>
-                    </div>
-
-                    <div
-                        className="programme-analysis-btn"
-                        onClick={() => setLevelFilter('categories_hub')}
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            padding: '20px 24px',
-                            margin: 0,
-                            background: 'linear-gradient(135deg, #7C3AED, #6D28D9)',
-                            boxShadow: '0 4px 20px rgba(124, 58, 237, 0.3)',
-                            borderRadius: '16px',
-                            cursor: 'pointer',
-                            transition: 'all 0.25s ease',
-                            border: 'none',
-                        }}
-                    >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                            <div style={{ backgroundColor: 'rgba(255,255,255,0.2)', color: '#FFFFFF', padding: '12px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <GraduationCap size={28} />
+                {/* Survey Records Analyzed Metric Cards + Programme-wise Analysis Entry */}
+                {levelFilter === 'all' && !searchTerm && (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+                        <div className="ai-chart-card" style={{ display: 'flex', alignItems: 'center', gap: '20px', padding: '20px 24px', margin: 0, borderLeft: '6px solid #7C3AED', background: '#FFFFFF', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.015)', borderRadius: '16px' }}>
+                            <div style={{ backgroundColor: '#F3E8FF', color: '#7C3AED', padding: '12px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <Users size={28} />
                             </div>
                             <div>
-                                <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.85)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Programme-wise Analysis</span>
-                                <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>Explore by qualification level</p>
+                                <span style={{ fontSize: '11px', color: '#64748B', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Student Interests Analyzed</span>
+                                <h2 style={{ fontSize: '28px', fontWeight: 900, color: '#0F172A', margin: '4px 0 0 0', lineHeight: 1 }}>{studentCount}</h2>
                             </div>
                         </div>
-                        <ArrowUpRight size={18} style={{ color: '#FFFFFF' }} />
-                    </div>
-                </div>
-            )}
 
-            {levelFilter === 'all' && !searchTerm && (
-                <>
-                    {/* Second Row: Interactive Sri Lanka Map (full width) */}
-                    <div style={{ marginBottom: '32px' }}>
-                        <InteractiveSriLankaMap />
-                    </div>
+                        <div className="ai-chart-card" style={{ display: 'flex', alignItems: 'center', gap: '20px', padding: '20px 24px', margin: 0, borderLeft: '6px solid #10B981', background: '#FFFFFF', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.015)', borderRadius: '16px' }}>
+                            <div style={{ backgroundColor: '#D1FAE5', color: '#10B981', padding: '12px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <Award size={28} />
+                            </div>
+                            <div>
+                                <span style={{ fontSize: '11px', color: '#64748B', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Industry Audits Analyzed</span>
+                                <h2 style={{ fontSize: '28px', fontWeight: 900, color: '#0F172A', margin: '4px 0 0 0', lineHeight: 1 }}>{industryCount}</h2>
+                            </div>
+                        </div>
 
-                    {/* Third Row: University Opportunities Bar Chart */}
-                    <div style={{ marginBottom: '32px' }}>
-                        <UniversityOpportunitiesChart />
-                    </div>
-                </>
-            )}
-            {levelFilter === 'categories_hub' && !searchTerm ? (
-                /* Categories Hub: Show the 5 categories directly */
-                <div className="cm-categories-grid" style={{ margin: 0, padding: 0, boxShadow: 'none', border: 'none', background: 'transparent' }}>
-                    {categories.map(cat => {
-                        const count = getCount(cat.name);
-                        return (
-                            <div key={cat.name} className="cm-category-card" onClick={() => setLevelFilter(cat.name)}>
-                                <div className="cm-category-icon" style={{ background: `${cat.color}15`, color: cat.color }}>
-                                    <cat.icon size={28} />
+                        <div
+                            className="programme-analysis-btn"
+                            onClick={() => setLevelFilter('categories_hub')}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                padding: '20px 24px',
+                                margin: 0,
+                                background: 'linear-gradient(135deg, #7C3AED, #6D28D9)',
+                                boxShadow: '0 4px 20px rgba(124, 58, 237, 0.3)',
+                                borderRadius: '16px',
+                                cursor: 'pointer',
+                                transition: 'all 0.25s ease',
+                                border: 'none',
+                            }}
+                        >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                                <div style={{ backgroundColor: 'rgba(255,255,255,0.2)', color: '#FFFFFF', padding: '12px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <GraduationCap size={28} />
                                 </div>
-                                <h3>{cat.name}</h3>
-                                <p>{cat.desc}</p>
-                                <div className="cm-category-stats">
-                                    <span>{count} Course{count !== 1 ? 's' : ''}</span>
-                                    <ArrowUpRight size={14} />
+                                <div>
+                                    <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.85)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Programme-wise Analysis</span>
+                                    <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>Explore by qualification level</p>
                                 </div>
                             </div>
-                        );
-                    })}
-                </div>
-            ) : levelFilter !== 'all' ? (
-                /* Course Content Grid displayed when category is selected or search term is entered */
-                <>
-                    <div className="cm-grid">
-                        {filteredPrograms.map(p => {
-                            const levelStyle = getLevelColor(p.level);
+                            <ArrowUpRight size={18} style={{ color: '#FFFFFF' }} />
+                        </div>
+                    </div>
+                )}
+
+                {levelFilter === 'all' && !searchTerm && (
+                    <>
+                        {/* Second Row: Interactive Sri Lanka Map (full width) */}
+                        <div style={{ marginBottom: '32px' }}>
+                            <InteractiveSriLankaMap />
+                        </div>
+
+                        {/* Third Row: University Opportunities Bar Chart */}
+                        <div style={{ marginBottom: '32px' }}>
+                            <UniversityOpportunitiesChart />
+                        </div>
+                    </>
+                )}
+                {levelFilter === 'categories_hub' && !searchTerm ? (
+                    /* Categories Hub: Show the 5 categories directly */
+                    <div className="cm-categories-grid" style={{ margin: 0, padding: 0, boxShadow: 'none', border: 'none', background: 'transparent' }}>
+                        {categories.map(cat => {
+                            const count = getCount(cat.name);
                             return (
-                                <div className="cm-course-card" key={p.id}>
-                                    <div className="cmc-header">
-                                        <span className="cmc-level" style={{ background: levelStyle.bg, color: levelStyle.text }}>
-                                            {p.level}
-                                        </span>
+                                <div key={cat.name} className="cm-category-card" onClick={() => setLevelFilter(cat.name)}>
+                                    <div className="cm-category-icon" style={{ background: `${cat.color}15`, color: cat.color }}>
+                                        <cat.icon size={28} />
                                     </div>
-
-                                    <h3 className="cmc-title" title={p.title}>{p.title}</h3>
-                                    <p className="cmc-code">{p.code} • {p.department}</p>
-
-                                    <div className="cmc-stats">
-                                        <div className="cmc-stat">
-                                            <Calendar size={14} />
-                                            <span>{formatDate(p.created_at)}</span>
-                                        </div>
-                                        <div className="cmc-stat">
-                                            <Calendar size={14} />
-                                            <span>{p.duration || 'Not Available'}</span>
-                                        </div>
-                                        <div className="cmc-stat">
-                                            <Award size={14} />
-                                            <span>{p.batches_count !== undefined && p.batches_count !== null ? `${p.batches_count} batch${p.batches_count !== 1 ? 'es' : ''}` : 'Not Available'}</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="cmc-grid-actions">
-                                        <button className="cmc-btn-manage big" onClick={() => onSelect(p)}>
-                                            <Sparkles size={16} /> Analyze
-                                        </button>
+                                    <h3>{cat.name}</h3>
+                                    <p>{cat.desc}</p>
+                                    <div className="cm-category-stats">
+                                        <span>{count} Course{count !== 1 ? 's' : ''}</span>
+                                        <ArrowUpRight size={14} />
                                     </div>
                                 </div>
                             );
                         })}
                     </div>
+                ) : levelFilter !== 'all' ? (
+                    /* Course Content Grid displayed when category is selected or search term is entered */
+                    <>
+                        <div className="cm-grid">
+                            {filteredPrograms.map(p => {
+                                const levelStyle = getLevelColor(p.level);
+                                return (
+                                    <div className="cm-course-card" key={p.id}>
+                                        <div className="cmc-header">
+                                            <span className="cmc-level" style={{ background: levelStyle.bg, color: levelStyle.text }}>
+                                                {p.level}
+                                            </span>
+                                        </div>
 
-                    {filteredPrograms.length === 0 && (
-                        <div className="cm-empty">
-                            <BookOpen size={48} />
-                            <p>No courses match your criteria</p>
+                                        <h3 className="cmc-title" title={p.title}>{p.title}</h3>
+                                        <p className="cmc-code">{p.code} • {p.department}</p>
+
+                                        <div className="cmc-stats">
+                                            <div className="cmc-stat">
+                                                <Calendar size={14} />
+                                                <span>{formatDate(p.created_at)}</span>
+                                            </div>
+                                            <div className="cmc-stat">
+                                                <Calendar size={14} />
+                                                <span>{p.duration || 'Not Available'}</span>
+                                            </div>
+                                            <div className="cmc-stat">
+                                                <Award size={14} />
+                                                <span>{p.batches_count !== undefined && p.batches_count !== null ? `${p.batches_count} batch${p.batches_count !== 1 ? 'es' : ''}` : 'Not Available'}</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="cmc-grid-actions">
+                                            <button className="cmc-btn-manage big" onClick={() => onSelect(p)}>
+                                                <Sparkles size={16} /> Analyze
+                                            </button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
                         </div>
-                    )}
-                </>
-            ) : null}
 
-        </div>
-    );
-};
+                        {filteredPrograms.length === 0 && (
+                            <div className="cm-empty">
+                                <BookOpen size={48} />
+                                <p>No courses match your criteria</p>
+                            </div>
+                        )}
+                    </>
+                ) : null}
+
+            </div>
+        );
+    };
 
 /* =========================================================
    STATE B: PROGRAM-SPECIFIC DASHBOARD
@@ -1480,86 +1480,86 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                                         </div>
                                     );
                                 })()}
-                                   {/* Preferred Learning & Training Methods */}
-                            <div className="ai-chart-card" style={{ margin: 0 }}>
-                                <h4>Preferred Learning & Training Methods</h4>
-                                <p className="text-slate-400 text-xs mb-4" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Teaching and training modes preferred by applicants and employers ranked by weighted overall demand (70% Industry / 30% Student).</p>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '12px' }}>
-                                    {(() => {
-                                        const studentMethods = overview.learning_preferences_data?.student_methods || [];
-                                        const industryPractices = overview.learning_preferences_data?.industry_practices || [];
+                                {/* Preferred Learning & Training Methods */}
+                                <div className="ai-chart-card" style={{ margin: 0 }}>
+                                    <h4>Preferred Learning & Training Methods</h4>
+                                    <p className="text-slate-400 text-xs mb-4" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Teaching and training modes preferred by applicants and employers ranked by weighted overall demand (70% Industry / 30% Student).</p>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '12px' }}>
+                                        {(() => {
+                                            const studentMethods = overview.learning_preferences_data?.student_methods || [];
+                                            const industryPractices = overview.learning_preferences_data?.industry_practices || [];
 
-                                        const methodMap: Record<string, { student: number; industry: number }> = {};
+                                            const methodMap: Record<string, { student: number; industry: number }> = {};
 
-                                        studentMethods.forEach((m: any) => {
-                                            const name = m.name;
-                                            if (!methodMap[name]) {
-                                                methodMap[name] = { student: 0, industry: 0 };
+                                            studentMethods.forEach((m: any) => {
+                                                const name = m.name;
+                                                if (!methodMap[name]) {
+                                                    methodMap[name] = { student: 0, industry: 0 };
+                                                }
+                                                methodMap[name].student = m.value;
+                                            });
+
+                                            industryPractices.forEach((p: any) => {
+                                                const name = p.name;
+                                                if (!methodMap[name]) {
+                                                    methodMap[name] = { student: 0, industry: 0 };
+                                                }
+                                                methodMap[name].industry = p.value;
+                                            });
+
+                                            const combinedMethods = Object.keys(methodMap).map(name => {
+                                                const { student, industry } = methodMap[name];
+                                                const overallVal = Math.round((industry * 0.70) + (student * 0.30));
+                                                const studentMatch = studentMethods.find((m: any) => m.name === name);
+                                                const alignmentLevel = studentMatch?.alignment_level || (overallVal >= 15 ? 'High' : (overallVal >= 8 ? 'Medium' : 'Low'));
+
+                                                return {
+                                                    name,
+                                                    studentVal: student,
+                                                    industryVal: industry,
+                                                    overallVal,
+                                                    alignment_level: alignmentLevel
+                                                };
+                                            });
+
+                                            const topMethods = combinedMethods
+                                                .sort((a, b) => b.overallVal - a.overallVal)
+                                                .slice(0, 4);
+
+                                            if (topMethods.length === 0) {
+                                                return <div className="text-center text-slate-400 py-6 text-sm">Insufficient data points.</div>;
                                             }
-                                            methodMap[name].student = m.value;
-                                        });
 
-                                        industryPractices.forEach((p: any) => {
-                                            const name = p.name;
-                                            if (!methodMap[name]) {
-                                                methodMap[name] = { student: 0, industry: 0 };
-                                            }
-                                            methodMap[name].industry = p.value;
-                                        });
-
-                                        const combinedMethods = Object.keys(methodMap).map(name => {
-                                            const { student, industry } = methodMap[name];
-                                            const overallVal = Math.round((industry * 0.70) + (student * 0.30));
-                                            const studentMatch = studentMethods.find((m: any) => m.name === name);
-                                            const alignmentLevel = studentMatch?.alignment_level || (overallVal >= 15 ? 'High' : (overallVal >= 8 ? 'Medium' : 'Low'));
-                                            
-                                            return {
-                                                name,
-                                                studentVal: student,
-                                                industryVal: industry,
-                                                overallVal,
-                                                alignment_level: alignmentLevel
-                                            };
-                                        });
-
-                                        const topMethods = combinedMethods
-                                            .sort((a, b) => b.overallVal - a.overallVal)
-                                            .slice(0, 4);
-
-                                        if (topMethods.length === 0) {
-                                            return <div className="text-center text-slate-400 py-6 text-sm">Insufficient data points.</div>;
-                                        }
-
-                                        return topMethods.map((item: any, idx: number) => (
-                                            <div key={idx} style={{
-                                                borderBottom: '1px solid #F1F5F9',
-                                                paddingBottom: '12px',
-                                                fontSize: '13px'
-                                            }}>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                                                    <span style={{ fontWeight: 700, color: '#1E293B' }}>{item.name}</span>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                        <span style={{ fontWeight: 800, color: '#7C3AED' }}>{item.overallVal}% Overall Demand</span>
-                                                        <span style={{
-                                                            backgroundColor: item.alignment_level === 'High' ? '#DCFCE7' : (item.alignment_level === 'Medium' ? '#FEF3C7' : '#F1F5F9'),
-                                                            color: item.alignment_level === 'High' ? '#15803D' : (item.alignment_level === 'Medium' ? '#B45309' : '#475569'),
-                                                            padding: '2px 6px',
-                                                            borderRadius: '6px',
-                                                            fontSize: '10px',
-                                                            fontWeight: 700
-                                                        }}>
-                                                            {item.alignment_level} Alignment
-                                                        </span>
+                                            return topMethods.map((item: any, idx: number) => (
+                                                <div key={idx} style={{
+                                                    borderBottom: '1px solid #F1F5F9',
+                                                    paddingBottom: '12px',
+                                                    fontSize: '13px'
+                                                }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                                                        <span style={{ fontWeight: 700, color: '#1E293B' }}>{item.name}</span>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                            <span style={{ fontWeight: 800, color: '#7C3AED' }}>{item.overallVal}% Overall Demand</span>
+                                                            <span style={{
+                                                                backgroundColor: item.alignment_level === 'High' ? '#DCFCE7' : (item.alignment_level === 'Medium' ? '#FEF3C7' : '#F1F5F9'),
+                                                                color: item.alignment_level === 'High' ? '#15803D' : (item.alignment_level === 'Medium' ? '#B45309' : '#475569'),
+                                                                padding: '2px 6px',
+                                                                borderRadius: '6px',
+                                                                fontSize: '10px',
+                                                                fontWeight: 700
+                                                            }}>
+                                                                {item.alignment_level} Alignment
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="bar-bg" style={{ height: '8px', backgroundColor: '#F3F4F6', borderRadius: '4px', margin: '4px 0 0 0' }}>
+                                                        <div className="bar-fill purple" style={{ width: `${item.overallVal}%`, height: '100%', backgroundColor: '#8B5CF6', borderRadius: '4px' }}></div>
                                                     </div>
                                                 </div>
-                                                <div className="bar-bg" style={{ height: '8px', backgroundColor: '#F3F4F6', borderRadius: '4px', margin: '4px 0 0 0' }}>
-                                                    <div className="bar-fill purple" style={{ width: `${item.overallVal}%`, height: '100%', backgroundColor: '#8B5CF6', borderRadius: '4px' }}></div>
-                                                </div>
-                                            </div>
-                                        ));
-                                    })()}
-                                </div>
-                            </div>                            </div>
+                                            ));
+                                        })()}
+                                    </div>
+                                </div>                            </div>
                         </div>
                     )}
                 </div>
@@ -2226,43 +2226,43 @@ const UniversityOpportunitiesChart: React.FC = () => {
             ) : data.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '60px 0', color: '#94A3B8', fontSize: '13px' }}>No data available.</div>
             ) : (
-                    /* Bar Chart - full width, no side panel */
-                    <ResponsiveContainer width="100%" height={320}>
-                        <BarChart
-                            data={data.slice(0, 5)}
-                            margin={{ top: 20, right: 32, left: 0, bottom: 60 }}
-                            barCategoryGap="28%"
-                            onMouseLeave={() => setActiveIndex(null)}
+                /* Bar Chart - full width, no side panel */
+                <ResponsiveContainer width="100%" height={320}>
+                    <BarChart
+                        data={data.slice(0, 5)}
+                        margin={{ top: 20, right: 32, left: 0, bottom: 60 }}
+                        barCategoryGap="28%"
+                        onMouseLeave={() => setActiveIndex(null)}
+                    >
+                        <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
+                        <XAxis
+                            dataKey="name"
+                            tick={<UniOppXTick />}
+                            tickLine={false}
+                            axisLine={{ stroke: '#E2E8F0' }}
+                            interval={0}
+                        />
+                        <YAxis
+                            tickLine={false}
+                            axisLine={false}
+                            tick={{ fontSize: 10, fill: '#94A3B8' }}
+                            tickFormatter={(v) => `${v}%`}
+                        />
+                        <Tooltip content={<UniOppTooltip />} cursor={false} />
+                        <Bar
+                            dataKey="percentage"
+                            shape={(props: any) => <UniOppBar {...props} fill={UNI_OPP_COLORS[props.index % UNI_OPP_COLORS.length]} isHovered={activeIndex === props.index} />}
+                            onMouseEnter={(_: any, index: number) => setActiveIndex(index)}
                         >
-                            <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
-                            <XAxis
-                                dataKey="name"
-                                tick={<UniOppXTick />}
-                                tickLine={false}
-                                axisLine={{ stroke: '#E2E8F0' }}
-                                interval={0}
-                            />
-                            <YAxis
-                                tickLine={false}
-                                axisLine={false}
-                                tick={{ fontSize: 10, fill: '#94A3B8' }}
-                                tickFormatter={(v) => `${v}%`}
-                            />
-                            <Tooltip content={<UniOppTooltip />} cursor={false} />
-                            <Bar
-                                dataKey="percentage"
-                                shape={(props: any) => <UniOppBar {...props} fill={UNI_OPP_COLORS[props.index % UNI_OPP_COLORS.length]} isHovered={activeIndex === props.index} />}
-                                onMouseEnter={(_: any, index: number) => setActiveIndex(index)}
-                            >
-                                {data.slice(0, 5).map((_, i) => (
-                                    <Cell
-                                        key={i}
-                                        fill={UNI_OPP_COLORS[i % UNI_OPP_COLORS.length]}
-                                    />
-                                ))}
-                            </Bar>
-                        </BarChart>
-                    </ResponsiveContainer>
+                            {data.slice(0, 5).map((_, i) => (
+                                <Cell
+                                    key={i}
+                                    fill={UNI_OPP_COLORS[i % UNI_OPP_COLORS.length]}
+                                />
+                            ))}
+                        </Bar>
+                    </BarChart>
+                </ResponsiveContainer>
             )}
         </div>
     );
