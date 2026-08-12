@@ -157,7 +157,7 @@ export const AIAnalytics: React.FC = () => {
                             <Cloud size={36} className="sync-overlay-icon" />
                         </div>
                         <h2 className="sync-overlay-title">Syncing Data</h2>
-                        <p className="sync-overlay-desc">Downloading surveys from Google Sheets and running the AI matching pipeline. This may take 1–2 minutes.</p>
+                        <p className="sync-overlay-desc">Downloading surveys from Google Sheets and running the AI matching pipeline. This may take few minutes.</p>
                         <div className="sync-progress-bar">
                             <div className="sync-progress-bar-fill"></div>
                         </div>
@@ -227,7 +227,7 @@ export const AIAnalytics: React.FC = () => {
 
 
 
- 
+
 const ProgramHub: React.FC<{
     programs: Course[],
     globalEmergingTech: string[],
@@ -477,7 +477,7 @@ const ProgramHub: React.FC<{
                     </>
                 )}
                 {levelFilter === 'categories_hub' && !searchTerm ? (
-                     
+
                     <div className="cm-categories-grid" style={{ margin: 0, padding: 0, boxShadow: 'none', border: 'none', background: 'transparent' }}>
                         {categories.map(cat => {
                             const count = getCount(cat.name);
@@ -497,7 +497,7 @@ const ProgramHub: React.FC<{
                         })}
                     </div>
                 ) : levelFilter !== 'all' ? (
-                     
+
                     <>
                         <div className="cm-grid">
                             {filteredPrograms.map(p => {
@@ -551,7 +551,7 @@ const ProgramHub: React.FC<{
         );
     };
 
- 
+
 const formatLastUpdated = (dateStr: string) => {
     if (!dateStr) return 'N/A';
     try {
@@ -659,7 +659,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                     const name = typeof sub === 'string' ? sub : (sub.name || 'N/A');
                     const classification = typeof sub === 'string' ? '' : ` (${sub.classification || ''})`;
                     const combinedPct = typeof sub === 'string' ? '' : ` - ${sub.combined_pct || 0}% Combined Score`;
-                    
+
                     addText(`- ${name}${classification}${combinedPct}`, margin + 10, { fontSize: 9.5, fontStyle: 'bold' });
                     y += 5;
 
@@ -689,7 +689,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                     const type = anomaly.anomaly_type || 'Legacy Technology Warning';
                     const exp = anomaly.explanation || '';
                     const color = type === 'Curriculum Modernization' ? 'red' : 'gray';
-                    
+
                     addText(`- ${type}: ${subject}`, margin + 10, { fontSize: 9, fontStyle: 'bold', color });
                     y += 5;
                     if (exp) {
@@ -1710,7 +1710,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                         <div className="ai-chart-card" style={{ margin: 0, border: '1px solid #D1FAE5', background: 'linear-gradient(135deg, #ECFDF5 0%, #F0FDF4 100%)' }}>
                             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '20px' }}>
                                 <div style={{ background: '#D1FAE5', color: '#059669', borderRadius: '10px', padding: '8px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z" /><path d="M6 12v5c3 3 9 3 12 0v-5" /></svg>
                                 </div>
                                 <div style={{ flex: 1 }}>
                                     <div style={{ fontSize: '15px', fontWeight: 800, color: '#064E3B', marginBottom: '2px' }}>Academic Entry Requirements</div>
@@ -1731,7 +1731,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
 
                             {(!academicEntry || academicEntry.accepted_industry_count === 0) ? (
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '18px 20px' }}>
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
                                     <span style={{ fontSize: '13px', color: '#64748B', fontWeight: 500 }}>No sufficient program-specific industry evidence.</span>
                                 </div>
                             ) : (
@@ -1836,7 +1836,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
 
                                     {academicEntry.summary && (
                                         <div style={{ background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: '12px', padding: '14px 16px', display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
-                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: '2px' }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="8"/><line x1="12" y1="12" x2="12" y2="16"/></svg>
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: '2px' }}><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="8" /><line x1="12" y1="12" x2="12" y2="16" /></svg>
                                             <p style={{ margin: 0, fontSize: '12.5px', color: '#065F46', lineHeight: 1.65, fontWeight: 500 }}>{academicEntry.summary}</p>
                                         </div>
                                     )}
