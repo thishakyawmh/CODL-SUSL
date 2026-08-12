@@ -33,6 +33,8 @@ export const AIAnalytics: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [globalEmergingTech, setGlobalEmergingTech] = useState<string[]>([]);
     const [viewMode, setViewMode] = useState<'hub' | 'course'>('hub');
+    const [levelFilter, setLevelFilter] = useState('all');
+    const [searchTerm, setSearchTerm] = useState('');
 
     const [syncing, setSyncing] = useState(false);
     const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
@@ -202,6 +204,10 @@ export const AIAnalytics: React.FC = () => {
                     lastSyncedAt={lastSyncedAt}
                     studentCount={studentCount}
                     industryCount={industryCount}
+                    levelFilter={levelFilter}
+                    setLevelFilter={setLevelFilter}
+                    searchTerm={searchTerm}
+                    setSearchTerm={setSearchTerm}
                 />
             )}
         </div>
@@ -223,9 +229,25 @@ const ProgramHub: React.FC<{
     lastSyncedAt?: string | null,
     studentCount: number,
     industryCount: number,
-}> = ({ programs, globalEmergingTech, onSelect, onOpenSync, onOpenManageForms, syncing, lastSyncedAt, studentCount, industryCount }) => {
-    const [levelFilter, setLevelFilter] = useState('all');
-    const [searchTerm, setSearchTerm] = useState('');
+    levelFilter: string,
+    setLevelFilter: React.Dispatch<React.SetStateAction<string>>,
+    searchTerm: string,
+    setSearchTerm: React.Dispatch<React.SetStateAction<string>>,
+}> = ({
+    programs,
+    globalEmergingTech,
+    onSelect,
+    onOpenSync,
+    onOpenManageForms,
+    syncing,
+    lastSyncedAt,
+    studentCount,
+    industryCount,
+    levelFilter,
+    setLevelFilter,
+    searchTerm,
+    setSearchTerm
+}) => {
 
     const categories = [
         {
@@ -1118,35 +1140,22 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
             </div>
 
             {/* Tab 1: AI Insights */}
-            <div className="pdf-insights-section" style={{ display: activeTab === 'insights' ? 'flex' : 'none', flexDirection: 'column', gap: '36px' }}>
+            <div className="pdf-insights-section" style={{ display: activeTab === 'insights' ? 'flex' : 'none' }}>
                 <h3 className="pdf-only-title" style={{ display: 'none', fontSize: '20px', fontWeight: 800, color: '#1E293B', borderBottom: '2px solid #E2E8F0', paddingBottom: '8px', marginBottom: '24px', marginTop: '24px' }}>I. AI Analytics & Survey Insights</h3>
 
                 {/* Category 1: Curriculum & Teaching Delivery */}
-                <div className="category-section" style={{ background: '#FAF5FF50', border: '1px solid #7C3AED10', padding: '28px', borderRadius: '24px', boxShadow: '0 4px 20px rgba(124, 58, 237, 0.02)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <div style={{ backgroundColor: '#F3E8FF', color: '#7C3AED', padding: '10px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div className="category-section category-purple">
+                    <div className="category-header">
+                        <div className="category-title-wrapper">
+                            <div className="category-icon-box purple">
                                 <BookOpen size={20} />
                             </div>
-                            <div>
-                                <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#4C1D95', margin: 0 }}>Curriculum & Delivery Insights</h3>
-                                <p style={{ fontSize: '13px', color: '#6B21A8', margin: '2px 0 0 0', fontWeight: 500 }}>Analysis of curriculum scope, subject coverage, delivery split, and curriculum anomalies</p>
+                            <div className="category-title-text">
+                                <h3>Curriculum & Delivery Insights</h3>
+                                <p>Analysis of curriculum scope, subject coverage, delivery split, and curriculum anomalies</p>
                                 
                                 {overview.kpis && (
-                                    <div style={{
-                                        backgroundColor: overview.kpis.evidence_status === 'insufficient' ? '#FEE2E2' : '#EFF6FF',
-                                        color: overview.kpis.evidence_status === 'insufficient' ? '#991B1B' : '#1E40AF',
-                                        border: overview.kpis.evidence_status === 'insufficient' ? '1px solid #FCA5A5' : '1px solid #BFDBFE',
-                                        padding: '8px 14px',
-                                        borderRadius: '12px',
-                                        fontSize: '12px',
-                                        fontWeight: 600,
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '6px',
-                                        marginTop: '10px',
-                                        width: 'fit-content'
-                                    }}>
+                                    <div className={`evidence-alert-badge ${overview.kpis.evidence_status === 'insufficient' ? 'insufficient' : 'sufficient'}`}>
                                         <span>📢</span>
                                         <span>
                                             {overview.kpis.evidence_status === 'insufficient' 
@@ -1159,9 +1168,9 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                         </div>
 
                         {/* Score badge next to the title (right corner) */}
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', backgroundColor: '#F3E8FF70', padding: '10px 18px', borderRadius: '16px', border: '1px solid #7C3AED15' }}>
-                            <span style={{ fontSize: '24px', fontWeight: 800, color: '#7C3AED', lineHeight: 1.1 }}>{overview.coverage_percent !== null ? `${overview.coverage_percent}%` : 'N/A'}</span>
-                            <span style={{ fontSize: '12px', fontWeight: 500, color: '#6B21A8', marginTop: '4px' }}>Curriculum Coverage</span>
+                        <div className="category-score-badge">
+                            <span className="score-val">{overview.coverage_percent !== null ? `${overview.coverage_percent}%` : 'N/A'}</span>
+                            <span className="score-label">Curriculum Coverage</span>
                         </div>
                     </div>
 
@@ -1228,10 +1237,10 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                         <div className="ai-category-grid">
                             {/* Potential Curriculum Gaps */}
                             <div className="ai-chart-card" style={{ borderLeft: '5px solid #7C3AED', margin: 0 }}>
-                                <h4 className="flex items-center gap-2 text-violet-700 font-bold" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                                <h4 className="ai-card-title text-violet-700 font-bold">
                                     <ShieldAlert size={18} className="text-violet-500" /> Potential Curriculum Gaps
                                 </h4>
-                                <p className="text-slate-400 text-xs mb-4" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Evidence-based analysis of curriculum gaps, enhancements and industry trends.</p>
+                                <p className="ai-card-subtitle">Evidence-based analysis of curriculum gaps, enhancements and industry trends.</p>
                                 {overview.missing_subjects && overview.missing_subjects.length > 0 ? (
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                                         {overview.missing_subjects.map((sub: any, idx: number) => {
@@ -1297,22 +1306,19 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                                                     <p style={{ margin: '0 0 12px 0', color: '#334155', fontSize: '13px', lineHeight: '1.4' }}>
                                                         {sub.explanation}
                                                     </p>
-
-                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px solid rgba(0,0,0,0.04)', paddingTop: '10px', fontSize: '11.5px', color: '#64748B' }}>
-                                                        <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
-                                                            <span>🏢 Industry: <strong>{sub.relevant_industry_responses}/{sub.total_industry_responses} ({sub.industry_pct}%)</strong></span>
-                                                            <span>🎓 Student: <strong>{sub.relevant_student_responses}/{sub.total_student_responses} ({sub.student_pct}%)</strong></span>
-                                                        </div>
-                                                        <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', color: '#475569' }}>
-                                                            <span>📖 Curriculum: <strong style={{ color: sub.curriculum_coverage_status === 'Not Covered' ? '#EF4444' : '#10B981' }}>{sub.curriculum_coverage_status}</strong></span>
-                                                            <span>⚡ Confidence: <strong>{sub.evidence_confidence}</strong></span>
-                                                        </div>
-                                                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '4px' }}>
+                                                    <div className="ai-metadata-grid">
+                                                        <span>🏢 Industry: <strong>{sub.relevant_industry_responses}/{sub.total_industry_responses} ({sub.industry_pct}%)</strong></span>
+                                                        <span>🎓 Student: <strong>{sub.relevant_student_responses}/{sub.total_student_responses} ({sub.student_pct}%)</strong></span>
+                                                        <span>📖 Curriculum: <strong style={{ color: sub.curriculum_coverage_status === 'Not Covered' ? '#EF4444' : '#10B981' }}>{sub.curriculum_coverage_status}</strong></span>
+                                                        <span>⚡ Confidence: <strong>{sub.evidence_confidence}</strong></span>
+                                                    </div>
+                                                    <div className="ai-metadata-extra">
+                                                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                                                             {sub.evidence_sources && sub.evidence_sources.map((src: string, i: number) => (
                                                                 <span key={i} style={{ backgroundColor: '#F1F5F9', border: '1px solid #E2E8F0', color: '#475569', padding: '2px 8px', borderRadius: '6px', fontSize: '10px', fontWeight: 600 }}>{src}</span>
                                                             ))}
                                                         </div>
-                                                        <div style={{ marginTop: '4px' }}>
+                                                        <div>
                                                             🔑 Skills: <strong style={{ color: '#475569' }}>{sub.skills.join(', ')}</strong>
                                                         </div>
                                                     </div>
@@ -1330,10 +1336,10 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
 
                             {/* Curriculum Anomalies */}
                             <div className="ai-chart-card" style={{ borderLeft: '5px solid #F59E0B', margin: 0 }}>
-                                <h4 className="flex items-center gap-2 text-amber-700 font-bold" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                                <h4 className="ai-card-title text-amber-700 font-bold">
                                     <AlertTriangle size={18} className="text-amber-500" /> Curriculum Anomalies
                                 </h4>
-                                <p className="text-slate-400 text-xs mb-4" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Low demand, legacy warning, or skill coverage gap indicators.</p>
+                                <p className="ai-card-subtitle">Low demand, legacy warning, or skill coverage gap indicators.</p>
 
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                     {overview.outdated_subjects && overview.outdated_subjects.length > 0 ? (
@@ -1395,9 +1401,9 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                             </div>
 
                             {/* Theory vs Practical Split */}
-                            <div className="ai-chart-card" style={{ margin: 0 }}>
-                                <h4>Theory vs Practical Split</h4>
-                                <p className="text-slate-400 text-xs mb-4" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Student preference ratio derived from survey responses.</p>
+                            <div className="ai-chart-card" style={{ margin: 0, gridColumn: '1 / -1' }}>
+                                <h4 className="ai-card-title">Theory vs Practical Split</h4>
+                                <p className="ai-card-subtitle">Student preference ratio derived from survey responses.</p>
 
                                 {(() => {
                                     const theory = overview.learning_preferences_data?.student_theory_percent || 0;
@@ -1452,113 +1458,53 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                                     );
                                 })()}
                             </div>
-
-                            {/* Preferred Learning Methods */}
-                            <div className="ai-chart-card" style={{ margin: 0 }}>
-                                <h4>Preferred Learning Methods</h4>
-                                <p className="text-slate-400 text-xs mb-4" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Teaching modes preferred by prospective applicants with industry alignment context.</p>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '12px' }}>
-                                    {overview.learning_preferences_data?.student_methods && overview.learning_preferences_data?.student_methods.length > 0 ? (
-                                        overview.learning_preferences_data.student_methods.map((m: any, idx: number) => (
-                                            <div key={idx} style={{
-                                                borderBottom: '1px solid #F1F5F9',
-                                                paddingBottom: '12px',
-                                                fontSize: '13px'
-                                            }}>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                                                    <span style={{ fontWeight: 700, color: '#1E293B' }}>{m.name}</span>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                        <span style={{ fontWeight: 800, color: '#7C3AED' }}>{m.value}% Student</span>
-                                                        <span style={{
-                                                            backgroundColor: m.alignment_level === 'High' ? '#DCFCE7' : (m.alignment_level === 'Medium' ? '#FEF3C7' : '#F1F5F9'),
-                                                            color: m.alignment_level === 'High' ? '#15803D' : (m.alignment_level === 'Medium' ? '#B45309' : '#475569'),
-                                                            padding: '2px 6px',
-                                                            borderRadius: '6px',
-                                                            fontSize: '10px',
-                                                            fontWeight: 700
-                                                        }}>
-                                                            {m.alignment_level} Alignment
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                                <p style={{ margin: 0, color: '#64748B', fontSize: '12px', fontStyle: 'italic' }}>
-                                                    🎯 {m.industry_evidence}
-                                                </p>
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <div className="text-center text-slate-400 py-6 text-sm">Insufficient data points.</div>
-                                    )}
-                                </div>
-                            </div>
                         </div>
                     )}
                 </div>
 
-                {/* Category 2: Student Interest & Alignment */}
-                <div className="category-section" style={{ background: '#EEF2FF50', border: '1px solid #4F46E510', padding: '28px', borderRadius: '24px', boxShadow: '0 4px 20px rgba(79, 70, 229, 0.02)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <div style={{ backgroundColor: '#E0E7FF', color: '#4F46E5', padding: '10px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <Users size={20} />
+                {/* Category 2: Combined Demand & Learning Preferences */}
+                <div className="category-section category-indigo">
+                    <div className="category-header">
+                        <div className="category-title-wrapper">
+                            <div className="category-icon-box indigo">
+                                <Layers size={20} />
                             </div>
-                            <div>
-                                <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#1E1B4B', margin: 0 }}>Student Interest & Alignment</h3>
-                                <p style={{ fontSize: '13px', color: '#312E81', margin: '2px 0 0 0', fontWeight: 500 }}>Alignment of course subjects against student applicant trends and demand</p>
-                            </div>
-                        </div>
-
-                        {/* Score badge next to the title (right corner) */}
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', backgroundColor: '#E0E7FF70', padding: '10px 18px', borderRadius: '16px', border: '1px solid #4F46E515' }}>
-                            <span style={{ fontSize: '24px', fontWeight: 800, color: '#4F46E5', lineHeight: 1.1 }}>{overview.kpis.studentMatch !== null ? `${overview.kpis.studentMatch}%` : 'N/A'}</span>
-                            <span style={{ fontSize: '12px', fontWeight: 500, color: '#312E81', marginTop: '4px' }}>Student Demand Alignment</span>
-                        </div>
-                    </div>
-
-                    {/* Student Demand (Top Fields) rendered directly as a single balanced card */}
-                    <div className="ai-chart-card" style={{ margin: 0 }}>
-                        <h4>Student Demand (Top Fields)</h4>
-                        <p className="text-slate-400 text-sm mb-4" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Most requested semantic clusters among applicants.</p>
-                        <div className="ai-chart-body">
-                            {studentData && studentData.length > 0 ? (
-                                studentData.slice(0, 6).map((d: any) => (
-                                    <div key={d.name} className="chart-bar-row">
-                                        <div className="label"><span>{d.name}</span> <span>{d.value}%</span></div>
-                                        <div className="bar-bg"><div className="bar-fill purple" style={{ width: `${d.value}%` }}></div></div>
-                                    </div>
-                                ))
-                            ) : (
-                                <div className="text-center text-slate-400 py-6 text-sm">Insufficient data points.</div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-
-                {/* Category 3: Industry & Market Requirements */}
-                <div className="category-section" style={{ background: '#ECFDF550', border: '1px solid #05966910', padding: '28px', borderRadius: '24px', boxShadow: '0 4px 20px rgba(5, 150, 105, 0.02)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <div style={{ backgroundColor: '#D1FAE5', color: '#059669', padding: '10px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <Award size={20} />
-                            </div>
-                            <div>
-                                <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#064E3B', margin: 0 }}>Industry & Market Requirements</h3>
-                                <p style={{ fontSize: '13px', color: '#047857', margin: '2px 0 0 0', fontWeight: 500 }}>Alignment of student curriculum skills against job market requirements and expected practices</p>
+                            <div className="category-title-text">
+                                <h3>Combined Demand & Learning Preferences</h3>
+                                <p>Analysis of curriculum gaps and preferred academic training methods across student and industry databases</p>
                             </div>
                         </div>
 
                         {/* Score badge next to the title (right corner) */}
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', backgroundColor: '#D1FAE570', padding: '10px 18px', borderRadius: '16px', border: '1px solid #05966915' }}>
-                            <span style={{ fontSize: '24px', fontWeight: 800, color: '#059669', lineHeight: 1.1 }}>{overview.kpis.industryMatch !== null ? `${overview.kpis.industryMatch}%` : 'N/A'}</span>
-                            <span style={{ fontSize: '12px', fontWeight: 500, color: '#064E3B', marginTop: '4px' }}>Industry Requirement Match</span>
+                        <div className="category-score-badge">
+                            <span className="score-val">{overview.kpis.alignment !== null ? `${overview.kpis.alignment}%` : 'N/A'}</span>
+                            <span className="score-label">Overall Curriculum Alignment</span>
                         </div>
                     </div>
 
                     <div className="ai-category-grid">
-                        {/* Industry Expected Practices */}
+                        {/* Combined Curriculum Demand (Gaps) */}
                         <div className="ai-chart-card" style={{ margin: 0 }}>
-                            <h4>Industry Expected Practices</h4>
-                            <p className="text-slate-400 text-xs mb-4" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Academic training methods requested by graduate employers.</p>
+                            <h4 className="ai-card-title">Combined Curriculum Demand</h4>
+                            <p className="ai-card-subtitle">Combined demand scores for curriculum gaps from industry and student tables.</p>
+                            <div className="ai-chart-body" style={{ marginTop: '12px' }}>
+                                {overview.missing_subjects && overview.missing_subjects.length > 0 ? (
+                                    overview.missing_subjects.map((sub: any, idx: number) => (
+                                        <div key={idx} className="chart-bar-row">
+                                            <div className="label"><span>{sub.name}</span> <span>{sub.combined_pct}%</span></div>
+                                            <div className="bar-bg"><div className="bar-fill purple" style={{ width: `${sub.combined_pct}%` }}></div></div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="text-center text-slate-400 py-6 text-sm">No curriculum gaps detected.</div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Training Practices Requested */}
+                        <div className="ai-chart-card" style={{ margin: 0 }}>
+                            <h4 className="ai-card-title">Training Practices Requested</h4>
+                            <p className="ai-card-subtitle">Academic training methods requested by graduate employers.</p>
                             <div className="ai-chart-body" style={{ marginTop: '12px' }}>
                                 {overview.learning_preferences_data?.industry_practices && overview.learning_preferences_data?.industry_practices.length > 0 ? (
                                     overview.learning_preferences_data.industry_practices.map((p: any, idx: number) => (
@@ -1573,36 +1519,30 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                             </div>
                         </div>
 
-                        {/* Graduate Skill Shortages */}
-                        <div className="ai-chart-card" style={{ borderLeft: '5px solid #EF4444', margin: 0 }}>
-                            <h4 className="flex items-center gap-2 text-red-700 font-bold" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                                <AlertTriangle size={18} className="text-red-500" /> Graduate Skill Shortages
-                            </h4>
-                            <p className="text-slate-400 text-xs mb-4" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Industry reported graduate capability deficits.</p>
-                            {skillGap && skillGap.missing_skills && skillGap.missing_skills.length > 0 ? (
-                                <div className="tag-container">
-                                    {skillGap.missing_skills.map((skill: string, idx: number) => (
-                                        <span key={idx} className="tag missing">{skill}</span>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="flex items-center justify-center p-6 bg-green-50 text-green-700 rounded-lg border border-green-200 gap-2" style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: '#F0FDF4', color: '#15803D', border: '1px solid #BBF7D0', padding: '16px', borderRadius: '12px' }}>
-                                    <CheckCircle size={20} />
-                                    <span>No graduate capability deficits reported.</span>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Industry Gaps (Top Demands) (Spans full width in row 2) */}
+                        {/* Student Learning Preferences (Spans full width in row 2) */}
                         <div className="ai-chart-card" style={{ margin: 0, gridColumn: '1 / -1' }}>
-                            <h4>Industry Gaps (Top Demands)</h4>
-                            <p className="text-slate-400 text-sm mb-4" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Technologies most heavily requested by employers.</p>
-                            <div className="ai-chart-body">
-                                {industryData && industryData.length > 0 ? (
-                                    industryData.slice(0, 6).map((d: any) => (
-                                        <div key={d.name} className="chart-bar-row">
-                                            <div className="label"><span>{d.name}</span> <span>{d.value}%</span></div>
-                                            <div className="bar-bg"><div className="bar-fill indigo" style={{ width: `${d.value}%` }}></div></div>
+                            <h4 className="ai-card-title">Student Learning Preferences</h4>
+                            <p className="ai-card-subtitle">Teaching modes preferred by prospective applicants with industry alignment context.</p>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '12px' }}>
+                                {overview.learning_preferences_data?.student_methods && overview.learning_preferences_data?.student_methods.length > 0 ? (
+                                    overview.learning_preferences_data.student_methods.map((m: any, idx: number) => (
+                                        <div key={idx} style={{
+                                            borderBottom: '1px solid #F1F5F9',
+                                            paddingBottom: '12px',
+                                            fontSize: '13px'
+                                        }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                                                <span style={{ fontWeight: 700, color: '#1E293B' }}>{m.name}</span>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                    <span style={{ fontWeight: 800, color: '#7C3AED' }}>{m.value}% Student</span>
+                                                    <span className={`evidence-alert-badge ${m.alignment_level === 'High' ? 'sufficient' : (m.alignment_level === 'Medium' ? 'sufficient' : 'insufficient')}`} style={{ margin: 0, padding: '2px 6px', fontSize: '9.5px', borderRadius: '4px' }}>
+                                                        {m.alignment_level} Alignment
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <p style={{ margin: 0, color: '#64748B', fontSize: '12px', fontStyle: 'italic' }}>
+                                                🎯 {m.industry_evidence}
+                                            </p>
                                         </div>
                                     ))
                                 ) : (
