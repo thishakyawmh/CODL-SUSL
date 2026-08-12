@@ -1353,3 +1353,15 @@
         flex-direction: column-reverse;
     }
 }
+
+/* Programme-wise Analysis Button */
+.programme-analysis-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 28px rgba(124, 58, 237, 0.45) !important;
+    background: linear-gradient(135deg, #6D28D9, #5B21B6) !important;
+}
+
+.programme-analysis-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 12px rgba(124, 58, 237, 0.3) !important;
+}

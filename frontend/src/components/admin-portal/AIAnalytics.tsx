@@ -67,7 +67,14 @@ export const AIAnalytics: React.FC = () => {
         setLoading(true);
         try {
             const data = await aiAnalyticsService.getPrograms();
-            setPrograms(data);
+            if (data && data.programs) {
+                setPrograms(data.programs);
+                setStudentCount(data.student_count || 0);
+                setIndustryCount(data.industry_count || 0);
+            } else if (Array.isArray(data)) {
+                setPrograms(data);
+            }
+
             const globalData = await aiAnalyticsService.getGlobalOverview().catch(() => null);
             if (globalData) {
                 if (globalData.emerging_technologies) {
@@ -76,8 +83,12 @@ export const AIAnalytics: React.FC = () => {
                 if (globalData.last_sync_at) {
                     setLastSyncedAt(globalData.last_sync_at);
                 }
-                setStudentCount(globalData.student_count || 0);
-                setIndustryCount(globalData.industry_count || 0);
+                if (globalData.student_count) {
+                    setStudentCount(globalData.student_count);
+                }
+                if (globalData.industry_count) {
+                    setIndustryCount(globalData.industry_count);
+                }
             }
         } catch (err) {
             console.error('Failed to load programs', err);
@@ -277,7 +288,7 @@ const ProgramHub: React.FC<{
             p.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
             p.department.toLowerCase().includes(searchTerm.toLowerCase());
 
-        if (levelFilter === 'all') {
+        if (levelFilter === 'all' || levelFilter === 'categories_hub') {
             return matchesSearch;
         } else {
             const activeCat = categories.find(c => c.name === levelFilter);
@@ -316,23 +327,35 @@ const ProgramHub: React.FC<{
                         <button
                             className="cm-back-text-btn"
                             onClick={() => {
-                                setLevelFilter('all');
-                                setSearchTerm('');
+                                if (levelFilter !== 'categories_hub' && levelFilter !== 'all' && !searchTerm) {
+                                    setLevelFilter('categories_hub');
+                                } else {
+                                    setLevelFilter('all');
+                                    setSearchTerm('');
+                                }
                             }}
                         >
                             <ArrowLeft size={18} /> Back
                         </button>
                     )}
                     <h1 className="admin-page-title">
-                        {(levelFilter !== 'all' || searchTerm !== '')
-                            ? (searchTerm ? `Search Results for "${searchTerm}"` : `${levelFilter} Programs`)
-                            : "AI Analytics Workspace"
+                        {searchTerm
+                            ? `Search Results for "${searchTerm}"`
+                            : levelFilter === 'categories_hub'
+                                ? "Programme-wise Analysis"
+                                : levelFilter !== 'all'
+                                    ? `${levelFilter} Programs`
+                                    : "AI Analytics Workspace"
                         }
                     </h1>
                     <p className="admin-page-subtitle">
-                        {(levelFilter !== 'all' || searchTerm !== '')
+                        {searchTerm
                             ? "Explore and analyze our educational program categories."
-                            : "Analyze curriculum alignment against student interest surveys and industry capability audits."
+                            : levelFilter === 'categories_hub'
+                                ? "Explore curriculum alignment, technology gaps, and AI recommendations by qualification level."
+                                : levelFilter !== 'all'
+                                    ? `Explore and analyze course alignments under ${levelFilter} category.`
+                                    : "Analyze curriculum alignment against student interest surveys and industry capability audits."
                         }
                     </p>
                 </div>
@@ -353,45 +376,77 @@ const ProgramHub: React.FC<{
                 )}
             </div>
 
-            {/* Search Input Bar consistent with Course Management search bar */}
-            <div className="cm-filters">
-                <div className="cm-search" style={{ maxWidth: '100%' }}>
-                    <Search size={18} />
-                    <input
-                        type="text"
-                        placeholder="Search for any course, degree or code..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
+            {/* Search Input Bar - only show when inside programme categories or a specific level */}
+            {levelFilter !== 'all' && (
+                <div className="cm-filters">
+                    <div className="cm-search" style={{ maxWidth: '100%' }}>
+                        <Search size={18} />
+                        <input
+                            type="text"
+                            placeholder="Search for any course, degree or code..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
                 </div>
-            </div>
+            )}
 
-            {/* Survey Records Analyzed Metric Cards */}
+            {/* Survey Records Analyzed Metric Cards + Programme-wise Analysis Entry */}
             {levelFilter === 'all' && !searchTerm && (
-                <>
-                    {/* Top Row: Simple Stats Count Cards */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', marginBottom: '20px' }}>
-                        <div className="ai-chart-card" style={{ display: 'flex', alignItems: 'center', gap: '20px', padding: '20px 24px', margin: 0, borderLeft: '6px solid #7C3AED', background: '#FFFFFF', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.015)', borderRadius: '16px' }}>
-                            <div style={{ backgroundColor: '#F3E8FF', color: '#7C3AED', padding: '12px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <Users size={28} />
-                            </div>
-                            <div>
-                                <span style={{ fontSize: '11px', color: '#64748B', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Student Interests Analyzed</span>
-                                <h2 style={{ fontSize: '28px', fontWeight: 900, color: '#0F172A', margin: '4px 0 0 0', lineHeight: 1 }}>{studentCount}</h2>
-                            </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+                    <div className="ai-chart-card" style={{ display: 'flex', alignItems: 'center', gap: '20px', padding: '20px 24px', margin: 0, borderLeft: '6px solid #7C3AED', background: '#FFFFFF', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.015)', borderRadius: '16px' }}>
+                        <div style={{ backgroundColor: '#F3E8FF', color: '#7C3AED', padding: '12px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Users size={28} />
                         </div>
-                        
-                        <div className="ai-chart-card" style={{ display: 'flex', alignItems: 'center', gap: '20px', padding: '20px 24px', margin: 0, borderLeft: '6px solid #10B981', background: '#FFFFFF', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.015)', borderRadius: '16px' }}>
-                            <div style={{ backgroundColor: '#D1FAE5', color: '#10B981', padding: '12px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <Award size={28} />
-                            </div>
-                            <div>
-                                <span style={{ fontSize: '11px', color: '#64748B', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Industry Audits Analyzed</span>
-                                <h2 style={{ fontSize: '28px', fontWeight: 900, color: '#0F172A', margin: '4px 0 0 0', lineHeight: 1 }}>{industryCount}</h2>
-                            </div>
+                        <div>
+                            <span style={{ fontSize: '11px', color: '#64748B', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Student Interests Analyzed</span>
+                            <h2 style={{ fontSize: '28px', fontWeight: 900, color: '#0F172A', margin: '4px 0 0 0', lineHeight: 1 }}>{studentCount}</h2>
                         </div>
                     </div>
 
+                    <div className="ai-chart-card" style={{ display: 'flex', alignItems: 'center', gap: '20px', padding: '20px 24px', margin: 0, borderLeft: '6px solid #10B981', background: '#FFFFFF', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.015)', borderRadius: '16px' }}>
+                        <div style={{ backgroundColor: '#D1FAE5', color: '#10B981', padding: '12px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Award size={28} />
+                        </div>
+                        <div>
+                            <span style={{ fontSize: '11px', color: '#64748B', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Industry Audits Analyzed</span>
+                            <h2 style={{ fontSize: '28px', fontWeight: 900, color: '#0F172A', margin: '4px 0 0 0', lineHeight: 1 }}>{industryCount}</h2>
+                        </div>
+                    </div>
+
+                    <div
+                        className="programme-analysis-btn"
+                        onClick={() => setLevelFilter('categories_hub')}
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '20px 24px',
+                            margin: 0,
+                            background: 'linear-gradient(135deg, #7C3AED, #6D28D9)',
+                            boxShadow: '0 4px 20px rgba(124, 58, 237, 0.3)',
+                            borderRadius: '16px',
+                            cursor: 'pointer',
+                            transition: 'all 0.25s ease',
+                            border: 'none',
+                        }}
+                    >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                            <div style={{ backgroundColor: 'rgba(255,255,255,0.2)', color: '#FFFFFF', padding: '12px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <GraduationCap size={28} />
+                            </div>
+                            <div>
+                                <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.85)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Programme-wise Analysis</span>
+                                <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>Explore by qualification level</p>
+                            </div>
+                        </div>
+                        <ArrowUpRight size={18} style={{ color: '#FFFFFF' }} />
+                    </div>
+                </div>
+            )}
+
+            {levelFilter === 'all' && !searchTerm && (
+                <>
                     {/* Second Row: Interactive Sri Lanka Map (full width) */}
                     <div style={{ marginBottom: '32px' }}>
                         <InteractiveSriLankaMap />
@@ -403,10 +458,9 @@ const ProgramHub: React.FC<{
                     </div>
                 </>
             )}
-
-            {/* Qualification Cards Grid (Initially visible when no category/search is selected) */}
-            {levelFilter === 'all' && !searchTerm ? (
-                <div className="cm-categories-grid">
+            {levelFilter === 'categories_hub' && !searchTerm ? (
+                /* Categories Hub: Show the 5 categories directly */
+                <div className="cm-categories-grid" style={{ margin: 0, padding: 0, boxShadow: 'none', border: 'none', background: 'transparent' }}>
                     {categories.map(cat => {
                         const count = getCount(cat.name);
                         return (
@@ -424,7 +478,7 @@ const ProgramHub: React.FC<{
                         );
                     })}
                 </div>
-            ) : (
+            ) : levelFilter !== 'all' ? (
                 /* Course Content Grid displayed when category is selected or search term is entered */
                 <>
                     <div className="cm-grid">
@@ -473,22 +527,8 @@ const ProgramHub: React.FC<{
                         </div>
                     )}
                 </>
-            )}
-            {levelFilter === 'all' && !searchTerm && (
-                <div className="ai-chart-card" style={{ marginTop: '32px' }}>
-                    <h4>Global Emerging Technologies</h4>
-                    <p className="text-slate-400 text-xs mb-4" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Raw tags detected in qualitative student & industry feedback across all programs.</p>
-                    {globalEmergingTech && globalEmergingTech.length > 0 ? (
-                        <div className="tag-container">
-                            {globalEmergingTech.map((tech, idx) => (
-                                <span key={idx} className="tag well">{tech}</span>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="text-center text-slate-400 py-4 text-sm">No emerging signals detected.</div>
-                    )}
-                </div>
-            )}
+            ) : null}
+
         </div>
     );
 };
@@ -610,59 +650,41 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
             y += 4;
 
             addText(`Preferred Learning Delivery Split:`, margin + 5, { fontSize: 10, fontStyle: 'bold' });
-            const y_start = y;
+            y += 7;
 
             const theory = overview.learning_preferences_data?.student_theory_percent || 0;
             const practical = overview.learning_preferences_data?.student_practical_percent || 0;
 
-            // Donut Chart coordinates - centered vertically with the legend block
-            const cx = margin + 120;
-            const cy = y_start + 11;
-            const r = 14;
+            // Draw text labels above the bar
+            addText(`Theory: ${theory}%`, margin + 10, { fontSize: 9, fontStyle: 'bold' });
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(9);
+            doc.text(`Practical: ${practical}%`, margin + 110, y, { align: 'right' });
+            y += 3;
 
-            const drawPieSlice = (cx: number, cy: number, r: number, startAngle: number, endAngle: number, fillHex: string) => {
-                const steps = 30;
-                const stepAngle = (endAngle - startAngle) / steps;
+            // Draw horizontal split bar (Total width: 100mm, height: 6mm)
+            const totalBarWidth = 100;
+            const barHeight = 5;
+            const theoryWidth = (theory / 100) * totalBarWidth;
+            const practicalWidth = (practical / 100) * totalBarWidth;
 
-                if (fillHex === 'purple') doc.setFillColor(192, 132, 252);
-                else doc.setFillColor(124, 58, 237);
+            // Background of bar
+            doc.setFillColor(241, 245, 249);
+            doc.rect(margin + 10, y, totalBarWidth, barHeight, 'F');
 
-                for (let i = 0; i < steps; i++) {
-                    const a1 = startAngle + i * stepAngle;
-                    const a2 = startAngle + (i + 1) * stepAngle;
+            // Draw Theory portion
+            if (theoryWidth > 0) {
+                doc.setFillColor(192, 132, 252);
+                doc.rect(margin + 10, y, theoryWidth, barHeight, 'F');
+            }
 
-                    const rad1 = (a1 - 90) * Math.PI / 180;
-                    const rad2 = (a2 - 90) * Math.PI / 180;
+            // Draw Practical portion
+            if (practicalWidth > 0) {
+                doc.setFillColor(124, 58, 237);
+                doc.rect(margin + 10 + theoryWidth, y, practicalWidth, barHeight, 'F');
+            }
 
-                    doc.triangle(
-                        cx, cy,
-                        cx + r * Math.cos(rad1), cy + r * Math.sin(rad1),
-                        cx + r * Math.cos(rad2), cy + r * Math.sin(rad2),
-                        'F'
-                    );
-                }
-            };
-
-            const theoryAngle = (theory / 100) * 360;
-            drawPieSlice(cx, cy, r, 0, theoryAngle, 'purple');
-            drawPieSlice(cx, cy, r, theoryAngle, 360, 'indigo');
-
-            // Inner cutout to build a Donut chart
-            doc.setFillColor(255, 255, 255);
-            doc.ellipse(cx, cy, r * 0.45, r * 0.45, 'F');
-
-            // Draw Legend with color boxes
-            y += 8;
-            doc.setFillColor(192, 132, 252);
-            doc.rect(margin + 10, y - 2.5, 3, 3, 'F');
-            addText(`Theory Preference: ${theory}%`, margin + 15, { fontSize: 9 });
-
-            y += 6;
-            doc.setFillColor(124, 58, 237);
-            doc.rect(margin + 10, y - 2.5, 3, 3, 'F');
-            addText(`Practical Preference: ${practical}%`, margin + 15, { fontSize: 9 });
-
-            y = y_start + 28; // clearance below chart bottom
+            y += barHeight + 8;
 
             addText('Student Preferred Learning Methods:', margin + 5, { fontSize: 10, fontStyle: 'bold' });
             y += 7;
@@ -1004,7 +1026,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                         </button>
                     </div>
 
-                    <div className="flex items-center gap-2 mt-4" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginTop: '16px' }}>
+                    <div className="flex items-center gap-2 mt-1.5" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginTop: '6px' }}>
                         {course.code && course.code.trim() && <span className="code-badge">{course.code}</span>}
                         <span className="text-slate-500 text-sm" style={{ fontWeight: 600 }}>{course.department}</span>
                         <span className="text-slate-400 text-xs" style={{ marginLeft: '8px' }}>| Last Updated: {overview.last_generated}</span>
@@ -1131,7 +1153,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                             <div>
                                 <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#4C1D95', margin: 0 }}>Curriculum & Delivery Insights</h3>
                                 <p style={{ fontSize: '13px', color: '#6B21A8', margin: '2px 0 0 0', fontWeight: 500 }}>Analysis of curriculum scope, subject coverage, delivery split, and curriculum anomalies</p>
-                                
+
                                 {overview.kpis && (
                                     <div style={{
                                         backgroundColor: overview.kpis.evidence_status === 'insufficient' ? '#FEE2E2' : '#EFF6FF',
@@ -1149,7 +1171,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                                     }}>
                                         <span>📢</span>
                                         <span>
-                                            {overview.kpis.evidence_status === 'insufficient' 
+                                            {overview.kpis.evidence_status === 'insufficient'
                                                 ? `Insufficient program-specific evidence. Only ${overview.kpis.student_count || 0} relevant student responses and ${overview.kpis.industry_count || 0} relevant industry responses were found.`
                                                 : `Analysis based on ${overview.kpis.student_count || 0} relevant student responses and ${overview.kpis.industry_count || 0} relevant industry responses. Overall Confidence: ${overview.kpis.confidence || 'High'}.`}
                                         </span>
@@ -1225,7 +1247,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                             </div>
                         </div>
                     ) : (
-                        <div className="ai-category-grid">
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '24px' }}>
                             {/* Potential Curriculum Gaps */}
                             <div className="ai-chart-card" style={{ borderLeft: '5px solid #7C3AED', margin: 0 }}>
                                 <h4 className="flex items-center gap-2 text-violet-700 font-bold" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
@@ -1402,41 +1424,26 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                                 {(() => {
                                     const theory = overview.learning_preferences_data?.student_theory_percent || 0;
                                     const practical = overview.learning_preferences_data?.student_practical_percent || 0;
-                                    const radius = 38;
-                                    const circumference = 2 * Math.PI * radius;
-                                    const theoryStroke = (theory / 100) * circumference;
-                                    const practicalStroke = (practical / 100) * circumference;
 
                                     return (
-                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', marginTop: '20px' }}>
-                                            <div style={{ position: 'relative', width: '150px', height: '150px', flexShrink: 0 }}>
-                                                <svg width="150" height="150" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)' }}>
-                                                    {/* Practical segment */}
-                                                    <circle
-                                                        cx="50"
-                                                        cy="50"
-                                                        r={radius}
-                                                        fill="transparent"
-                                                        stroke="#7C3AED"
-                                                        strokeWidth="18"
-                                                        strokeDasharray={`${practicalStroke} ${circumference}`}
-                                                        strokeDashoffset="0"
-                                                    />
-                                                    {/* Theory segment */}
-                                                    <circle
-                                                        cx="50"
-                                                        cy="50"
-                                                        r={radius}
-                                                        fill="transparent"
-                                                        stroke="#C084FC"
-                                                        strokeWidth="18"
-                                                        strokeDasharray={`${theoryStroke} ${circumference}`}
-                                                        strokeDashoffset={-practicalStroke}
-                                                    />
-                                                </svg>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '20px' }}>
+                                            {/* Horizontal Split Bar */}
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: 700, color: '#475569' }}>
+                                                    <span>Theory ({theory}%)</span>
+                                                    <span>Practical ({practical}%)</span>
+                                                </div>
+                                                <div style={{ width: '100%', height: '24px', borderRadius: '12px', display: 'flex', overflow: 'hidden', backgroundColor: '#F1F5F9', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.06)' }}>
+                                                    {theory > 0 && (
+                                                        <div style={{ width: `${theory}%`, backgroundColor: '#C084FC', height: '100%', transition: 'all 0.5s ease' }} />
+                                                    )}
+                                                    {practical > 0 && (
+                                                        <div style={{ width: `${practical}%`, backgroundColor: '#7C3AED', height: '100%', transition: 'all 0.5s ease' }} />
+                                                    )}
+                                                </div>
                                             </div>
 
-                                            <div style={{ display: 'flex', justifyContent: 'center', gap: '32px', width: '100%' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'center', gap: '32px', width: '100%', marginTop: '10px' }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
                                                     <span style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#C084FC', display: 'inline-block' }}></span>
                                                     <span style={{ color: '#475569', fontWeight: 600 }}>Theory:</span>
@@ -1495,44 +1502,6 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                     )}
                 </div>
 
-                {/* Category 2: Student Interest & Alignment */}
-                <div className="category-section" style={{ background: '#EEF2FF50', border: '1px solid #4F46E510', padding: '28px', borderRadius: '24px', boxShadow: '0 4px 20px rgba(79, 70, 229, 0.02)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <div style={{ backgroundColor: '#E0E7FF', color: '#4F46E5', padding: '10px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <Users size={20} />
-                            </div>
-                            <div>
-                                <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#1E1B4B', margin: 0 }}>Student Interest & Alignment</h3>
-                                <p style={{ fontSize: '13px', color: '#312E81', margin: '2px 0 0 0', fontWeight: 500 }}>Alignment of course subjects against student applicant trends and demand</p>
-                            </div>
-                        </div>
-
-                        {/* Score badge next to the title (right corner) */}
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', backgroundColor: '#E0E7FF70', padding: '10px 18px', borderRadius: '16px', border: '1px solid #4F46E515' }}>
-                            <span style={{ fontSize: '24px', fontWeight: 800, color: '#4F46E5', lineHeight: 1.1 }}>{overview.kpis.studentMatch !== null ? `${overview.kpis.studentMatch}%` : 'N/A'}</span>
-                            <span style={{ fontSize: '12px', fontWeight: 500, color: '#312E81', marginTop: '4px' }}>Student Demand Alignment</span>
-                        </div>
-                    </div>
-
-                    {/* Student Demand (Top Fields) rendered directly as a single balanced card */}
-                    <div className="ai-chart-card" style={{ margin: 0 }}>
-                        <h4>Student Demand (Top Fields)</h4>
-                        <p className="text-slate-400 text-sm mb-4" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Most requested semantic clusters among applicants.</p>
-                        <div className="ai-chart-body">
-                            {studentData && studentData.length > 0 ? (
-                                studentData.slice(0, 6).map((d: any) => (
-                                    <div key={d.name} className="chart-bar-row">
-                                        <div className="label"><span>{d.name}</span> <span>{d.value}%</span></div>
-                                        <div className="bar-bg"><div className="bar-fill purple" style={{ width: `${d.value}%` }}></div></div>
-                                    </div>
-                                ))
-                            ) : (
-                                <div className="text-center text-slate-400 py-6 text-sm">Insufficient data points.</div>
-                            )}
-                        </div>
-                    </div>
-                </div>
 
                 {/* Category 3: Industry & Market Requirements */}
                 <div className="category-section" style={{ background: '#ECFDF550', border: '1px solid #05966910', padding: '28px', borderRadius: '24px', boxShadow: '0 4px 20px rgba(5, 150, 105, 0.02)' }}>
@@ -1554,25 +1523,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                         </div>
                     </div>
 
-                    <div className="ai-category-grid">
-                        {/* Industry Expected Practices */}
-                        <div className="ai-chart-card" style={{ margin: 0 }}>
-                            <h4>Industry Expected Practices</h4>
-                            <p className="text-slate-400 text-xs mb-4" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Academic training methods requested by graduate employers.</p>
-                            <div className="ai-chart-body" style={{ marginTop: '12px' }}>
-                                {overview.learning_preferences_data?.industry_practices && overview.learning_preferences_data?.industry_practices.length > 0 ? (
-                                    overview.learning_preferences_data.industry_practices.map((p: any, idx: number) => (
-                                        <div key={idx} className="chart-bar-row">
-                                            <div className="label"><span>{p.name}</span> <span>{p.value}%</span></div>
-                                            <div className="bar-bg"><div className="bar-fill indigo" style={{ width: `${p.value}%` }}></div></div>
-                                        </div>
-                                    ))
-                                ) : (
-                                    <div className="text-center text-slate-400 py-6 text-sm">Insufficient data points.</div>
-                                )}
-                            </div>
-                        </div>
-
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '24px' }}>
                         {/* Graduate Skill Shortages */}
                         <div className="ai-chart-card" style={{ borderLeft: '5px solid #EF4444', margin: 0 }}>
                             <h4 className="flex items-center gap-2 text-red-700 font-bold" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
@@ -1593,8 +1544,8 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                             )}
                         </div>
 
-                        {/* Industry Gaps (Top Demands) (Spans full width in row 2) */}
-                        <div className="ai-chart-card" style={{ margin: 0, gridColumn: '1 / -1' }}>
+                        {/* Industry Gaps (Top Demands) */}
+                        <div className="ai-chart-card" style={{ margin: 0 }}>
                             <h4>Industry Gaps (Top Demands)</h4>
                             <p className="text-slate-400 text-sm mb-4" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Technologies most heavily requested by employers.</p>
                             <div className="ai-chart-body">
@@ -1603,6 +1554,24 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                                         <div key={d.name} className="chart-bar-row">
                                             <div className="label"><span>{d.name}</span> <span>{d.value}%</span></div>
                                             <div className="bar-bg"><div className="bar-fill indigo" style={{ width: `${d.value}%` }}></div></div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="text-center text-slate-400 py-6 text-sm">Insufficient data points.</div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Industry Expected Practices */}
+                        <div className="ai-chart-card" style={{ margin: 0 }}>
+                            <h4>Industry Expected Practices</h4>
+                            <p className="text-slate-400 text-xs mb-4" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Academic training methods requested by graduate employers.</p>
+                            <div className="ai-chart-body" style={{ marginTop: '12px' }}>
+                                {overview.learning_preferences_data?.industry_practices && overview.learning_preferences_data?.industry_practices.length > 0 ? (
+                                    overview.learning_preferences_data.industry_practices.map((p: any, idx: number) => (
+                                        <div key={idx} className="chart-bar-row">
+                                            <div className="label"><span>{p.name}</span> <span>{p.value}%</span></div>
+                                            <div className="bar-bg"><div className="bar-fill indigo" style={{ width: `${p.value}%` }}></div></div>
                                         </div>
                                     ))
                                 ) : (
@@ -1799,91 +1768,45 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
 
 
 
-// ─── District → Province lookup ─────────────────────────────────────────────
-const DISTRICT_TO_PROVINCE: Record<string, string> = {
-    colombo: 'Western', gampaha: 'Western', kalutara: 'Western',
-    kandy: 'Central', matale: 'Central', 'nuwara eliya': 'Central',
-    galle: 'Southern', matara: 'Southern', hambantota: 'Southern',
-    jaffna: 'Northern', kilinochchi: 'Northern', mannar: 'Northern', mullaitivu: 'Northern', vavuniya: 'Northern',
-    batticaloa: 'Eastern', ampara: 'Eastern', trincomalee: 'Eastern',
-    kurunegala: 'North Western', puttalam: 'North Western',
-    anuradhapura: 'North Central', polonnaruwa: 'North Central',
-    badulla: 'Uva', monaragala: 'Uva',
-    ratnapura: 'Sabaragamuwa', kegalle: 'Sabaragamuwa',
-};
 
-const PROVINCE_COLORS: Record<string, string> = {
-    'Western': '#7C3AED', 'Central': '#2563EB', 'Southern': '#059669',
-    'Northern': '#DC2626', 'Eastern': '#D97706', 'North Western': '#0891B2',
-    'North Central': '#7C3AED', 'Uva': '#DB2777', 'Sabaragamuwa': '#65A30D',
-};
-
-const EDU_ORDER = ['Undergraduate', 'Advanced Level', 'Diploma Holder', 'Ordinary Level', 'Not Specified'];
 const MAP_CHART_COLORS = ['#7C3AED', '#3B82F6', '#10B981', '#EC4899', '#F59E0B', '#06B6D4', '#EF4444', '#8B5CF6'];
 
 interface GeoData {
     by_province: Record<string, Record<string, { name: string; score: number }[]>>;
     all_island: { name: string; score: number }[];
     district_counts: Record<string, number>;
+    education_levels: { name: string; value: number }[];
+    industry_sectors: { name: string; value: number }[];
 }
 
 const InteractiveSriLankaMap: React.FC = () => {
     const [geoData, setGeoData] = useState<GeoData | null>(null);
     const [loadingGeo, setLoadingGeo] = useState(true);
     const [hoveredDistrict, setHoveredDistrict] = useState<string | null>(null);
-    const [selectedProvince, setSelectedProvince] = useState<string | null>(null);
-    const [allIslandMode, setAllIslandMode] = useState(false);
-    const [selectedField, setSelectedField] = useState<string | null>(null);
-    const [selectedEduLevel, setSelectedEduLevel] = useState<string | null>(null);
-    const [skills, setSkills] = useState<{ name: string; score: number; percentage: number }[]>([]);
-    const [loadingSkills, setLoadingSkills] = useState(false);
     const [allIslandSelectedField, setAllIslandSelectedField] = useState<string | null>(null);
     const [allIslandSkills, setAllIslandSkills] = useState<{ name: string; score: number; percentage: number }[]>([]);
     const [loadingAllIslandSkills, setLoadingAllIslandSkills] = useState(false);
 
     useEffect(() => {
         aiAnalyticsService.getGeographyData().then(d => {
-            setGeoData(d); setLoadingGeo(false);
+            setGeoData(d);
+            setLoadingGeo(false);
+            if (d?.all_island && d.all_island.length > 0) {
+                handleAllIslandFieldClick(d.all_island[0].name);
+            }
         }).catch(() => setLoadingGeo(false));
     }, []);
 
     const districtCounts = geoData?.district_counts || {};
-    const maxCount = Math.max(...Object.values(districtCounts), 1);
-
-    const getProvinceForDistrict = (name: string) => DISTRICT_TO_PROVINCE[name.toLowerCase()] || null;
+    const maxCount = Math.max(...Object.values(districtCounts).map(v => Number(v)), 1);
 
     const getColorForDistrict = (name: string) => {
-        const province = getProvinceForDistrict(name);
-        const count = districtCounts[name] || 0;
-        if (count === 0) return '#E2E8F0';
+        const nameLower = name.toLowerCase().trim();
+        const count = districtCounts[nameLower] || districtCounts[name] || 0;
+        if (count === 0) return '#F1F5F9';
         const ratio = count / maxCount;
-        const base = PROVINCE_COLORS[province || ''] || '#7C3AED';
-        if (ratio < 0.25) return `${base}40`;
-        if (ratio < 0.5) return `${base}80`;
-        if (ratio < 0.75) return `${base}BB`;
-        return base;
-    };
-
-    const handleDistrictClick = (districtName: string) => {
-        const province = getProvinceForDistrict(districtName);
-        if (!province) return;
-        setAllIslandMode(false);
-        setSelectedProvince(province);
-        setSelectedField(null);
-        setSelectedEduLevel(null);
-        setSkills([]);
-    };
-
-    const handleFieldClick = async (field: string, eduLevel: string) => {
-        setSelectedField(field);
-        setSelectedEduLevel(eduLevel);
-        setLoadingSkills(true);
-        setSkills([]);
-        try {
-            const data = await aiAnalyticsService.getGeographySkills(field, selectedProvince || '', eduLevel);
-            setSkills(data.skills || []);
-        } catch { setSkills([]); }
-        finally { setLoadingSkills(false); }
+        const lightness = 80 - (ratio * 40);
+        return `hsl(262, 80%, ${lightness}%)`;
     };
 
     const handleAllIslandFieldClick = async (field: string) => {
@@ -1898,10 +1821,6 @@ const InteractiveSriLankaMap: React.FC = () => {
     };
 
     const allIslandPieData = (geoData?.all_island || []).slice(0, 8).map(f => ({ ...f, value: f.score }));
-    const provinceData = selectedProvince && geoData?.by_province[selectedProvince] ? geoData.by_province[selectedProvince] : null;
-    const sortedEduLevels = provinceData
-        ? EDU_ORDER.filter(e => provinceData[e]).concat(Object.keys(provinceData).filter(e => !EDU_ORDER.includes(e)))
-        : [];
 
     const mapTooltipStyle: React.CSSProperties = {
         position: 'absolute', bottom: '8px', left: '50%', transform: 'translateX(-50%)',
@@ -1911,206 +1830,251 @@ const InteractiveSriLankaMap: React.FC = () => {
     };
 
     return (
-        <div style={{ background: '#FFFFFF', borderRadius: '20px', border: '1px solid #E2E8F0', boxShadow: '0 4px 24px rgba(0,0,0,0.06)', padding: '28px', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '24px' }}>
-                <div>
-                    <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>Geographic Interest Distribution</h4>
-                    <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#64748B', fontWeight: 500 }}>Click a district to explore academic interests by education level. Click a field to see top skills.</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+            {/* Grid Container for Side-by-Side: Education Levels, Industry Sectors, & Sri Lanka Map */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
+
+                {/* Left Card: Applicant Education Levels */}
+                <div style={{ background: '#FFFFFF', borderRadius: '20px', border: '1px solid #E2E8F0', boxShadow: '0 4px 24px rgba(0,0,0,0.06)', padding: '28px', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ marginBottom: '24px' }}>
+                        <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>Applicant Education Levels</h4>
+                        <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#64748B', fontWeight: 500 }}>Prior qualifications of surveyed applicants.</p>
+                    </div>
+                    {loadingGeo ? (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '340px' }}>
+                            <div style={{ width: '36px', height: '36px', borderRadius: '50%', border: '3px solid #E9D5FF', borderTopColor: '#7C3AED', animation: 'spin 0.9s linear infinite' }}></div>
+                        </div>
+                    ) : (geoData?.education_levels || []).length === 0 ? (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '340px', color: '#94A3B8', fontSize: '13px' }}>No education data available.</div>
+                    ) : (
+                        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <ResponsiveContainer width="100%" height={300}>
+                                <PieChart>
+                                    <Pie
+                                        data={geoData?.education_levels}
+                                        cx="50%"
+                                        cy="50%"
+                                        innerRadius={60}
+                                        outerRadius={95}
+                                        paddingAngle={4}
+                                        dataKey="value"
+                                    >
+                                        {(geoData?.education_levels || []).map((_, idx) => (
+                                            <Cell key={`cell-${idx}`} fill={MAP_CHART_COLORS[idx % MAP_CHART_COLORS.length]} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip content={({ active, payload }: any) => {
+                                        if (active && payload?.length) {
+                                            const p = payload[0].payload;
+                                            const total = (geoData?.education_levels || []).reduce((sum, item) => sum + item.value, 0);
+                                            const pct = total > 0 ? ((p.value / total) * 100).toFixed(1) : '0.0';
+                                            return (
+                                                <div style={{ background: '#1E293B', color: '#FFF', padding: '10px 14px', borderRadius: '10px', fontSize: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
+                                                    <div style={{ fontWeight: 700 }}>{p.name}</div>
+                                                    <div style={{ opacity: 0.85, marginTop: 4 }}>Applicants: {p.value} ({pct}%)</div>
+                                                </div>
+                                            );
+                                        }
+                                        return null;
+                                    }} />
+                                    <Legend
+                                        layout="vertical"
+                                        verticalAlign="middle"
+                                        align="right"
+                                        iconType="circle"
+                                        iconSize={8}
+                                        formatter={(value) => {
+                                            const total = (geoData?.education_levels || []).reduce((sum, item) => sum + item.value, 0);
+                                            const item = (geoData?.education_levels || []).find(e => e.name === value);
+                                            const pct = item && total > 0 ? ((item.value / total) * 100).toFixed(1) : '0.0';
+                                            return <span style={{ fontSize: '12px', color: '#475569', fontWeight: 600 }}>{value} ({pct}%)</span>;
+                                        }}
+                                    />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        </div>
+                    )}
                 </div>
-                <button onClick={() => { setAllIslandMode(!allIslandMode); setSelectedProvince(null); setSelectedField(null); setAllIslandSelectedField(null); setAllIslandSkills([]); setSkills([]); }}
-                    style={{ padding: '8px 18px', borderRadius: '10px', border: allIslandMode ? '2px solid #7C3AED' : '1.5px solid #CBD5E1', background: allIslandMode ? '#7C3AED' : '#FFFFFF', color: allIslandMode ? '#FFFFFF' : '#475569', fontWeight: 700, fontSize: '12px', cursor: 'pointer', transition: 'all 0.2s ease', whiteSpace: 'nowrap' }}>
-                    🌐 All Island
-                </button>
+
+                {/* Middle Card: Industry Sector Distribution */}
+                <div style={{ background: '#FFFFFF', borderRadius: '20px', border: '1px solid #E2E8F0', boxShadow: '0 4px 24px rgba(0,0,0,0.06)', padding: '28px', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ marginBottom: '24px' }}>
+                        <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>Industry Sector Distribution</h4>
+                        <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#64748B', fontWeight: 500 }}>Sectors of surveyed industry organizations.</p>
+                    </div>
+                    {loadingGeo ? (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '340px' }}>
+                            <div style={{ width: '36px', height: '36px', borderRadius: '50%', border: '3px solid #E9D5FF', borderTopColor: '#7C3AED', animation: 'spin 0.9s linear infinite' }}></div>
+                        </div>
+                    ) : (geoData?.industry_sectors || []).length === 0 ? (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '340px', color: '#94A3B8', fontSize: '13px' }}>No industry sector data available.</div>
+                    ) : (
+                        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <ResponsiveContainer width="100%" height={300}>
+                                <PieChart>
+                                    <Pie
+                                        data={geoData?.industry_sectors}
+                                        cx="50%"
+                                        cy="50%"
+                                        innerRadius={60}
+                                        outerRadius={95}
+                                        paddingAngle={4}
+                                        dataKey="value"
+                                    >
+                                        {(geoData?.industry_sectors || []).map((_, idx) => (
+                                            <Cell key={`cell-ind-${idx}`} fill={MAP_CHART_COLORS[idx % MAP_CHART_COLORS.length]} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip content={({ active, payload }: any) => {
+                                        if (active && payload?.length) {
+                                            const p = payload[0].payload;
+                                            const total = (geoData?.industry_sectors || []).reduce((sum, item) => sum + item.value, 0);
+                                            const pct = total > 0 ? ((p.value / total) * 100).toFixed(1) : '0.0';
+                                            return (
+                                                <div style={{ background: '#1E293B', color: '#FFF', padding: '10px 14px', borderRadius: '10px', fontSize: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
+                                                    <div style={{ fontWeight: 700 }}>{p.name}</div>
+                                                    <div style={{ opacity: 0.85, marginTop: 4 }}>Organizations: {p.value} ({pct}%)</div>
+                                                </div>
+                                            );
+                                        }
+                                        return null;
+                                    }} />
+                                    <Legend
+                                        layout="vertical"
+                                        verticalAlign="middle"
+                                        align="right"
+                                        iconType="circle"
+                                        iconSize={8}
+                                        formatter={(value) => {
+                                            const total = (geoData?.industry_sectors || []).reduce((sum, item) => sum + item.value, 0);
+                                            const item = (geoData?.industry_sectors || []).find(e => e.name === value);
+                                            const pct = item && total > 0 ? ((item.value / total) * 100).toFixed(1) : '0.0';
+                                            return <span style={{ fontSize: '12px', color: '#475569', fontWeight: 600 }}>{value} ({pct}%)</span>;
+                                        }}
+                                    />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        </div>
+                    )}
+                </div>
+
+                {/* Right Card: Geographical Distribution Map */}
+                <div style={{ background: '#FFFFFF', borderRadius: '20px', border: '1px solid #E2E8F0', boxShadow: '0 4px 24px rgba(0,0,0,0.06)', padding: '28px', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ marginBottom: '24px' }}>
+                        <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>Geographical Distribution</h4>
+                        <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#64748B', fontWeight: 500 }}>Applicant interest mapped by district of residence.</p>
+                    </div>
+                    {loadingGeo ? (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '340px' }}>
+                            <div style={{ width: '36px', height: '36px', borderRadius: '50%', border: '3px solid #E9D5FF', borderTopColor: '#7C3AED', animation: 'spin 0.9s linear infinite' }}></div>
+                        </div>
+                    ) : (
+                        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: '340px' }}>
+                            <div style={{ width: '220px', height: '330px', position: 'relative', flexShrink: 0 }}>
+                                <svg viewBox={SriLankaMapData.viewBox} style={{ width: '100%', height: '100%', maxHeight: '100%', cursor: 'pointer' }}>
+                                    {SriLankaMapData.locations.map((loc: any) => {
+                                        const isHovered = hoveredDistrict === loc.name;
+                                        const count = districtCounts[loc.name.toLowerCase().trim()] || districtCounts[loc.name] || 0;
+                                        const fillColor = getColorForDistrict(loc.name);
+                                        const strokeColor = count > 0 ? '#7C3AED' : '#CBD5E1';
+
+                                        return (
+                                            <path
+                                                key={loc.id}
+                                                d={loc.path}
+                                                fill={fillColor}
+                                                stroke={strokeColor}
+                                                strokeWidth={isHovered ? '2' : '1'}
+                                                style={{ transition: 'all 0.18s ease', outline: 'none' }}
+                                                onMouseEnter={() => setHoveredDistrict(loc.name)}
+                                                onMouseLeave={() => setHoveredDistrict(null)}
+                                            >
+                                                <title>{loc.name}: {count} applicants</title>
+                                            </path>
+                                        );
+                                    })}
+                                </svg>
+                                {hoveredDistrict && (
+                                    <div style={mapTooltipStyle}>
+                                        {hoveredDistrict} · {districtCounts[hoveredDistrict.toLowerCase().trim()] || districtCounts[hoveredDistrict] || 0} applicants
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </div>
             </div>
 
-            {loadingGeo ? (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '360px' }}>
-                    <div style={{ textAlign: 'center' }}>
-                        <div style={{ width: '36px', height: '36px', borderRadius: '50%', border: '3px solid #E9D5FF', borderTopColor: '#7C3AED', animation: 'spin 0.9s linear infinite', margin: '0 auto 12px auto' }}></div>
-                        <span style={{ fontSize: '13px', color: '#94A3B8' }}>Loading geographic data…</span>
-                    </div>
-                </div>
-            ) : allIslandMode ? (
-                <div style={{ display: 'grid', gridTemplateColumns: allIslandSelectedField ? '1fr 1fr' : '1fr', gap: '32px', alignItems: 'flex-start' }}>
-                    <div>
-                        <p style={{ margin: '0 0 16px 0', fontSize: '13px', fontWeight: 700, color: '#374151' }}>Top Interest Fields — All Island <span style={{ fontSize: '11px', fontWeight: 500, color: '#94A3B8', marginLeft: '8px' }}>click a slice to see skills</span></p>
-                        <ResponsiveContainer width="100%" height={340}>
-                            <PieChart>
-                                <Pie data={allIslandPieData} cx="50%" cy="50%" outerRadius={120} paddingAngle={3} dataKey="value"
-                                    onClick={(entry: any) => handleAllIslandFieldClick(entry.name)} style={{ cursor: 'pointer' }}>
-                                    {allIslandPieData.map((entry, i) => (
-                                        <Cell key={i} fill={MAP_CHART_COLORS[i % MAP_CHART_COLORS.length]}
-                                            stroke={allIslandSelectedField === entry.name ? '#0F172A' : 'transparent'}
-                                            strokeWidth={allIslandSelectedField === entry.name ? 3 : 0}
-                                            opacity={allIslandSelectedField && allIslandSelectedField !== entry.name ? 0.45 : 1} />
-                                    ))}
-                                </Pie>
-                                <Tooltip content={({ active, payload }: any) => {
-                                    if (active && payload?.length) {
-                                        const p = payload[0].payload;
-                                        return <div style={{ background: '#1E293B', color: '#FFF', padding: '10px 14px', borderRadius: '10px', fontSize: '12px' }}><div style={{ fontWeight: 700 }}>{p.name}</div><div style={{ opacity: 0.85, marginTop: 4 }}>Weighted score: {p.score}</div></div>;
-                                    }
-                                    return null;
-                                }} />
-                                <Legend layout="vertical" verticalAlign="middle" align="right" iconType="circle" iconSize={8}
-                                    formatter={(value) => <span style={{ fontSize: '11px', color: '#475569', fontWeight: 600 }}>{value}</span>} />
-                            </PieChart>
-                        </ResponsiveContainer>
-                    </div>
-                    {allIslandSelectedField && (
-                        <div style={{ animation: 'fadeInRight 0.3s ease' }}>
-                            <p style={{ margin: '0 0 6px 0', fontSize: '13px', fontWeight: 700, color: '#374151' }}>Top Skills for "{allIslandSelectedField}"</p>
-                            <p style={{ margin: '0 0 16px 0', fontSize: '11px', color: '#94A3B8' }}>All Island · All Education Levels</p>
-                            {loadingAllIslandSkills ? (
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '300px' }}>
-                                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', border: '3px solid #E9D5FF', borderTopColor: '#7C3AED', animation: 'spin 0.9s linear infinite' }}></div>
-                                </div>
-                            ) : allIslandSkills.length === 0 ? (
-                                <div style={{ textAlign: 'center', padding: '40px 0', color: '#94A3B8', fontSize: '13px' }}>No skill data found.</div>
-                            ) : (
-                                <ResponsiveContainer width="100%" height={340}>
-                                    <PieChart>
-                                        <Pie data={allIslandSkills.map(s => ({ ...s, value: s.score }))} cx="50%" cy="50%" outerRadius={115} paddingAngle={2} dataKey="value">
-                                            {allIslandSkills.map((_, i) => <Cell key={i} fill={MAP_CHART_COLORS[i % MAP_CHART_COLORS.length]} />)}
-                                        </Pie>
-                                        <Tooltip content={({ active, payload }: any) => {
-                                            if (active && payload?.length) {
-                                                const p = payload[0].payload;
-                                                return <div style={{ background: '#1E293B', color: '#FFF', padding: '10px 14px', borderRadius: '10px', fontSize: '12px' }}><div style={{ fontWeight: 700, textTransform: 'capitalize' }}>{p.name}</div><div style={{ opacity: 0.85, marginTop: 4 }}>{p.percentage}% · score {p.score}</div></div>;
-                                            }
-                                            return null;
-                                        }} />
-                                        <Legend layout="vertical" verticalAlign="middle" align="right" iconType="circle" iconSize={8}
-                                            formatter={(value) => <span style={{ fontSize: '11px', color: '#475569', fontWeight: 600, textTransform: 'capitalize' }}>{value}</span>} />
-                                    </PieChart>
-                                </ResponsiveContainer>
-                            )}
-                        </div>
-                    )}
-                </div>
-            ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: selectedProvince ? '220px 1fr 1fr' : '220px 1fr', gap: '24px', alignItems: 'flex-start' }}>
-                    <div style={{ position: 'relative' }}>
-                        <svg viewBox={SriLankaMapData.viewBox} style={{ width: '100%', maxHeight: '400px', cursor: 'pointer' }}>
-                            {SriLankaMapData.locations.map((loc: any) => {
-                                const province = getProvinceForDistrict(loc.name);
-                                const isSelected = province === selectedProvince;
-                                const isHovered = hoveredDistrict === loc.name;
-                                return (
-                                    <path key={loc.id} d={loc.path} fill={getColorForDistrict(loc.name)}
-                                        stroke={isSelected ? '#0F172A' : isHovered ? '#7C3AED' : '#FFFFFF'}
-                                        strokeWidth={isSelected ? '2.5' : isHovered ? '2' : '1'}
-                                        style={{ transition: 'all 0.18s ease', outline: 'none' }}
-                                        onMouseEnter={() => setHoveredDistrict(loc.name)}
-                                        onMouseLeave={() => setHoveredDistrict(null)}
-                                        onClick={() => handleDistrictClick(loc.name)}>
-                                        <title>{loc.name}{province ? ` (${province})` : ''}: {districtCounts[loc.name] || 0} applicants</title>
-                                    </path>
-                                );
-                            })}
-                        </svg>
-                        {hoveredDistrict && <div style={mapTooltipStyle}>{hoveredDistrict} · {districtCounts[hoveredDistrict] || 0} applicants</div>}
-                        <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            {Object.entries(PROVINCE_COLORS).map(([p, c]) => (
-                                <div key={p} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '10px', color: '#475569' }}>
-                                    <div style={{ width: '10px', height: '10px', borderRadius: '3px', background: c, flexShrink: 0 }} />{p}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
 
-                    {selectedProvince && provinceData && (
-                        <div style={{ background: '#F8FAFC', borderRadius: '14px', border: '1px solid #E2E8F0', padding: '20px', animation: 'fadeInRight 0.25s ease', maxHeight: '520px', overflowY: 'auto' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-                                <div>
-                                    <h5 style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: '#0F172A' }}>{selectedProvince} Province</h5>
-                                    <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#64748B' }}>Top interest fields · click a field to see skills</p>
-                                </div>
-                                <button onClick={() => { setSelectedProvince(null); setSelectedField(null); setSkills([]); }}
-                                    style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', color: '#94A3B8', lineHeight: 1 }}>×</button>
-                            </div>
-                            {sortedEduLevels.map(eduLevel => {
-                                const fields = provinceData[eduLevel] || [];
-                                return (
-                                    <div key={eduLevel} style={{ marginBottom: '16px' }}>
-                                        <div style={{ fontSize: '11px', fontWeight: 700, color: '#7C3AED', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#7C3AED' }} />{eduLevel}
-                                        </div>
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                            {fields.slice(0, 3).map((f, idx) => {
-                                                const isActive = selectedField === f.name && selectedEduLevel === eduLevel;
-                                                return (
-                                                    <button key={idx} onClick={() => handleFieldClick(f.name, eduLevel)}
-                                                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderRadius: '8px', cursor: 'pointer', border: isActive ? '1.5px solid #7C3AED' : '1px solid #E2E8F0', background: isActive ? '#EDE9FE' : '#FFFFFF', textAlign: 'left', transition: 'all 0.15s ease', width: '100%' }}>
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                            <span style={{ width: '20px', height: '20px', borderRadius: '50%', background: MAP_CHART_COLORS[idx], color: '#FFF', fontSize: '10px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{idx + 1}</span>
-                                                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#1E293B' }}>{f.name}</span>
-                                                        </div>
-                                                        <span style={{ fontSize: '11px', color: '#94A3B8', fontWeight: 600 }}>{f.score}</span>
-                                                    </button>
-                                                );
-                                            })}
-                                        </div>
+            {/* Row 2: Top Interest Fields & Skills (Separate section under the map) */}
+            <div style={{ background: '#FFFFFF', borderRadius: '20px', border: '1px solid #E2E8F0', boxShadow: '0 4px 24px rgba(0,0,0,0.06)', padding: '28px', display: 'flex', flexDirection: 'column' }}>
+                {loadingGeo ? (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '360px' }}>
+                        <div style={{ width: '36px', height: '36px', borderRadius: '50%', border: '3px solid #E9D5FF', borderTopColor: '#7C3AED', animation: 'spin 0.9s linear infinite' }}></div>
+                    </div>
+                ) : (
+                    <div style={{ display: 'grid', gridTemplateColumns: allIslandSelectedField ? '1fr 1fr' : '1fr', gap: '32px', alignItems: 'flex-start' }}>
+                        <div>
+                            <h4 style={{ margin: '0 0 4px 0', fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>Top Interest Fields</h4>
+                            <p style={{ margin: '0 0 16px 0', fontSize: '12px', color: '#64748B', fontWeight: 500 }}>
+                                Click a slice to see the top skills requested for that field.
+                            </p>
+                            <ResponsiveContainer width="100%" height={340}>
+                                <PieChart>
+                                    <Pie data={allIslandPieData} cx="50%" cy="50%" outerRadius={120} paddingAngle={3} dataKey="value"
+                                        onClick={(entry: any) => handleAllIslandFieldClick(entry.name)} style={{ cursor: 'pointer' }}>
+                                        {allIslandPieData.map((entry, i) => (
+                                            <Cell key={i} fill={MAP_CHART_COLORS[i % MAP_CHART_COLORS.length]}
+                                                stroke={allIslandSelectedField === entry.name ? '#0F172A' : 'transparent'}
+                                                strokeWidth={allIslandSelectedField === entry.name ? 3 : 0}
+                                                opacity={allIslandSelectedField && allIslandSelectedField !== entry.name ? 0.45 : 1} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip content={({ active, payload }: any) => {
+                                        if (active && payload?.length) {
+                                            const p = payload[0].payload;
+                                            return <div style={{ background: '#1E293B', color: '#FFF', padding: '10px 14px', borderRadius: '10px', fontSize: '12px' }}><div style={{ fontWeight: 700 }}>{p.name}</div><div style={{ opacity: 0.85, marginTop: 4 }}>Weighted score: {p.score}</div></div>;
+                                        }
+                                        return null;
+                                    }} />
+                                    <Legend layout="vertical" verticalAlign="middle" align="right" iconType="circle" iconSize={8}
+                                        formatter={(value) => <span style={{ fontSize: '11px', color: '#475569', fontWeight: 600 }}>{value}</span>} />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        </div>
+                        {allIslandSelectedField && (
+                            <div style={{ animation: 'fadeInRight 0.3s ease' }}>
+                                <h4 style={{ margin: '0 0 4px 0', fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>Top Skills for <span style={{ background: 'linear-gradient(135deg, #EDE9FE, #DDD6FE)', color: '#6D28D9', padding: '2px 10px', borderRadius: '6px', fontWeight: 800 }}>{allIslandSelectedField}</span></h4>
+                                <p style={{ margin: '0 0 16px 0', fontSize: '12px', color: '#64748B', fontWeight: 500 }}>All Island · All Education Levels</p>
+                                {loadingAllIslandSkills ? (
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '300px' }}>
+                                        <div style={{ width: '28px', height: '28px', borderRadius: '50%', border: '3px solid #E9D5FF', borderTopColor: '#7C3AED', animation: 'spin 0.9s linear infinite' }}></div>
                                     </div>
-                                );
-                            })}
-                        </div>
-                    )}
-
-                    {selectedProvince && selectedField && (
-                        <div style={{ background: '#F8FAFC', borderRadius: '14px', border: '1px solid #E2E8F0', padding: '20px', animation: 'fadeInRight 0.25s ease' }}>
-                            <div style={{ marginBottom: '16px' }}>
-                                <h5 style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: '#0F172A' }}>Top Skills</h5>
-                                <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#64748B' }}>{selectedField} · {selectedEduLevel}</p>
-                            </div>
-                            {loadingSkills ? (
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px' }}>
-                                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', border: '3px solid #E9D5FF', borderTopColor: '#7C3AED', animation: 'spin 0.9s linear infinite' }}></div>
-                                </div>
-                            ) : skills.length === 0 ? (
-                                <div style={{ textAlign: 'center', padding: '40px 0', color: '#94A3B8', fontSize: '13px' }}>No skill data for this field.</div>
-                            ) : (
-                                <>
-                                    <ResponsiveContainer width="100%" height={220}>
+                                ) : allIslandSkills.length === 0 ? (
+                                    <div style={{ textAlign: 'center', padding: '40px 0', color: '#94A3B8', fontSize: '13px' }}>No skill data found.</div>
+                                ) : (
+                                    <ResponsiveContainer width="100%" height={340}>
                                         <PieChart>
-                                            <Pie data={skills.map(s => ({ ...s, value: s.score }))} cx="50%" cy="50%" outerRadius={85} paddingAngle={2} dataKey="value">
-                                                {skills.map((_, i) => <Cell key={i} fill={MAP_CHART_COLORS[i % MAP_CHART_COLORS.length]} />)}
+                                            <Pie data={allIslandSkills.map(s => ({ ...s, value: s.score }))} cx="50%" cy="50%" outerRadius={115} paddingAngle={2} dataKey="value">
+                                                {allIslandSkills.map((_, i) => <Cell key={i} fill={MAP_CHART_COLORS[i % MAP_CHART_COLORS.length]} />)}
                                             </Pie>
                                             <Tooltip content={({ active, payload }: any) => {
                                                 if (active && payload?.length) {
                                                     const p = payload[0].payload;
-                                                    return <div style={{ background: '#1E293B', color: '#FFF', padding: '8px 12px', borderRadius: '8px', fontSize: '11px' }}><div style={{ fontWeight: 700, textTransform: 'capitalize' }}>{p.name}</div><div style={{ opacity: 0.8, marginTop: 2 }}>{p.percentage}%</div></div>;
+                                                    return <div style={{ background: '#1E293B', color: '#FFF', padding: '10px 14px', borderRadius: '10px', fontSize: '12px' }}><div style={{ fontWeight: 700, textTransform: 'capitalize' }}>{p.name}</div><div style={{ opacity: 0.85, marginTop: 4 }}>{p.percentage}% · score {p.score}</div></div>;
                                                 }
                                                 return null;
                                             }} />
+                                            <Legend layout="vertical" verticalAlign="middle" align="right" iconType="circle" iconSize={8}
+                                                formatter={(value) => <span style={{ fontSize: '11px', color: '#475569', fontWeight: 600, textTransform: 'capitalize' }}>{value}</span>} />
                                         </PieChart>
                                     </ResponsiveContainer>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}>
-                                        {skills.map((s, i) => (
-                                            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                <div style={{ width: '10px', height: '10px', borderRadius: '3px', background: MAP_CHART_COLORS[i % MAP_CHART_COLORS.length], flexShrink: 0 }} />
-                                                <span style={{ fontSize: '12px', color: '#1E293B', fontWeight: 600, textTransform: 'capitalize', flex: 1 }}>{s.name}</span>
-                                                <div style={{ height: '6px', borderRadius: '3px', background: '#EDE9FE', flex: 2, overflow: 'hidden' }}>
-                                                    <div style={{ height: '100%', width: `${s.percentage}%`, background: MAP_CHART_COLORS[i % MAP_CHART_COLORS.length], borderRadius: '3px' }} />
-                                                </div>
-                                                <span style={{ fontSize: '11px', color: '#94A3B8', fontWeight: 600, minWidth: '36px', textAlign: 'right' }}>{s.percentage}%</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </>
-                            )}
-                        </div>
-                    )}
-
-                    {!selectedProvince && (
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '12px', color: '#94A3B8', padding: '40px' }}>
-                            <div style={{ fontSize: '40px' }}>🗺️</div>
-                            <p style={{ margin: 0, fontSize: '13px', fontWeight: 600, textAlign: 'center' }}>Click a district on the map<br />to explore academic interests</p>
-                            <p style={{ margin: 0, fontSize: '11px', textAlign: 'center' }}>Or use "All Island" to see<br />a full pie chart overview</p>
-                        </div>
-                    )}
-                </div>
-            )}
+                                )}
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
         </div>
     );
 };
@@ -2216,11 +2180,10 @@ const UniversityOpportunitiesChart: React.FC = () => {
             ) : data.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '60px 0', color: '#94A3B8', fontSize: '13px' }}>No data available.</div>
             ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: '32px', alignItems: 'center' }}>
-                    {/* Bar Chart */}
+                    /* Bar Chart - full width, no side panel */
                     <ResponsiveContainer width="100%" height={320}>
                         <BarChart
-                            data={data}
+                            data={data.slice(0, 5)}
                             margin={{ top: 20, right: 32, left: 0, bottom: 60 }}
                             barCategoryGap="28%"
                             onMouseLeave={() => setActiveIndex(null)}
@@ -2245,7 +2208,7 @@ const UniversityOpportunitiesChart: React.FC = () => {
                                 shape={(props: any) => <UniOppBar {...props} fill={UNI_OPP_COLORS[props.index % UNI_OPP_COLORS.length]} isHovered={activeIndex === props.index} />}
                                 onMouseEnter={(_: any, index: number) => setActiveIndex(index)}
                             >
-                                {data.map((_, i) => (
+                                {data.slice(0, 5).map((_, i) => (
                                     <Cell
                                         key={i}
                                         fill={UNI_OPP_COLORS[i % UNI_OPP_COLORS.length]}
@@ -2254,62 +2217,6 @@ const UniversityOpportunitiesChart: React.FC = () => {
                             </Bar>
                         </BarChart>
                     </ResponsiveContainer>
-
-                    {/* Ranked list panel */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        {data.map((item, i) => (
-                            <div
-                                key={i}
-                                onMouseEnter={() => setActiveIndex(i)}
-                                onMouseLeave={() => setActiveIndex(null)}
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '12px',
-                                    padding: '10px 14px',
-                                    borderRadius: '10px',
-                                    background: activeIndex === i ? '#F5F3FF' : '#F8FAFC',
-                                    border: activeIndex === i ? '1.5px solid #7C3AED' : '1px solid #E2E8F0',
-                                    cursor: 'default',
-                                    transition: 'all 0.15s ease',
-                                }}
-                            >
-                                {/* Rank badge */}
-                                <div style={{
-                                    width: '26px', height: '26px', borderRadius: '8px',
-                                    background: UNI_OPP_COLORS[i % UNI_OPP_COLORS.length],
-                                    color: '#FFF', fontSize: '11px', fontWeight: 800,
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    flexShrink: 0,
-                                }}>
-                                    {i + 1}
-                                </div>
-                                {/* Label + bar */}
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{ fontSize: '12px', fontWeight: 700, color: '#1E293B', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                        {item.name}
-                                    </div>
-                                    <div style={{ height: '5px', borderRadius: '3px', background: '#E2E8F0', overflow: 'hidden' }}>
-                                        <div style={{
-                                            height: '100%',
-                                            width: `${item.percentage}%`,
-                                            background: UNI_OPP_COLORS[i % UNI_OPP_COLORS.length],
-                                            borderRadius: '3px',
-                                            transition: 'width 0.4s ease',
-                                        }} />
-                                    </div>
-                                </div>
-                                {/* Percentage */}
-                                <span style={{ fontSize: '13px', fontWeight: 800, color: UNI_OPP_COLORS[i % UNI_OPP_COLORS.length], minWidth: '48px', textAlign: 'right' }}>
-                                    {item.percentage}%
-                                </span>
-                                <span style={{ fontSize: '10px', color: '#94A3B8', minWidth: '28px', textAlign: 'right' }}>
-                                    ({item.count})
-                                </span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
             )}
         </div>
     );
