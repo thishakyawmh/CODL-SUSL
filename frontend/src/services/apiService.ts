@@ -554,6 +554,10 @@ export const aiAnalyticsService = {
         const response = await api.get(`/admin/ai-analytics/${courseId}/recommendations`);
         return response.data;
     },
+    getAcademicEntryRequirements: async (courseId: string) => {
+        const response = await api.get(`/admin/ai-analytics/${courseId}/academic-entry`);
+        return response.data;
+    },
     getSurveys: async () => {
         const response = await api.get('/admin/ai-analytics/surveys');
         return response.data;

@@ -72,6 +72,7 @@ class ProcessAnalyticsPipelineJob implements ShouldQueue
                     'jaccard_similarity_results' => $analytics['jaccard_similarity_results'] ?? [],
                     'kpis' => $kpis,
                     'generated_recommendations' => $recommendations,
+                    'academic_entry_requirements' => $analytics['academic_entry_requirements'] ?? null,
                     'generated_at' => now(),
                 ]);
             }
