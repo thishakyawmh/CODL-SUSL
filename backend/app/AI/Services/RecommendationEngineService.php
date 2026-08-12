@@ -13,6 +13,30 @@ class RecommendationEngineService
     public function generateRecommendations(array $analyticsData): array
     {
         $evidenceStatus = $analyticsData['kpis']['evidence_status'] ?? 'sufficient';
+        $curriculumStatus = $analyticsData['kpis']['curriculum_status'] ?? 'sufficient';
+
+        if ($curriculumStatus === 'insufficient') {
+            return [
+                [
+                    'id' => 'insufficient_curriculum',
+                    'course' => 'Curriculum Audit',
+                    'type' => 'System Audit',
+                    'title' => 'Curriculum Analysis Unavailable',
+                    'description' => "This program does not currently have curriculum data available. Add the program's curriculum subjects to enable AI-powered curriculum gap and anomaly recommendations.",
+                    'priority' => 'Medium',
+                    'evidence_source' => 'AI Curriculum Gate',
+                    'impact' => 'N/A',
+                    'evidence' => [
+                        'relevant_responses' => 0,
+                        'observed_percentage' => 'N/A',
+                        'supporting_domain' => 'None',
+                        'threshold' => '1 subject minimum',
+                        'confidence' => 'N/A',
+                        'trigger' => 'Curriculum Gate'
+                    ]
+                ]
+            ];
+        }
         
         if ($evidenceStatus === 'insufficient' || $evidenceStatus === 'limited') {
             $studentMin = config('analytics.thresholds.min_student_responses', 10);
@@ -84,76 +108,76 @@ class RecommendationEngineService
             }
         }
 
-        // 2. Generate Outdated Subject Warnings (from real curriculum)
+        // 2. Generate Curriculum Anomaly Warnings (from real curriculum anomalies)
         if (!empty($analyticsData['outdated_subjects'])) {
-            foreach ($analyticsData['outdated_subjects'] as $idx => $subject) {
-                $recommendations[] = [
-                    'id' => 'outdated_' . $idx,
-                    'course' => $subject['code'],
-                    'type' => 'Curriculum Revision',
-                    'title' => 'Deprecate / Revise Legacy Subject: ' . $subject['name'],
-                    'description' => 'This subject teaches legacy technologies (' . $subject['reason'] . '). We recommend deprecating it and replacing the syllabus with modern equivalent libraries and tools.',
-                    'priority' => 'Critical',
-                    'evidence_source' => 'Course Management',
-                    'impact' => 'Outdated Code Removal',
-                    'evidence' => [
-                        'relevant_responses' => 1,
-                        'observed_percentage' => '100%',
-                        'supporting_domain' => $subject['name'],
-                        'threshold' => 'Legacy Keyword Match',
-                        'confidence' => 'High',
-                        'trigger' => 'Outdated Tech Detected'
-                    ]
-                ];
-            }
-        }
+            foreach ($analyticsData['outdated_subjects'] as $idx => $anomaly) {
+                $affected = $anomaly['affected_subject'];
+                $parts = explode(':', $affected, 2);
+                $code = trim($parts[0]);
+                $name = trim($parts[1] ?? $affected);
+                
+                $priority = 'Medium';
+                $recType = 'Syllabus Review';
+                if ($anomaly['anomaly_type'] === 'Curriculum Modernization') {
+                    $priority = 'Critical';
+                    $recType = 'Curriculum Revision';
+                } elseif ($anomaly['anomaly_type'] === 'Skill Coverage Gap') {
+                    $priority = 'High';
+                    $recType = 'Syllabus Enrichment';
+                }
 
-        // 3. Generate Low-Demand Subject Alerts (from real curriculum & survey intersect)
-        if (!empty($analyticsData['low_demand_subjects'])) {
-            foreach ($analyticsData['low_demand_subjects'] as $idx => $subject) {
                 $recommendations[] = [
-                    'id' => 'lowdemand_' . $idx,
-                    'course' => $subject['code'],
-                    'type' => 'Syllabus Review',
-                    'title' => 'Review Low-Demand Subject: ' . $subject['name'],
-                    'description' => 'This subject has very low demand (<5%) in both student and industry surveys. Consider converting it into an elective or merging it with related modules.',
-                    'priority' => 'Medium',
-                    'evidence_source' => 'Surveys & Curriculum',
-                    'impact' => 'Syllabus Optimization',
+                    'id' => 'anomaly_' . $idx,
+                    'course' => $code,
+                    'type' => $recType,
+                    'title' => $anomaly['anomaly_type'] . ': ' . $name,
+                    'description' => $anomaly['explanation'],
+                    'priority' => $priority,
+                    'evidence_source' => 'Curriculum Audit',
+                    'impact' => $anomaly['anomaly_type'] === 'Curriculum Modernization' ? 'Outdated Code Removal' : 'Relevance Optimization',
                     'evidence' => [
-                        'relevant_responses' => 0,
-                        'observed_percentage' => '<5%',
-                        'supporting_domain' => $subject['name'],
+                        'relevant_responses' => $anomaly['combined_evidence'] . '% combined demand',
+                        'observed_percentage' => $anomaly['combined_evidence'] . '%',
+                        'supporting_domain' => $name,
                         'threshold' => '5%',
-                        'confidence' => $analyticsData['kpis']['confidence'] ?? 'High',
-                        'trigger' => 'Low Observed Demand'
+                        'confidence' => $anomaly['confidence'],
+                        'trigger' => $anomaly['anomaly_type']
                     ]
                 ];
             }
         }
 
-        // 4. Generate Missing Subject Recommendations (real curriculum gap analysis)
+        // 3. Generate Missing Subject Recommendations (real curriculum gap analysis)
         if (!empty($analyticsData['missing_subjects'])) {
-            foreach ($analyticsData['missing_subjects'] as $idx => $domain) {
-                $count = ($industryFrequencies[$domain] ?? 0) + ($studentFrequencies[$domain] ?? 0);
-                $totalResponses = ($analyticsData['kpis']['student_count'] ?? 0) + ($analyticsData['kpis']['industry_count'] ?? 0);
-                $percentage = $totalResponses > 0 ? round(($count / $totalResponses) * 100, 1) : 0;
+            foreach ($analyticsData['missing_subjects'] as $idx => $subject) {
+                $classification = $subject['classification'] ?? 'Core Curriculum Gap';
+                
+                // Skip emerging trends that are not program-relevant core gaps
+                if ($classification === 'Emerging / Industry Technology Trend' || $classification === 'Already Covered') {
+                    continue;
+                }
+
+                $domainName = $subject['name'];
+                $percentage = $subject['combined_pct'];
+                $count = $subject['count'];
+                $priority = ($classification === 'Core Curriculum Gap') ? 'High' : 'Medium';
+                $recType = ($classification === 'Core Curriculum Gap') ? 'New Module' : 'Module Expansion';
 
                 $recommendations[] = [
                     'id' => 'missing_' . $idx,
-                    'course' => $domain,
-                    'type' => 'New Module',
-                    'title' => 'Introduce Core Module: ' . $domain,
-                    'description' => 'Student and industry surveys show high demand for ' . $domain . ', but it is completely absent in the current curriculum. We recommend introducing a new dedicated module to teach ' . $domain . ' concepts.',
-                    'priority' => 'High',
+                    'course' => $domainName,
+                    'type' => $recType,
+                    'title' => 'Introduce Core Module: ' . $domainName,
+                    'description' => $subject['explanation'] . ' Supporting skills requested: ' . implode(', ', $subject['skills']) . '.',
+                    'priority' => $priority,
                     'evidence_source' => 'Survey Gap Analysis',
                     'impact' => '+25% Industry Alignment',
                     'evidence' => [
                         'relevant_responses' => $count,
                         'observed_percentage' => $percentage . '%',
-                        'supporting_domain' => $domain,
-                        'threshold' => '15%',
-                        'confidence' => $analyticsData['kpis']['confidence'] ?? 'High',
+                        'supporting_domain' => $domainName,
+                        'threshold' => '5% combined',
+                        'confidence' => $subject['confidence'],
                         'trigger' => 'Curriculum Gap'
                     ]
                 ];
@@ -219,7 +243,7 @@ class RecommendationEngineService
                 'evidence_source' => 'System Audit',
                 'impact' => 'N/A',
                 'evidence' => [
-                    'relevant_responses' => $totalRelevant,
+                    'relevant_responses' => $analyticsData['kpis']['surveys'] ?? 0,
                     'observed_percentage' => '100%',
                     'supporting_domain' => 'N/A',
                     'threshold' => 'N/A',

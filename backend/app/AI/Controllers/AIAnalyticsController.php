@@ -163,6 +163,189 @@ class AIAnalyticsController extends Controller
     }
 
     /**
+     * Get geography-based interest distribution for the interactive Sri Lanka map.
+     * Returns weighted interest scores grouped by province → education_level.
+     * Weights: primary × 1.0, secondary × 0.6, ternary × 0.3
+     */
+    public function getGeographyData()
+    {
+        $allRows = DB::connection('analytics')->table('student_interests')
+            ->select('province', 'education_level', 'district',
+                'primary_interest', 'secondary_interest', 'ternary_interest')
+            ->whereNotNull('province')
+            ->where('province', '!=', '')
+            ->get();
+
+        // Compute weighted interest scores per province+edu_level
+        $byProvince = [];
+        $allIsland = [];
+        $districtCounts = [];
+
+        foreach ($allRows as $row) {
+            $province = trim($row->province);
+            $eduLevel = trim($row->education_level ?: 'Not Specified');
+            $district = trim($row->district ?: '');
+
+            // Track district counts for map coloring
+            if ($district) {
+                $districtCounts[$district] = ($districtCounts[$district] ?? 0) + 1;
+            }
+
+            $interests = [
+                ['field' => $row->primary_interest,   'weight' => 1.0],
+                ['field' => $row->secondary_interest,  'weight' => 0.6],
+                ['field' => $row->ternary_interest,    'weight' => 0.3],
+            ];
+
+            foreach ($interests as $entry) {
+                $field = trim($entry['field'] ?? '');
+                if (!$field) continue;
+                $w = $entry['weight'];
+
+                // By province + edu level
+                $byProvince[$province][$eduLevel][$field] = 
+                    ($byProvince[$province][$eduLevel][$field] ?? 0) + $w;
+
+                // All island
+                $allIsland[$field] = ($allIsland[$field] ?? 0) + $w;
+            }
+        }
+
+        // Sort and format province data
+        $formattedProvince = [];
+        foreach ($byProvince as $province => $eduLevels) {
+            $formattedProvince[$province] = [];
+            foreach ($eduLevels as $eduLevel => $fields) {
+                arsort($fields);
+                $top = array_slice($fields, 0, 5, true);
+                $formattedProvince[$province][$eduLevel] = array_map(
+                    fn($name, $score) => ['name' => $name, 'score' => round($score, 2)],
+                    array_keys($top), array_values($top)
+                );
+            }
+        }
+
+        // Sort and format all-island data
+        arsort($allIsland);
+        $formattedAllIsland = array_map(
+            fn($name, $score) => ['name' => $name, 'score' => round($score, 2)],
+            array_keys($allIsland), array_values($allIsland)
+        );
+
+        return response()->json([
+            'by_province'     => $formattedProvince,
+            'all_island'      => $formattedAllIsland,
+            'district_counts' => $districtCounts,
+        ]);
+    }
+
+    /**
+     * Get top skills for a specific interest field, with optional province + education_level filters.
+     * Skills are aggregated from primary/secondary/ternary_skills when the matching interest = the target field.
+     */
+    public function getGeographySkills(Request $request)
+    {
+        $field    = trim($request->query('field', ''));
+        $province = trim($request->query('province', ''));
+        $eduLevel = trim($request->query('education_level', ''));
+
+        if (!$field) {
+            return response()->json(['error' => 'field parameter is required'], 422);
+        }
+
+        $query = DB::connection('analytics')->table('student_interests')
+            ->select('primary_interest', 'primary_skills',
+                     'secondary_interest', 'secondary_skills',
+                     'ternary_interest', 'ternary_skills');
+
+        if ($province) {
+            $query->where('province', $province);
+        }
+        if ($eduLevel) {
+            $query->where('education_level', $eduLevel);
+        }
+
+        $rows = $query->get();
+
+        $skillScores = [];
+
+        foreach ($rows as $row) {
+            // Accumulate skills when the matching interest equals the target field
+            $pairs = [
+                ['interest' => $row->primary_interest,   'skills' => $row->primary_skills,   'weight' => 1.0],
+                ['interest' => $row->secondary_interest,  'skills' => $row->secondary_skills,  'weight' => 0.6],
+                ['interest' => $row->ternary_interest,    'skills' => $row->ternary_skills,    'weight' => 0.3],
+            ];
+
+            foreach ($pairs as $pair) {
+                if (trim($pair['interest'] ?? '') !== $field) continue;
+                if (empty(trim($pair['skills'] ?? ''))) continue;
+
+                // Skills stored as comma-separated values
+                $skills = array_map('trim', explode(',', $pair['skills']));
+                foreach ($skills as $skill) {
+                    $skill = trim($skill);
+                    if (!$skill) continue;
+                    $skillScores[$skill] = ($skillScores[$skill] ?? 0) + $pair['weight'];
+                }
+            }
+        }
+
+        arsort($skillScores);
+        $top = array_slice($skillScores, 0, 8, true);
+        $total = array_sum($top) ?: 1;
+
+        $result = array_map(function($name, $score) use ($total) {
+            return [
+                'name'       => $name,
+                'score'      => round($score, 2),
+                'percentage' => round(($score / $total) * 100, 1),
+            ];
+        }, array_keys($top), array_values($top));
+
+        return response()->json([
+            'field'  => $field,
+            'skills' => $result,
+        ]);
+    }
+
+    /**
+     * Count university_opportunities values directly from student_interests.
+     * Values are comma-separated in the column. No NLP — pure counting.
+     */
+    public function getUniversityOpportunities()
+    {
+        $rows = DB::connection('analytics')
+            ->table('student_interests')
+            ->whereNotNull('university_opportunities')
+            ->where('university_opportunities', '!=', '')
+            ->pluck('university_opportunities');
+
+        $counts = [];
+        foreach ($rows as $raw) {
+            $items = array_map('trim', explode(',', $raw));
+            foreach ($items as $item) {
+                $item = trim($item);
+                if (!$item) continue;
+                $counts[$item] = ($counts[$item] ?? 0) + 1;
+            }
+        }
+
+        arsort($counts);
+        $total = array_sum($counts) ?: 1;
+
+        $result = array_map(function ($name, $count) use ($total) {
+            return [
+                'name'       => $name,
+                'count'      => $count,
+                'percentage' => round(($count / $total) * 100, 1),
+            ];
+        }, array_keys($counts), array_values($counts));
+
+        return response()->json(array_values($result));
+    }
+
+    /**
      * Store a manual survey.
      */
     public function storeSurvey(Request $request)
@@ -490,6 +673,49 @@ class AIAnalyticsController extends Controller
                                 $val = null;
                             }
                         }
+
+                        // Convert student learning balance strings to tinyint (1-5)
+                        if (in_array($dbColumn, ['primary_learning_balance', 'secondary_learning_balance', 'ternary_learning_balance']) && $val) {
+                            if (is_numeric($val)) {
+                                $val = (int) $val;
+                            } else {
+                                $b = strtolower(trim($val));
+                                if (str_contains($b, 'balanced')) {
+                                    $val = 3;
+                                } elseif (str_contains($b, 'mostly practical') || str_contains($b, 'practical oriented')) {
+                                    $val = 4;
+                                } elseif (str_contains($b, 'mostly theory') || str_contains($b, 'theory oriented')) {
+                                    $val = 2;
+                                } elseif (str_contains($b, 'practical')) {
+                                    $val = 5;
+                                } elseif (str_contains($b, 'theory')) {
+                                    $val = 1;
+                                } else {
+                                    $val = 3;
+                                }
+                            }
+                        }
+
+                        // Convert industry certification importance strings/numbers to tinyint (1-5)
+                        if ($dbColumn === 'certification_importance' && $val) {
+                            if (is_numeric($val)) {
+                                $val = (int) $val;
+                            } else {
+                                $b = strtolower(trim($val));
+                                if (str_contains($b, 'very') || str_contains($b, 'critical') || str_contains($b, 'high')) {
+                                    $val = 5;
+                                } elseif (str_contains($b, 'important')) {
+                                    $val = 4;
+                                } elseif (str_contains($b, 'neutral') || str_contains($b, 'medium')) {
+                                    $val = 3;
+                                } elseif (str_contains($b, 'low') || str_contains($b, 'not')) {
+                                    $val = 2;
+                                } else {
+                                    $val = 1;
+                                }
+                            }
+                        }
+
                         $record[$dbColumn] = $val;
                     }
                     

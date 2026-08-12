@@ -19,6 +19,11 @@
     to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes fadeInRight {
+    from { opacity: 0; transform: translateX(14px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
 /* Page Header Structure */
 .admin-page-header {
     display: flex;

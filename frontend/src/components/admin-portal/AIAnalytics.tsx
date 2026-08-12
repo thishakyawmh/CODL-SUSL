@@ -9,7 +9,7 @@ import {
 import { aiAnalyticsService, courseService } from '../../services/apiService';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
-import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
+import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 // @ts-ignore
 import SriLankaMapData from '@svg-maps/sri-lanka';
 import './AIAnalytics.css';
@@ -32,14 +32,13 @@ export const AIAnalytics: React.FC = () => {
     const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
     const [loading, setLoading] = useState(true);
     const [globalEmergingTech, setGlobalEmergingTech] = useState<string[]>([]);
-    const [viewMode, setViewMode] = useState<'hub' | 'course' | 'common'>('hub');
+    const [viewMode, setViewMode] = useState<'hub' | 'course'>('hub');
 
     const [syncing, setSyncing] = useState(false);
     const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
     const [studentCount, setStudentCount] = useState<number>(0);
     const [industryCount, setIndustryCount] = useState<number>(0);
-    const [educationLevels, setEducationLevels] = useState<{ name: string; value: number }[]>([]);
-    const [districts, setDistricts] = useState<{ name: string; count: number }[]>([]);
+    // educationLevels and districts removed — now fetched directly by InteractiveSriLankaMap
 
     // Toast notification state
     const [toasts, setToasts] = useState<{ id: number; message: string; type: 'success' | 'error' | 'info' }[]>([]);
@@ -79,8 +78,6 @@ export const AIAnalytics: React.FC = () => {
                 }
                 setStudentCount(globalData.student_count || 0);
                 setIndustryCount(globalData.industry_count || 0);
-                setEducationLevels(globalData.education_levels || []);
-                setDistricts(globalData.districts || []);
             }
         } catch (err) {
             console.error('Failed to load programs', err);
@@ -194,8 +191,6 @@ export const AIAnalytics: React.FC = () => {
 
             {viewMode === 'course' && selectedCourse ? (
                 <ProgramDashboard course={selectedCourse} onBack={() => { setSelectedCourse(null); setViewMode('hub'); }} />
-            ) : viewMode === 'common' ? (
-                <CommonAnalyticsDashboard onBack={() => setViewMode('hub')} />
             ) : (
                 <ProgramHub
                     programs={programs}
@@ -203,13 +198,10 @@ export const AIAnalytics: React.FC = () => {
                     onSelect={(c) => { setSelectedCourse(c); setViewMode('course'); }}
                     onOpenSync={handleDirectSync}
                     onOpenManageForms={() => navigate('/admin/ai-analytics/manage-forms')}
-                    onOpenCommonAnalytics={() => setViewMode('common')}
                     syncing={syncing}
                     lastSyncedAt={lastSyncedAt}
                     studentCount={studentCount}
                     industryCount={industryCount}
-                    educationLevels={educationLevels}
-                    districts={districts}
                 />
             )}
         </div>
@@ -227,14 +219,11 @@ const ProgramHub: React.FC<{
     onSelect: (c: Course) => void,
     onOpenSync: () => void,
     onOpenManageForms: () => void,
-    onOpenCommonAnalytics: () => void,
     syncing?: boolean,
     lastSyncedAt?: string | null,
     studentCount: number,
     industryCount: number,
-    educationLevels: { name: string; value: number }[],
-    districts: { name: string; count: number }[]
-}> = ({ programs, globalEmergingTech, onSelect, onOpenSync, onOpenManageForms, onOpenCommonAnalytics, syncing, lastSyncedAt, studentCount, industryCount, educationLevels, districts }) => {
+}> = ({ programs, globalEmergingTech, onSelect, onOpenSync, onOpenManageForms, syncing, lastSyncedAt, studentCount, industryCount }) => {
     const [levelFilter, setLevelFilter] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -354,9 +343,6 @@ const ProgramHub: React.FC<{
                                 Last Sync: {new Date(lastSyncedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                             </span>
                         )}
-                        <button className="admin-btn-outline" onClick={onOpenCommonAnalytics}>
-                            <BarChart2 size={16} /> Common Student Analytics
-                        </button>
                         <button className="admin-btn-outline" onClick={onOpenManageForms}>
                             <Database size={16} /> Manage Forms
                         </button>
@@ -406,10 +392,14 @@ const ProgramHub: React.FC<{
                         </div>
                     </div>
 
-                    {/* Second Row: Visual Charts Side-by-Side */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px', marginBottom: '32px' }}>
-                        <EducationLevelChart data={educationLevels} />
-                        <GeographicalMapCard data={districts} />
+                    {/* Second Row: Interactive Sri Lanka Map (full width) */}
+                    <div style={{ marginBottom: '32px' }}>
+                        <InteractiveSriLankaMap />
+                    </div>
+
+                    {/* Third Row: University Opportunities Bar Chart */}
+                    <div style={{ marginBottom: '32px' }}>
+                        <UniversityOpportunitiesChart />
                     </div>
                 </>
             )}
@@ -1141,6 +1131,30 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                             <div>
                                 <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#4C1D95', margin: 0 }}>Curriculum & Delivery Insights</h3>
                                 <p style={{ fontSize: '13px', color: '#6B21A8', margin: '2px 0 0 0', fontWeight: 500 }}>Analysis of curriculum scope, subject coverage, delivery split, and curriculum anomalies</p>
+                                
+                                {overview.kpis && (
+                                    <div style={{
+                                        backgroundColor: overview.kpis.evidence_status === 'insufficient' ? '#FEE2E2' : '#EFF6FF',
+                                        color: overview.kpis.evidence_status === 'insufficient' ? '#991B1B' : '#1E40AF',
+                                        border: overview.kpis.evidence_status === 'insufficient' ? '1px solid #FCA5A5' : '1px solid #BFDBFE',
+                                        padding: '8px 14px',
+                                        borderRadius: '12px',
+                                        fontSize: '12px',
+                                        fontWeight: 600,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '6px',
+                                        marginTop: '10px',
+                                        width: 'fit-content'
+                                    }}>
+                                        <span>📢</span>
+                                        <span>
+                                            {overview.kpis.evidence_status === 'insufficient' 
+                                                ? `Insufficient program-specific evidence. Only ${overview.kpis.student_count || 0} relevant student responses and ${overview.kpis.industry_count || 0} relevant industry responses were found.`
+                                                : `Analysis based on ${overview.kpis.student_count || 0} relevant student responses and ${overview.kpis.industry_count || 0} relevant industry responses. Overall Confidence: ${overview.kpis.confidence || 'High'}.`}
+                                        </span>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -1151,139 +1165,334 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                         </div>
                     </div>
 
-                    <div className="ai-category-grid">
-                        {/* Missing Core Subjects */}
-                        <div className="ai-chart-card" style={{ borderLeft: '5px solid #EF4444', margin: 0 }}>
-                            <h4 className="flex items-center gap-2 text-red-700 font-bold" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                                <ShieldAlert size={18} className="text-red-500" /> Missing Core Subjects
-                            </h4>
-                            <p className="text-slate-400 text-xs mb-4" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Demanded domains completely absent from the current curriculum.</p>
-                            {overview.missing_subjects && overview.missing_subjects.length > 0 ? (
-                                <div className="tag-container">
-                                    {overview.missing_subjects.map((domain: string, idx: number) => (
-                                        <span key={idx} className="tag missing">
-                                            {domain}
-                                        </span>
-                                    ))}
+                    {overview.kpis?.curriculum_status === 'insufficient' ? (
+                        <div style={{
+                            backgroundColor: '#F8FAFC',
+                            border: '1px dashed #CBD5E1',
+                            padding: '40px 24px',
+                            borderRadius: '20px',
+                            textAlign: 'center',
+                            marginTop: '16px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '16px'
+                        }}>
+                            <div style={{
+                                backgroundColor: '#F1F5F9',
+                                color: '#64748B',
+                                padding: '16px',
+                                borderRadius: '50%',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                            }}>
+                                <AlertTriangle size={32} />
+                            </div>
+                            <div>
+                                <h4 style={{ fontSize: '18px', fontWeight: 800, color: '#1E293B', margin: '0 0 8px 0' }}>Curriculum Analysis Unavailable</h4>
+                                <p style={{ fontSize: '14px', color: '#64748B', margin: '0 auto', maxWidth: '540px', lineHeight: '1.5' }}>
+                                    This program does not currently have curriculum data available. Add the program's curriculum subjects to enable AI-powered curriculum gap and anomaly analysis.
+                                </p>
+                            </div>
+                            <div style={{
+                                display: 'flex',
+                                gap: '24px',
+                                background: '#FFFFFF',
+                                border: '1px solid #E2E8F0',
+                                padding: '16px 28px',
+                                borderRadius: '16px',
+                                fontSize: '13px',
+                                color: '#475569',
+                                fontWeight: 500,
+                                textAlign: 'left',
+                                boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
+                            }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                    <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#94A3B8', fontWeight: 700 }}>Curriculum Status</span>
+                                    <strong style={{ color: '#EF4444' }}>Not Available</strong>
                                 </div>
-                            ) : (
-                                <div className="flex items-center gap-2 p-4 bg-green-50 text-green-700 rounded-lg border border-green-200" style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: '#F0FDF4', color: '#15803D', border: '1px solid #BBF7D0', padding: '16px', borderRadius: '12px' }}>
-                                    <CheckCircle size={20} />
-                                    <span className="text-sm font-semibold">All required core technology domains are covered by the curriculum.</span>
+                                <div style={{ width: '1px', backgroundColor: '#E2E8F0' }}></div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                    <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#94A3B8', fontWeight: 700 }}>Curriculum Insights</span>
+                                    <strong style={{ color: '#EF4444' }}>Unavailable</strong>
                                 </div>
-                            )}
+                                <div style={{ width: '1px', backgroundColor: '#E2E8F0' }}></div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                    <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#94A3B8', fontWeight: 700 }}>Reason</span>
+                                    <strong style={{ color: '#475569' }}>No verified subject data</strong>
+                                </div>
+                            </div>
                         </div>
+                    ) : (
+                        <div className="ai-category-grid">
+                            {/* Potential Curriculum Gaps */}
+                            <div className="ai-chart-card" style={{ borderLeft: '5px solid #7C3AED', margin: 0 }}>
+                                <h4 className="flex items-center gap-2 text-violet-700 font-bold" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                                    <ShieldAlert size={18} className="text-violet-500" /> Potential Curriculum Gaps
+                                </h4>
+                                <p className="text-slate-400 text-xs mb-4" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Evidence-based analysis of curriculum gaps, enhancements and industry trends.</p>
+                                {overview.missing_subjects && overview.missing_subjects.length > 0 ? (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                        {overview.missing_subjects.map((sub: any, idx: number) => {
+                                            // Determine styles dynamically based on classification
+                                            let cardBg = '#F8FAFC';
+                                            let cardBorder = '#E2E8F0';
+                                            let textTheme = '#475569';
+                                            let badgeBg = '#E2E8F0';
 
-                        {/* Curriculum Anomalies */}
-                        <div className="ai-chart-card" style={{ borderLeft: '5px solid #F59E0B', margin: 0 }}>
-                            <h4 className="flex items-center gap-2 text-amber-700 font-bold" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                                <AlertTriangle size={18} className="text-amber-500" /> Curriculum Anomalies
-                            </h4>
-                            <p className="text-slate-400 text-xs mb-4" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Legacy subjects or subjects with low survey demand.</p>
+                                            if (sub.classification === 'Core Curriculum Gap') {
+                                                cardBg = '#FEF2F2';
+                                                cardBorder = '#FCA5A5';
+                                                textTheme = '#B91C1C';
+                                                badgeBg = '#FEE2E2';
+                                            } else if (sub.classification === 'Curriculum Enhancement') {
+                                                cardBg = '#F5F3FF';
+                                                cardBorder = '#C084FC';
+                                                textTheme = '#6D28D9';
+                                                badgeBg = '#EDE9FE';
+                                            } else if (sub.classification === 'Emerging / Industry Technology Trend') {
+                                                cardBg = '#F0F9FF';
+                                                cardBorder = '#7DD3FC';
+                                                textTheme = '#0369A1';
+                                                badgeBg = '#E0F2FE';
+                                            }
 
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                {((overview.outdated_subjects && overview.outdated_subjects.length > 0) ||
-                                    (overview.low_demand_subjects && overview.low_demand_subjects.length > 0)) ? (
-                                    <>
-                                        {overview.outdated_subjects.map((sub: any, idx: number) => (
-                                            <div key={`out-${idx}`} style={{ display: 'flex', justifyContent: 'space-between', backgroundColor: '#FEF3C7', border: '1px solid #FDE68A', padding: '12px 16px', borderRadius: '12px', fontSize: '13px' }}>
-                                                <strong style={{ color: '#92400E' }}>{sub.code}: {sub.name}</strong>
-                                                <span style={{ color: '#B45309', fontWeight: 'bold' }}>Legacy Tech Warning</span>
-                                            </div>
-                                        ))}
-                                        {overview.low_demand_subjects.map((sub: any, idx: number) => (
-                                            <div key={`low-${idx}`} style={{ display: 'flex', justifyContent: 'space-between', backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', padding: '12px 16px', borderRadius: '12px', fontSize: '13px' }}>
-                                                <strong style={{ color: '#334155' }}>{sub.code}: {sub.name}</strong>
-                                                <span style={{ color: '#64748B', fontWeight: '600' }}>Low Demand (&lt;5%)</span>
-                                            </div>
-                                        ))}
-                                    </>
+                                            return (
+                                                <div key={idx} style={{
+                                                    backgroundColor: cardBg,
+                                                    border: `1px solid ${cardBorder}`,
+                                                    padding: '16px 20px',
+                                                    borderRadius: '20px',
+                                                    fontSize: '13px',
+                                                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.01)',
+                                                    transition: 'all 0.2s ease'
+                                                }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                                            <strong style={{ color: '#1E293B', fontSize: '15px' }}>{sub.name}</strong>
+                                                            <span style={{
+                                                                backgroundColor: badgeBg,
+                                                                color: textTheme,
+                                                                padding: '3px 10px',
+                                                                borderRadius: '8px',
+                                                                fontWeight: 700,
+                                                                fontSize: '11px'
+                                                            }}>
+                                                                {sub.classification}
+                                                            </span>
+                                                        </div>
+                                                        <span style={{
+                                                            backgroundColor: '#7C3AED15',
+                                                            color: '#7C3AED',
+                                                            padding: '4px 10px',
+                                                            borderRadius: '10px',
+                                                            fontWeight: 800,
+                                                            fontSize: '12px'
+                                                        }}>
+                                                            {sub.combined_pct}% Combined Score
+                                                        </span>
+                                                    </div>
+
+                                                    <p style={{ margin: '0 0 12px 0', color: '#334155', fontSize: '13px', lineHeight: '1.4' }}>
+                                                        {sub.explanation}
+                                                    </p>
+
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px solid rgba(0,0,0,0.04)', paddingTop: '10px', fontSize: '11.5px', color: '#64748B' }}>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+                                                            <span>🏢 Industry: <strong>{sub.relevant_industry_responses}/{sub.total_industry_responses} ({sub.industry_pct}%)</strong></span>
+                                                            <span>🎓 Student: <strong>{sub.relevant_student_responses}/{sub.total_student_responses} ({sub.student_pct}%)</strong></span>
+                                                        </div>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', color: '#475569' }}>
+                                                            <span>📖 Curriculum: <strong style={{ color: sub.curriculum_coverage_status === 'Not Covered' ? '#EF4444' : '#10B981' }}>{sub.curriculum_coverage_status}</strong></span>
+                                                            <span>⚡ Confidence: <strong>{sub.evidence_confidence}</strong></span>
+                                                        </div>
+                                                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '4px' }}>
+                                                            {sub.evidence_sources && sub.evidence_sources.map((src: string, i: number) => (
+                                                                <span key={i} style={{ backgroundColor: '#F1F5F9', border: '1px solid #E2E8F0', color: '#475569', padding: '2px 8px', borderRadius: '6px', fontSize: '10px', fontWeight: 600 }}>{src}</span>
+                                                            ))}
+                                                        </div>
+                                                        <div style={{ marginTop: '4px' }}>
+                                                            🔑 Skills: <strong style={{ color: '#475569' }}>{sub.skills.join(', ')}</strong>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
                                 ) : (
                                     <div className="flex items-center gap-2 p-4 bg-green-50 text-green-700 rounded-lg border border-green-200" style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: '#F0FDF4', color: '#15803D', border: '1px solid #BBF7D0', padding: '16px', borderRadius: '12px' }}>
                                         <CheckCircle size={20} />
-                                        <span className="text-sm font-semibold">No legacy or low-demand anomalies found in current subjects.</span>
+                                        <span className="text-sm font-semibold">All required technology domains are covered by the curriculum.</span>
                                     </div>
                                 )}
                             </div>
-                        </div>
 
-                        {/* Theory vs Practical Split */}
-                        <div className="ai-chart-card" style={{ margin: 0 }}>
-                            <h4>Theory vs Practical Split</h4>
-                            <p className="text-slate-400 text-xs mb-4" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Student preference ratio derived from survey responses.</p>
+                            {/* Curriculum Anomalies */}
+                            <div className="ai-chart-card" style={{ borderLeft: '5px solid #F59E0B', margin: 0 }}>
+                                <h4 className="flex items-center gap-2 text-amber-700 font-bold" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                                    <AlertTriangle size={18} className="text-amber-500" /> Curriculum Anomalies
+                                </h4>
+                                <p className="text-slate-400 text-xs mb-4" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Low demand, legacy warning, or skill coverage gap indicators.</p>
 
-                            {(() => {
-                                const theory = overview.learning_preferences_data?.student_theory_percent || 0;
-                                const practical = overview.learning_preferences_data?.student_practical_percent || 0;
-                                const radius = 38;
-                                const circumference = 2 * Math.PI * radius;
-                                const theoryStroke = (theory / 100) * circumference;
-                                const practicalStroke = (practical / 100) * circumference;
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                    {overview.outdated_subjects && overview.outdated_subjects.length > 0 ? (
+                                        overview.outdated_subjects.map((anomaly: any, idx: number) => {
+                                            // Determine alert color based on category
+                                            let bgColor = '#FFFBEB';
+                                            let borderColor = '#FDE68A';
+                                            let textColor = '#B45309';
+                                            let typeColor = '#D97706';
 
-                                return (
-                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', marginTop: '20px' }}>
-                                        <div style={{ position: 'relative', width: '150px', height: '150px', flexShrink: 0 }}>
-                                            <svg width="150" height="150" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)' }}>
-                                                {/* Practical segment */}
-                                                <circle
-                                                    cx="50"
-                                                    cy="50"
-                                                    r={radius}
-                                                    fill="transparent"
-                                                    stroke="#7C3AED"
-                                                    strokeWidth="18"
-                                                    strokeDasharray={`${practicalStroke} ${circumference}`}
-                                                    strokeDashoffset="0"
-                                                />
-                                                {/* Theory segment */}
-                                                <circle
-                                                    cx="50"
-                                                    cy="50"
-                                                    r={radius}
-                                                    fill="transparent"
-                                                    stroke="#C084FC"
-                                                    strokeWidth="18"
-                                                    strokeDasharray={`${theoryStroke} ${circumference}`}
-                                                    strokeDashoffset={-practicalStroke}
-                                                />
-                                            </svg>
+                                            if (anomaly.anomaly_type === 'Curriculum Modernization') {
+                                                bgColor = '#FEF2F2';
+                                                borderColor = '#FEE2E2';
+                                                textColor = '#991B1B';
+                                                typeColor = '#EF4444';
+                                            } else if (anomaly.anomaly_type === 'Low Observed Demand') {
+                                                bgColor = '#F8FAFC';
+                                                borderColor = '#E2E8F0';
+                                                textColor = '#334155';
+                                                typeColor = '#64748B';
+                                            }
+
+                                            return (
+                                                <div key={idx} style={{
+                                                    backgroundColor: bgColor,
+                                                    border: `1px solid ${borderColor}`,
+                                                    padding: '14px 18px',
+                                                    borderRadius: '16px',
+                                                    fontSize: '13px'
+                                                }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                                        <strong style={{ color: textColor, fontSize: '13px' }}>{anomaly.affected_subject}</strong>
+                                                        <span style={{
+                                                            backgroundColor: `${typeColor}15`,
+                                                            color: typeColor,
+                                                            padding: '2px 8px',
+                                                            borderRadius: '8px',
+                                                            fontWeight: 700,
+                                                            fontSize: '10.5px'
+                                                        }}>
+                                                            {anomaly.anomaly_type}
+                                                        </span>
+                                                    </div>
+                                                    <p style={{ margin: '0 0 8px 0', color: '#475569', fontSize: '12.5px' }}>{anomaly.explanation}</p>
+                                                    <div style={{ display: 'flex', gap: '16px', fontSize: '11px', color: '#64748B' }}>
+                                                        <span>📊 Combined relevance: <strong>{anomaly.combined_evidence}%</strong></span>
+                                                        <span>🔑 Key domains: <strong>{anomaly.supporting_evidence.join(', ')}</strong></span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })
+                                    ) : (
+                                        <div className="flex items-center gap-2 p-4 bg-green-50 text-green-700 rounded-lg border border-green-200" style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: '#F0FDF4', color: '#15803D', border: '1px solid #BBF7D0', padding: '16px', borderRadius: '12px' }}>
+                                            <CheckCircle size={20} />
+                                            <span className="text-sm font-semibold">No legacy or low-demand anomalies found in current subjects.</span>
                                         </div>
+                                    )}
+                                </div>
+                            </div>
 
-                                        <div style={{ display: 'flex', justifyContent: 'center', gap: '32px', width: '100%' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
-                                                <span style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#C084FC', display: 'inline-block' }}></span>
-                                                <span style={{ color: '#475569', fontWeight: 600 }}>Theory:</span>
-                                                <span style={{ fontWeight: 800, color: '#1E293B' }}>{theory}%</span>
+                            {/* Theory vs Practical Split */}
+                            <div className="ai-chart-card" style={{ margin: 0 }}>
+                                <h4>Theory vs Practical Split</h4>
+                                <p className="text-slate-400 text-xs mb-4" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Student preference ratio derived from survey responses.</p>
+
+                                {(() => {
+                                    const theory = overview.learning_preferences_data?.student_theory_percent || 0;
+                                    const practical = overview.learning_preferences_data?.student_practical_percent || 0;
+                                    const radius = 38;
+                                    const circumference = 2 * Math.PI * radius;
+                                    const theoryStroke = (theory / 100) * circumference;
+                                    const practicalStroke = (practical / 100) * circumference;
+
+                                    return (
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', marginTop: '20px' }}>
+                                            <div style={{ position: 'relative', width: '150px', height: '150px', flexShrink: 0 }}>
+                                                <svg width="150" height="150" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)' }}>
+                                                    {/* Practical segment */}
+                                                    <circle
+                                                        cx="50"
+                                                        cy="50"
+                                                        r={radius}
+                                                        fill="transparent"
+                                                        stroke="#7C3AED"
+                                                        strokeWidth="18"
+                                                        strokeDasharray={`${practicalStroke} ${circumference}`}
+                                                        strokeDashoffset="0"
+                                                    />
+                                                    {/* Theory segment */}
+                                                    <circle
+                                                        cx="50"
+                                                        cy="50"
+                                                        r={radius}
+                                                        fill="transparent"
+                                                        stroke="#C084FC"
+                                                        strokeWidth="18"
+                                                        strokeDasharray={`${theoryStroke} ${circumference}`}
+                                                        strokeDashoffset={-practicalStroke}
+                                                    />
+                                                </svg>
                                             </div>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
-                                                <span style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#7C3AED', display: 'inline-block' }}></span>
-                                                <span style={{ color: '#475569', fontWeight: 600 }}>Practical:</span>
-                                                <span style={{ fontWeight: 800, color: '#1E293B' }}>{practical}%</span>
+
+                                            <div style={{ display: 'flex', justifyContent: 'center', gap: '32px', width: '100%' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
+                                                    <span style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#C084FC', display: 'inline-block' }}></span>
+                                                    <span style={{ color: '#475569', fontWeight: 600 }}>Theory:</span>
+                                                    <span style={{ fontWeight: 800, color: '#1E293B' }}>{theory}%</span>
+                                                </div>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
+                                                    <span style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#7C3AED', display: 'inline-block' }}></span>
+                                                    <span style={{ color: '#475569', fontWeight: 600 }}>Practical:</span>
+                                                    <span style={{ fontWeight: 800, color: '#1E293B' }}>{practical}%</span>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                );
-                            })()}
-                        </div>
+                                    );
+                                })()}
+                            </div>
 
-                        {/* Student Preferred Learning Methods */}
-                        <div className="ai-chart-card" style={{ margin: 0 }}>
-                            <h4>Student Preferred Learning Methods</h4>
-                            <p className="text-slate-400 text-xs mb-4" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Teaching modes preferred by prospective applicants.</p>
-                            <div className="ai-chart-body" style={{ marginTop: '12px' }}>
-                                {overview.learning_preferences_data?.student_methods && overview.learning_preferences_data?.student_methods.length > 0 ? (
-                                    overview.learning_preferences_data.student_methods.map((m: any, idx: number) => (
-                                        <div key={idx} className="chart-bar-row">
-                                            <div className="label"><span>{m.name}</span> <span>{m.value}%</span></div>
-                                            <div className="bar-bg"><div className="bar-fill purple" style={{ width: `${m.value}%` }}></div></div>
-                                        </div>
-                                    ))
-                                ) : (
-                                    <div className="text-center text-slate-400 py-6 text-sm">Insufficient data points.</div>
-                                )}
+                            {/* Preferred Learning Methods */}
+                            <div className="ai-chart-card" style={{ margin: 0 }}>
+                                <h4>Preferred Learning Methods</h4>
+                                <p className="text-slate-400 text-xs mb-4" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Teaching modes preferred by prospective applicants with industry alignment context.</p>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '12px' }}>
+                                    {overview.learning_preferences_data?.student_methods && overview.learning_preferences_data?.student_methods.length > 0 ? (
+                                        overview.learning_preferences_data.student_methods.map((m: any, idx: number) => (
+                                            <div key={idx} style={{
+                                                borderBottom: '1px solid #F1F5F9',
+                                                paddingBottom: '12px',
+                                                fontSize: '13px'
+                                            }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                                                    <span style={{ fontWeight: 700, color: '#1E293B' }}>{m.name}</span>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                        <span style={{ fontWeight: 800, color: '#7C3AED' }}>{m.value}% Student</span>
+                                                        <span style={{
+                                                            backgroundColor: m.alignment_level === 'High' ? '#DCFCE7' : (m.alignment_level === 'Medium' ? '#FEF3C7' : '#F1F5F9'),
+                                                            color: m.alignment_level === 'High' ? '#15803D' : (m.alignment_level === 'Medium' ? '#B45309' : '#475569'),
+                                                            padding: '2px 6px',
+                                                            borderRadius: '6px',
+                                                            fontSize: '10px',
+                                                            fontWeight: 700
+                                                        }}>
+                                                            {m.alignment_level} Alignment
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <p style={{ margin: 0, color: '#64748B', fontSize: '12px', fontStyle: 'italic' }}>
+                                                    🎯 {m.industry_evidence}
+                                                </p>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="text-center text-slate-400 py-6 text-sm">Insufficient data points.</div>
+                                    )}
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    )}
                 </div>
 
                 {/* Category 2: Student Interest & Alignment */}
@@ -1588,151 +1797,317 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
     );
 };
 
-/* =========================================================
-   COMMON STUDENT ANALYTICS COMPONENTS
-   ========================================================= */
 
-const DonutChart: React.FC<{
-    data: any[],
-    onSliceClick: (fieldName: string) => void,
-    selectedField: string | null
-}> = ({ data, onSliceClick, selectedField }) => {
-    const radius = 70;
-    const circumference = 2 * Math.PI * radius;
-    let accumulatedPercent = 0;
 
-    const colors = [
-        '#7C3AED', // Purple
-        '#3B82F6', // Blue
-        '#10B981', // Emerald
-        '#EC4899', // Pink
-        '#F59E0B', // Amber
-        '#06B6D4', // Cyan
-        '#94A3B8'  // Slate
-    ];
-
-    return (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
-            <div style={{ position: 'relative', width: '220px', height: '220px' }}>
-                <svg width="220" height="220" viewBox="0 0 200 200" style={{ transform: 'rotate(-90deg)' }}>
-                    {data.map((item, index) => {
-                        const percent = item.value;
-                        const strokeLength = (percent / 100) * circumference;
-                        const strokeOffset = circumference - ((accumulatedPercent / 100) * circumference);
-                        accumulatedPercent += percent;
-
-                        const color = colors[index % colors.length];
-                        const isSelected = selectedField === item.name;
-
-                        return (
-                            <circle
-                                key={item.name}
-                                cx="100"
-                                cy="100"
-                                r={radius}
-                                fill="transparent"
-                                stroke={color}
-                                strokeWidth={isSelected ? "22" : "16"}
-                                strokeDasharray={`${strokeLength} ${circumference}`}
-                                strokeDashoffset={strokeOffset}
-                                style={{
-                                    transition: 'all 0.3s ease',
-                                    cursor: 'pointer',
-                                    opacity: selectedField ? (isSelected ? 1.0 : 0.4) : 0.95
-                                }}
-                                onMouseEnter={(e) => {
-                                    if (!isSelected) e.currentTarget.style.opacity = '1.0';
-                                }}
-                                onMouseLeave={(e) => {
-                                    if (!isSelected && selectedField) e.currentTarget.style.opacity = '0.4';
-                                    else if (!isSelected) e.currentTarget.style.opacity = '0.95';
-                                }}
-                                onClick={() => onSliceClick(item.name)}
-                            >
-                                <title>{item.name}: {item.count} responses ({item.value}%)</title>
-                            </circle>
-                        );
-                    })}
-                    <circle cx="100" cy="100" r={radius - 12} fill="#FFFFFF" />
-                </svg>
-                <div style={{
-                    position: 'absolute',
-                    top: '50%',
-                    left: '50%',
-                    transform: 'translate(-50%, -50%)',
-                    textAlign: 'center',
-                    pointerEvents: 'none'
-                }}>
-                    <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                        Selected Field
-                    </span>
-                    <div style={{ fontSize: '14px', fontWeight: '900', color: '#1E293B', marginTop: '2px', maxWidth: '140px', lineHeight: 1.2 }}>
-                        {selectedField || "Click a slice"}
-                    </div>
-                </div>
-            </div>
-            <div style={{ marginTop: '20px', display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center', maxWidth: '340px' }}>
-                {data.map((item, index) => {
-                    const color = colors[index % colors.length];
-                    const isSelected = selectedField === item.name;
-                    return (
-                        <div
-                            key={item.name}
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                                fontSize: '12px',
-                                fontWeight: isSelected ? '700' : '500',
-                                color: isSelected ? '#1E293B' : '#64748B',
-                                cursor: 'pointer'
-                            }}
-                            onClick={() => onSliceClick(item.name)}
-                        >
-                            <span style={{ display: 'inline-block', width: '10px', height: '10px', borderRadius: '50%', backgroundColor: color }}></span>
-                            <span>{item.name} ({item.value}%)</span>
-                        </div>
-                    );
-                })}
-            </div>
-        </div>
-    );
+// ─── District → Province lookup ─────────────────────────────────────────────
+const DISTRICT_TO_PROVINCE: Record<string, string> = {
+    colombo: 'Western', gampaha: 'Western', kalutara: 'Western',
+    kandy: 'Central', matale: 'Central', 'nuwara eliya': 'Central',
+    galle: 'Southern', matara: 'Southern', hambantota: 'Southern',
+    jaffna: 'Northern', kilinochchi: 'Northern', mannar: 'Northern', mullaitivu: 'Northern', vavuniya: 'Northern',
+    batticaloa: 'Eastern', ampara: 'Eastern', trincomalee: 'Eastern',
+    kurunegala: 'North Western', puttalam: 'North Western',
+    anuradhapura: 'North Central', polonnaruwa: 'North Central',
+    badulla: 'Uva', monaragala: 'Uva',
+    ratnapura: 'Sabaragamuwa', kegalle: 'Sabaragamuwa',
 };
 
-const FieldSkillDrilldown: React.FC<{
-    field: string,
-    skillsData: any[],
-    loading: boolean
-}> = ({ field, skillsData, loading }) => {
+const PROVINCE_COLORS: Record<string, string> = {
+    'Western': '#7C3AED', 'Central': '#2563EB', 'Southern': '#059669',
+    'Northern': '#DC2626', 'Eastern': '#D97706', 'North Western': '#0891B2',
+    'North Central': '#7C3AED', 'Uva': '#DB2777', 'Sabaragamuwa': '#65A30D',
+};
+
+const EDU_ORDER = ['Undergraduate', 'Advanced Level', 'Diploma Holder', 'Ordinary Level', 'Not Specified'];
+const MAP_CHART_COLORS = ['#7C3AED', '#3B82F6', '#10B981', '#EC4899', '#F59E0B', '#06B6D4', '#EF4444', '#8B5CF6'];
+
+interface GeoData {
+    by_province: Record<string, Record<string, { name: string; score: number }[]>>;
+    all_island: { name: string; score: number }[];
+    district_counts: Record<string, number>;
+}
+
+const InteractiveSriLankaMap: React.FC = () => {
+    const [geoData, setGeoData] = useState<GeoData | null>(null);
+    const [loadingGeo, setLoadingGeo] = useState(true);
+    const [hoveredDistrict, setHoveredDistrict] = useState<string | null>(null);
+    const [selectedProvince, setSelectedProvince] = useState<string | null>(null);
+    const [allIslandMode, setAllIslandMode] = useState(false);
+    const [selectedField, setSelectedField] = useState<string | null>(null);
+    const [selectedEduLevel, setSelectedEduLevel] = useState<string | null>(null);
+    const [skills, setSkills] = useState<{ name: string; score: number; percentage: number }[]>([]);
+    const [loadingSkills, setLoadingSkills] = useState(false);
+    const [allIslandSelectedField, setAllIslandSelectedField] = useState<string | null>(null);
+    const [allIslandSkills, setAllIslandSkills] = useState<{ name: string; score: number; percentage: number }[]>([]);
+    const [loadingAllIslandSkills, setLoadingAllIslandSkills] = useState(false);
+
+    useEffect(() => {
+        aiAnalyticsService.getGeographyData().then(d => {
+            setGeoData(d); setLoadingGeo(false);
+        }).catch(() => setLoadingGeo(false));
+    }, []);
+
+    const districtCounts = geoData?.district_counts || {};
+    const maxCount = Math.max(...Object.values(districtCounts), 1);
+
+    const getProvinceForDistrict = (name: string) => DISTRICT_TO_PROVINCE[name.toLowerCase()] || null;
+
+    const getColorForDistrict = (name: string) => {
+        const province = getProvinceForDistrict(name);
+        const count = districtCounts[name] || 0;
+        if (count === 0) return '#E2E8F0';
+        const ratio = count / maxCount;
+        const base = PROVINCE_COLORS[province || ''] || '#7C3AED';
+        if (ratio < 0.25) return `${base}40`;
+        if (ratio < 0.5) return `${base}80`;
+        if (ratio < 0.75) return `${base}BB`;
+        return base;
+    };
+
+    const handleDistrictClick = (districtName: string) => {
+        const province = getProvinceForDistrict(districtName);
+        if (!province) return;
+        setAllIslandMode(false);
+        setSelectedProvince(province);
+        setSelectedField(null);
+        setSelectedEduLevel(null);
+        setSkills([]);
+    };
+
+    const handleFieldClick = async (field: string, eduLevel: string) => {
+        setSelectedField(field);
+        setSelectedEduLevel(eduLevel);
+        setLoadingSkills(true);
+        setSkills([]);
+        try {
+            const data = await aiAnalyticsService.getGeographySkills(field, selectedProvince || '', eduLevel);
+            setSkills(data.skills || []);
+        } catch { setSkills([]); }
+        finally { setLoadingSkills(false); }
+    };
+
+    const handleAllIslandFieldClick = async (field: string) => {
+        setAllIslandSelectedField(field);
+        setLoadingAllIslandSkills(true);
+        setAllIslandSkills([]);
+        try {
+            const data = await aiAnalyticsService.getGeographySkills(field);
+            setAllIslandSkills(data.skills || []);
+        } catch { setAllIslandSkills([]); }
+        finally { setLoadingAllIslandSkills(false); }
+    };
+
+    const allIslandPieData = (geoData?.all_island || []).slice(0, 8).map(f => ({ ...f, value: f.score }));
+    const provinceData = selectedProvince && geoData?.by_province[selectedProvince] ? geoData.by_province[selectedProvince] : null;
+    const sortedEduLevels = provinceData
+        ? EDU_ORDER.filter(e => provinceData[e]).concat(Object.keys(provinceData).filter(e => !EDU_ORDER.includes(e)))
+        : [];
+
+    const mapTooltipStyle: React.CSSProperties = {
+        position: 'absolute', bottom: '8px', left: '50%', transform: 'translateX(-50%)',
+        background: '#1E293B', color: '#FFF', padding: '6px 12px', borderRadius: '8px',
+        fontSize: '11px', fontWeight: 600, boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+        pointerEvents: 'none', whiteSpace: 'nowrap', zIndex: 10,
+    };
+
     return (
-        <div className="ai-chart-card" style={{ borderLeft: '5px solid #10B981' }}>
-            <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#065F46', fontWeight: '800' }}>
-                <Sparkles size={18} className="text-emerald-500" /> Skill Demand for {field}
-            </h4>
-            <p className="text-slate-400 text-xs mb-4" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>
-                Normalized skill/domain demand filtered strictly by students interested in {field}.
-            </p>
-            {loading ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center', padding: '48px 0' }}>
-                    <div className="loading-spinner small"></div>
-                    <span className="text-sm text-slate-400">Loading skill demands...</span>
+        <div style={{ background: '#FFFFFF', borderRadius: '20px', border: '1px solid #E2E8F0', boxShadow: '0 4px 24px rgba(0,0,0,0.06)', padding: '28px', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '24px' }}>
+                <div>
+                    <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>Geographic Interest Distribution</h4>
+                    <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#64748B', fontWeight: 500 }}>Click a district to explore academic interests by education level. Click a field to see top skills.</p>
+                </div>
+                <button onClick={() => { setAllIslandMode(!allIslandMode); setSelectedProvince(null); setSelectedField(null); setAllIslandSelectedField(null); setAllIslandSkills([]); setSkills([]); }}
+                    style={{ padding: '8px 18px', borderRadius: '10px', border: allIslandMode ? '2px solid #7C3AED' : '1.5px solid #CBD5E1', background: allIslandMode ? '#7C3AED' : '#FFFFFF', color: allIslandMode ? '#FFFFFF' : '#475569', fontWeight: 700, fontSize: '12px', cursor: 'pointer', transition: 'all 0.2s ease', whiteSpace: 'nowrap' }}>
+                    🌐 All Island
+                </button>
+            </div>
+
+            {loadingGeo ? (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '360px' }}>
+                    <div style={{ textAlign: 'center' }}>
+                        <div style={{ width: '36px', height: '36px', borderRadius: '50%', border: '3px solid #E9D5FF', borderTopColor: '#7C3AED', animation: 'spin 0.9s linear infinite', margin: '0 auto 12px auto' }}></div>
+                        <span style={{ fontSize: '13px', color: '#94A3B8' }}>Loading geographic data…</span>
+                    </div>
+                </div>
+            ) : allIslandMode ? (
+                <div style={{ display: 'grid', gridTemplateColumns: allIslandSelectedField ? '1fr 1fr' : '1fr', gap: '32px', alignItems: 'flex-start' }}>
+                    <div>
+                        <p style={{ margin: '0 0 16px 0', fontSize: '13px', fontWeight: 700, color: '#374151' }}>Top Interest Fields — All Island <span style={{ fontSize: '11px', fontWeight: 500, color: '#94A3B8', marginLeft: '8px' }}>click a slice to see skills</span></p>
+                        <ResponsiveContainer width="100%" height={340}>
+                            <PieChart>
+                                <Pie data={allIslandPieData} cx="50%" cy="50%" outerRadius={120} paddingAngle={3} dataKey="value"
+                                    onClick={(entry: any) => handleAllIslandFieldClick(entry.name)} style={{ cursor: 'pointer' }}>
+                                    {allIslandPieData.map((entry, i) => (
+                                        <Cell key={i} fill={MAP_CHART_COLORS[i % MAP_CHART_COLORS.length]}
+                                            stroke={allIslandSelectedField === entry.name ? '#0F172A' : 'transparent'}
+                                            strokeWidth={allIslandSelectedField === entry.name ? 3 : 0}
+                                            opacity={allIslandSelectedField && allIslandSelectedField !== entry.name ? 0.45 : 1} />
+                                    ))}
+                                </Pie>
+                                <Tooltip content={({ active, payload }: any) => {
+                                    if (active && payload?.length) {
+                                        const p = payload[0].payload;
+                                        return <div style={{ background: '#1E293B', color: '#FFF', padding: '10px 14px', borderRadius: '10px', fontSize: '12px' }}><div style={{ fontWeight: 700 }}>{p.name}</div><div style={{ opacity: 0.85, marginTop: 4 }}>Weighted score: {p.score}</div></div>;
+                                    }
+                                    return null;
+                                }} />
+                                <Legend layout="vertical" verticalAlign="middle" align="right" iconType="circle" iconSize={8}
+                                    formatter={(value) => <span style={{ fontSize: '11px', color: '#475569', fontWeight: 600 }}>{value}</span>} />
+                            </PieChart>
+                        </ResponsiveContainer>
+                    </div>
+                    {allIslandSelectedField && (
+                        <div style={{ animation: 'fadeInRight 0.3s ease' }}>
+                            <p style={{ margin: '0 0 6px 0', fontSize: '13px', fontWeight: 700, color: '#374151' }}>Top Skills for "{allIslandSelectedField}"</p>
+                            <p style={{ margin: '0 0 16px 0', fontSize: '11px', color: '#94A3B8' }}>All Island · All Education Levels</p>
+                            {loadingAllIslandSkills ? (
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '300px' }}>
+                                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', border: '3px solid #E9D5FF', borderTopColor: '#7C3AED', animation: 'spin 0.9s linear infinite' }}></div>
+                                </div>
+                            ) : allIslandSkills.length === 0 ? (
+                                <div style={{ textAlign: 'center', padding: '40px 0', color: '#94A3B8', fontSize: '13px' }}>No skill data found.</div>
+                            ) : (
+                                <ResponsiveContainer width="100%" height={340}>
+                                    <PieChart>
+                                        <Pie data={allIslandSkills.map(s => ({ ...s, value: s.score }))} cx="50%" cy="50%" outerRadius={115} paddingAngle={2} dataKey="value">
+                                            {allIslandSkills.map((_, i) => <Cell key={i} fill={MAP_CHART_COLORS[i % MAP_CHART_COLORS.length]} />)}
+                                        </Pie>
+                                        <Tooltip content={({ active, payload }: any) => {
+                                            if (active && payload?.length) {
+                                                const p = payload[0].payload;
+                                                return <div style={{ background: '#1E293B', color: '#FFF', padding: '10px 14px', borderRadius: '10px', fontSize: '12px' }}><div style={{ fontWeight: 700, textTransform: 'capitalize' }}>{p.name}</div><div style={{ opacity: 0.85, marginTop: 4 }}>{p.percentage}% · score {p.score}</div></div>;
+                                            }
+                                            return null;
+                                        }} />
+                                        <Legend layout="vertical" verticalAlign="middle" align="right" iconType="circle" iconSize={8}
+                                            formatter={(value) => <span style={{ fontSize: '11px', color: '#475569', fontWeight: 600, textTransform: 'capitalize' }}>{value}</span>} />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            )}
+                        </div>
+                    )}
                 </div>
             ) : (
-                <div className="ai-chart-body" style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {skillsData && skillsData.length > 0 ? (
-                        skillsData.map((s: any, idx: number) => (
-                            <div key={idx} className="chart-bar-row">
-                                <div className="label">
-                                    <span>{s.name}</span>
-                                    <span>{s.count} ({s.value}%)</span>
+                <div style={{ display: 'grid', gridTemplateColumns: selectedProvince ? '220px 1fr 1fr' : '220px 1fr', gap: '24px', alignItems: 'flex-start' }}>
+                    <div style={{ position: 'relative' }}>
+                        <svg viewBox={SriLankaMapData.viewBox} style={{ width: '100%', maxHeight: '400px', cursor: 'pointer' }}>
+                            {SriLankaMapData.locations.map((loc: any) => {
+                                const province = getProvinceForDistrict(loc.name);
+                                const isSelected = province === selectedProvince;
+                                const isHovered = hoveredDistrict === loc.name;
+                                return (
+                                    <path key={loc.id} d={loc.path} fill={getColorForDistrict(loc.name)}
+                                        stroke={isSelected ? '#0F172A' : isHovered ? '#7C3AED' : '#FFFFFF'}
+                                        strokeWidth={isSelected ? '2.5' : isHovered ? '2' : '1'}
+                                        style={{ transition: 'all 0.18s ease', outline: 'none' }}
+                                        onMouseEnter={() => setHoveredDistrict(loc.name)}
+                                        onMouseLeave={() => setHoveredDistrict(null)}
+                                        onClick={() => handleDistrictClick(loc.name)}>
+                                        <title>{loc.name}{province ? ` (${province})` : ''}: {districtCounts[loc.name] || 0} applicants</title>
+                                    </path>
+                                );
+                            })}
+                        </svg>
+                        {hoveredDistrict && <div style={mapTooltipStyle}>{hoveredDistrict} · {districtCounts[hoveredDistrict] || 0} applicants</div>}
+                        <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            {Object.entries(PROVINCE_COLORS).map(([p, c]) => (
+                                <div key={p} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '10px', color: '#475569' }}>
+                                    <div style={{ width: '10px', height: '10px', borderRadius: '3px', background: c, flexShrink: 0 }} />{p}
                                 </div>
-                                <div className="bar-bg">
-                                    <div className="bar-fill emerald" style={{ width: `${s.value}%` }}></div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {selectedProvince && provinceData && (
+                        <div style={{ background: '#F8FAFC', borderRadius: '14px', border: '1px solid #E2E8F0', padding: '20px', animation: 'fadeInRight 0.25s ease', maxHeight: '520px', overflowY: 'auto' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                                <div>
+                                    <h5 style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: '#0F172A' }}>{selectedProvince} Province</h5>
+                                    <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#64748B' }}>Top interest fields · click a field to see skills</p>
                                 </div>
+                                <button onClick={() => { setSelectedProvince(null); setSelectedField(null); setSkills([]); }}
+                                    style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', color: '#94A3B8', lineHeight: 1 }}>×</button>
                             </div>
-                        ))
-                    ) : (
-                        <div className="text-center text-slate-400 py-6 text-sm">No skill demand data for this field.</div>
+                            {sortedEduLevels.map(eduLevel => {
+                                const fields = provinceData[eduLevel] || [];
+                                return (
+                                    <div key={eduLevel} style={{ marginBottom: '16px' }}>
+                                        <div style={{ fontSize: '11px', fontWeight: 700, color: '#7C3AED', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#7C3AED' }} />{eduLevel}
+                                        </div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                            {fields.slice(0, 3).map((f, idx) => {
+                                                const isActive = selectedField === f.name && selectedEduLevel === eduLevel;
+                                                return (
+                                                    <button key={idx} onClick={() => handleFieldClick(f.name, eduLevel)}
+                                                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderRadius: '8px', cursor: 'pointer', border: isActive ? '1.5px solid #7C3AED' : '1px solid #E2E8F0', background: isActive ? '#EDE9FE' : '#FFFFFF', textAlign: 'left', transition: 'all 0.15s ease', width: '100%' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                            <span style={{ width: '20px', height: '20px', borderRadius: '50%', background: MAP_CHART_COLORS[idx], color: '#FFF', fontSize: '10px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{idx + 1}</span>
+                                                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#1E293B' }}>{f.name}</span>
+                                                        </div>
+                                                        <span style={{ fontSize: '11px', color: '#94A3B8', fontWeight: 600 }}>{f.score}</span>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+
+                    {selectedProvince && selectedField && (
+                        <div style={{ background: '#F8FAFC', borderRadius: '14px', border: '1px solid #E2E8F0', padding: '20px', animation: 'fadeInRight 0.25s ease' }}>
+                            <div style={{ marginBottom: '16px' }}>
+                                <h5 style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: '#0F172A' }}>Top Skills</h5>
+                                <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#64748B' }}>{selectedField} · {selectedEduLevel}</p>
+                            </div>
+                            {loadingSkills ? (
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px' }}>
+                                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', border: '3px solid #E9D5FF', borderTopColor: '#7C3AED', animation: 'spin 0.9s linear infinite' }}></div>
+                                </div>
+                            ) : skills.length === 0 ? (
+                                <div style={{ textAlign: 'center', padding: '40px 0', color: '#94A3B8', fontSize: '13px' }}>No skill data for this field.</div>
+                            ) : (
+                                <>
+                                    <ResponsiveContainer width="100%" height={220}>
+                                        <PieChart>
+                                            <Pie data={skills.map(s => ({ ...s, value: s.score }))} cx="50%" cy="50%" outerRadius={85} paddingAngle={2} dataKey="value">
+                                                {skills.map((_, i) => <Cell key={i} fill={MAP_CHART_COLORS[i % MAP_CHART_COLORS.length]} />)}
+                                            </Pie>
+                                            <Tooltip content={({ active, payload }: any) => {
+                                                if (active && payload?.length) {
+                                                    const p = payload[0].payload;
+                                                    return <div style={{ background: '#1E293B', color: '#FFF', padding: '8px 12px', borderRadius: '8px', fontSize: '11px' }}><div style={{ fontWeight: 700, textTransform: 'capitalize' }}>{p.name}</div><div style={{ opacity: 0.8, marginTop: 2 }}>{p.percentage}%</div></div>;
+                                                }
+                                                return null;
+                                            }} />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}>
+                                        {skills.map((s, i) => (
+                                            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                <div style={{ width: '10px', height: '10px', borderRadius: '3px', background: MAP_CHART_COLORS[i % MAP_CHART_COLORS.length], flexShrink: 0 }} />
+                                                <span style={{ fontSize: '12px', color: '#1E293B', fontWeight: 600, textTransform: 'capitalize', flex: 1 }}>{s.name}</span>
+                                                <div style={{ height: '6px', borderRadius: '3px', background: '#EDE9FE', flex: 2, overflow: 'hidden' }}>
+                                                    <div style={{ height: '100%', width: `${s.percentage}%`, background: MAP_CHART_COLORS[i % MAP_CHART_COLORS.length], borderRadius: '3px' }} />
+                                                </div>
+                                                <span style={{ fontSize: '11px', color: '#94A3B8', fontWeight: 600, minWidth: '36px', textAlign: 'right' }}>{s.percentage}%</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    )}
+
+                    {!selectedProvince && (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '12px', color: '#94A3B8', padding: '40px' }}>
+                            <div style={{ fontSize: '40px' }}>🗺️</div>
+                            <p style={{ margin: 0, fontSize: '13px', fontWeight: 600, textAlign: 'center' }}>Click a district on the map<br />to explore academic interests</p>
+                            <p style={{ margin: 0, fontSize: '11px', textAlign: 'center' }}>Or use "All Island" to see<br />a full pie chart overview</p>
+                        </div>
                     )}
                 </div>
             )}
@@ -1740,438 +2115,203 @@ const FieldSkillDrilldown: React.FC<{
     );
 };
 
-const GeographicalMapCard: React.FC<{ data: { name: string; count: number }[] }> = ({ data }) => {
-    const [hoveredDistrict, setHoveredDistrict] = useState<{ name: string; count: number } | null>(null);
+/* =========================================================
+   UNIVERSITY OPPORTUNITIES BAR CHART
+   ========================================================= */
 
-    // Create a dictionary for quick lookup
-    const districtCounts = React.useMemo(() => {
-        const dict: Record<string, number> = {};
-        data.forEach(d => {
-            dict[d.name.toLowerCase()] = d.count;
-        });
-        return dict;
-    }, [data]);
+const UNI_OPP_COLORS = [
+    '#7C3AED', '#3B82F6', '#10B981', '#EC4899',
+    '#F59E0B', '#06B6D4', '#EF4444', '#8B5CF6',
+    '#0EA5E9', '#84CC16', '#F97316', '#6366F1',
+];
 
-    // Find the maximum count to calculate colors
-    const maxCount = React.useMemo(() => {
-        const counts = data.map(d => d.count);
-        return counts.length > 0 ? Math.max(...counts) : 1;
-    }, [data]);
-
-    const getColorForDistrict = (districtName: string) => {
-        const count = districtCounts[districtName.toLowerCase()] || 0;
-        if (count === 0) return '#F1F5F9'; // Slate 100
-        
-        // Use a nice purple gradient based on count
-        const ratio = count / maxCount;
-        if (ratio < 0.25) return '#E9D5FF'; // Purple 200
-        if (ratio < 0.5) return '#C084FC';  // Purple 400
-        if (ratio < 0.75) return '#A855F7'; // Purple 500
-        return '#7C3AED';                   // Purple 600
-    };
-
+// Sub-components defined OUTSIDE to prevent infinite re-renders
+const UniOppBar = (props: any) => {
+    const { x, y, width, height, fill, isHovered } = props;
+    const depth = 7;
+    if (height <= 0) return null;
     return (
-        <div className="ai-chart-card" style={{ display: 'flex', flexDirection: 'column', margin: '0 0 32px 0', padding: '24px', alignItems: 'center' }}>
-            <h4 style={{ margin: '0 0 4px 0', fontSize: '15px', fontWeight: '800', color: '#1E293B', alignSelf: 'flex-start' }}>Geographical Distribution</h4>
-            <p className="text-slate-400 text-xs mb-6" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500, alignSelf: 'flex-start' }}>Applicant interest mapped by district of residence.</p>
-            
-            {/* SVG Map Section */}
-            <div style={{ position: 'relative', width: '260px', height: '420px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '10px' }}>
-                <svg viewBox={SriLankaMapData.viewBox} style={{ width: '100%', height: '100%', cursor: 'pointer' }}>
-                    {SriLankaMapData.locations.map((loc: any) => {
-                        const count = districtCounts[loc.name.toLowerCase()] || 0;
-                        const isHovered = hoveredDistrict?.name.toLowerCase() === loc.name.toLowerCase();
-                        
-                        return (
-                            <path
-                                key={loc.id}
-                                d={loc.path}
-                                fill={getColorForDistrict(loc.name)}
-                                stroke={isHovered ? '#7C3AED' : '#FFFFFF'}
-                                strokeWidth={isHovered ? '2' : '1'}
-                                style={{ transition: 'all 0.2s ease' }}
-                                onMouseEnter={() => setHoveredDistrict({ name: loc.name, count })}
-                                onMouseLeave={() => setHoveredDistrict(null)}
-                            >
-                                <title>{loc.name}: {count} applicants</title>
-                            </path>
-                        );
-                    })}
-                </svg>
-                
-                {/* Hover Tooltip Overlay */}
-                {hoveredDistrict && (
-                    <div style={{
-                        position: 'absolute',
-                        bottom: '20px',
-                        left: '50%',
-                        transform: 'translateX(-50%)',
-                        backgroundColor: '#1E293B',
-                        color: '#FFFFFF',
-                        padding: '8px 12px',
-                        borderRadius: '8px',
-                        fontSize: '12px',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                        pointerEvents: 'none',
-                        whiteSpace: 'nowrap',
-                        zIndex: 10
-                    }}>
-                        <span style={{ fontWeight: 700 }}>{hoveredDistrict.name}</span>: {hoveredDistrict.count} applicants
-                    </div>
-                )}
-            </div>
-        </div>
+        <g>
+            <rect x={x} y={y} width={width} height={height} fill={fill} rx={3}
+                style={{ filter: isHovered ? 'brightness(1.18)' : 'none', transition: 'filter 0.15s ease' }} />
+            <polygon points={`${x + width},${y} ${x + width + depth},${y - depth / 2} ${x + width + depth},${y + height - depth / 2} ${x + width},${y + height}`}
+                fill={fill + '99'} />
+            <polygon points={`${x},${y} ${x + depth},${y - depth / 2} ${x + width + depth},${y - depth / 2} ${x + width},${y}`}
+                fill={fill + 'DD'} />
+        </g>
     );
 };
 
-const EducationLevelChart: React.FC<{ data: { name: string; value: number }[] }> = ({ data }) => {
-    const COLORS = [
-        '#7C3AED', // Purple
-        '#3B82F6', // Blue
-        '#10B981', // Emerald
-        '#EC4899', // Pink
-        '#F59E0B', // Amber
-        '#06B6D4'  // Cyan
-    ];
-
-    const total = data.reduce((sum, item) => sum + item.value, 0) || 1;
-
-    // Format data for Recharts
-    const chartData = data.map((item, index) => ({
-        name: item.name,
-        value: item.value,
-        percentage: ((item.value / total) * 100).toFixed(1)
-    }));
-
-    return (
-        <div className="ai-chart-card" style={{ display: 'flex', flexDirection: 'column', margin: 0, padding: '24px', minHeight: '300px' }}>
-            <h4 style={{ margin: '0 0 4px 0', fontSize: '15px', fontWeight: '800', color: '#1E293B' }}>Applicant Education Levels</h4>
-            <p className="text-slate-400 text-xs mb-6" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Prior qualifications of surveyed applicants.</p>
-            
-            <div style={{ width: '100%', height: '180px', position: 'relative', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                        <Pie
-                            data={chartData}
-                            cx="40%"
-                            cy="50%"
-                            innerRadius={45}
-                            outerRadius={65}
-                            paddingAngle={3}
-                            dataKey="value"
-                            labelLine={false}
-                        >
-                            {chartData.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} style={{ outline: 'none' }} />
-                            ))}
-                        </Pie>
-                        <Tooltip
-                            content={({ active, payload }) => {
-                                if (active && payload && payload.length) {
-                                    const item = payload[0].payload;
-                                    return (
-                                        <div style={{ backgroundColor: '#1E293B', color: '#FFFFFF', padding: '8px 12px', borderRadius: '8px', fontSize: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', border: 'none' }}>
-                                            <span style={{ fontWeight: 700 }}>{item.name}</span>
-                                            <div style={{ marginTop: '4px', opacity: 0.9 }}>
-                                                {item.value} applicants ({item.percentage}%)
-                                            </div>
-                                        </div>
-                                    );
-                                }
-                                return null;
-                            }}
-                        />
-                        <Legend
-                            verticalAlign="middle"
-                            align="right"
-                            layout="vertical"
-                            iconType="circle"
-                            iconSize={8}
-                            formatter={(value, entry: any) => {
-                                const payload = entry.payload;
-                                return (
-                                    <span style={{ fontSize: '11px', color: '#475569', fontWeight: 600, marginLeft: '6px' }}>
-                                        {value} ({payload ? payload.percentage : 0}%)
-                                    </span>
-                                );
-                            }}
-                        />
-                    </PieChart>
-                </ResponsiveContainer>
-            </div>
-        </div>
-    );
-};
-
-const HighDemandSkills: React.FC<{ skills: any[] }> = ({ skills }) => {
-    return (
-        <div className="ai-chart-card" style={{ borderLeft: '5px solid #F59E0B' }}>
-            <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#78350F', fontWeight: '800' }}>
-                <TrendingUp size={18} className="text-amber-500" /> High-Demand Skills
-            </h4>
-            <p className="text-slate-400 text-xs mb-4" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Ranked horizontal bar chart of high-growth / high-demand skill domains.</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {skills && skills.length > 0 ? (
-                    skills.map((s: any, idx: number) => (
-                        <div key={idx} className="chart-bar-row">
-                            <div className="label">
-                                <span>#{s.rank} {s.name}</span>
-                                <span>{s.count} ({s.percentage}%)</span>
-                            </div>
-                            <div className="bar-bg">
-                                <div className="bar-fill amber" style={{ width: `${s.percentage}%` }}></div>
-                            </div>
-                        </div>
-                    ))
-                ) : (
-                    <div className="text-center text-slate-400 py-6 text-sm">Insufficient data points.</div>
-                )}
-            </div>
-        </div>
-    );
-};
-
-const OpportunitiesExpected: React.FC<{ opportunities: any[] }> = ({ opportunities }) => {
-    return (
-        <div className="ai-chart-card">
-            <h4>University Opportunities Students Expect</h4>
-            <p className="text-slate-400 text-xs mb-4" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Recurring opportunity themes grouped dynamically from survey feedback.</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {opportunities && opportunities.length > 0 ? (
-                    opportunities.map((o: any, idx: number) => (
-                        <div key={idx} className="chart-bar-row">
-                            <div className="label"><span>{o.name}</span> <span>{o.count} ({o.percentage}%)</span></div>
-                            <div className="bar-bg"><div className="bar-fill blue" style={{ width: `${o.percentage}%` }}></div></div>
-                        </div>
-                    ))
-                ) : (
-                    <div className="text-center text-slate-400 py-6 text-sm">Insufficient data points.</div>
-                )}
-            </div>
-        </div>
-    );
-};
-
-const BalanceDonutChart: React.FC<{ data: any[] }> = ({ data }) => {
-    const activeData = data.filter(item => item.count > 0);
-    const radius = 60;
-    const circumference = 2 * Math.PI * radius;
-    let accumulatedPercent = 0;
-
-    const colorMap: { [key: string]: string } = {
-        '1 (100% Theory)': '#EF4444',
-        '2 (Mostly Theory)': '#F59E0B',
-        '3 (Balanced)': '#3B82F6',
-        '4 (Mostly Practical)': '#10B981',
-        '5 (100% Practical)': '#7C3AED'
-    };
-
-    if (activeData.length === 0) {
-        return <div className="text-center text-slate-400 py-6 text-sm">No data available.</div>;
-    }
-
-    return (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around', gap: '20px', width: '100%', flexWrap: 'wrap', marginTop: '10px' }}>
-            <div style={{ position: 'relative', width: '130px', height: '130px' }}>
-                <svg width="130" height="130" viewBox="0 0 140 140" style={{ transform: 'rotate(-90deg)' }}>
-                    {activeData.map((item) => {
-                        const percent = item.percentage;
-                        const strokeLength = (percent / 100) * circumference;
-                        const strokeOffset = circumference - ((accumulatedPercent / 100) * circumference);
-                        accumulatedPercent += percent;
-
-                        const color = colorMap[item.label] || '#94A3B8';
-
-                        return (
-                            <circle
-                                key={item.label}
-                                cx="70"
-                                cy="70"
-                                r={radius}
-                                fill="transparent"
-                                stroke={color}
-                                strokeWidth="12"
-                                strokeDasharray={`${strokeLength} ${circumference}`}
-                                strokeDashoffset={strokeOffset}
-                                style={{ opacity: 0.95 }}
-                            >
-                                <title>{item.label}: {item.count} responses ({item.percentage}%)</title>
-                            </circle>
-                        );
-                    })}
-                    <circle cx="70" cy="70" r={radius - 8} fill="#FFFFFF" />
-                </svg>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                {activeData.map((item) => {
-                    const color = colorMap[item.label] || '#94A3B8';
-                    return (
-                        <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#475569', fontWeight: 600 }}>
-                            <span style={{ display: 'inline-block', width: '10px', height: '10px', borderRadius: '3px', backgroundColor: color }}></span>
-                            <span>{item.label}: {item.count} ({item.percentage}%)</span>
-                        </div>
-                    );
-                })}
-            </div>
-        </div>
-    );
-};
-
-const LearningPreferences: React.FC<{ methods: any[], balance: any[] }> = ({ methods, balance }) => {
-    return (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
-            {/* Preferred Learning Methods */}
-            <div className="ai-chart-card">
-                <h4>Preferred Learning Methods</h4>
-                <p className="text-slate-400 text-xs mb-4" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Ranked teaching modes selected by students in surveys.</p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {methods && methods.length > 0 ? (
-                        methods.map((m: any, idx: number) => (
-                            <div key={idx} className="chart-bar-row">
-                                <div className="label"><span>{m.name}</span> <span>{m.count} ({m.percentage}%)</span></div>
-                                <div className="bar-bg"><div className="bar-fill purple" style={{ width: `${m.percentage}%` }}></div></div>
-                            </div>
-                        ))
-                    ) : (
-                        <div className="text-center text-slate-400 py-6 text-sm">Insufficient data points.</div>
-                    )}
+const UniOppTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+        const d = payload[0].payload;
+        return (
+            <div style={{ background: '#1E293B', color: '#FFF', padding: '10px 16px', borderRadius: '10px', fontSize: '13px', boxShadow: '0 8px 24px rgba(0,0,0,0.2)', lineHeight: 1.6 }}>
+                <div style={{ fontWeight: 700, marginBottom: '4px' }}>{d.name}</div>
+                <div style={{ opacity: 0.85 }}>
+                    <span style={{ fontWeight: 700, fontSize: '16px', color: '#A78BFA' }}>{d.percentage}%</span>
+                    <span style={{ marginLeft: '8px', fontSize: '11px', opacity: 0.7 }}>({d.count} responses)</span>
                 </div>
             </div>
+        );
+    }
+    return null;
+};
 
-            {/* Learning Balance Donut Chart */}
-            <div className="ai-chart-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <h4 style={{ alignSelf: 'flex-start' }}>Learning Balance Distribution</h4>
-                <p className="text-slate-400 text-xs mb-4" style={{ alignSelf: 'flex-start', margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Proportional breakdown of theory vs practical learning preferences.</p>
-                <BalanceDonutChart data={balance} />
-            </div>
-        </div>
+const UniOppXTick = ({ x, y, payload }: any) => {
+    const words = String(payload.value).split(' ');
+    const lines: string[] = [];
+    let current = '';
+    for (const w of words) {
+        if ((current + ' ' + w).trim().length > 14) { lines.push(current.trim()); current = w; }
+        else { current = (current + ' ' + w).trim(); }
+    }
+    if (current) lines.push(current);
+    return (
+        <g transform={`translate(${x},${y})`}>
+            {lines.map((line, i) => (
+                <text key={i} x={0} y={0} dy={14 + i * 13} textAnchor="middle" fill="#64748B" fontSize={10} fontWeight={500}>{line}</text>
+            ))}
+        </g>
     );
 };
 
-const CommonAnalyticsDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+const UniversityOpportunitiesChart: React.FC = () => {
+
+    const [data, setData] = useState<{ name: string; count: number; percentage: number }[]>([]);
     const [loading, setLoading] = useState(true);
-    const [data, setData] = useState<any>(null);
-    const [selectedField, setSelectedField] = useState<string | null>(null);
-    const [drilldownData, setDrilldownData] = useState<any[]>([]);
-    const [drilldownLoading, setDrilldownLoading] = useState(false);
+    const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
     useEffect(() => {
-        const fetchCommonOverview = async () => {
-            setLoading(true);
-            try {
-                const res = await aiAnalyticsService.getCommonOverview();
-                setData(res);
-                if (res.overall_demand && res.overall_demand.length > 0) {
-                    const firstField = res.overall_demand[0].name;
-                    setSelectedField(firstField);
-                    fetchDrilldown(firstField);
-                }
-            } catch (err) {
-                console.error("Failed to load common student analytics", err);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchCommonOverview();
+        aiAnalyticsService.getUniversityOpportunities()
+            .then(d => { setData(d); setLoading(false); })
+            .catch(() => setLoading(false));
     }, []);
 
-    const fetchDrilldown = async (field: string) => {
-        if (field === 'Other') {
-            setDrilldownData([]);
-            return;
-        }
-        setDrilldownLoading(true);
-        try {
-            const res = await aiAnalyticsService.getCommonDrilldown(field);
-            setDrilldownData(res);
-        } catch (err) {
-            console.error("Failed to load drilldown data", err);
-        } finally {
-            setDrilldownLoading(false);
-        }
-    };
-
-    const handleSliceClick = (field: string) => {
-        setSelectedField(field);
-        fetchDrilldown(field);
-    };
-
-    if (loading) {
-        return (
-            <div className="loading-spinner-container">
-                <div className="loading-spinner"></div>
-                <p>Aggregating University-wide Student Analytics...</p>
-            </div>
-        );
-    }
-
-    if (!data || data.total_surveys === 0) {
-        return (
-            <div style={{ animation: 'fadeIn 0.3s ease' }}>
-                <button
-                    className="cm-back-text-btn"
-                    onClick={onBack}
-                    style={{ marginBottom: '24px' }}
-                >
-                    <ArrowLeft size={16} /> Back to Programs
-                </button>
-                <div className="card-empty-state">
-                    <Database size={54} style={{ color: '#94A3B8', marginBottom: '16px' }} />
-                    <h3>No Common Student Analytics Available</h3>
-                    <p>There are currently no student interest surveys loaded in the database.</p>
-                    <p>Please return to the hub and sync the Google Sheets data.</p>
-                </div>
-            </div>
-        );
-    }
-
     return (
-        <div className="space-y-8 pb-10" style={{ animation: 'fadeIn 0.3s ease', display: 'flex', flexDirection: 'column', gap: '32px' }}>
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-6" style={{ borderBottom: '1px solid #E2E8F0', paddingBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '20px' }}>
-                <div>
-                    <button
-                        className="cm-back-text-btn"
-                        onClick={onBack}
-                        style={{ marginBottom: '16px' }}
-                    >
-                        <ArrowLeft size={16} /> Back to Programs
-                    </button>
-                    <h1 className="admin-page-title">Common Student Analytics</h1>
-                    <p className="text-slate-500 text-sm mt-1" style={{ fontWeight: 600 }}>University-wide student demand and academic interest insights across {data.total_surveys} surveys.</p>
+        <div style={{
+            background: '#FFFFFF',
+            borderRadius: '20px',
+            border: '1px solid #E2E8F0',
+            boxShadow: '0 4px 24px rgba(0,0,0,0.06)',
+            padding: '28px',
+        }}>
+            {/* Header */}
+            <div style={{ marginBottom: '24px' }}>
+                <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>
+                    University Opportunities Students Expect
+                </h4>
+                <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#64748B', fontWeight: 500 }}>
+                    Recurring opportunity themes grouped directly from survey responses · hover for percentage.
+                </p>
+            </div>
+
+            {loading ? (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '280px' }}>
+                    <div style={{ textAlign: 'center' }}>
+                        <div style={{ width: '36px', height: '36px', borderRadius: '50%', border: '3px solid #E9D5FF', borderTopColor: '#7C3AED', animation: 'spin 0.9s linear infinite', margin: '0 auto 12px auto' }}></div>
+                        <span style={{ fontSize: '13px', color: '#94A3B8' }}>Loading opportunity data…</span>
+                    </div>
                 </div>
-            </div>
+            ) : data.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '60px 0', color: '#94A3B8', fontSize: '13px' }}>No data available.</div>
+            ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: '32px', alignItems: 'center' }}>
+                    {/* Bar Chart */}
+                    <ResponsiveContainer width="100%" height={320}>
+                        <BarChart
+                            data={data}
+                            margin={{ top: 20, right: 32, left: 0, bottom: 60 }}
+                            barCategoryGap="28%"
+                            onMouseLeave={() => setActiveIndex(null)}
+                        >
+                            <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
+                            <XAxis
+                                dataKey="name"
+                                tick={<UniOppXTick />}
+                                tickLine={false}
+                                axisLine={{ stroke: '#E2E8F0' }}
+                                interval={0}
+                            />
+                            <YAxis
+                                tickLine={false}
+                                axisLine={false}
+                                tick={{ fontSize: 10, fill: '#94A3B8' }}
+                                tickFormatter={(v) => `${v}%`}
+                            />
+                            <Tooltip content={<UniOppTooltip />} cursor={false} />
+                            <Bar
+                                dataKey="percentage"
+                                shape={(props: any) => <UniOppBar {...props} fill={UNI_OPP_COLORS[props.index % UNI_OPP_COLORS.length]} isHovered={activeIndex === props.index} />}
+                                onMouseEnter={(_: any, index: number) => setActiveIndex(index)}
+                            >
+                                {data.map((_, i) => (
+                                    <Cell
+                                        key={i}
+                                        fill={UNI_OPP_COLORS[i % UNI_OPP_COLORS.length]}
+                                    />
+                                ))}
+                            </Bar>
+                        </BarChart>
+                    </ResponsiveContainer>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
-                <div className="ai-chart-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    <h4 style={{ alignSelf: 'flex-start' }}>Overall Student Demand by Academic Field</h4>
-                    <p className="text-slate-400 text-xs mb-6" style={{ alignSelf: 'flex-start', margin: '0 0 24px 0', fontSize: '12px', fontWeight: 500 }}>
-                        Click a slice of the donut to drill down into field-specific skill demands.
-                    </p>
-                    <DonutChart
-                        data={data.overall_demand}
-                        onSliceClick={handleSliceClick}
-                        selectedField={selectedField}
-                    />
+                    {/* Ranked list panel */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {data.map((item, i) => (
+                            <div
+                                key={i}
+                                onMouseEnter={() => setActiveIndex(i)}
+                                onMouseLeave={() => setActiveIndex(null)}
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '12px',
+                                    padding: '10px 14px',
+                                    borderRadius: '10px',
+                                    background: activeIndex === i ? '#F5F3FF' : '#F8FAFC',
+                                    border: activeIndex === i ? '1.5px solid #7C3AED' : '1px solid #E2E8F0',
+                                    cursor: 'default',
+                                    transition: 'all 0.15s ease',
+                                }}
+                            >
+                                {/* Rank badge */}
+                                <div style={{
+                                    width: '26px', height: '26px', borderRadius: '8px',
+                                    background: UNI_OPP_COLORS[i % UNI_OPP_COLORS.length],
+                                    color: '#FFF', fontSize: '11px', fontWeight: 800,
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    flexShrink: 0,
+                                }}>
+                                    {i + 1}
+                                </div>
+                                {/* Label + bar */}
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{ fontSize: '12px', fontWeight: 700, color: '#1E293B', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                        {item.name}
+                                    </div>
+                                    <div style={{ height: '5px', borderRadius: '3px', background: '#E2E8F0', overflow: 'hidden' }}>
+                                        <div style={{
+                                            height: '100%',
+                                            width: `${item.percentage}%`,
+                                            background: UNI_OPP_COLORS[i % UNI_OPP_COLORS.length],
+                                            borderRadius: '3px',
+                                            transition: 'width 0.4s ease',
+                                        }} />
+                                    </div>
+                                </div>
+                                {/* Percentage */}
+                                <span style={{ fontSize: '13px', fontWeight: 800, color: UNI_OPP_COLORS[i % UNI_OPP_COLORS.length], minWidth: '48px', textAlign: 'right' }}>
+                                    {item.percentage}%
+                                </span>
+                                <span style={{ fontSize: '10px', color: '#94A3B8', minWidth: '28px', textAlign: 'right' }}>
+                                    ({item.count})
+                                </span>
+                            </div>
+                        ))}
+                    </div>
                 </div>
-
-                <FieldSkillDrilldown
-                    field={selectedField || "None"}
-                    skillsData={drilldownData}
-                    loading={drilldownLoading}
-                />
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
-                <HighDemandSkills skills={data.high_demand_skills} />
-                <OpportunitiesExpected opportunities={data.opportunities} />
-            </div>
-
-            <div>
-                <h3 className="text-xl font-bold text-slate-800 mb-4" style={{ fontSize: '18px', fontWeight: '800', marginBottom: '16px' }}>
-                    Learning Preferences
-                </h3>
-                <LearningPreferences methods={data.learning_methods} balance={data.learning_balance} />
-            </div>
+            )}
         </div>
     );
 };
+
