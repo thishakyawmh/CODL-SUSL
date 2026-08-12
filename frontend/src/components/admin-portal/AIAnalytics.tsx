@@ -9,10 +9,26 @@ import {
 import { aiAnalyticsService, courseService } from '../../services/apiService';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
-import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid, Sector } from 'recharts';
 // @ts-ignore
 import SriLankaMapData from '@svg-maps/sri-lanka';
 import './AIAnalytics.css';
+
+const renderActiveShape = (props: any) => {
+    const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } = props;
+    return (
+        <Sector
+            cx={cx}
+            cy={cy}
+            innerRadius={innerRadius}
+            outerRadius={outerRadius + 8}
+            startAngle={startAngle}
+            endAngle={endAngle}
+            fill={fill}
+            style={{ transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)', cursor: 'pointer' }}
+        />
+    );
+};
 
 interface Course {
     id: string;
@@ -2164,9 +2180,10 @@ const InteractiveSriLankaMap: React.FC = () => {
                                         outerRadius={110}
                                         paddingAngle={4}
                                         dataKey="value"
+                                        activeShape={renderActiveShape}
                                     >
                                         {(geoData?.education_levels || []).map((_, idx) => (
-                                            <Cell key={`cell-${idx}`} fill={`url(#${CHART_GRADIENTS[idx % CHART_GRADIENTS.length].id})`} />
+                                            <Cell key={`cell-${idx}`} fill={`url(#${CHART_GRADIENTS[idx % CHART_GRADIENTS.length].id})`} style={{ transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)', cursor: 'pointer', outline: 'none' }} />
                                         ))}
                                     </Pie>
                                     <Tooltip content={({ active, payload }: any) => {
@@ -2224,9 +2241,10 @@ const InteractiveSriLankaMap: React.FC = () => {
                                         outerRadius={110}
                                         paddingAngle={4}
                                         dataKey="value"
+                                        activeShape={renderActiveShape}
                                     >
                                         {(geoData?.industry_sectors || []).map((_, idx) => (
-                                            <Cell key={`cell-ind-${idx}`} fill={`url(#${CHART_GRADIENTS[idx % CHART_GRADIENTS.length].id})`} />
+                                            <Cell key={`cell-ind-${idx}`} fill={`url(#${CHART_GRADIENTS[idx % CHART_GRADIENTS.length].id})`} style={{ transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)', cursor: 'pointer', outline: 'none' }} />
                                         ))}
                                     </Pie>
                                     <Tooltip content={({ active, payload }: any) => {
@@ -2323,13 +2341,14 @@ const InteractiveSriLankaMap: React.FC = () => {
                                             </linearGradient>
                                         ))}
                                     </defs>
-                                    <Pie data={allIslandPieData} cx="50%" cy="50%" innerRadius={60} outerRadius={110} paddingAngle={3} dataKey="value"
+                                    <Pie data={allIslandPieData} cx="50%" cy="50%" innerRadius={60} outerRadius={110} paddingAngle={3} dataKey="value" activeShape={renderActiveShape}
                                         onClick={(entry: any) => handleAllIslandFieldClick(entry.name)} style={{ cursor: 'pointer' }}>
                                         {allIslandPieData.map((entry, i) => (
                                             <Cell key={i} fill={`url(#${CHART_GRADIENTS[i % CHART_GRADIENTS.length].id})`}
                                                 stroke={allIslandSelectedField === entry.name ? '#0F172A' : 'transparent'}
                                                 strokeWidth={allIslandSelectedField === entry.name ? 3 : 0}
-                                                opacity={allIslandSelectedField && allIslandSelectedField !== entry.name ? 0.45 : 1} />
+                                                opacity={allIslandSelectedField && allIslandSelectedField !== entry.name ? 0.45 : 1}
+                                                style={{ transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)', cursor: 'pointer', outline: 'none' }} />
                                         ))}
                                     </Pie>
                                     <Tooltip content={({ active, payload }: any) => {
@@ -2374,8 +2393,8 @@ const InteractiveSriLankaMap: React.FC = () => {
                                                         </linearGradient>
                                                     ))}
                                                 </defs>
-                                                <Pie data={allIslandSkills.map(s => ({ ...s, value: s.score }))} cx="50%" cy="50%" innerRadius={70} outerRadius={105} paddingAngle={2} dataKey="value">
-                                                    {allIslandSkills.map((_, i) => <Cell key={i} fill={`url(#${CHART_GRADIENTS[i % CHART_GRADIENTS.length].id})`} />)}
+                                                <Pie data={allIslandSkills.map(s => ({ ...s, value: s.score }))} cx="50%" cy="50%" innerRadius={70} outerRadius={105} paddingAngle={2} dataKey="value" activeShape={renderActiveShape}>
+                                                    {allIslandSkills.map((_, i) => <Cell key={i} fill={`url(#${CHART_GRADIENTS[i % CHART_GRADIENTS.length].id})`} style={{ transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)', cursor: 'pointer', outline: 'none' }} />)}
                                                 </Pie>
                                                 <Tooltip content={({ active, payload }: any) => {
                                                     if (active && payload?.length) {
@@ -2422,13 +2441,14 @@ const InteractiveSriLankaMap: React.FC = () => {
                                             </linearGradient>
                                         ))}
                                     </defs>
-                                    <Pie data={geoData?.industry_domains || []} cx="50%" cy="50%" innerRadius={60} outerRadius={110} paddingAngle={3} dataKey="value"
+                                    <Pie data={geoData?.industry_domains || []} cx="50%" cy="50%" innerRadius={60} outerRadius={110} paddingAngle={3} dataKey="value" activeShape={renderActiveShape}
                                         onClick={(entry: any) => handleIndustryFieldClick(entry.name)} style={{ cursor: 'pointer' }}>
                                         {(geoData?.industry_domains || []).map((entry, i) => (
                                             <Cell key={i} fill={`url(#${CHART_GRADIENTS[i % CHART_GRADIENTS.length].id})`}
                                                 stroke={industrySelectedField === entry.name ? '#0F172A' : 'transparent'}
                                                 strokeWidth={industrySelectedField === entry.name ? 3 : 0}
-                                                opacity={industrySelectedField && industrySelectedField !== entry.name ? 0.45 : 1} />
+                                                opacity={industrySelectedField && industrySelectedField !== entry.name ? 0.45 : 1}
+                                                style={{ transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)', cursor: 'pointer', outline: 'none' }} />
                                         ))}
                                     </Pie>
                                     <Tooltip content={({ active, payload }: any) => {
@@ -2473,9 +2493,9 @@ const InteractiveSriLankaMap: React.FC = () => {
                                                         </linearGradient>
                                                     ))}
                                                 </defs>
-                                                <Pie data={industrySkills} cx="50%" cy="50%" innerRadius={70} outerRadius={105} paddingAngle={4} dataKey="value">
+                                                <Pie data={industrySkills} cx="50%" cy="50%" innerRadius={70} outerRadius={105} paddingAngle={4} dataKey="value" activeShape={renderActiveShape}>
                                                     {industrySkills.map((entry, idx) => (
-                                                        <Cell key={`cell-ind-skill-${idx}`} fill={`url(#${CHART_GRADIENTS[(idx + 2) % CHART_GRADIENTS.length].id})`} />
+                                                        <Cell key={`cell-ind-skill-${idx}`} fill={`url(#${CHART_GRADIENTS[(idx + 2) % CHART_GRADIENTS.length].id})`} style={{ transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)', cursor: 'pointer', outline: 'none' }} />
                                                     ))}
                                                 </Pie>
                                                 <Tooltip content={({ active, payload }: any) => {
