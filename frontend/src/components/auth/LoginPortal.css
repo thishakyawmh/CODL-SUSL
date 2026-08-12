@@ -790,3 +790,24 @@
         transform: scale(1.12);
     }
 }
+
+/* Mobile Responsiveness for Loading Overlay */
+@media (max-width: 480px) {
+    .sync-overlay-content {
+        padding: 28px 20px;
+        border-radius: 20px;
+        width: 85%;
+    }
+    .sync-overlay-spinner {
+        width: 64px;
+        height: 64px;
+        margin-bottom: 16px;
+    }
+    .sync-overlay-title {
+        font-size: 18px;
+    }
+    .sync-overlay-desc {
+        font-size: 13px;
+        line-height: 1.5;
+    }
+}
