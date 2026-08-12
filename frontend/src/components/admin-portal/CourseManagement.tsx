@@ -70,7 +70,7 @@ export const CourseManagement: React.FC = () => {
         const fetchRealCourses = async () => {
             try {
                 const data = await courseService.getAll();
-                // Map backend fields to frontend UI expectations
+
                 const mapped = data.map((c: any) => ({
                     id: c.id.toString(),
                     title: c.title,
@@ -114,19 +114,19 @@ export const CourseManagement: React.FC = () => {
         fetchPendingApprovals();
     }, [isLoading, realCourses, userRole]);
 
-    // Merge mock and real courses
+
     let allCourses = [...mockAdminCourses, ...realCourses];
 
-    // Filter by assigned courses if the user is a secretary or coordinator
+
     if (userRole === 'secretary') {
         const adminName = currentUser.fullName.toLowerCase();
         allCourses = allCourses.filter(course => {
             if (course.id.startsWith('CRS-')) {
-                // Mock courses
+
                 const sec = course.secretary?.toLowerCase() || '';
                 return sec !== '' && (sec.includes(adminName) || adminName.includes(sec.replace(/^(mr\.|mrs\.|ms\.)\s+/i, '')));
             } else {
-                // Real courses from API
+
                 return course.secretary_id?.toString() === currentUser.id?.toString() ||
                     (course.secretary?.toLowerCase() || '').includes(adminName);
             }
@@ -135,11 +135,11 @@ export const CourseManagement: React.FC = () => {
         const adminName = currentUser.fullName.toLowerCase();
         allCourses = allCourses.filter(course => {
             if (course.id.startsWith('CRS-')) {
-                // Mock courses
+
                 const coord = course.coordinator?.toLowerCase() || '';
                 return coord !== '' && (coord.includes(adminName) || adminName.includes(coord.replace(/^(dr\.|mr\.|mrs\.|ms\.)\s+/i, '')));
             } else {
-                // Real courses from API
+
                 return course.coordinator_id?.toString() === currentUser.id?.toString() ||
                     (course.coordinator?.toLowerCase() || '').includes(adminName);
             }
@@ -148,13 +148,13 @@ export const CourseManagement: React.FC = () => {
         const adminName = currentUser.fullName.toLowerCase();
         allCourses = allCourses.filter(course => {
             if (course.id.startsWith('CRS-')) {
-                // Mock courses
+
                 const coord = course.coordinator?.toLowerCase() || '';
                 const sec = course.secretary?.toLowerCase() || '';
                 return (coord !== '' && (coord.includes(adminName) || adminName.includes(coord.replace(/^(dr\.|mr\.|mrs\.|ms\.)\s+/i, '')))) ||
                     (sec !== '' && (sec.includes(adminName) || adminName.includes(sec.replace(/^(mr\.|mrs\.|ms\.)\s+/i, ''))));
             } else {
-                // Real courses from API are already filtered by the backend
+
                 return true;
             }
         });
@@ -237,7 +237,7 @@ export const CourseManagement: React.FC = () => {
             </div>
 
 
-            {/* Stats */}
+            { }
             {levelFilter === 'all' && !searchTerm && (
                 <div className="cm-stats-row" style={{
                     gridTemplateColumns: ['coordinator', 'secretary', 'director', 'super_admin'].includes(userRole)
@@ -289,7 +289,7 @@ export const CourseManagement: React.FC = () => {
                 </div>
             )}
 
-            {/* Search Bar only */}
+            { }
             <div className="cm-filters">
                 <div className="cm-search" style={{ maxWidth: '100%' }}>
                     <Search size={18} />
@@ -302,7 +302,7 @@ export const CourseManagement: React.FC = () => {
                 </div>
             </div>
 
-            {/* Category Overview (Featured when no search/filter) */}
+            { }
             {levelFilter === 'all' && !searchTerm && (
                 allCourses.length === 0 ? (
                     <div className="cm-empty" style={{ background: '#FFFFFF', padding: '60px', borderRadius: '24px', border: '1px solid rgba(0,0,0,0.05)', textAlign: 'center', margin: '20px 0' }}>
@@ -339,7 +339,7 @@ export const CourseManagement: React.FC = () => {
                 )
             )}
 
-            {/* Course Content Grid */}
+            { }
             {(levelFilter !== 'all' || searchTerm !== '') && (
                 <>
 

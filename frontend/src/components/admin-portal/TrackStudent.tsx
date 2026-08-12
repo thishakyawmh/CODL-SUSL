@@ -36,7 +36,7 @@ interface DBUserType {
     courses: string[];
     lastLogin: string;
 
-    // DB-specific fields
+
     dob?: string | null;
     sex?: string | null;
     civilStatus?: string | null;
@@ -68,7 +68,7 @@ interface AcademicProfile {
 }
 
 const getStudentAcademicProfile = (student: DBUserType): AcademicProfile => {
-    // If it's a real student with seeded profile fields, use those directly
+
     if (student.dob || student.olSubjects || student.alSubjects) {
         return {
             dob: student.dob || '2001-05-15',
@@ -86,7 +86,7 @@ const getStudentAcademicProfile = (student: DBUserType): AcademicProfile => {
         };
     }
 
-    // No profile data available — return empty defaults
+
     return {
         dob: '',
         sex: '',
@@ -427,7 +427,7 @@ export const TrackStudent: React.FC = () => {
     const [dbError, setDbError] = useState<string | null>(null);
     const [totalStudentCount, setTotalStudentCount] = useState<number>(0);
 
-    // Fetch total number of students in database on mount
+
     useEffect(() => {
         const fetchTotalCount = async () => {
             try {
@@ -440,7 +440,7 @@ export const TrackStudent: React.FC = () => {
         fetchTotalCount();
     }, []);
 
-    // Fetch live search results when query changes
+
     useEffect(() => {
         if (!searchQuery.trim()) {
             setRealStudents([]);
@@ -478,7 +478,7 @@ export const TrackStudent: React.FC = () => {
         return () => clearTimeout(delayDebounceFn);
     }, [searchQuery]);
 
-    // Use database data directly — no mock blending
+
 
     const filteredStudents = useMemo(() => {
         if (!searchQuery.trim()) return [];
@@ -598,7 +598,7 @@ export const TrackStudent: React.FC = () => {
 
     const studentData = selectedStudent ? getStudentData(selectedStudent) : null;
 
-    // Build per-course academic view
+
     const getCourseAcademicView = (courseName: string) => {
         const courseData = realCourses.find(c => c.title === courseName);
         const courseResults = studentData?.results.filter(r => r.course === courseName) || [];
@@ -608,7 +608,7 @@ export const TrackStudent: React.FC = () => {
         return { courseData, courseResults, courseReattempts, coursePostponements, courseExamApps };
     };
 
-    // Build a timeline of all student activity
+
     const buildTimeline = () => {
         if (!studentData || !selectedStudent) return [];
         const events: { date: string; type: string; title: string; detail: string; status: string; icon: React.ReactNode; course: string }[] = [];
@@ -673,7 +673,7 @@ export const TrackStudent: React.FC = () => {
             });
         });
 
-        // Push simulated application submission & approval events for each course
+
         selectedStudent.courses.forEach(courseName => {
             const joinDate = new Date(selectedStudent.joinDate);
             const submissionDateObj = new Date(joinDate);
@@ -784,7 +784,7 @@ export const TrackStudent: React.FC = () => {
 
             {selectedStudent && studentData && academicProfile ? (
                 <div className="ts-profile-section-new">
-                    {/* Student Hero Banner */}
+                    { }
                     <StudentHeroBanner
                         student={selectedStudent}
                         profile={academicProfile}
@@ -793,7 +793,7 @@ export const TrackStudent: React.FC = () => {
                         onEdit={() => openEditModal(selectedStudent, academicProfile)}
                     />
 
-                    {/* Tabbed Navigation Bar */}
+                    { }
                     <div style={{ display: 'flex', gap: '8px', borderBottom: '2px solid #E2E8F0', marginBottom: '24px' }}>
                         <button
                             onClick={() => setActiveTab('profile')}
@@ -876,7 +876,7 @@ export const TrackStudent: React.FC = () => {
                         </button>
                     </div>
 
-                    {/* Tab Contents */}
+                    { }
                     {activeTab === 'profile' && (
                         <StudentProfileTab student={selectedStudent} profile={academicProfile} />
                     )}
@@ -907,7 +907,7 @@ export const TrackStudent: React.FC = () => {
                     gap: '24px',
                     alignItems: 'stretch'
                 }}>
-                    {/* KPI Metric Widget */}
+                    { }
                     <div style={{
                         background: '#FFFFFF',
                         borderRadius: '16px',
@@ -944,7 +944,7 @@ export const TrackStudent: React.FC = () => {
                         </span>
                     </div>
 
-                    {/* Search Guides / Examples */}
+                    { }
                     <div style={{
                         background: '#FFFFFF',
                         borderRadius: '16px',
@@ -970,7 +970,7 @@ export const TrackStudent: React.FC = () => {
                             flexDirection: 'column',
                             gap: '12px'
                         }}>
-                            {/* Search Card 1 */}
+                            { }
                             <div
                                 onClick={() => setSearchQuery('Saveena')}
                                 style={{
@@ -1006,7 +1006,7 @@ export const TrackStudent: React.FC = () => {
                                 </code>
                             </div>
 
-                            {/* Search Card 2 */}
+                            { }
                             <div
                                 onClick={() => setSearchQuery('26CODL0001')}
                                 style={{
@@ -1042,7 +1042,7 @@ export const TrackStudent: React.FC = () => {
                                 </code>
                             </div>
 
-                            {/* Search Card 3 */}
+                            { }
                             <div
                                 onClick={() => setSearchQuery('200545678921')}
                                 style={{
@@ -1082,7 +1082,7 @@ export const TrackStudent: React.FC = () => {
                 </div>
             )}
 
-            {/* Edit Student Modal */}
+            { }
             <EditStudentModal
                 show={showEditModal}
                 editForm={editForm}

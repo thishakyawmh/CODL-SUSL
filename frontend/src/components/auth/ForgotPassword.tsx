@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Mail, ChevronRight, MapPin, Phone } from 'lucide-react';
 import { authService } from '../../services/apiService';
-import './LoginPortal.css'; // Reusing premium login portal styles
+import './LoginPortal.css'; 
 
 export const ForgotPassword: React.FC = () => {
     const navigate = useNavigate();
@@ -56,7 +56,7 @@ export const ForgotPassword: React.FC = () => {
 
     return (
         <div className="login-portal-wrapper">
-            {/* Left Side - Branding & Information */}
+            { }
             <div className="login-left-pane">
                 <div className="branding-container">
                     <div className="branding-header-group">
@@ -106,7 +106,7 @@ export const ForgotPassword: React.FC = () => {
                 </div>
             </div>
 
-            {/* Right Side - Forgot Password Form */}
+            { }
             <div className="login-right-pane">
                 <div className="mobile-header-banner">
                     <div className="mobile-branding-header">

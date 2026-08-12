@@ -10,9 +10,7 @@ use App\Models\Subject;
 
 class AIAnalysisController extends Controller
 {
-    /**
-     * Analyze a course curriculum against real-world industry trends and job paths.
-     */
+     
     public function analyze(Request $request)
     {
         $request->validate([
@@ -20,10 +18,10 @@ class AIAnalysisController extends Controller
         ]);
 
         $courseId = $request->input('course_id');
-        // Load the course with its semesters, subjects, and batches (with materials)
+
         $course = Course::with(['category', 'semesters.subjects', 'subjects', 'batches'])->findOrFail($courseId);
 
-        // 1. Gather all subjects in this course
+
         $subjectsList = collect();
         if ($course->semesters->isNotEmpty()) {
             foreach ($course->semesters as $semester) {
@@ -43,7 +41,7 @@ class AIAnalysisController extends Controller
             ];
         })->toArray();
 
-        // 2. Gather all unique slide files/materials uploaded for this course
+
         $materials = [];
         $seenFilenames = [];
         foreach ($course->batches as $batch) {
@@ -62,22 +60,22 @@ class AIAnalysisController extends Controller
             }
         }
 
-        // 3. Load predefined job paths database (real-world demands)
+
         $jobPathsDef = $this->getPredefinedJobPaths();
 
-        // 4. Handle empty curriculum early (e.g. course 5 BET Hons has no subjects)
+
         if (empty($subjectArray)) {
             $emptyResult = $this->generateEmptyAnalysisResult($course, $jobPathsDef);
             return response()->json($emptyResult);
         }
 
-        // 5. Attempt AI analysis via Gemini API if configured
+
         $apiKey = config('services.gemini.key');
         if (!empty($apiKey)) {
             try {
                 $analysisResult = $this->analyzeWithGemini($course, $subjectArray, $materials, $jobPathsDef, $apiKey);
                 if ($analysisResult) {
-                    // Sort job paths by matching percentage descending in Gemini response too (if not already sorted)
+
                     if (isset($analysisResult['job_paths'])) {
                         usort($analysisResult['job_paths'], function ($a, $b) {
                             return $b['matching_percentage'] <=> $a['matching_percentage'];
@@ -90,14 +88,12 @@ class AIAnalysisController extends Controller
             }
         }
 
-        // Fallback to local rule-based analysis engine
+
         $analysisResult = $this->analyzeLocally($course, $subjectArray, $materials, $jobPathsDef);
         return response()->json($analysisResult);
     }
 
-    /**
-     * Generate an empty audit report for courses without defined modules/subjects.
-     */
+     
     private function generateEmptyAnalysisResult($course, $jobPathsDef)
     {
         $jobPaths = [];
@@ -119,9 +115,7 @@ class AIAnalysisController extends Controller
         ];
     }
 
-    /**
-     * Call Gemini API to perform the analysis.
-     */
+     
     private function analyzeWithGemini($course, $subjectArray, $materials, $jobPathsDef, $apiKey)
     {
         $prompt = "You are an expert academic curriculum auditor. You are auditing the program: '" . $course->title . "' (" . ($course->category ? $course->category->name : 'N/A') . ").\n\n";
@@ -193,9 +187,7 @@ class AIAnalysisController extends Controller
         throw new \Exception('Invalid response structure or HTTP failure from Gemini API');
     }
 
-    /**
-     * Local matching engine fallback using keyword matching and statistical scoring.
-     */
+     
     private function analyzeLocally($course, $subjectArray, $materials, $jobPathsDef)
     {
         $jobPathsResult = [];
@@ -203,12 +195,12 @@ class AIAnalysisController extends Controller
         $overallScoreSum = 0;
         $totalJobPaths = count($jobPathsDef);
 
-        // Gather all subject names and slide names in lowercase for keyword scanning
+
         $subjectNamesLower = array_map(function ($s) { return strtolower($s['name']); }, $subjectArray);
         $slideNamesLower = array_map(function ($m) { return strtolower($m['filename']); }, $materials);
         $allTaughtText = implode(' ', array_merge($subjectNamesLower, $slideNamesLower));
 
-        // 1. Analyze Job Paths
+
         foreach ($jobPathsDef as $path) {
             $coveredSkills = [];
             $missingSkills = [];
@@ -228,14 +220,14 @@ class AIAnalysisController extends Controller
                 }
             }
 
-            // Calculate matching percentage based on covered skills
+
             $matchingPercentage = 0;
             $totalSkillsCount = count($path['skills']);
             if ($totalSkillsCount > 0) {
                 $matchingPercentage = round((count($coveredSkills) / $totalSkillsCount) * 100);
             }
 
-            // Build dynamic description
+
             if ($matchingPercentage >= 80) {
                 $description = "Highly aligned. This program provides excellent training for " . $path['name'] . ", covering almost all core skills and tools.";
             } elseif ($matchingPercentage >= 40) {
@@ -257,33 +249,33 @@ class AIAnalysisController extends Controller
             $overallScoreSum += $matchingPercentage;
         }
 
-        // Sort job paths by matching percentage descending
+
         usort($jobPathsResult, function ($a, $b) {
             return $b['matching_percentage'] <=> $a['matching_percentage'];
         });
 
         $overallMatchingScore = $totalJobPaths > 0 ? round($overallScoreSum / $totalJobPaths) : 0;
-        // Limit score to realistic values (between 5% and 98%)
+
         $overallMatchingScore = max(10, min(95, $overallMatchingScore));
 
-        // 2. Subject-by-Subject analysis
+
         foreach ($subjectArray as $subject) {
             $subNameLower = strtolower($subject['name']);
             $auditedSlides = [];
             $topicsIncluded = [];
 
-            // Map slides to this subject based on keyword matching
+
             foreach ($materials as $material) {
                 $slideLower = strtolower($material['filename']);
                 
-                // Exclude common file extensions and prefix labels
+
                 $cleanSlideName = preg_replace('/^(lec|slide|lecture|chapter|week|unit)_\d+_/i', '', $material['filename']);
                 $cleanSlideName = str_replace(['_', '.pdf', '.pptx', '.ppt'], [' ', '', '', ''], $cleanSlideName);
                 
-                // Check if slide matches subject
+
                 $isMatch = false;
                 
-                // Triggers
+
                 if (str_contains($subNameLower, 'python') && str_contains($slideLower, 'python')) {
                     $isMatch = true;
                 } elseif (str_contains($subNameLower, 'web') && (str_contains($slideLower, 'web') || str_contains($slideLower, 'html') || str_contains($slideLower, 'css') || str_contains($slideLower, 'react') || str_contains($slideLower, 'redux') || str_contains($slideLower, 'node') || str_contains($slideLower, 'php') || str_contains($slideLower, 'laravel') || str_contains($slideLower, 'javascript') || str_contains($slideLower, 'dom') || str_contains($slideLower, 'js'))) {
@@ -302,13 +294,13 @@ class AIAnalysisController extends Controller
 
                 if ($isMatch) {
                     $auditedSlides[] = $material['filename'];
-                    // Extract a clean topic name
+
                     $topicsIncluded[] = ucwords(trim($cleanSlideName));
                 }
             }
 
-            // Calculate Usefulness Percentage based on relevance to market demands
-            $usefulness = 60; // default base
+
+            $usefulness = 60; 
             $recommendations = "";
 
             if (str_contains($subNameLower, 'advanced web')) {
@@ -352,15 +344,15 @@ class AIAnalysisController extends Controller
                 $recommendations = "Standard supporting course. Focus on aligning the syllabus with professional business communication and industry report writing.";
             }
 
-            // If no slide was audited, we suggest uploading slides
+
             if (empty($auditedSlides)) {
                 $recommendations = "Action required: No slides or lecture materials have been uploaded by the instructor. Upload course slides via CourseMaterials.tsx to run a deeper content audit.";
             }
 
-            // Ensure unique topics
+
             $topicsIncluded = array_values(array_unique($topicsIncluded));
             if (empty($topicsIncluded)) {
-                // Fallback topics from subject name
+
                 if (str_contains($subNameLower, 'web')) {
                     $topicsIncluded = ["HTML/CSS Structures", "Syllabus Basics"];
                 } elseif (str_contains($subNameLower, 'database')) {
@@ -382,7 +374,7 @@ class AIAnalysisController extends Controller
             ];
         }
 
-        // 3. Create professional executive summary
+
         $summary = "The curriculum for '" . $course->title . "' has been audited against contemporary technology recruitment sectors. ";
         $summary .= "The overall matching score is " . $overallMatchingScore . "%. ";
         
@@ -402,9 +394,7 @@ class AIAnalysisController extends Controller
         ];
     }
 
-    /**
-     * Predefined job paths details with associated keywords.
-     */
+     
     private function getPredefinedJobPaths()
     {
         return [

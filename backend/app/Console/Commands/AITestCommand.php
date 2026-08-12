@@ -18,12 +18,12 @@ class AITestCommand extends Command
     {
         $this->info('Starting AI Pipeline Simulation...');
 
-        // 1. Clean the database for a fresh test
+
         StudentInterest::truncate();
         IndustryRequirement::truncate();
         AnalyticsCache::truncate();
 
-        // 2. Inject Mock Survey Data
+
         $this->info('Injecting mock Google Forms data...');
         StudentInterest::create([
             'education_level' => 'BSc Computer Science',
@@ -57,13 +57,13 @@ class AITestCommand extends Command
 
         $this->info('Simulating AI Sync Pipeline...');
         
-        // 3. Run the NLP Pipeline
+
         $analytics = $nlpService->processAll();
         
-        // 4. Run the Recommendation Engine
+
         $recommendations = $recommendationEngine->generateRecommendations($analytics);
 
-        // 5. Output the Results
+
         $this->newLine();
         $this->info('✅ NLP Output (Top Demanded Skills):');
         foreach ($analytics['domain_frequency_counts']['industry'] as $domain => $count) {
@@ -80,7 +80,7 @@ class AITestCommand extends Command
             $this->newLine();
         }
 
-        // Clean up mock data so it doesn't pollute the real DB
+
         StudentInterest::truncate();
         IndustryRequirement::truncate();
 

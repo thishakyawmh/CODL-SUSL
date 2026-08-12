@@ -11,7 +11,7 @@ export const Profile: React.FC = () => {
     const [isSaving, setIsSaving] = useState(false);
     const [avatarError, setAvatarError] = useState(false);
 
-    // Initial mock data simulating what is fetched from the backend (saved from previous applications)
+
     const [profileData, setProfileData] = useState(() => {
         const storedUser = sessionStorage.getItem('user');
         if (storedUser) {
@@ -302,7 +302,7 @@ export const Profile: React.FC = () => {
 
             <div className="profile-content-grid">
 
-                {/* Personal Information */}
+                { }
                 <div className="profile-section-card">
                     <div className="profile-section-header">
                         <div className="profile-section-icon"><User size={24} /></div>
@@ -388,7 +388,7 @@ export const Profile: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Contact & Address */}
+                { }
                 <div className="profile-section-card">
                     <div className="profile-section-header">
                         <div className="profile-section-icon"><MapPin size={24} /></div>
@@ -458,7 +458,7 @@ export const Profile: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Employment Info */}
+                { }
                 <div className="profile-section-card full-width">
                     <div className="profile-section-header">
                         <div className="profile-section-icon"><Briefcase size={24} /></div>
@@ -486,7 +486,7 @@ export const Profile: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Educational Qualifications */}
+                { }
                 <div className="profile-section-card full-width">
                     <div className="profile-section-header">
                         <div className="profile-section-icon"><GraduationCap size={24} /></div>

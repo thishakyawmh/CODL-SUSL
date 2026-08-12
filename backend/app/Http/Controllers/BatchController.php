@@ -167,7 +167,7 @@ class BatchController extends Controller
     public function uploadMaterial(Request $request, $batchId)
     {
         $request->validate([
-            'file' => 'required|file|max:20480', // 20MB max
+            'file' => 'required|file|max:20480', 
         ]);
 
         $file = $request->file('file');

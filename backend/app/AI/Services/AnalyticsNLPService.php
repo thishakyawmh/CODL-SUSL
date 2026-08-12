@@ -13,17 +13,14 @@ class AnalyticsNLPService
 
     public function __construct()
     {
-        // Load the synonym dictionary from config/analytics.php
+
         $this->synonyms = config('analytics.synonyms', []);
     }
 
-    /**
-     * Master method to process survey data for a specific course/program scope.
-     * Uses multi-signal semantic matching to find relevant surveys.
-     */
+     
     public function processAll(\App\Models\Course $course = null): array
     {
-        // Use memory-efficient cursors to process database rows one by one
+
         $studentSurveys = StudentInterest::cursor();
         $industrySurveys = IndustryRequirement::cursor();
 
@@ -34,15 +31,15 @@ class AnalyticsNLPService
         $studentPrefsCounts = [];
         $industryPracticesCounts = [];
 
-        // Theory/Practical preferred learning weighted average variables
+
         $theoryPracticalSum = 0.0;
         $theoryPracticalWeightSum = 0.0;
 
-        // Certification importance weighted average variables
+
         $certImportanceSum = 0.0;
         $certImportanceWeightSum = 0.0;
 
-        // Helper to convert balance input (text or number) to a 1-5 score
+
         $parseBalance = function ($balance) {
             if (is_numeric($balance)) {
                 return (float) $balance;
@@ -57,7 +54,7 @@ class AnalyticsNLPService
             return 3.0;
         };
 
-        // Load config thresholds & weights
+
         $minStudentThreshold = config('analytics.thresholds.min_student_responses', 10);
         $minIndustryThreshold = config('analytics.thresholds.min_industry_responses', 5);
         $minRelevanceScore = config('analytics.thresholds.min_relevance_score', 0.35);
@@ -77,7 +74,7 @@ class AnalyticsNLPService
         $curriculumDomains = [];
         $curriculumAvailable = false;
 
-        // Initialize variables to avoid undefined variable warnings when $course is null
+
         $studentDistribution = [];
         $industryDistribution = [];
         $jaccardResults = ['intersection' => [], 'union' => [], 'overall_score' => null];
@@ -96,7 +93,7 @@ class AnalyticsNLPService
         $domainMatrix = [];
 
         if ($course) {
-            // Build Program Profile from real database data only
+
             $course->loadMissing('semesters.subjects', 'category');
             
             foreach ($course->semesters as $semester) {
@@ -114,16 +111,16 @@ class AnalyticsNLPService
             $curriculumDomains = $this->deduplicateDomains($curriculumDomains);
             $curriculumAvailable = !empty($curriculumSubjects);
 
-            // Build the complete Program Profile.
-            // CRITICAL: Domain boundaries are derived ONLY from title/department/category.
-            // Curriculum subject names MUST NEVER contribute to domain boundary derivation
-            // because subject keyword spillover is the primary source of false positives.
+
+
+
+
             $profile = $this->buildProgramProfile($course, $curriculumSubjects);
             $relatedSectors        = $profile['related_sectors'];
             $relatedInterests      = array_merge($profile['core_domains'], $profile['adjacent_domains'], $profile['emerging_domains']);
             $relatedSubDisciplines = $profile['related_disciplines'];
 
-            // HARD SAFETY GATE: If no curriculum subjects are present, skip curriculum analyses
+
             if (!$curriculumAvailable) {
                 $evidenceStatus = 'insufficient';
                 $confidence = 'Insufficient evidence';
@@ -164,7 +161,7 @@ class AnalyticsNLPService
                 ];
             }
 
-            // 1. Filter Student Surveys using multi-layered profile context
+
             $relevantStudentSurveys = [];
             $studentAudit = [];
             foreach ($studentSurveys as $survey) {
@@ -194,7 +191,7 @@ class AnalyticsNLPService
                 }
             }
 
-            // 2. Filter Industry Surveys using multi-layered profile context
+
             $relevantIndustrySurveys = [];
             $industryAudit = [];
             foreach ($industrySurveys as $survey) {
@@ -225,12 +222,12 @@ class AnalyticsNLPService
             $avgStudentRelevance = $studentCount > 0 ? array_sum(array_column($relevantStudentSurveys, 'relevance_score')) / $studentCount : 0.0;
             $avgIndustryRelevance = $industryCount > 0 ? array_sum(array_column($relevantIndustrySurveys, 'relevance_score')) / $industryCount : 0.0;
 
-            // Confidence & evidence status gate
+
             if ($totalRelevant === 0) {
                 $evidenceStatus = 'insufficient';
                 $confidence = 'Insufficient evidence';
             } else {
-                // Calculate average relevance
+
                 $avgRelevance = ($avgStudentRelevance + $avgIndustryRelevance) / 2.0;
                 if ($studentCount < $minStudentThreshold || $industryCount < $minIndustryThreshold) {
                     $evidenceStatus = 'limited';
@@ -241,7 +238,7 @@ class AnalyticsNLPService
                 }
             }
 
-            // If evidence is insufficient, bypass normal analysis and return empty KPIs (NO fallback to global)
+
             if ($evidenceStatus === 'insufficient') {
                 return [
                     'student_demand_distribution' => [['name' => 'Insufficient data', 'value' => 0]],
@@ -280,7 +277,7 @@ class AnalyticsNLPService
                 ];
             }
 
-            // 3. Process Relevant Student Surveys
+
             $studentDomainCounts = [];
             $studentDomainSkillLinks = [];
             foreach ($relevantStudentSurveys as $item) {
@@ -324,7 +321,7 @@ class AnalyticsNLPService
                 }
             }
 
-            // 4. Process Relevant Industry Surveys
+
             $industryDomainCounts = [];
             $industryDomainSkillLinks = [];
             foreach ($relevantIndustrySurveys as $item) {
@@ -372,7 +369,7 @@ class AnalyticsNLPService
             }
 
         } else {
-            // Global scope fallback using memory-efficient cursor loop (for global analytics view)
+
             foreach ($studentSurveys as $survey) {
                 $text = implode(' ', [$survey->primary_interest, $survey->primary_skills, $survey->secondary_interest, $survey->secondary_skills, $survey->ternary_interest, $survey->ternary_skills]);
                 $domains = $this->extractDomains($text);
@@ -434,7 +431,7 @@ class AnalyticsNLPService
             }
         }
 
-        // Sort all accumulated frequencies
+
         arsort($studentFrequencies);
         arsort($industryFrequencies);
         arsort($emergingTechnologiesCounts);
@@ -442,23 +439,23 @@ class AnalyticsNLPService
         arsort($studentPrefsCounts);
         arsort($industryPracticesCounts);
 
-        // 4. Calculate Jaccard Similarity (Overall match between supply and demand)
+
         $jaccardResults = $this->calculateWeightedJaccard($studentFrequencies, $industryFrequencies);
 
-        // 5. Structure distributions for the dashboard pie charts
+
         $studentDistribution = $this->formatDistribution($studentFrequencies);
         $industryDistribution = $this->formatDistribution($industryFrequencies);
 
-        // 7. Process Learning Preferences Aggregates
+
         $avgTheoryPractical = $theoryPracticalWeightSum > 0 ? $theoryPracticalSum / $theoryPracticalWeightSum : 3.0;
         $studentPracticalPercent = (int) round(($avgTheoryPractical / 5) * 100);
         $studentTheoryPercent = 100 - $studentPracticalPercent;
 
-        // Preferred learning methods - student direct preferences
+
         $studentPrefsFormatted = [];
         $totalPrefs = array_sum($studentPrefsCounts) ?: 1;
         foreach (array_slice($studentPrefsCounts, 0, 5, true) as $name => $count) {
-            // Check if industry requirements demand skills aligned with this method
+
             $industryAlignmentText = "Direct Student Request";
             $alignmentLevel = 'Low';
             if ($course) {
@@ -487,13 +484,13 @@ class AnalyticsNLPService
 
         $avgCertImportance = $certImportanceWeightSum > 0 ? $certImportanceSum / $certImportanceWeightSum : 3.0;
         $certImportancePercent = (int) round(($avgCertImportance / 5) * 100);
-        // 8. Dynamic Curriculum Coverage & Gaps Analysis
+
         $coveragePercent = 0;
         $missingSubjects = [];
         $curriculumAnomalies = [];
         $domainMatrix = [];
 
-        // Determine average relevance scores
+
         $avgStudentRelevance = $studentCount > 0 ? array_sum(array_column($relevantStudentSurveys, 'relevance_score')) / $studentCount : 0.0;
         $avgIndustryRelevance = $industryCount > 0 ? array_sum(array_column($relevantIndustrySurveys, 'relevance_score')) / $industryCount : 0.0;
         $confidence = $this->calculateConfidence($studentCount, $industryCount, $avgStudentRelevance, $avgIndustryRelevance, $curriculumAvailable);
@@ -501,9 +498,9 @@ class AnalyticsNLPService
         if ($course && $curriculumAvailable) {
             $allFrequencies = array_unique(array_merge(array_keys($industryFrequencies), array_keys($studentFrequencies)));
 
-            // Determine evidence-supported requirement coverage denominator.
-            // Only domains within CORE or ADJACENT boundaries are considered target domains.
-            // Excluded domains are never counted as coverage targets.
+
+
+
             $targetDomains = [];
             foreach ($allFrequencies as $domain) {
                 if (in_array($domain, $profile['excluded_domains'])) continue;
@@ -534,31 +531,31 @@ class AnalyticsNLPService
 
             $allDomainsList = array_keys($this->synonyms);
             foreach ($allDomainsList as $domain) {
-                // STEP 1: Immediately skip excluded domains — they must never surface in output.
+
                 if (in_array($domain, $profile['excluded_domains'])) {
                     continue;
                 }
 
-                // STEP 2: Classify by program profile boundaries (never by relatedInterests).
+
                 $isCore     = in_array($domain, $profile['core_domains']);
                 $isAdjacent = in_array($domain, $profile['adjacent_domains']) && !$isCore;
                 $isEmerging = in_array($domain, $profile['emerging_domains']) && !$isCore && !$isAdjacent;
 
-                // 2. Evidence Relevance & Metrics (70/30 WEIGHT APPLIED ONLY TO RECORDS SURVIVING RELEVANCE GATE)
+
                 $raw_ind_pct = $industryCount > 0 ? ($industryDomainCounts[$domain] ?? 0) / $industryCount : 0.0;
                 $raw_stud_pct = $studentCount > 0 ? ($studentDomainCounts[$domain] ?? 0) / $studentCount : 0.0;
                 $combined_score = ($raw_ind_pct * 0.70) + ($raw_stud_pct * 0.30);
 
-                // 3. Curriculum Coverage Check (EVALUATED BEFORE GAP CLASSIFICATION)
+
                 $coverage = $this->getCurriculumCoverageStatus($domain, $curriculumSubjects);
                 
-                // 4. Core/Adjacent/Emerging/Out-of-Scope Classification
+
                 $relevanceLevel = 'OUT-OF-SCOPE';
                 if ($isCore) $relevanceLevel = 'CORE';
                 elseif ($isAdjacent) $relevanceLevel = 'ADJACENT';
                 elseif ($isEmerging) $relevanceLevel = 'EMERGING';
 
-                // 5. Determine finding classification (ENFORCING RESPONSE COUNT GATES IN ADDITION TO PERCENTAGE)
+
                 $classification = 'IGNORE';
                 $indCountMatch = $industryDomainCounts[$domain] ?? 0;
                 $studCountMatch = $studentDomainCounts[$domain] ?? 0;
@@ -568,7 +565,7 @@ class AnalyticsNLPService
                     $classification = 'Already Covered';
                 } else {
                     if ($relevanceLevel === 'CORE') {
-                        // Needs strong evidence: threshold 15% combined score AND >= 3 responses
+
                         if ($combined_score >= 0.15 && $totalEvidenceCount >= 3) {
                             $classification = 'Core Curriculum Gap';
                         } elseif ($combined_score >= 0.08 && $totalEvidenceCount >= 2) {
@@ -577,14 +574,14 @@ class AnalyticsNLPService
                             $classification = 'Insufficient Evidence';
                         }
                     } elseif ($relevanceLevel === 'ADJACENT') {
-                        // Needs moderate/strong evidence: threshold 8% combined score AND >= 2 responses
+
                         if ($combined_score >= 0.08 && $totalEvidenceCount >= 2) {
                             $classification = 'Curriculum Enhancement';
                         } else {
                             $classification = 'Insufficient Evidence';
                         }
                     } elseif ($relevanceLevel === 'EMERGING') {
-                        // Emerging trend: threshold 5% combined score AND >= 2 responses
+
                         if ($combined_score >= 0.05 && $totalEvidenceCount >= 2) {
                             $classification = 'Emerging / Industry Technology Trend';
                         } else {
@@ -593,7 +590,7 @@ class AnalyticsNLPService
                     }
                 }
 
-                // Prepare explanation and source details
+
                 $sources = [];
                 if ($raw_ind_pct > 0) $sources[] = 'Industry Survey';
                 if ($raw_stud_pct > 0) $sources[] = 'Student Interest Survey';
@@ -604,7 +601,7 @@ class AnalyticsNLPService
                 );
                 $suppSkills = array_slice(array_values(array_unique(array_filter($suppSkills))), 0, 5);
 
-                // Detailed reasoning explanation matching Requirement 14
+
                 $pctText = round($combined_score * 100) . '%';
                 
                 if ($classification === 'Already Covered') {
@@ -615,8 +612,8 @@ class AnalyticsNLPService
                     if ($coverage['status'] === 'Embedded Coverage') {
                         $reason = "{$domain} has partial/embedded coverage across curriculum subjects (" . $coverage['subject'] . "). A dedicated module enhancement is recommended based on " . $totalEvidenceCount . " relevant survey responses.";
                     } else {
-                        // IMPORTANT: When coverage is 'Not Covered', never say "contains related concepts".
-                        // The coverage status and explanation text must be consistent.
+
+
                         $reason = "{$domain} was identified as a curriculum enhancement ({$pctText} combined demand from " . $totalEvidenceCount . " relevant responses). The current curriculum does not have a dedicated subject for this area.";
                     }
                 } elseif ($classification === 'Insufficient Evidence') {
@@ -655,20 +652,20 @@ class AnalyticsNLPService
 
                 $domainMatrix[] = $finding;
 
-                // Add to missing_subjects only if it is a core gap or curriculum enhancement!
+
                 if ($classification === 'Core Curriculum Gap' || $classification === 'Curriculum Enhancement') {
                     $missingSubjects[] = $finding;
                 }
             }
-            // Sort missing subjects by combined score descending
+
             usort($missingSubjects, fn($a, $b) => $b['combined_pct'] <=> $a['combined_pct']);
 
-            // Identify Curriculum Anomalies
+
             $legacyKeywords = config('analytics.legacy_keywords', ['visual basic', 'flash', 'silverlight', 'cobol', 'dreamweaver', 'pascal', 'fortran']);
             foreach ($curriculumSubjects as $subject) {
                 $subLower = strtolower($subject['name']);
                 
-                // Anomaly 1: Curriculum Modernization (Legacy Tech)
+
                 $isLegacy = false;
                 $legacyTechName = '';
                 foreach ($legacyKeywords as $kw) {
@@ -679,7 +676,7 @@ class AnalyticsNLPService
                     }
                 }
 
-                // Calculate combined demand score for subject domains
+
                 $subDomains = $this->extractDomains($subject['name']);
                 $raw_ind_pct = 0.0;
                 $raw_stud_pct = 0.0;
@@ -708,7 +705,7 @@ class AnalyticsNLPService
                     ];
                 }
 
-                // Anomaly 2: Low Observed Demand (<5% combined score)
+
                 if (!empty($subDomains) && $combined_score < 0.05 && count($curriculumSubjects) > 3) {
                     $curriculumAnomalies[] = [
                         'anomaly_type' => 'Low Observed Demand',
@@ -722,7 +719,7 @@ class AnalyticsNLPService
                     ];
                 }
 
-                // Anomaly 3: Skill Coverage Gap
+
                 if ($combined_score >= 0.15 && !empty($subDomains)) {
                     $associatedSkills = [];
                     foreach ($subDomains as $sd) {
@@ -745,7 +742,7 @@ class AnalyticsNLPService
             }
         }
 
-        // Calculate separate match KPIs using Cosine Similarity of curriculum vs student/industry
+
         $studentMatchScore = null;
         $industryMatchScore = null;
         if ($course && $curriculumAvailable) {
@@ -766,13 +763,13 @@ class AnalyticsNLPService
             'skill_gaps' => array_keys(array_slice($skillGapsCounts, 0, 5)),
             'jaccard_similarity_results' => $jaccardResults,
             
-            // Upgraded insights metrics
+
             'coverage_percent' => $coveragePercent,
             'missing_subjects' => $missingSubjects,
             'outdated_subjects' => $curriculumAnomalies,
             'low_demand_subjects' => [],
             
-            // Teaching & learning preferences metrics
+
             'learning_preferences_data' => [
                 'student_theory_percent' => $studentTheoryPercent,
                 'student_practical_percent' => $studentPracticalPercent,
@@ -1047,29 +1044,23 @@ class AnalyticsNLPService
         return implode(' ', $parts);
     }
 
-    /**
-     * Normalizes text by lowercasing and removing punctuation.
-     */
+     
     public function normalizeText(string $text): string
     {
         $text = strtolower($text);
-        // Remove everything except letters, numbers, and spaces
+
         $text = preg_replace('/[^a-z0-9\s]/', ' ', $text);
-        // Replace multiple spaces with a single space
+
         return preg_replace('/\s+/', ' ', $text);
     }
 
-    /**
-     * Tokenizes text into an array of words.
-     */
+     
     protected function tokenize(string $text): array
     {
         return array_filter(explode(' ', $text));
     }
 
-    /**
-     * Removes common stop words from tokens.
-     */
+     
     protected function removeStopWords(array $tokens): array
     {
         $stopWords = ['and', 'the', 'want', 'learn', 'should', 'with', 'would', 'also', 'about', 'to', 'in', 'of', 'for', 'a', 'an'];
@@ -1086,7 +1077,7 @@ class AnalyticsNLPService
         Log::info("Pre-classifying survey texts via Gemini API...");
 
         $texts = [];
-        // Extract texts from student interests
+
         foreach (\App\AI\Models\StudentInterest::cursor() as $survey) {
             $t = trim(implode(' ', array_filter([
                 $survey->primary_skills,
@@ -1100,7 +1091,7 @@ class AnalyticsNLPService
             if ($survey->ternary_skills) $texts[] = trim($survey->ternary_skills);
         }
 
-        // Extract texts from industry requirements
+
         foreach (\App\AI\Models\IndustryRequirement::cursor() as $survey) {
             $t = trim(implode(' ', array_filter([
                 $survey->required_skills,
@@ -1121,7 +1112,7 @@ class AnalyticsNLPService
         }
 
         $domainsList = array_keys($this->synonyms);
-        $chunks = array_chunk($uniqueTexts, 30); // Use 30 to stay within response token limits safely
+        $chunks = array_chunk($uniqueTexts, 30); 
 
         foreach ($chunks as $chunkIndex => $chunk) {
             Log::info("Sending batch " . ($chunkIndex + 1) . " of " . count($chunks) . " to Gemini...");
@@ -1170,7 +1161,7 @@ class AnalyticsNLPService
                 Log::error("Error in Gemini batch pre-classification: " . $e->getMessage());
             }
 
-            // Sleep 4 seconds between calls to respect the 15 RPM free-tier limit
+
             if (count($chunks) > 1 && $chunkIndex < count($chunks) - 1) {
                 sleep(4);
             }
@@ -1198,7 +1189,7 @@ class AnalyticsNLPService
             $domains = $this->extractDomainsLocalRegex($text);
         }
 
-        // Post-validation: filter domains to prevent generic word contamination!
+
         $validatedDomains = [];
         foreach ($domains as $domain) {
             if ($this->validateDomainContext($domain, $text)) {
@@ -1220,7 +1211,7 @@ class AnalyticsNLPService
                 if (empty($normalizedKeyword)) {
                     continue;
                 }
-                // Match with word boundaries to avoid false positives (e.g. 'ml' in 'html')
+
                 $pattern = '/\b' . preg_quote($normalizedKeyword, '/') . '\b/i';
                 if (preg_match($pattern, $normalized)) {
                     $matchedDomains[] = $domain;
@@ -1231,17 +1222,13 @@ class AnalyticsNLPService
         return array_values(array_unique($matchedDomains));
     }
 
-    /**
-     * Deduplicates domains to prevent one survey from skewing the frequency.
-     */
+     
     protected function deduplicateDomains(array $domains): array
     {
         return array_values(array_unique($domains));
     }
 
-    /**
-     * Counts the frequency of each domain.
-     */
+     
     protected function countFrequency(array $domains): array
     {
         $frequencies = array_count_values($domains);
@@ -1249,9 +1236,7 @@ class AnalyticsNLPService
         return $frequencies;
     }
 
-    /**
-     * Calculates the Jaccard similarity between two frequency distributions.
-     */
+     
     protected function calculateJaccardSimilarity(array $setA, array $setB): array
     {
         $keysA = array_keys($setA);
@@ -1269,15 +1254,13 @@ class AnalyticsNLPService
         ];
     }
 
-    /**
-     * Formats frequency array into standard charting format.
-     */
+     
     protected function formatDistribution(array $frequencies): array
     {
         $total = array_sum($frequencies) ?: 1;
         $distribution = [];
         
-        // Take top 5 for charts
+
         $topFrequencies = array_slice($frequencies, 0, 5, true);
         
         foreach ($topFrequencies as $name => $count) {
@@ -1294,9 +1277,7 @@ class AnalyticsNLPService
         return $distribution;
     }
 
-    /**
-     * Helper to classify a course into one of the 19 standard academic interests.
-     */
+     
     public function classifyCourseField(\App\Models\Course $course): string
     {
         $text = strtolower($course->title . ' ' . $course->department);
@@ -1335,9 +1316,7 @@ class AnalyticsNLPService
         return $course->department;
     }
 
-    /**
-     * Recommends multiple related academic interests based on program title, category, and subject names.
-     */
+     
     public function classifyCourseFields(\App\Models\Course $course): array
     {
         $course->loadMissing('semesters.subjects', 'category');
@@ -1390,9 +1369,7 @@ class AnalyticsNLPService
         return array_unique($matchedFields);
     }
 
-    /**
-     * Calculates the cosine similarity between curriculum domains and survey frequency distribution.
-     */
+     
     protected function calculateCosineSimilarity(array $curriculumDomains, array $frequencies): float
     {
         if (empty($curriculumDomains) || empty($frequencies)) {
@@ -1400,7 +1377,7 @@ class AnalyticsNLPService
         }
 
         $dotProduct = 0.0;
-        $normA = count($curriculumDomains); // Since each domain in curriculum has weight 1.0, sum of 1.0^2 is count.
+        $normA = count($curriculumDomains); 
         $normB = 0.0;
 
         foreach ($frequencies as $domain => $count) {
@@ -1417,9 +1394,7 @@ class AnalyticsNLPService
         return ($dotProduct / (sqrt($normA) * sqrt($normB))) * 100;
     }
 
-    /**
-     * Calculates the weighted Jaccard similarity between two frequency distributions.
-     */
+     
     protected function calculateWeightedJaccard(array $setA, array $setB): array
     {
         $keysA = array_keys($setA);
@@ -1656,7 +1631,7 @@ class AnalyticsNLPService
             return false;
         }
 
-        // Association map of subjects to skills
+
         $subjectToSkillsMap = [
             'management' => ['management', 'leadership', 'strategy', 'hr', 'human resource', 'organization', 'behavior'],
             'marketing' => ['marketing', 'sales', 'seo', 'sem', 'branding', 'social media', 'advertising', 'consumer'],
@@ -1681,7 +1656,7 @@ class AnalyticsNLPService
             'tourism' => ['tourism', 'travel', 'hotel', 'hospitality', 'event'],
         ];
 
-        // If curriculum is empty, check against program profile (title & department)
+
         if (empty($curriculumSubjects)) {
             $profileText = strtolower($course->title . ' ' . $course->department);
             foreach ($skills as $skill) {
@@ -1728,14 +1703,14 @@ class AnalyticsNLPService
         foreach ($curriculumSubjects as $subject) {
             $subNameLower = strtolower($subject['name']);
             
-            // Direct match: subject name contains the domain itself
+
             if (str_contains($subNameLower, $domainLower)) {
                 $directMatch = true;
                 $matchedSubject = $subject['code'] . ': ' . $subject['name'];
                 break;
             }
 
-            // Equivalent match: subject name contains some of the synonyms
+
             foreach ($synonyms as $syn) {
                 if (empty($syn) || strlen($syn) < 3) continue;
                 if (str_contains($subNameLower, strtolower($syn))) {
@@ -1753,7 +1728,7 @@ class AnalyticsNLPService
             return ['status' => 'Covered by Equivalent Subject', 'subject' => $matchedSubject];
         }
 
-        // Level 3: Embedded Coverage check
+
         $subNames = array_map(fn($s) => strtolower($s['name']), $curriculumSubjects);
         
         if ($domain === 'Data Science' || $domain === 'Data Analytics') {
@@ -1801,7 +1776,7 @@ class AnalyticsNLPService
     {
         $relevant = $relatedInterests;
 
-        // Dependency mappings
+
         if (in_array('Computing & Information Technology', $relatedInterests)) {
             $relevant = array_merge($relevant, [
                 'Computing & Information Technology', 'Cloud Computing', 'Data Science', 
@@ -1870,7 +1845,7 @@ class AnalyticsNLPService
 
         $rules = $genericMap[$domain];
         
-        // Check if any of the generic words are in the text
+
         $hasGeneric = false;
         foreach ($rules['generic'] as $gen) {
             if (preg_match('/\b' . preg_quote($gen, '/') . '\b/i', $textLower)) {
@@ -1879,18 +1854,18 @@ class AnalyticsNLPService
             }
         }
 
-        // If there's a generic word, check if there is also a contextual word or a multi-word keyword.
+
         if ($hasGeneric) {
-            // First check if any non-generic synonym keyword matches directly as a whole phrase
+
             $synonyms = $this->synonyms[$domain] ?? [];
             foreach ($synonyms as $syn) {
                 $isGenSyn = in_array(strtolower($syn), $rules['generic']);
                 if (!$isGenSyn && preg_match('/\b' . preg_quote(strtolower($syn), '/') . '\b/i', $textLower)) {
-                    return true; // Safe!
+                    return true; 
                 }
             }
             
-            // Otherwise, we require at least one contextual word
+
             foreach ($rules['context'] as $ctx) {
                 if (preg_match('/\b' . preg_quote($ctx, '/') . '\b/i', $textLower)) {
                     return true;
@@ -1903,15 +1878,7 @@ class AnalyticsNLPService
         return true;
     }
 
-    /**
-     * Evaluates whether a student survey record is relevant to the given program profile.
-     *
-     * Rules enforced:
-     * 1. Interest-Skill isolation: Primary skills only count for primary interest, etc.
-     * 2. Hard excluded domain rejection: records whose primary interest is excluded are rejected immediately.
-     * 3. Generic token suppression: records with only generic skill words are rejected.
-     * 4. Minimum relevance score gate after all checks.
-     */
+     
     private function evaluateStudentRelevance($survey, array $profile): array
     {
         $reasons = [];
@@ -1927,7 +1894,7 @@ class AnalyticsNLPService
         $secondaryInterest = $survey->secondary_interest ?? '';
         $ternaryInterest   = $survey->ternary_interest   ?? '';
 
-        // Hard rejection: primary interest is explicitly excluded for this program type
+
         if ($primaryInterest && in_array($primaryInterest, $excludedDomains)) {
             return [
                 'accepted' => false,
@@ -1936,10 +1903,10 @@ class AnalyticsNLPService
             ];
         }
 
-        // Interest matching: Primary → Secondary → Ternary (never cross-mix levels)
+
         if ($primaryInterest && in_array($primaryInterest, $acceptedDomains)) {
             $matchedInterestLevel = 'primary';
-            // Core primary interest has higher weight than adjacent primary interest
+
             $interestWeight = in_array($primaryInterest, $coreDomains) ? 1.0 : 0.70;
             $reasons[] = in_array($primaryInterest, $coreDomains) ? 'Core Primary Interest' : 'Adjacent Primary Interest';
         } elseif ($secondaryInterest && in_array($secondaryInterest, $acceptedDomains) && !in_array($secondaryInterest, $excludedDomains)) {
@@ -1960,7 +1927,7 @@ class AnalyticsNLPService
             ];
         }
 
-        // Extract skills from the MATCHED interest level only — never cross-mix
+
         $skills  = '';
         $methods = '';
         $balance = '';
@@ -2013,23 +1980,12 @@ class AnalyticsNLPService
         ];
     }
 
-    /**
-     * Evaluates whether an industry survey record is relevant to the given program profile.
-     *
-     * Pipeline (all stages must pass in order):
-     * Stage 1: Sector compatibility — Is the industry sector relevant to this program type?
-     * Stage 2: Discipline compatibility — Does the survey's academic field match program domains?
-     * Stage 3: Domain boundary check — Do detected skill domains fall within CORE/ADJACENT?
-     *          Records whose detected domains are ALL in the program's EXCLUDED list are rejected
-     *          even if sector and discipline passed.
-     * Stage 4: Generic token check — Reject records with only generic skill words.
-     * Stage 5: Curriculum skill match + minimum score gate.
-     */
+     
     private function evaluateIndustryRelevance($survey, array $profile): array
     {
         $reasons = [];
 
-        // --- Stage 1: Sector compatibility ---
+
         if (!in_array($survey->industry_sector, $profile['related_sectors'])) {
             return [
                 'accepted' => false,
@@ -2040,7 +1996,7 @@ class AnalyticsNLPService
         $sectorScore = 0.25;
         $reasons[]   = 'Sector Match';
 
-        // --- Stage 2: Academic discipline compatibility ---
+
         $surveyFields = array_filter([
             $survey->primary_academic_field,
             $survey->secondary_academic_field,
@@ -2059,10 +2015,10 @@ class AnalyticsNLPService
         $fieldScore = in_array($survey->primary_academic_field ?? '', $profile['core_domains']) ? 0.25 : 0.15;
         $reasons[] = 'Discipline Match';
 
-        // --- Stage 3: Domain boundary check ---
-        // Detect the actual technology/knowledge domains referenced in this survey record.
-        // If ALL of those domains are in the program's EXCLUDED list, reject the record
-        // regardless of sector/discipline match — e.g. a DevOps survey for Web Design.
+
+
+
+
         $surveyFullText = trim(implode(' ', array_filter([
             $survey->required_skills,
             $survey->emerging_fields,
@@ -2073,14 +2029,14 @@ class AnalyticsNLPService
         if (!empty($detectedDomains) && !empty($profile['excluded_domains'])) {
             $nonExcludedDomains = array_diff($detectedDomains, $profile['excluded_domains']);
             if (empty($nonExcludedDomains)) {
-                // Every detected domain is on the excluded list
+
                 return [
                     'accepted' => false,
                     'reason'   => 'Stage 3 FAIL: all detected domains [' . implode(', ', $detectedDomains) . '] are excluded for ' . $profile['program_type'],
                     'score'    => $sectorScore + $fieldScore,
                 ];
             }
-            // At least one detected domain must be within core or adjacent (emerging alone is not sufficient)
+
             $coreOrAdjacentDomains = array_merge($profile['core_domains'], $profile['adjacent_domains']);
             $relevantDomains = array_intersect($detectedDomains, $coreOrAdjacentDomains);
             if (empty($relevantDomains)) {
@@ -2093,7 +2049,7 @@ class AnalyticsNLPService
         }
         $reasons[] = 'Domain Boundary OK';
 
-        // --- Stage 4: Generic token check ---
+
         $skills = $survey->required_skills ?? '';
         if ($this->containsOnlyGenericTokens($skills)) {
             return [
@@ -2103,7 +2059,7 @@ class AnalyticsNLPService
             ];
         }
 
-        // --- Stage 5: Curriculum skill match + minimum score gate ---
+
         $skillsScore = 0.0;
         if ($this->areSkillsRelatedToCurriculum($skills, $profile['curriculum_subjects'])) {
             $skillsScore = 0.35;
@@ -2163,15 +2119,7 @@ class AnalyticsNLPService
         return true;
     }
 
-    /**
-     * Builds the complete Program Profile for a course.
-     *
-     * CRITICAL DESIGN RULE: Domain boundaries are derived ONLY from the program title,
-     * department, and category. Curriculum subject names are NEVER used to populate
-     * domain boundaries — this prevents subject keyword spillover (e.g. a "JavaScript"
-     * subject causing "Web Development" to appear in a Graphic Design program's scope,
-     * which then causes Cloud/DevOps to be flagged as adjacent).
-     */
+     
     private function buildProgramProfile(\App\Models\Course $course, array $curriculumSubjects): array
     {
         $titleText = strtolower(trim(implode(' ', array_filter([
@@ -2205,122 +2153,108 @@ class AnalyticsNLPService
         ];
     }
 
-    /**
-     * Detects the program type from title+department+category text.
-     * Checks in specificity order (most specific first) so that a
-     * "BBA in E-Business" matches 'e_business' before 'business_management'.
-     */
+     
     private function detectProgramType(string $titleText): string
     {
-        // E-Business (before general business check)
+
         if (preg_match('/\b(e-?business|e-?commerce|digital\s+business)\b/i', $titleText)
             && preg_match('/\b(business|bba|management|administration)\b/i', $titleText)) {
             return 'e_business';
         }
-        // Web Design / Web Development
+
         if (preg_match('/\b(web\s+design|web\s+development|frontend|front.?end\s+dev)\b/i', $titleText)) {
             return 'web_design_development';
         }
-        // Graphic Design
+
         if (preg_match('/\b(graphic\s+design|fine\s+arts?|illustration|multimedia\s+design|visual\s+arts?)\b/i', $titleText)) {
             return 'graphic_design';
         }
-        // Software Engineering
+
         if (preg_match('/\b(software\s+engineering|software\s+development)\b/i', $titleText)) {
             return 'software_engineering';
         }
-        // Cyber Security
+
         if (preg_match('/\b(cyber\s+security|cybersecurity|information\s+security)\b/i', $titleText)) {
             return 'cyber_security';
         }
-        // Data Science / AI
+
         if (preg_match('/\b(data\s+science|machine\s+learning|artificial\s+intelligence)\b/i', $titleText)) {
             return 'data_science_ai';
         }
-        // DevOps / Cloud
+
         if (preg_match('/\b(devops|cloud\s+computing|cloud\s+infrastructure)\b/i', $titleText)) {
             return 'devops_cloud';
         }
-        // Mobile Development
+
         if (preg_match('/\b(mobile\s+(development|application|computing)|android\s+dev|ios\s+dev)\b/i', $titleText)) {
             return 'mobile_development';
         }
-        // Python / specific language cert
+
         if (preg_match('/\b(python\s+programming|python\s+development)\b/i', $titleText)) {
             return 'python_programming';
         }
-        // General IT / Computing (checked AFTER all specific IT programs)
+
         if (preg_match('/\b(information\s+technology|computing|computer\s+science)\b/i', $titleText)
             && !preg_match('/\b(accounting|business|marketing|management|english)\b/i', $titleText)) {
             return 'information_technology';
         }
-        // Networking
+
         if (preg_match('/\b(computer\s+network|networking|telecommunication)\b/i', $titleText)) {
             return 'networking';
         }
-        // Accounting / Finance
+
         if (preg_match('/\b(accounting|accountancy|finance|financial|audit|taxation|banking)\b/i', $titleText)) {
             return 'accounting_finance';
         }
-        // Agribusiness (before general agriculture)
+
         if (preg_match('/\b(agribusiness|agri.?management|agricultural\s+(business|management))\b/i', $titleText)) {
             return 'agribusiness';
         }
-        // Agriculture
+
         if (preg_match('/\b(agriculture|agricultural|farming|horticulture|animal\s+science|crop\s+science)\b/i', $titleText)) {
             return 'agriculture';
         }
-        // Law
+
         if (preg_match('/\b(law|legal\s+studies|jurisprudence)\b/i', $titleText)) {
             return 'law';
         }
-        // Marketing
+
         if (preg_match('/\b(marketing|digital\s+marketing|advertising)\b/i', $titleText)) {
             return 'marketing';
         }
-        // Business / Management (general — after e-business and accounting)
+
         if (preg_match('/\b(business|bba|mba|management|administration|human\s+resource|entrepreneurship)\b/i', $titleText)) {
             return 'business_management';
         }
-        // English / Languages
+
         if (preg_match('/\b(english|spoken\s+english|language|linguistics|literature|translation|esl)\b/i', $titleText)) {
             return 'languages_arts';
         }
-        // Media & Communication
+
         if (preg_match('/\b(media|journalism|communication|broadcasting|public\s+relations)\b/i', $titleText)) {
             return 'media_communication';
         }
-        // Hospitality / Tourism
+
         if (preg_match('/\b(hospitality|tourism|hotel|travel\s+management|event\s+management)\b/i', $titleText)) {
             return 'hospitality_tourism';
         }
-        // Economics
+
         if (preg_match('/\b(economics|macroeconomics|microeconomics)\b/i', $titleText)) {
             return 'economics';
         }
-        // Education
+
         if (preg_match('/\b(education|teaching|pedagogy|teacher\s+training)\b/i', $titleText)) {
             return 'education';
         }
-        // Psychology
+
         if (preg_match('/\b(psychology|counseling|counselling|behavioral\s+science)\b/i', $titleText)) {
             return 'psychology';
         }
 
-        return 'general'; // Conservative fallback
+        return 'general'; 
     }
 
-    /**
-     * Returns explicit domain boundaries (CORE, ADJACENT, EMERGING, EXCLUDED) for a program type.
-     *
-     * These boundaries are hard-coded per program type and are NOT derived from any
-     * curriculum content. They represent the academic scope of the program:
-     * - CORE:     Domains that are primary learning objectives of this program.
-     * - ADJACENT: Domains that are directly related but not primary learning objectives.
-     * - EMERGING: Domains that industry is beginning to apply to this field.
-     * - EXCLUDED: Domains that are out of academic scope — any survey record whose
-     *             detected domains are ALL in this list will be rejected at Stage 3.
-     */
+     
     private function getDomainBoundaries(string $programType): array
     {
         $map = [
@@ -2562,10 +2496,7 @@ class AnalyticsNLPService
         return $map[$programType] ?? $map['general'];
     }
 
-    /**
-     * Returns the industry sectors relevant to a program type.
-     * Used in Stage 1 of the industry relevance gate.
-     */
+     
     private function getSectorsForProgramType(string $programType): array
     {
         $map = [
@@ -2613,7 +2544,7 @@ class AnalyticsNLPService
         }
 
         if (!$hasBalance) {
-            return 'Medium'; // student evidence only or industry evidence only
+            return 'Medium'; 
         }
 
         if ($avgRelevance >= 0.70 && $total >= 20) {

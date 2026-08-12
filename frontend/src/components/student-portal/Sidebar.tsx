@@ -14,10 +14,10 @@ export const Sidebar: React.FC = () => {
     const handleSignOutConfirm = () => {
         setIsSignOutOpen(false);
         
-        // Clear local storage first to guarantee UI updates instantly
+
         sessionStorage.clear();
         
-        // Call API in background
+
         authService.logout().catch(() => {});
         
         navigate('/login', { replace: true });
@@ -26,7 +26,7 @@ export const Sidebar: React.FC = () => {
     const [isMobileOpen, setIsMobileOpen] = useState(false);
     const [avatarError, setAvatarError] = useState(false);
 
-    // Close sidebar on route change for mobile
+
     useEffect(() => {
         setIsMobileOpen(false);
     }, [location.pathname]);
@@ -80,7 +80,7 @@ export const Sidebar: React.FC = () => {
 
     return (
         <>
-            {/* Mobile Header Toggle */}
+            { }
             <div className="mobile-header">
                 <div className="logo-mobile">
                     <img src={branding.logo} alt="Logo" />
@@ -93,7 +93,7 @@ export const Sidebar: React.FC = () => {
                 </button>
             </div>
 
-            {/* Mobile Overlay */}
+            { }
             {isMobileOpen && (
                 <div className="sidebar-overlay" onClick={() => setIsMobileOpen(false)}></div>
             )}

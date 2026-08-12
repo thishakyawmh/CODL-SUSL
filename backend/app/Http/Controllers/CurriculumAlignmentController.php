@@ -13,10 +13,7 @@ use Illuminate\Support\Facades\DB;
 
 class CurriculumAlignmentController extends Controller
 {
-    /**
-     * Skill Extraction Engine
-     * Automatically extracts skills from course subjects based on keyword matching
-     */
+     
     public function extractSkills(Request $request)
     {
         $request->validate([
@@ -26,10 +23,10 @@ class CurriculumAlignmentController extends Controller
         $courseId = $request->course_id;
         $course = Course::with('subjects')->find($courseId);
         
-        // Retrieve subjects. If the course is a Degree or HND, it may have semesters.
+
         $subjects = Subject::where('course_id', $courseId)->get();
         
-        // Define keyword mappings to skills and categories
+
         $mappings = [
             'programming' => ['skill' => 'Programming', 'category' => 'Software Development'],
             'python' => ['skill' => 'Programming', 'category' => 'Software Development'],
@@ -79,7 +76,7 @@ class CurriculumAlignmentController extends Controller
             'linux' => ['skill' => 'Operating Systems', 'category' => 'Infrastructure'],
         ];
 
-        // Delete existing skills for this course to prevent duplication
+
         Skill::where('course_id', $courseId)->delete();
 
         $extracted = [];
@@ -92,7 +89,7 @@ class CurriculumAlignmentController extends Controller
 
             foreach ($mappings as $keyword => $info) {
                 if (str_contains($nameLower, $keyword) || str_contains($codeLower, $keyword)) {
-                    // Avoid duplicating the exact same skill for the same subject
+
                     $existsKey = $subject->id . '-' . $info['skill'];
                     if (!isset($extracted[$existsKey])) {
                         Skill::create([
@@ -108,7 +105,7 @@ class CurriculumAlignmentController extends Controller
                 }
             }
 
-            // Fallback: If no keywords match, extract standard skill based on name
+
             if (!$matched) {
                 $cleanedName = preg_replace('/(fundamentals|introduction to|advanced|principles of|systems|applications|methods|and)\s+/i', '', $subject->name);
                 $cleanedName = trim(ucwords($cleanedName));
@@ -130,9 +127,7 @@ class CurriculumAlignmentController extends Controller
         ]);
     }
 
-    /**
-     * Get Skills list (with optional filtering)
-     */
+     
     public function getSkills(Request $request)
     {
         $query = Skill::with(['course', 'semester', 'subject']);
@@ -155,7 +150,7 @@ class CurriculumAlignmentController extends Controller
 
         $skills = $query->get();
 
-        // Skill categories count for analytics
+
         $categoriesCount = Skill::groupBy('category')
             ->select('category', DB::raw('count(*) as total'))
             ->get();
@@ -166,9 +161,7 @@ class CurriculumAlignmentController extends Controller
         ]);
     }
 
-    /**
-     * Update Skill Category
-     */
+     
     public function updateSkillCategory(Request $request, $id)
     {
         $request->validate([
@@ -186,9 +179,7 @@ class CurriculumAlignmentController extends Controller
         ]);
     }
 
-    /**
-     * Submit Industry Survey
-     */
+     
     public function submitIndustrySurvey(Request $request)
     {
         $request->validate([
@@ -213,14 +204,12 @@ class CurriculumAlignmentController extends Controller
         ], 201);
     }
 
-    /**
-     * Get Industry Survey Analytics
-     */
+     
     public function getIndustrySurveyData(Request $request)
     {
         $surveys = IndustrySurvey::all();
 
-        // 1. Calculate Top Requested Skills
+
         $skillsFreq = [];
         foreach ($surveys as $survey) {
             $skills = $survey->required_skills ?? [];
@@ -235,12 +224,12 @@ class CurriculumAlignmentController extends Controller
             $topSkills[] = ['skill' => $skill, 'count' => $count];
         }
 
-        // 2. Sector Distribution
+
         $sectorsCount = IndustrySurvey::groupBy('industry_sector')
             ->select('industry_sector as sector', DB::raw('count(*) as count'))
             ->get();
 
-        // 3. Demand Ranking
+
         $demandCount = IndustrySurvey::groupBy('demand_level')
             ->select('demand_level as level', DB::raw('count(*) as count'))
             ->get();
@@ -254,9 +243,7 @@ class CurriculumAlignmentController extends Controller
         ]);
     }
 
-    /**
-     * Submit Student Survey
-     */
+     
     public function submitStudentSurvey(Request $request)
     {
         $request->validate([
@@ -274,20 +261,18 @@ class CurriculumAlignmentController extends Controller
         ], 201);
     }
 
-    /**
-     * Get Student Interest Survey Analytics
-     */
+     
     public function getStudentSurveyData(Request $request)
     {
         $surveys = StudentSurvey::all();
 
-        // Interest Distribution
+
         $interestDist = StudentSurvey::groupBy('interest_field')
             ->select('interest_field as field', DB::raw('count(*) as count'))
             ->orderBy('count', 'desc')
             ->get();
 
-        // Career paths count
+
         $careerDist = StudentSurvey::whereNotNull('career_path')
             ->groupBy('career_path')
             ->select('career_path as path', DB::raw('count(*) as count'))
@@ -295,10 +280,10 @@ class CurriculumAlignmentController extends Controller
             ->limit(8)
             ->get();
 
-        // Enrollment predictions (predicted growth percentages based on student interests vs past baseline)
+
         $predictions = [];
         foreach ($interestDist as $item) {
-            $baseline = 10; // Simulated baseline
+            $baseline = 10; 
             $growth = (($item->count - $baseline) / ($baseline ?: 1)) * 100;
             $predictions[] = [
                 'field' => $item->field,
@@ -315,17 +300,15 @@ class CurriculumAlignmentController extends Controller
         ]);
     }
 
-    /**
-     * Get Comparison & AI Insights Engine
-     */
+     
     public function getAiInsights(Request $request, $courseId)
     {
         $course = Course::with('subjects')->findOrFail($courseId);
 
-        // Retrieve existing insights if available, or generate a fresh analysis
+
         $insight = AiInsight::where('course_id', $courseId)->first();
 
-        // If no insight exists, compute the match score and save a default initial calculation
+
         if (!$insight) {
             return $this->recalculateAndStoreInsights($courseId);
         }
@@ -333,31 +316,27 @@ class CurriculumAlignmentController extends Controller
         return response()->json($insight);
     }
 
-    /**
-     * Force Re-Calculate Scores and Run Recommendation Generator
-     */
+     
     public function generateAiRecommendations(Request $request, $courseId)
     {
         return $this->recalculateAndStoreInsights($courseId);
     }
 
-    /**
-     * Private helper to run comparison, score metrics, and build AI recommendations
-     */
+     
     private function recalculateAndStoreInsights($courseId)
     {
         $course = Course::findOrFail($courseId);
 
-        // 1. Current Curriculum Skills
+
         $curriculumSkills = Skill::where('course_id', $courseId)
             ->pluck('skill')
             ->unique()
             ->map(function($s) { return trim(strtolower($s)); })
             ->toArray();
 
-        // If skills are not extracted yet, auto-extract them first
+
         if (empty($curriculumSkills)) {
-            // Run extraction in background logic
+
             $req = new Request(['course_id' => $courseId]);
             $this->extractSkills($req);
             $curriculumSkills = Skill::where('course_id', $courseId)
@@ -367,7 +346,7 @@ class CurriculumAlignmentController extends Controller
                 ->toArray();
         }
 
-        // 2. Industry Required Skills (Extracted from all industry surveys)
+
         $industrySkillsRaw = [];
         $industrySurveys = IndustrySurvey::all();
         foreach ($industrySurveys as $survey) {
@@ -378,12 +357,12 @@ class CurriculumAlignmentController extends Controller
         }
         $industrySkills = array_values(array_unique($industrySkillsRaw));
 
-        // Default standard skills in case surveys are empty
+
         if (empty($industrySkills)) {
             $industrySkills = ['ai', 'cyber security', 'cloud computing', 'robotics', 'data science', 'programming', 'databases', 'networking'];
         }
 
-        // 3. Student Interest Skills (Map interest fields to skill tags)
+
         $studentSurveys = StudentSurvey::all();
         $studentSkillsRaw = [];
         foreach ($studentSurveys as $survey) {
@@ -397,14 +376,14 @@ class CurriculumAlignmentController extends Controller
             $studentSkills = ['ai', 'cyber security', 'data science', 'robotics', 'software engineering', 'cloud computing', 'networking'];
         }
 
-        // 4. Identify Covered vs Missing Skills
+
         $coveredSkills = [];
         $missingSkills = [];
 
-        // Check Industry matching
+
         $matchedIndustry = [];
         foreach ($industrySkills as $is) {
-            // Check if curriculum has it
+
             $matched = false;
             foreach ($curriculumSkills as $cs) {
                 if ($cs === $is || str_contains($cs, $is) || str_contains($is, $cs)) {
@@ -420,7 +399,7 @@ class CurriculumAlignmentController extends Controller
             }
         }
 
-        // Check Student matching
+
         $matchedStudent = [];
         foreach ($studentSkills as $ss) {
             $matched = false;
@@ -441,21 +420,21 @@ class CurriculumAlignmentController extends Controller
         $coveredSkills = array_values(array_unique($coveredSkills));
         $missingSkills = array_values(array_unique($missingSkills));
 
-        // 5. Skill Coverage Calculation Formulas
-        // Industry Coverage = (matched industry skills / total industry skills) * 100
+
+
         $totalIndustryCount = count($industrySkills);
         $matchedIndustryCount = count($matchedIndustry);
         $industryCoverage = $totalIndustryCount > 0 ? ($matchedIndustryCount / $totalIndustryCount) * 100 : 0;
 
-        // Student Coverage = (matched student skills / total student skills) * 100
+
         $totalStudentCount = count($studentSkills);
         $matchedStudentCount = count($matchedStudent);
         $studentCoverage = $totalStudentCount > 0 ? ($matchedStudentCount / $totalStudentCount) * 100 : 0;
 
-        // Overall Match Score = (Industry Coverage + Student Coverage) / 2
+
         $overallMatchScore = ($industryCoverage + $studentCoverage) / 2;
 
-        // 6. Generate AI recommendations cards
+
         $recommendations = [];
         $index = 1;
 
@@ -503,7 +482,7 @@ class CurriculumAlignmentController extends Controller
             ];
         }
 
-        // Catch-all general recommendations
+
         $recommendations[] = [
             'id' => $index++,
             'title' => 'Revise Existing Curriculum for Emerging Technologies',
@@ -513,7 +492,7 @@ class CurriculumAlignmentController extends Controller
             'priority' => 5
         ];
 
-        // Store in DB
+
         $insight = AiInsight::updateOrCreate(
             ['course_id' => $courseId],
             [

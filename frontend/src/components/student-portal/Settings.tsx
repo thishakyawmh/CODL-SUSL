@@ -10,7 +10,7 @@ export const Settings: React.FC = () => {
 
 
 
-    // Password state
+
     const [passwordData, setPasswordData] = useState({
         currentPassword: '',
         newPassword: '',
@@ -64,7 +64,7 @@ export const Settings: React.FC = () => {
             </div>
 
             <div className="settings-layout">
-                {/* Settings Sidebar */}
+                { }
                 <div className="settings-sidebar">
                     <button
                         className={`settings-tab ${activeTab === 'general' ? 'active' : ''}`}
@@ -91,7 +91,7 @@ export const Settings: React.FC = () => {
                     </button>
                 </div>
 
-                {/* Settings Content */}
+                { }
                 <div className="settings-content">
                     {activeTab === 'security' && (
                         <div className="settings-panel">

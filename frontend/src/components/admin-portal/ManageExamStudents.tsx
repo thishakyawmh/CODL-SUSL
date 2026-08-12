@@ -27,14 +27,14 @@ export const ManageExamStudents: React.FC = () => {
     const [searchParams] = useSearchParams();
     const batchFromUrl = searchParams.get('batch') || '';
 
-    // ─── Loading state ─────────────────────────
+
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [examName, setExamName] = useState('');
     const [examBatch, setExamBatch] = useState(batchFromUrl);
     const [courseTitle, setCourseTitle] = useState('');
 
-    // ─── Student selection state ───────────────
+
     const [selectedRegulars, setSelectedRegulars] = useState<string[]>([]);
     const [tempSelectedRegulars, setTempSelectedRegulars] = useState<string[]>([]);
     const [selectedReattempts, setSelectedReattempts] = useState<string[]>([]);
@@ -45,12 +45,12 @@ export const ManageExamStudents: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'regular' | 'postponements' | 'reattempts'>('regular');
     const [isRefreshing, setIsRefreshing] = useState(false);
 
-    // Rejection state
+
     const [showRejectModal, setShowRejectModal] = useState(false);
     const [rejectionReason, setRejectionReason] = useState('');
     const [pendingApp, setPendingApp] = useState<any | null>(null);
 
-    // Details Modal state
+
     const [showDetailsModal, setShowDetailsModal] = useState(false);
     const [selectedAppDetails, setSelectedAppDetails] = useState<any | null>(null);
 
@@ -66,11 +66,11 @@ export const ManageExamStudents: React.FC = () => {
         if (!id || !examId) return;
         if (!isSilent) setIsLoading(true);
         try {
-            // Fetch course info
+
             const courseData = await courseService.getById(courseId);
             setCourseTitle(courseData.title || '');
 
-            // Fetch exam info
+
             const exams = await examService.getByCourse(courseId);
             const exam = exams.find((e: any) => e.id.toString() === examId.toString());
             if (exam) {
@@ -83,11 +83,11 @@ export const ManageExamStudents: React.FC = () => {
                 }
             }
 
-            // Fetch enrolled students
+
             const students = await courseService.getEnrolledStudents(courseId);
             setEnrolledStudents(students);
 
-            // Fetch exam applications
+
             const courseManageData = await courseService.getManageCourseData(courseId);
             const examApps = (courseManageData.exam_applications || []).filter((app: any) => {
                 const titleMatch = app.exam_title?.toLowerCase().trim() === exam?.title?.toLowerCase().trim() ||
@@ -107,7 +107,7 @@ export const ManageExamStudents: React.FC = () => {
         if (!id || !examId) return;
         if (!isSilent) setIsLoading(true);
         try {
-            // Postponements
+
             const postponements = await postponementRequestService.getAll();
             const filteredPost = (postponements || []).filter((p: any) => {
                 if (!p) return false;
@@ -129,7 +129,7 @@ export const ManageExamStudents: React.FC = () => {
                 assigned_exam_id: p.assigned_exam_id?.toString() || null
             }));
 
-            // Merge with existing reattempts
+
             setStudentRequests(prev => [
                 ...mappedPost,
                 ...prev.filter(r => r.type !== 'postponement')
@@ -151,7 +151,7 @@ export const ManageExamStudents: React.FC = () => {
         if (!id || !examId) return;
         if (!isSilent) setIsLoading(true);
         try {
-            // Reattempts
+
             const reattempts = await reattemptRequestService.getAll();
             const filteredReat = (reattempts || []).filter((r: any) => {
                 if (!r) return false;
@@ -174,7 +174,7 @@ export const ManageExamStudents: React.FC = () => {
                 attempt: r.attempt || 2
             }));
 
-            // Merge with existing postponements
+
             setStudentRequests(prev => [
                 ...prev.filter(r => r.type !== 'reattempt'),
                 ...mappedReat
@@ -493,7 +493,7 @@ export const ManageExamStudents: React.FC = () => {
         }
     };
 
-    // ─── Derived lists ─────────────────────────
+
     const regularEnrolled = useMemo(() => {
         return enrolledStudents
             .filter((s: any) => {
@@ -580,7 +580,7 @@ export const ManageExamStudents: React.FC = () => {
         }
     };
 
-    // ─── Save ──────────────────────────────────
+
     const handleSave = async () => {
         if (isSaving) return;
         setIsSaving(true);
@@ -614,7 +614,7 @@ export const ManageExamStudents: React.FC = () => {
         }
     };
 
-    // ─── Loading spinner ───────────────────────
+
     if (isLoading) {
         return (
             <div className="cm-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
@@ -631,7 +631,7 @@ export const ManageExamStudents: React.FC = () => {
     return (
         <>
             <div className="cm-container">
-                {/* ─── Page Header ─── */}
+                { }
                 <div className="admin-page-header" style={{ display: 'flex', flexDirection: 'column', gap: '20px', alignItems: 'flex-start' }}>
                     <button
                         className="cm-back-btn"
@@ -671,7 +671,7 @@ export const ManageExamStudents: React.FC = () => {
                 </div>
 
                 <div className="create-course-form" style={{ marginTop: '24px' }}>
-                    {/* ─── Total Banner ─── */}
+                    { }
                     <div style={{
                         background: 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)',
                         borderRadius: '20px',
@@ -696,7 +696,7 @@ export const ManageExamStudents: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* ─── Tabs Selection ─── */}
+                    { }
                     <div style={{
                         display: 'flex',
                         gap: '12px',
@@ -758,7 +758,7 @@ export const ManageExamStudents: React.FC = () => {
                         ))}
                     </div>
 
-                    {/* ─── SECTION 1: Regular Students ─── */}
+                    { }
                     {activeTab === 'regular' && (
                         <div className="form-section-card" style={{ marginTop: '0' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #F1F5F9', paddingBottom: '16px', marginBottom: '16px' }}>
@@ -820,7 +820,7 @@ export const ManageExamStudents: React.FC = () => {
                                 </div>
                             </div>
 
-                            {/* Search Input for Regulars */}
+                            { }
                             <div style={{ position: 'relative', marginBottom: '16px' }}>
                                 <input
                                     type="text"
@@ -833,7 +833,7 @@ export const ManageExamStudents: React.FC = () => {
                                 <Search size={16} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }} />
                             </div>
 
-                            {/* Regular Students Table */}
+                            { }
                             {displayedRegulars.length > 0 ? (
                                 <div style={{ overflowX: 'auto', maxHeight: '350px' }}>
                                     <table className="admin-table">
@@ -849,7 +849,7 @@ export const ManageExamStudents: React.FC = () => {
                                         <tbody>
                                             {displayedRegulars.map(student => {
                                                 const isSelected = selectedRegulars.includes(student.id);
-                                                // Find student's exam application status
+
                                                 const app = examApplications.find((a: any) =>
                                                     (a.user_id?.toString() === student.id || a.user?.id?.toString() === student.id)
                                                 );
@@ -990,7 +990,7 @@ export const ManageExamStudents: React.FC = () => {
                         </div>
                     )}
 
-                    {/* ─── SECTION 2: Postponements ─── */}
+                    { }
                     {activeTab === 'postponements' && (
                         <div className="form-section-card" style={{ marginTop: '0' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #F1F5F9', paddingBottom: '16px', marginBottom: '16px' }}>
@@ -1048,7 +1048,7 @@ export const ManageExamStudents: React.FC = () => {
                                 </div>
                             </div>
 
-                            {/* Postponements Table */}
+                            { }
                             {registeredPostponements.length > 0 ? (
                                 <div style={{ overflowX: 'auto', maxHeight: '300px' }}>
                                     <table className="admin-table">
@@ -1137,7 +1137,7 @@ export const ManageExamStudents: React.FC = () => {
                         </div>
                     )}
 
-                    {/* ─── SECTION 3: Reattempts ─── */}
+                    { }
                     {activeTab === 'reattempts' && (
                         <div className="form-section-card" style={{ marginTop: '0' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #F1F5F9', paddingBottom: '16px', marginBottom: '16px' }}>
@@ -1195,7 +1195,7 @@ export const ManageExamStudents: React.FC = () => {
                                 </div>
                             </div>
 
-                            {/* Reattempts Table */}
+                            { }
                             {registeredReattempts.length > 0 ? (
                                 <div style={{ overflowX: 'auto', maxHeight: '300px' }}>
                                     <table className="admin-table">
@@ -1288,7 +1288,7 @@ export const ManageExamStudents: React.FC = () => {
                 </div>
             </div>
 
-            {/* ─── Postponement Modal ─── */}
+            { }
             {activeModal === 'postponements' && (
                 <div className="student-list-overlay" onClick={() => setActiveModal(null)}>
                     <div className="student-list-modal" onClick={e => e.stopPropagation()}>
@@ -1361,7 +1361,7 @@ export const ManageExamStudents: React.FC = () => {
                 </div>
             )}
 
-            {/* ─── Reattempt Modal ─── */}
+            { }
             {activeModal === 'reattempts' && (
                 <div className="student-list-overlay" onClick={() => setActiveModal(null)}>
                     <div className="student-list-modal" onClick={e => e.stopPropagation()}>
@@ -1434,7 +1434,7 @@ export const ManageExamStudents: React.FC = () => {
                 </div>
             )}
 
-            {/* ─── Regular Student Assignment Modal ─── */}
+            { }
             {activeModal === 'regular' && (
                 <div className="student-list-overlay" onClick={() => {
                     setModalSearchQuery('');
@@ -1461,7 +1461,7 @@ export const ManageExamStudents: React.FC = () => {
                         </div>
 
                         <div className="modal-body" style={{ maxHeight: '60vh', overflowY: 'auto', padding: '20px 24px' }}>
-                            {/* Search bar inside modal */}
+                            { }
                             <div style={{ position: 'relative', marginBottom: '16px' }}>
                                 <input
                                     type="text"
@@ -1605,7 +1605,7 @@ export const ManageExamStudents: React.FC = () => {
                 setReason={setRejectionReason}
             />
 
-            {/* ─── Application Details Modal ─── */}
+            { }
             {showDetailsModal && selectedAppDetails && (() => {
                 const app = selectedAppDetails;
                 const secStatus = getStageStatus(app, 'secretary');

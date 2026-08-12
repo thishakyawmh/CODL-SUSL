@@ -24,12 +24,12 @@ interface Guide {
 export const HelpCenter: React.FC = () => {
     const { guideId } = useParams<{ guideId?: string }>();
 
-    // Language is defaulted to English
+
     const lang = 'en';
 
     const [searchTerm, setSearchTerm] = useState('');
 
-    // UI interface and branding labels must ALWAYS remain in English
+
     const branding = {
         logo: '/images/logo.png',
         institution: 'Centre for Open & Distance Learning',
@@ -48,7 +48,7 @@ export const HelpCenter: React.FC = () => {
         videoAlertEn: 'The instructional video for this guide is currently being prepared.'
     };
 
-    // Main guide database structured with English and Sinhala content
+
     const guides: Guide[] = [
         {
             id: 'create-account',
@@ -58,7 +58,7 @@ export const HelpCenter: React.FC = () => {
             descSi: 'අයදුම්කරුගේ නව ගිණුම සකසා සක්‍රිය කරන ආකාරය',
             icon: UserPlus,
             color: '#7C3AED',
-            videoId: 'ezbJwaLmOeM', // Provided testing video id
+            videoId: 'ezbJwaLmOeM', 
             introEn: 'To access CODL student features and submit applications, you need to create a secure personal portal. Watch the guide video below.',
             introSi: 'CODL ශිෂ්‍ය පහසුකම් භාවිතා කිරීමට සහ අයදුම්පත් ඉදිරිපත් කිරීමට, ඔබ ආරක්ෂිත පුද්ගලික ද්වාරයක් සෑදිය යුතුය. මේ සඳහා පහත වීඩියෝ මාර්ගෝපදේශය නරඹන්න.',
             notesEn: [
@@ -78,7 +78,7 @@ export const HelpCenter: React.FC = () => {
             descSi: 'පවතින අධ්‍යයන පාඨමාලා සඳහා අයදුම් කරන ආකාරය',
             icon: BookOpen,
             color: '#3B82F6',
-            videoId: '', // Handled gracefully
+            videoId: '', 
             introEn: 'View and enroll in new academic degrees, diplomas, or certificate programs offered by the Centre for Distance Learning. Watch the guide video below.',
             introSi: 'බාහිර හා දුරස්ථ අධ්‍යාපන මධ්‍යස්ථානය මඟින් පිරිනමනු ලබන නව උපාධි, ඩිප්ලෝමා හෝ සහතික පත්‍ර පාඨමාලාවකට ලියාපදිංචි වීමට අදාළ උපදෙස් මාලාව පහත වීඩියෝවෙන් නරඹන්න.',
             notesEn: [
@@ -198,9 +198,7 @@ export const HelpCenter: React.FC = () => {
             )}
 
             {currentGuide ? (
-                /* =========================================================
-                   STATE B: GUIDE DETAIL PAGE (ALWAYS ENGLISH CARD TITLE)
-                   ========================================================= */
+                 
                 <>
                     <div style={{ marginBottom: '24px', display: 'flex' }}>
                         <Link to="/help-center" className="hc-back-btn">
@@ -215,7 +213,7 @@ export const HelpCenter: React.FC = () => {
                                 <currentGuide.icon size={28} />
                             </div>
                             <div>
-                                {/* Detail page title must ALWAYS be English as required */}
+                                { }
                                 <h1>{currentGuide.titleEn}</h1>
                                 <p className="hc-detail-desc">{lang === 'en' ? currentGuide.descEn : currentGuide.descSi}</p>
                             </div>
@@ -224,7 +222,7 @@ export const HelpCenter: React.FC = () => {
                         <div className="hc-detail-content">
                             <p className="hc-intro-text">{lang === 'en' ? currentGuide.introEn : currentGuide.introSi}</p>
 
-                            {/* Embed Video Player */}
+                            { }
                             {currentGuide.videoId ? (
                                 <div className="hc-video-container">
                                     <iframe
@@ -247,11 +245,9 @@ export const HelpCenter: React.FC = () => {
                 </div>
                 </>
             ) : (
-                /* =========================================================
-                   STATE A: HELP CENTER LANDING HUB
-                   ========================================================= */
+                 
                 <>
-                    {/* Hero Section (Always English UI) */}
+                    { }
                     <div className="help-center-hero">
                         <h1>{branding.title}</h1>
                         <p>{branding.subtitle}</p>
@@ -267,7 +263,7 @@ export const HelpCenter: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Guide categories (Titles & descriptions translate, Heading remains English) */}
+                    { }
                     <div className="help-center-content">
                         <h3>{branding.categoriesTitle}</h3>
 

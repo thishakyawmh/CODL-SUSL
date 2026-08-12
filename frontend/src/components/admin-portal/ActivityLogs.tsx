@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Activity, Clock, Search, ArrowLeft, Shield, Calendar, Filter } from 'lucide-react';
 import { activityLogService } from '../../services/apiService';
 import { getCurrentAdminUser } from '../../data/mockAdminData';
-import './RoleManagement.css'; // Reuses the container layout styling
-import './AdminDashboard.css'; // Standard Activity styling
+import './RoleManagement.css'; 
+import './AdminDashboard.css'; 
 
 export const ActivityLogs: React.FC = () => {
     const navigate = useNavigate();
@@ -79,7 +79,7 @@ export const ActivityLogs: React.FC = () => {
 
     return (
         <div className="rm-container">
-            {/* Header */}
+            { }
             <div className="admin-page-header" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
                 <button
                     className="cm-back-text-btn"
@@ -101,7 +101,7 @@ export const ActivityLogs: React.FC = () => {
                 </div>
             </div>
 
-            {/* Filters Section */}
+            { }
             <div style={{
                 background: '#FFFFFF',
                 borderRadius: '16px',
@@ -113,7 +113,7 @@ export const ActivityLogs: React.FC = () => {
                 gap: '16px',
                 flexWrap: 'wrap'
             }}>
-                {/* Search */}
+                { }
                 <div style={{ flex: 1, minWidth: '260px', position: 'relative' }}>
                     <Search size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }} />
                     <input
@@ -138,7 +138,7 @@ export const ActivityLogs: React.FC = () => {
                     />
                 </div>
 
-                {/* Filter by Role */}
+                { }
                 <div style={{ minWidth: '200px', position: 'relative', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Filter size={16} style={{ color: '#64748B' }} />
                     <select
@@ -172,7 +172,7 @@ export const ActivityLogs: React.FC = () => {
                 </div>
             </div>
 
-            {/* Logs List Card */}
+            { }
             <div style={{
                 background: '#FFFFFF',
                 borderRadius: '18px',
@@ -205,7 +205,7 @@ export const ActivityLogs: React.FC = () => {
                                     onMouseEnter={e => e.currentTarget.style.backgroundColor = '#F8FAFC'}
                                     onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
                                 >
-                                    {/* Icon */}
+                                    { }
                                     <div className={`activity-icon ${log.type}`} style={{
                                         display: 'flex',
                                         alignItems: 'center',
@@ -218,7 +218,7 @@ export const ActivityLogs: React.FC = () => {
                                         <Activity size={18} />
                                     </div>
 
-                                    {/* Main info */}
+                                    { }
                                     <div style={{ flex: 1, minWidth: 0 }}>
                                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', marginBottom: '4px' }}>
                                             <span style={{ fontWeight: 700, fontSize: '14px', color: '#0F172A' }}>{log.user}</span>
@@ -244,7 +244,7 @@ export const ActivityLogs: React.FC = () => {
                                         </div>
                                     </div>
 
-                                    {/* Date & Time */}
+                                    { }
                                     <div style={{
                                         display: 'flex',
                                         flexDirection: 'column',

@@ -78,7 +78,7 @@ export const RegisteredCourses: React.FC<RegisteredCoursesProps> = ({ onSelect }
                         const materials = courseData.materials || [];
                         const examData = courseData.examData || { exams: [], my_applications: [], postponement_requests: [], reattempt_requests: [] };
 
-                        // 1. Calculate new materials count
+
                         let matCount = 0;
                         let totalMatCount = 0;
                         if (materials && Array.isArray(materials)) {
@@ -100,7 +100,7 @@ export const RegisteredCourses: React.FC<RegisteredCoursesProps> = ({ onSelect }
                             matCount = totalMatCount - previousMatCount;
                         }
 
-                        // 2. Calculate new exams count
+
                         let exCount = 0;
                         let totalExamCount = 0;
                         const exams = examData.exams || [];
@@ -160,10 +160,10 @@ export const RegisteredCourses: React.FC<RegisteredCoursesProps> = ({ onSelect }
 
     const getTypeColor = (type: string) => {
         switch (type) {
-            case 'Degree': return { bg: '#EDE9FE', text: '#7C3AED' }; // Purple
-            case 'Diploma': return { bg: '#F3E8FF', text: '#9333EA' }; // Purple
-            case 'Certification': return { bg: '#CCFBF1', text: '#0D9488' }; // Teal
-            default: return { bg: '#F1F5F9', text: '#475569' }; // Gray
+            case 'Degree': return { bg: '#EDE9FE', text: '#7C3AED' }; 
+            case 'Diploma': return { bg: '#F3E8FF', text: '#9333EA' }; 
+            case 'Certification': return { bg: '#CCFBF1', text: '#0D9488' }; 
+            default: return { bg: '#F1F5F9', text: '#475569' }; 
         }
     };
 

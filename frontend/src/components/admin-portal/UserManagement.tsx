@@ -11,7 +11,7 @@ import { userService, courseApplicationService } from '../../services/apiService
 import { toast } from '../../utils/toast';
 import './UserManagement.css';
 
-// Map backend user to frontend User interface
+
 const mapUser = (user: any): User => ({
     id: String(user.id),
     fullName: user.full_name,
@@ -110,8 +110,8 @@ export const UserManagement: React.FC = () => {
     const generateStudentNumber = (role: string) => {
         const yearDigits = new Date().getFullYear().toString().slice(-2);
 
-        // Count users of this specific role to determine the next number
-        // In a real production app, this would be handled by the backend
+
+
         const roleUsers = users.filter(u => u.role === role);
         const nextNum = String(roleUsers.length + 1).padStart(4, '0');
 
@@ -131,7 +131,7 @@ export const UserManagement: React.FC = () => {
             case 'applicant':
                 return `CODL/AP${nextNum}`;
             default:
-                return `CODL/UN${nextNum}`; // Unknown
+                return `CODL/UN${nextNum}`; 
         }
     };
 
@@ -149,14 +149,14 @@ export const UserManagement: React.FC = () => {
                 role: newUser.role,
                 status: 'active',
                 student_number: studentNumber,
-                password: newUser.nic // Default password is NIC
+                password: newUser.nic 
             };
 
             await userService.create(payload);
             toast.success(`User created in Cloud DB!\n\nRegistration Number: ${studentNumber}\nDefault Password: ${newUser.nic}`, { title: 'Account Created' });
             setShowCreateModal(false);
             setNewUser({ fullName: '', email: '', nic: '', phone: '', role: 'student' });
-            fetchUsers(); // Refresh list
+            fetchUsers(); 
         } catch (err: any) {
             toast.error(err.response?.data?.message || 'Failed to create user');
         } finally {
@@ -189,7 +189,7 @@ export const UserManagement: React.FC = () => {
             toast.success('User updated successfully!');
             setIsEditMode(false);
             setShowDetailModal(false);
-            fetchUsers(); // Refresh list
+            fetchUsers(); 
         } catch (err: any) {
             toast.error(err.response?.data?.message || 'Failed to update user');
         } finally {
@@ -289,10 +289,10 @@ export const UserManagement: React.FC = () => {
             return;
         }
 
-        // CSV Headers
+
         const headers = ['Registration Number', 'Full Name', 'Email', 'NIC', 'Phone', 'Role', 'Status', 'Joined Date'];
 
-        // Convert user objects to CSV rows
+
         const csvRows = users.map(user => [
             `"${user.studentNumber || ''}"`,
             `"${user.fullName?.replace(/"/g, '""') || ''}"`,
@@ -304,10 +304,10 @@ export const UserManagement: React.FC = () => {
             `"${user.joinDate || ''}"`
         ]);
 
-        // Combine headers and rows
+
         const csvContent = [headers.join(','), ...csvRows.map(row => row.join(','))].join('\n');
 
-        // Create Blob and trigger download
+
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
@@ -323,7 +323,7 @@ export const UserManagement: React.FC = () => {
 
     return (
         <div className="um-container">
-            {/* Page Header */}
+            { }
             <div className="admin-page-header">
                 <div>
                     <h1 className="admin-page-title">User Management</h1>
@@ -339,7 +339,7 @@ export const UserManagement: React.FC = () => {
                 </div>
             </div>
 
-            {/* Stats Cards */}
+            { }
             <div className="um-stats-row">
                 {roles.filter(r => r.key !== 'all').map(role => {
                     const count = users.filter(u => u.role === role.key).length;
@@ -360,7 +360,7 @@ export const UserManagement: React.FC = () => {
                 })}
             </div>
 
-            {/* Filters */}
+            { }
             <div className="um-filters">
                 <div className="um-search">
                     <Search size={18} className="um-search-icon" />
@@ -399,7 +399,7 @@ export const UserManagement: React.FC = () => {
                 </div>
             </div>
 
-            {/* Users Table */}
+            { }
             <div className="um-table-card">
                 <div className="um-table-header">
                     <h3><Users size={18} /> All Users ({filteredUsers.length})</h3>
@@ -511,7 +511,7 @@ export const UserManagement: React.FC = () => {
                 </div>
             </div>
 
-            {/* Create User Modal */}
+            { }
             {showCreateModal && (
                 <div className="um-modal-overlay" onClick={() => setShowCreateModal(false)}>
                     <div className="um-modal" onClick={(e) => e.stopPropagation()}>
@@ -617,7 +617,7 @@ export const UserManagement: React.FC = () => {
                 </div>
             )}
 
-            {/* User Detail Modal */}
+            { }
             {showDetailModal && selectedUser && (
                 <div className="um-modal-overlay" onClick={() => setShowDetailModal(false)}>
                     <div className="um-modal detail-modal" onClick={(e) => e.stopPropagation()}>
@@ -787,7 +787,7 @@ export const UserManagement: React.FC = () => {
                 </div>
             )}
 
-            {/* Reset Password Confirmation Modal */}
+            { }
             {showResetConfirmModal && userToReset && (
                 <div className="um-modal-overlay" onClick={() => { setShowResetConfirmModal(false); setUserToReset(null); }}>
                     <div className="um-modal" style={{ maxWidth: '480px' }} onClick={(e) => e.stopPropagation()}>

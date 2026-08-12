@@ -221,7 +221,7 @@ export const ExamApplicationForm: React.FC<ExamApplicationFormProps> = ({ isEmbe
 
             <form className="application-form" onSubmit={handleSubmit}>
 
-                {/* Applicant Information Card */}
+                { }
                 <div className="form-section-card modern-shadow">
                     <div className="section-card-header-with-icon">
                         <div className="section-icon-container purple-gradient"><User size={20} color="white" /></div>
@@ -255,7 +255,7 @@ export const ExamApplicationForm: React.FC<ExamApplicationFormProps> = ({ isEmbe
                     </div>
                 </div>
 
-                {/* Address Details Card */}
+                { }
                 <div className="form-section-card modern-shadow">
                     <div className="section-card-header-with-icon">
                         <div className="section-icon-container green-gradient"><MapPin size={20} color="white" /></div>
@@ -273,7 +273,7 @@ export const ExamApplicationForm: React.FC<ExamApplicationFormProps> = ({ isEmbe
                     </div>
                 </div>
 
-                {/* Examination & Fee Details Card */}
+                { }
                 <div className="form-section-card modern-shadow">
                     <div className="section-card-header-with-icon">
                         <div className="section-icon-container purple-gradient"><FileText size={20} color="white" /></div>
@@ -309,7 +309,7 @@ export const ExamApplicationForm: React.FC<ExamApplicationFormProps> = ({ isEmbe
                     </div>
                 </div>
 
-                {/* Subjects Selection Card */}
+                { }
                 {subjects.length > 0 && (
                     <div className="form-section-card modern-shadow">
                         <div className="section-card-header-with-icon">
@@ -379,7 +379,7 @@ export const ExamApplicationForm: React.FC<ExamApplicationFormProps> = ({ isEmbe
                     </div>
                 )}
 
-                {/* Declaration Card */}
+                { }
                 <div className="form-section-card declaration-card">
                     <label className="modern-declaration">
                         <input type="checkbox" className="dec-checkbox" />

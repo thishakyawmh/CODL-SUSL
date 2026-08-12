@@ -9,7 +9,7 @@ interface StudentProfileTabProps {
 export const StudentProfileTab: React.FC<StudentProfileTabProps> = ({ student, profile }) => {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {/* Personal Details Card */}
+            { }
             <div style={{ background: '#FFFFFF', padding: '24px', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', border: '1px solid #E2E8F0' }}>
                 <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#1E293B', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <User size={18} color="#2563EB" /> Demographics & Contact
@@ -68,7 +68,7 @@ export const StudentProfileTab: React.FC<StudentProfileTabProps> = ({ student, p
                 </div>
             </div>
 
-            {/* Ordinary Level (O/L) Qualifications Card */}
+            { }
             <div style={{ background: '#FFFFFF', padding: '24px', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', border: '1px solid #E2E8F0' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                     <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#1E293B', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -97,7 +97,7 @@ export const StudentProfileTab: React.FC<StudentProfileTabProps> = ({ student, p
                 )}
             </div>
 
-            {/* Advanced Level (A/L) Qualifications Card */}
+            { }
             <div style={{ background: '#FFFFFF', padding: '24px', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', border: '1px solid #E2E8F0' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                     <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#1E293B', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -126,7 +126,7 @@ export const StudentProfileTab: React.FC<StudentProfileTabProps> = ({ student, p
                 )}
             </div>
 
-            {/* Other Qualifications Card */}
+            { }
             {profile.otherQualifications && profile.otherQualifications.trim() !== '' && profile.otherQualifications.trim().toLowerCase() !== 'none' && (
                 <div style={{ background: '#FFFFFF', padding: '24px', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', border: '1px solid #E2E8F0' }}>
                     <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#1E293B', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>

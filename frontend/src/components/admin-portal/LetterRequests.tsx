@@ -137,7 +137,7 @@ export const LetterRequests: React.FC = () => {
             return { label: 'Approved', bg: '#D1FAE5', text: '#059669' };
         }
 
-        // For Super Admin
+
         if (status === 'approved') return { label: 'Approved', bg: '#D1FAE5', text: '#059669' };
         if (level === 0) return { label: 'Pending Secretary', bg: '#FEF3C7', text: '#D97706' };
         if (level === 1) return { label: 'Pending Coordinator', bg: '#FEF3C7', text: '#D97706' };
@@ -318,7 +318,7 @@ export const LetterRequests: React.FC = () => {
                                                             <CheckCircle2 size={16} />
                                                         </div>
                                                     ) : (
-                                                        // Pending states but not actionable for this user
+
                                                         (currentUser.role === 'secretary' && req.approval_level >= 1) ||
                                                         (currentUser.role === 'coordinator' && req.approval_level >= 2) ||
                                                         (currentUser.role === 'director' && req.approval_level >= 3) ? (
@@ -414,7 +414,7 @@ export const LetterRequests: React.FC = () => {
 
                             <div className="am-approval-flow">
                                 <div className="am-flow-steps">
-                                    {/* Stage 1: Secretary */}
+                                    { }
                                     <div className={`am-flow-step ${selectedRequest.approval_level >= 1 ? 'approved' : selectedRequest.status === 'rejected' && selectedRequest.approval_level === 0 ? 'rejected' : 'pending'}`}>
                                         <div className="am-step-marker">
                                             {selectedRequest.approval_level >= 1 ? <Check size={10} /> :
@@ -440,7 +440,7 @@ export const LetterRequests: React.FC = () => {
                                         </div>
                                     </div>
 
-                                    {/* Stage 2: Coordinator */}
+                                    { }
                                     <div className={`am-flow-step ${selectedRequest.approval_level >= 2 ? 'approved' : selectedRequest.status === 'rejected' && selectedRequest.approval_level === 1 ? 'rejected' : 'pending'}`}>
                                         <div className="am-step-marker">
                                             {selectedRequest.approval_level >= 2 ? <Check size={10} /> :
@@ -466,7 +466,7 @@ export const LetterRequests: React.FC = () => {
                                         </div>
                                     </div>
 
-                                    {/* Stage 3: Director */}
+                                    { }
                                     <div className={`am-flow-step ${selectedRequest.approval_level >= 3 ? 'approved' : selectedRequest.status === 'rejected' && selectedRequest.approval_level === 2 ? 'rejected' : 'pending'}`}>
                                         <div className="am-step-marker">
                                             {selectedRequest.approval_level >= 3 ? <Check size={10} /> :

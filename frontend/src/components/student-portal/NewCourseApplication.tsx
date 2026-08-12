@@ -9,7 +9,7 @@ import './NewCourseApplication.css';
 interface Course {
     id: string;
     title: string;
-    level: string; // Degree, Diploma, Certificate
+    level: string; 
     department: string;
     duration: string;
     intakeStatus: 'Open' | 'Closed';
@@ -46,7 +46,7 @@ export const NewCourseApplication: React.FC = () => {
         );
     };
 
-    // Form state
+
     const [formData, setFormData] = useState({
         fullName: '',
         displayName: '',
@@ -237,7 +237,7 @@ export const NewCourseApplication: React.FC = () => {
             await courseApplicationService.create(payload);
             toast.success("Application submitted successfully!");
 
-            // Refresh parent state to indicate application exists
+
             if (outletContext && typeof outletContext.fetchApplications === 'function') {
                 await outletContext.fetchApplications();
             }

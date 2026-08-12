@@ -98,7 +98,7 @@ export const StudentSurveyForm: React.FC = () => {
                 </header>
 
                 <form onSubmit={handleSubmit} className="ps-survey-form">
-                    {/* Section 1: Contact Details */}
+                    { }
                     <div className="ps-form-section">
                         <h2>1. Personal Profile (Optional)</h2>
                         <p className="ps-section-desc">You can submit this survey anonymously or provide contact details to receive updates on program admissions.</p>
@@ -136,7 +136,7 @@ export const StudentSurveyForm: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Section 2: Core Area of Interest */}
+                    { }
                     <div className="ps-form-section">
                         <h2>2. Which field interests you most?</h2>
                         <p className="ps-section-desc">Select the single educational field you are most passionate about starting or pursuing.</p>
@@ -169,7 +169,7 @@ export const StudentSurveyForm: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Section 3: Intended Career Path */}
+                    { }
                     <div className="ps-form-section">
                         <h2>3. Career Aspirations</h2>
                         <p className="ps-section-desc">Describe your target job role or where you see yourself working after graduation.</p>

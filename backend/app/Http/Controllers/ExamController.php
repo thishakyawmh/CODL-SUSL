@@ -76,7 +76,7 @@ class ExamController extends Controller
         $examData = collect($validated)->except(['postponements', 'reattempts'])->toArray();
         $exam->update($examData);
 
-        // Process Postponement Assignments
+
         if ($request->has('postponements')) {
             $newPostponementIds = [];
             if (is_array($request->postponements)) {
@@ -90,19 +90,19 @@ class ExamController extends Controller
                     ->toArray();
             }
 
-            // Un-assign any postponement requests that were linked but are no longer selected
+
             \App\Models\PostponementRequest::where('assigned_exam_id', $exam->id)
                 ->whereNotIn('id', $newPostponementIds)
                 ->update(['assigned_exam_id' => null, 'status' => 'approved']);
 
-            // Assign the new postponement requests
+
             if (!empty($newPostponementIds)) {
                 \App\Models\PostponementRequest::whereIn('id', $newPostponementIds)
                     ->update(['assigned_exam_id' => $exam->id, 'status' => 'assigned']);
             }
         }
 
-        // Process Reattempt Assignments
+
         if ($request->has('reattempts')) {
             $newReattemptIds = [];
             if (is_array($request->reattempts)) {
@@ -116,12 +116,12 @@ class ExamController extends Controller
                     ->toArray();
             }
 
-            // Un-assign any reattempt requests that were linked but are no longer selected
+
             \App\Models\ReattemptRequest::where('assigned_exam_id', $exam->id)
                 ->whereNotIn('id', $newReattemptIds)
                 ->update(['assigned_exam_id' => null, 'status' => 'approved']);
 
-            // Assign the new reattempt requests
+
             if (!empty($newReattemptIds)) {
                 \App\Models\ReattemptRequest::whereIn('id', $newReattemptIds)
                     ->update(['assigned_exam_id' => $exam->id, 'status' => 'assigned']);
@@ -137,7 +137,7 @@ class ExamController extends Controller
         $exam = Exam::findOrFail($id);
         $courseId = $exam->course_id;
 
-        // Revert status of assigned requests to approved
+
         \App\Models\PostponementRequest::where('assigned_exam_id', $exam->id)
             ->update(['assigned_exam_id' => null, 'status' => 'approved']);
 
@@ -152,7 +152,7 @@ class ExamController extends Controller
     public function uploadTimetable(Request $request)
     {
         $request->validate([
-            'file' => 'required|file|mimes:pdf,doc,docx|max:20480', // 20MB limit
+            'file' => 'required|file|mimes:pdf,doc,docx|max:20480', 
         ]);
 
         $file = $request->file('file');
