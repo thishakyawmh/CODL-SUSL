@@ -558,6 +558,24 @@ const ProgramHub: React.FC<{
 /* =========================================================
    STATE B: PROGRAM-SPECIFIC DASHBOARD
    ========================================================= */
+const formatLastUpdated = (dateStr: string) => {
+    if (!dateStr) return 'N/A';
+    try {
+        const date = new Date(dateStr);
+        if (isNaN(date.getTime())) return dateStr;
+        return date.toLocaleString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+        }).replace(',', ' -');
+    } catch {
+        return dateStr;
+    }
+};
+
 const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ course, onBack }) => {
     const [loading, setLoading] = useState(true);
     const [overview, setOverview] = useState<any>(null);
@@ -1114,7 +1132,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                     <div className="flex items-center gap-2 mt-1.5" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginTop: '6px' }}>
                         {course.code && course.code.trim() && <span className="code-badge">{course.code}</span>}
                         <span className="text-slate-500 text-sm" style={{ fontWeight: 600 }}>{course.department}</span>
-                        <span className="text-slate-400 text-xs" style={{ marginLeft: '8px' }}>| Last Updated: {overview.last_generated}</span>
+                        <span className="text-slate-400 text-xs" style={{ marginLeft: '8px' }}>| Last Updated: {formatLastUpdated(overview.last_generated)}</span>
                     </div>
                 </div>
             </div>

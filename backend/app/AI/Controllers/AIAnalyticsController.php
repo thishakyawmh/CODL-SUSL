@@ -55,7 +55,7 @@ class AIAnalyticsController extends Controller
 
         return response()->json([
             'kpis' => $cache->kpis,
-            'last_generated' => $cache->generated_at->format('M j, Y - g:i A'),
+            'last_generated' => $cache->generated_at->toIso8601String(),
             'coverage_percent' => isset($cache->kpis['coverage_percent']) ? $cache->kpis['coverage_percent'] : null,
             'missing_subjects' => $cache->kpis['missing_subjects'] ?? [],
             'outdated_subjects' => $cache->kpis['outdated_subjects'] ?? [],
@@ -536,7 +536,7 @@ class AIAnalyticsController extends Controller
 
             // Trigger Background NLP Processing Pipeline
             try {
-                \App\Jobs\ProcessAnalyticsPipelineJob::dispatch();
+                \App\Jobs\ProcessAnalyticsPipelineJob::dispatchSync();
             } catch (\Exception $e) {
                 \Log::error('Failed to dispatch ProcessAnalyticsPipelineJob: ' . $e->getMessage());
             }
@@ -569,7 +569,7 @@ class AIAnalyticsController extends Controller
 
         // Trigger Background NLP Processing Pipeline
         try {
-            \App\Jobs\ProcessAnalyticsPipelineJob::dispatch();
+            \App\Jobs\ProcessAnalyticsPipelineJob::dispatchSync();
         } catch (\Exception $e) {
             \Log::error('Failed to dispatch ProcessAnalyticsPipelineJob: ' . $e->getMessage());
         }

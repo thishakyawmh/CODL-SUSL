@@ -70,6 +70,8 @@ class AnalyticsNLPService
 
         $relevantStudentSurveys = [];
         $relevantIndustrySurveys = [];
+        $studentAudit = [];
+        $industryAudit = [];
 
         $curriculumSubjects = [];
         $curriculumDomains = [];
