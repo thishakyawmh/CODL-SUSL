@@ -733,7 +733,6 @@ class AnalyticsNLPService
             $industryMatchScore = (int) round($this->calculateCosineSimilarity($curriculumDomains, $industryFrequencies));
         }
 
-        // Compute Academic Entry Requirements as secondary aggregation over the SAME accepted industry records
         $academicEntryRequirements = $course ? $this->computeAcademicEntryRequirements($relevantIndustrySurveys) : null;
 
         return [

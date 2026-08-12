@@ -1589,7 +1589,6 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '24px' }}>
-                        {/* Academic Entry Requirements Section */}
                         <div className="ai-chart-card" style={{ margin: 0, border: '1px solid #D1FAE5', background: 'linear-gradient(135deg, #ECFDF5 0%, #F0FDF4 100%)' }}>
                             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '20px' }}>
                                 <div style={{ background: '#D1FAE5', color: '#059669', borderRadius: '10px', padding: '8px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
