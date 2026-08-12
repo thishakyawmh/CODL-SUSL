@@ -26,6 +26,7 @@ export const AdminSidebar: React.FC = () => {
     const [isSignOutOpen, setIsSignOutOpen] = useState(false);
     const [isMobileOpen, setIsMobileOpen] = useState(false);
     const [expandedMenus, setExpandedMenus] = useState<string[]>(['approvals']);
+    const [avatarError, setAvatarError] = useState(false);
 
 
 
@@ -182,8 +183,13 @@ export const AdminSidebar: React.FC = () => {
                     <div className="admin-profile-card">
                         <div className="admin-profile-content">
                             <div className="admin-avatar-wrapper">
-                                {user.avatar ? (
-                                    <img src={getFullAvatarUrl(user.avatar)} alt={user.fullName} className="admin-profile-image" />
+                                {user.avatar && !avatarError ? (
+                                    <img 
+                                        src={getFullAvatarUrl(user.avatar)} 
+                                        alt={user.fullName} 
+                                        className="admin-profile-image" 
+                                        onError={() => setAvatarError(true)}
+                                    />
                                 ) : (
                                     <div 
                                         className="admin-profile-initials"

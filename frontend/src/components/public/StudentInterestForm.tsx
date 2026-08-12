@@ -620,7 +620,11 @@ export const StudentInterestForm: React.FC = () => {
 
                     {/* Part 1: Profile & Contact */}
                     <div className="form-section">
-                        <h3 className="form-section-title">Profile & Contact Details</h3>
+                        <div className="section-header-row">
+                            <h3 className="form-section-title" style={{ borderLeftColor: '#7C3AED', marginBottom: 0 }}>
+                                Profile & Contact Details
+                            </h3>
+                        </div>
                         <div className="form-grid">
 
                             {/* Education level */}

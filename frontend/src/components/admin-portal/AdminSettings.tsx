@@ -24,6 +24,7 @@ export const AdminSettings: React.FC = () => {
     const [activeSection, setActiveSection] = useState(isCoordinator ? 'profile' : (isDirector ? 'profile' : 'general'));
     const [saved, setSaved] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const [avatarError, setAvatarError] = useState(false);
 
     const [profileData, setProfileData] = useState({
         fullName: user.fullName,
@@ -319,6 +320,7 @@ export const AdminSettings: React.FC = () => {
         setAvatarFile(file);
         const previewUrl = URL.createObjectURL(file);
         setAvatarPreview(previewUrl);
+        setAvatarError(false);
     };
 
     const handleRemoveAvatar = () => {
@@ -742,11 +744,12 @@ export const AdminSettings: React.FC = () => {
                                 <div className="as-form-group full-width">
                                     <div className="as-avatar-upload-zone">
                                         <div className="as-avatar-preview-container">
-                                            {(avatarPreview || profileData.avatar) ? (
+                                            {(avatarPreview || (profileData.avatar && !avatarError)) ? (
                                                 <img 
                                                     src={avatarPreview || getFullAvatarUrl(profileData.avatar)} 
                                                     alt="Profile" 
                                                     className="as-avatar-image" 
+                                                    onError={() => setAvatarError(true)}
                                                 />
                                             ) : (
                                                 <div className="as-avatar-placeholder">

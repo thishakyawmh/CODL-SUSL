@@ -9,6 +9,7 @@ import './Profile.css';
 export const Profile: React.FC = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const [avatarError, setAvatarError] = useState(false);
 
     // Initial mock data simulating what is fetched from the backend (saved from previous applications)
     const [profileData, setProfileData] = useState(() => {
@@ -234,11 +235,12 @@ export const Profile: React.FC = () => {
 
             <div className="profile-header-card">
                 <div className="profile-avatar-wrapper">
-                    {(isEditing ? tempData.avatar : profileData.avatar) ? (
+                    {((isEditing ? tempData.avatar : profileData.avatar) && !avatarError) ? (
                         <img
                             src={isEditing ? (tempData.avatar?.startsWith('blob:') ? tempData.avatar : getFullAvatarUrl(tempData.avatar)) : getFullAvatarUrl(profileData.avatar)}
                             alt="Profile"
                             className="profile-avatar"
+                            onError={() => setAvatarError(true)}
                         />
                     ) : (
                         <div
@@ -259,6 +261,7 @@ export const Profile: React.FC = () => {
                                         setAvatarFile(file);
                                         const imageUrl = URL.createObjectURL(file);
                                         setTempData(prev => ({ ...prev, avatar: imageUrl }));
+                                        setAvatarError(false);
                                     }
                                 }}
                                 style={{ display: 'none' }}

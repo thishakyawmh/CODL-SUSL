@@ -24,6 +24,7 @@ export const Sidebar: React.FC = () => {
     };
 
     const [isMobileOpen, setIsMobileOpen] = useState(false);
+    const [avatarError, setAvatarError] = useState(false);
 
     // Close sidebar on route change for mobile
     useEffect(() => {
@@ -116,8 +117,13 @@ export const Sidebar: React.FC = () => {
                     <div className="sidebar-profile-card">
                         <div className="sidebar-profile-content">
                             <div className="sidebar-profile-avatar-wrapper">
-                                {avatar ? (
-                                    <img src={getFullAvatarUrl(avatar)} alt="Profile" className="sidebar-profile-image" />
+                                {avatar && !avatarError ? (
+                                    <img 
+                                        src={getFullAvatarUrl(avatar)} 
+                                        alt="Profile" 
+                                        className="sidebar-profile-image" 
+                                        onError={() => setAvatarError(true)}
+                                    />
                                 ) : (
                                     <div 
                                         className="sidebar-profile-initials"
