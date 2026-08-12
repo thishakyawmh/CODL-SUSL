@@ -33,7 +33,11 @@ class AIAnalyticsController extends Controller
                 'batches_count' => $c->batches_count,
             ];
         });
-        return response()->json($courses); 
+        return response()->json([
+            'programs' => $courses,
+            'student_count' => \App\AI\Models\StudentInterest::count(),
+            'industry_count' => \App\AI\Models\IndustryRequirement::count(),
+        ]); 
     }
 
     private function getCacheForCourse($courseId)
@@ -180,6 +184,7 @@ class AIAnalyticsController extends Controller
         $byProvince = [];
         $allIsland = [];
         $districtCounts = [];
+        $educationLevels = [];
 
         foreach ($allRows as $row) {
             $province = trim($row->province);
@@ -190,6 +195,9 @@ class AIAnalyticsController extends Controller
             if ($district) {
                 $districtCounts[$district] = ($districtCounts[$district] ?? 0) + 1;
             }
+
+            // Track education level counts for pie chart
+            $educationLevels[$eduLevel] = ($educationLevels[$eduLevel] ?? 0) + 1;
 
             $interests = [
                 ['field' => $row->primary_interest,   'weight' => 1.0],
@@ -232,10 +240,36 @@ class AIAnalyticsController extends Controller
             array_keys($allIsland), array_values($allIsland)
         );
 
+        // Format education levels for pie chart
+        $formattedEducationLevels = [];
+        foreach ($educationLevels as $name => $count) {
+            $formattedEducationLevels[] = [
+                'name' => $name,
+                'value' => $count
+            ];
+        }
+
+        // Get industry sector distribution
+        $industrySectors = IndustryRequirement::select('industry_sector', \DB::raw('count(*) as count'))
+            ->whereNotNull('industry_sector')
+            ->where('industry_sector', '!=', '')
+            ->groupBy('industry_sector')
+            ->get()
+            ->map(function($item) {
+                return [
+                    'name' => trim($item->industry_sector),
+                    'value' => (int) $item->count
+                ];
+            })
+            ->values()
+            ->toArray();
+
         return response()->json([
             'by_province'     => $formattedProvince,
             'all_island'      => $formattedAllIsland,
             'district_counts' => $districtCounts,
+            'education_levels' => $formattedEducationLevels,
+            'industry_sectors' => $industrySectors,
         ]);
     }
 

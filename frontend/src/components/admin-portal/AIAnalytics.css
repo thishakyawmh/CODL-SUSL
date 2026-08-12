@@ -1370,6 +1370,7 @@
     }
 }
 
+<<<<<<< HEAD
 /* =========================================================
    AI INSIGHTS SECTION LAYOUT & SPACING ENHANCEMENTS
    ========================================================= */
@@ -1652,4 +1653,16 @@
     gap: 6px;
     margin-top: 8px;
     font-size: 11.5px;
+=======
+/* Programme-wise Analysis Button */
+.programme-analysis-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 28px rgba(124, 58, 237, 0.45) !important;
+    background: linear-gradient(135deg, #6D28D9, #5B21B6) !important;
+}
+
+.programme-analysis-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 12px rgba(124, 58, 237, 0.3) !important;
+>>>>>>> 7f384fee808c4f4c8fb6fa7af462c425c6ac15a8
 }
