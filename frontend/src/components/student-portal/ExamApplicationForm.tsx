@@ -54,8 +54,18 @@ export const ExamApplicationForm: React.FC<ExamApplicationFormProps> = ({ isEmbe
     const [calculatedAttempt, setCalculatedAttempt] = useState('1');
 
     const [salutation, setSalutation] = useState(profileData.sex === 'Male' ? 'Mr' : (profileData.sex === 'Female' ? 'Ms' : 'Mr'));
-    const [nameWithInitials, setNameWithInitials] = useState(profileData.fullName);
-    const [nameDenotedByInitials, setNameDenotedByInitials] = useState('');
+    const [nameWithInitials, setNameWithInitials] = useState(() => {
+        const name = profileData.fullName;
+        if (!name) return '';
+        const parts = name.trim().split(/\s+/);
+        if (parts.length <= 1) return name;
+        const initials = parts.slice(0, parts.length - 1)
+            .map(part => part[0].toUpperCase() + '.')
+            .join('');
+        const surname = parts[parts.length - 1];
+        return `${initials} ${surname}`;
+    });
+    const [nameDenotedByInitials, setNameDenotedByInitials] = useState(profileData.fullName);
     const [contactNumber, setContactNumber] = useState(profileData.mobilePhone);
     const [permanentAddress, setPermanentAddress] = useState(profileData.address);
     const [addressDuringExam, setAddressDuringExam] = useState('');

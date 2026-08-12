@@ -20,11 +20,7 @@ use App\AI\Controllers\AIAnalyticsController;
 use App\Http\Controllers\StudentInterestController;
 
 
-/*
-|--------------------------------------------------------------------------
-| API Routes
-|--------------------------------------------------------------------------
-*/
+/* API Routes */
 
 Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:login');
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
@@ -35,11 +31,14 @@ Route::post('/reset-password', [AuthController::class, 'resetPassword'])->middle
 // Public: Available courses for applicants (with batches)
 Route::get('/public/courses', [CourseController::class, 'publicIndex']);
 Route::get('/admin/system-settings', [SystemSettingController::class, 'getSettings']);
-Route::post('/public/surveys', [AIAnalyticsController::class, 'storeSurvey']); // Public survey submission
-Route::post('/student-interests', [StudentInterestController::class, 'store']);
-Route::get('/student-interests/config', [StudentInterestController::class, 'getConfig']);
-Route::get('/student-interests/teaching-methods', [StudentInterestController::class, 'getTeachingMethods']);
-Route::get('/student-interests/university-opportunities', [StudentInterestController::class, 'getUniversityOpportunities']);
+Route::post('/public/surveys', [AIAnalyticsController::class, 'storeSurvey'])->middleware('throttle:submissions'); // Public survey submission
+Route::post('/student-interests', [StudentInterestController::class, 'store'])->middleware('throttle:submissions');
+Route::post('/industry-analysis', [StudentInterestController::class, 'storeIndustry'])->middleware('throttle:submissions');
+Route::get('/student-interests/config', [StudentInterestController::class, 'getConfig'])->middleware('throttle:survey-configs');
+Route::get('/student-interests/teaching-methods', [StudentInterestController::class, 'getTeachingMethods'])->middleware('throttle:survey-configs');
+Route::get('/student-interests/university-opportunities', [StudentInterestController::class, 'getUniversityOpportunities'])->middleware('throttle:survey-configs');
+Route::get('/industry-analysis/sectors', [StudentInterestController::class, 'getIndustrySectors'])->middleware('throttle:survey-configs');
+Route::get('/industry-analysis/config', [StudentInterestController::class, 'getIndustryConfig'])->middleware('throttle:survey-configs');
 
 
 
@@ -78,6 +77,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // AI Analytics Dashboard (moved to secure block and corrected parameters)
         Route::get('/admin/ai-analytics/programs', [AIAnalyticsController::class, 'getPrograms']);
+        Route::get('/admin/ai-analytics/global-overview', [AIAnalyticsController::class, 'getGlobalOverview']);
+        Route::get('/admin/ai-analytics/common/overview', [AIAnalyticsController::class, 'getCommonOverview']);
+        Route::get('/admin/ai-analytics/common/drilldown', [AIAnalyticsController::class, 'getCommonDrilldown']);
         Route::post('/admin/ai-analytics/sync-sheet', [AIAnalyticsController::class, 'syncGoogleSheet']);
         Route::get('/admin/ai-analytics/{courseId}/overview', [AIAnalyticsController::class, 'getOverview']);
         Route::get('/admin/ai-analytics/{courseId}/student-demand', [AIAnalyticsController::class, 'getStudentInterest']);
@@ -85,14 +87,26 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/admin/ai-analytics/{courseId}/recommendations', [AIAnalyticsController::class, 'getRecommendations']);
         Route::get('/admin/ai-analytics/{courseId}/skill-gap', [AIAnalyticsController::class, 'getSkillGap']);
         Route::get('/admin/ai-analytics/{courseId}/emerging-technologies', [AIAnalyticsController::class, 'getEmergingTechnologies']);
+        Route::get('/admin/ai-analytics/{courseId}/export', [AIAnalyticsController::class, 'exportCSV']);
+        Route::get('/admin/ai-analytics/{courseId}/academic-entry', [AIAnalyticsController::class, 'getAcademicEntryRequirements']);
         Route::get('/admin/ai-analytics/surveys', [AIAnalyticsController::class, 'getSurveys']);
         Route::post('/admin/ai-analytics/surveys', [AIAnalyticsController::class, 'storeSurvey']);
+        Route::get('/admin/ai-analytics/geography', [AIAnalyticsController::class, 'getGeographyData']);
+        Route::get('/admin/ai-analytics/geography/skills', [AIAnalyticsController::class, 'getGeographySkills']);
+        Route::get('/admin/ai-analytics/industry/skills', [AIAnalyticsController::class, 'getIndustrySkills']);
+        Route::get('/admin/ai-analytics/university-opportunities', [AIAnalyticsController::class, 'getUniversityOpportunities']);
         Route::post('/admin/student-interests/config', [StudentInterestController::class, 'storeConfig']);
         Route::delete('/admin/student-interests/config/{id}', [StudentInterestController::class, 'deleteConfig']);
         Route::post('/admin/student-interests/teaching-methods', [StudentInterestController::class, 'storeTeachingMethod']);
         Route::delete('/admin/student-interests/teaching-methods/{id}', [StudentInterestController::class, 'deleteTeachingMethod']);
         Route::post('/admin/student-interests/university-opportunities', [StudentInterestController::class, 'storeUniversityOpportunity']);
         Route::delete('/admin/student-interests/university-opportunities/{id}', [StudentInterestController::class, 'deleteUniversityOpportunity']);
+
+        // Industry survey configs
+        Route::post('/admin/industry-analysis/sectors', [StudentInterestController::class, 'storeIndustrySector']);
+        Route::delete('/admin/industry-analysis/sectors/{id}', [StudentInterestController::class, 'deleteIndustrySector']);
+        Route::post('/admin/industry-analysis/config', [StudentInterestController::class, 'storeIndustryConfig']);
+        Route::delete('/admin/industry-analysis/config/{id}', [StudentInterestController::class, 'deleteIndustryConfig']);
     });
 
     // Super Admin / Director Management routes
@@ -165,6 +179,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/courses/{id}/exams', [ExamController::class, 'store']);
     Route::put('/exams/{id}', [ExamController::class, 'update']);
     Route::delete('/exams/{id}', [ExamController::class, 'destroy']);
+    Route::post('/exams/upload-timetable', [ExamController::class, 'uploadTimetable']);
 
     // Announcements
     Route::get('/announcements', [AnnouncementController::class, 'index']);

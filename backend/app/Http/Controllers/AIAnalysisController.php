@@ -72,7 +72,7 @@ class AIAnalysisController extends Controller
         }
 
         // 5. Attempt AI analysis via Gemini API if configured
-        $apiKey = env('GEMINI_API_KEY');
+        $apiKey = config('services.gemini.key');
         if (!empty($apiKey)) {
             try {
                 $analysisResult = $this->analyzeWithGemini($course, $subjectArray, $materials, $jobPathsDef, $apiKey);

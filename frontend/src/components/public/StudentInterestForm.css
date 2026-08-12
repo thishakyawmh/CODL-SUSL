@@ -64,28 +64,33 @@
 }
 
 .banner-image-placeholder {
-  width: 290px;
-  height: 175px;
+  width: 350px;
+  max-width: 45%;
+  height: 190px;
   display: flex;
   justify-content: center;
   align-items: center;
-  overflow: hidden;
+  flex-shrink: 0;
 }
 
 .banner-image-placeholder img {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  transform: scale(1.08);
-  transform-origin: center;
+}
+
+@media (max-width: 1024px) {
+  .banner-image-placeholder {
+    display: none;
+  }
 }
 
 .student-interest-description-card {
   width: 90%;
   max-width: 850px;
   margin: var(--space-md, 16px) auto 0 auto;
-  background: linear-gradient(135deg, #ffffff 0%, #f5f3ff 100%);
-  border: 1px solid rgba(124, 58, 237, 0.15);
+  background: #f7ebfb;
+  border: 1px solid #eef2f6;
   border-radius: var(--card-radius, 20px);
   padding: 20px 24px;
   display: flex;
@@ -113,24 +118,15 @@
   font-size: var(--text-md, 14.5px);
   line-height: var(--leading-relaxed, 1.6);
   color: var(--text-secondary, #475569);
-  text-align: justify;
 }
 
 .student-interest-card {
   width: 90%;
   max-width: 850px;
-  margin: var(--space-md, 16px) auto var(--space-xl, 32px) auto;
-  background: var(--white, #ffffff);
-  border: 1px solid var(--border-color, #e2e8f0);
-  border-radius: var(--card-radius, 20px);
-  box-shadow: var(--shadow-card, 0 4px 6px rgba(0, 0, 0, 0.05));
-  padding: var(--space-xl, 32px);
-  transition: transform var(--transition-base), box-shadow var(--transition-base);
-}
-
-
-.student-interest-card:hover {
-  box-shadow: 0 24px 48px rgba(124, 58, 237, 0.16);
+  margin: 24px auto var(--space-xl, 32px) auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
 
 .form-header {
@@ -157,6 +153,9 @@
 }
 
 .interest-form {
+  width: 90%;
+  max-width: 850px;
+  margin: 24px auto var(--space-xl, 32px) auto;
   display: flex;
   flex-direction: column;
   gap: var(--space-lg, 24px);
@@ -208,18 +207,18 @@
 }
 
 .form-group label {
-  font-size: var(--text-md, 13px);
-  font-weight: 550;
-  color: var(--text-dark, #1e293b);
+  font-size: 13px;
+  font-weight: 600;
+  color: #4b5563;
 }
 
 .form-input,
 .form-select,
 .form-textarea {
   font-family: inherit;
-  font-size: var(--text-md, 13px);
+  font-size: 13.5px;
   padding: 12px 16px;
-  border-radius: var(--input-radius, 10px);
+  border-radius: 10px;
   border: 1.5px solid var(--border-color, #e2e8f0);
   background-color: var(--white, #ffffff);
   color: var(--text-dark, #1e293b);
@@ -450,15 +449,36 @@
 
 @media (max-width: 768px) {
   .student-interest-header-card {
-    flex-direction: column-reverse;
-    align-items: stretch;
-    text-align: center;
-    gap: var(--space-md, 16px);
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+    padding: 24px 16px;
+    gap: 16px;
   }
 
-  .banner-image-placeholder {
-    width: 100%;
-    height: 150px;
+  .header-text-section h1 {
+    font-size: 22px;
+    margin-bottom: 12px;
+  }
+
+  .header-uni-logo {
+    width: 30px;
+    height: 30px;
+  }
+
+  .header-subtitle-container {
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .subtitle-line1 {
+    font-size: 9px;
+    white-space: nowrap;
+  }
+
+  .subtitle-line2 {
+    font-size: 7.5px;
+    white-space: nowrap;
   }
 }
 
@@ -572,4 +592,40 @@
     justify-content: space-between;
     padding: 12px 16px;
   }
+
+  .header-subtitle-container {
+    justify-content: flex-start;
+  }
+}
+
+/* University Logo Header Styling */
+.header-subtitle-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.header-uni-logo {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+}
+
+.subtitle-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.35;
+}
+
+.subtitle-line1 {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--text-dark, #334155);
+}
+
+.subtitle-line2 {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary, #64748b);
 }

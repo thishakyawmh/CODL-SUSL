@@ -24,6 +24,7 @@ export const AdminSettings: React.FC = () => {
     const [activeSection, setActiveSection] = useState(isCoordinator ? 'profile' : (isDirector ? 'profile' : 'general'));
     const [saved, setSaved] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const [avatarError, setAvatarError] = useState(false);
 
     const [profileData, setProfileData] = useState({
         fullName: user.fullName,
@@ -105,7 +106,6 @@ export const AdminSettings: React.FC = () => {
         };
         fetchHealthStats();
     }, [activeSection, healthTimeframe]);
-
     const fetchBackups = async () => {
         setLoadingBackups(true);
         try {
@@ -124,6 +124,12 @@ export const AdminSettings: React.FC = () => {
             setLoadingBackups(false);
         }
     };
+
+    useEffect(() => {
+        if (activeSection === 'backup') {
+            fetchBackups();
+        }
+    }, [activeSection]);
 
     const handleRunBackup = async () => {
         setIsRunningBackup(true);
@@ -235,12 +241,6 @@ export const AdminSettings: React.FC = () => {
     const [tableSearch, setTableSearch] = useState('');
     const [rowSearch, setRowSearch] = useState('');
 
-    useEffect(() => {
-        if (activeSection === 'datatables') {
-            fetchTables();
-        }
-    }, [activeSection]);
-
     const fetchTables = async () => {
         setLoadingTables(true);
         try {
@@ -253,6 +253,12 @@ export const AdminSettings: React.FC = () => {
             setLoadingTables(false);
         }
     };
+
+    useEffect(() => {
+        if (activeSection === 'datatables') {
+            fetchTables();
+        }
+    }, [activeSection]);
 
     const fetchTableData = async (tableName: string) => {
         setLoadingData(true);
@@ -314,6 +320,7 @@ export const AdminSettings: React.FC = () => {
         setAvatarFile(file);
         const previewUrl = URL.createObjectURL(file);
         setAvatarPreview(previewUrl);
+        setAvatarError(false);
     };
 
     const handleRemoveAvatar = () => {
@@ -737,11 +744,12 @@ export const AdminSettings: React.FC = () => {
                                 <div className="as-form-group full-width">
                                     <div className="as-avatar-upload-zone">
                                         <div className="as-avatar-preview-container">
-                                            {(avatarPreview || profileData.avatar) ? (
+                                            {(avatarPreview || (profileData.avatar && !avatarError)) ? (
                                                 <img 
                                                     src={avatarPreview || getFullAvatarUrl(profileData.avatar)} 
                                                     alt="Profile" 
                                                     className="as-avatar-image" 
+                                                    onError={() => setAvatarError(true)}
                                                 />
                                             ) : (
                                                 <div className="as-avatar-placeholder">

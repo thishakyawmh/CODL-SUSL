@@ -27,21 +27,21 @@ class AITestCommand extends Command
         $this->info('Injecting mock Google Forms data...');
         StudentInterest::create([
             'education_level' => 'BSc Computer Science',
-            'primary_field' => 'Software Engineering',
-            'learning_preferences' => 'Practical',
-            'theory_practical_score' => 80,
+            'primary_interest' => 'Web Development',
+            'primary_skills' => 'React, Node, HTML, CSS, JavaScript',
+            'primary_learning_methods' => 'Online Courses, Practical Projects',
+            'primary_learning_balance' => 4,
             'university_opportunities' => 'Good',
-            'emerging_fields' => 'I am very interested in Artificial Intelligence, machine learning, and writing python scripts.',
             'new_program_suggestion' => 'More AI courses please.'
         ]);
 
         StudentInterest::create([
             'education_level' => 'BSc Information Technology',
-            'primary_field' => 'IT',
-            'learning_preferences' => 'Theory',
-            'theory_practical_score' => 60,
+            'primary_interest' => 'Cloud Computing',
+            'primary_skills' => 'AWS, Azure, Docker, Kubernetes',
+            'primary_learning_methods' => 'Practical Projects',
+            'primary_learning_balance' => 3,
             'university_opportunities' => 'Average',
-            'emerging_fields' => 'Docker, Kubernetes, and Cloud Computing are my favorites.',
             'new_program_suggestion' => 'Cloud infrastructure'
         ]);
 
@@ -49,10 +49,10 @@ class AITestCommand extends Command
             'company_name' => 'Tech Innovators',
             'industry_sector' => 'Software Development',
             'organization_size' => 'Medium',
-            'primary_academic_field' => 'Computer Science',
+            'primary_academic_field' => 'Web Development',
             'required_skills' => 'We strictly require AWS, DevOps, CI/CD, and Artificial Intelligence models.',
             'graduate_skill_gaps' => 'Students lack practical DevOps and Machine Learning knowledge.',
-            'emerging_fields' => 'AI, Cloud Computing, Cyber Security'
+            'new_program_suggestion' => 'AI, Cloud Computing, Cyber Security'
         ]);
 
         $this->info('Simulating AI Sync Pipeline...');

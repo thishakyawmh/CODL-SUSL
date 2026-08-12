@@ -43,19 +43,67 @@ class StudentInterestController extends Controller
             // Global questions
             'university_opportunities' => 'nullable|string',
             'new_program_suggestion' => 'nullable|string',
+            'recaptcha_token' => 'nullable|string',
         ]);
+
+        // Verify reCAPTCHA if credentials are provided and not set to placeholder
+        $recaptchaSecret = config('services.recaptcha.secret');
+        if ($recaptchaSecret && $recaptchaSecret !== '6Ld_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx') {
+            $token = $request->input('recaptcha_token');
+            if (!$token) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'reCAPTCHA token is missing.'
+                ], 422);
+            }
+
+            try {
+                $verifyResponse = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
+                    'secret' => $recaptchaSecret,
+                    'response' => $token,
+                    'remoteip' => $request->ip(),
+                ]);
+
+                if (!$verifyResponse->successful() || !$verifyResponse->json('success') || $verifyResponse->json('score') < 0.5) {
+                    Log::warning('reCAPTCHA validation failed', [
+                        'ip' => $request->ip(),
+                        'response' => $verifyResponse->json()
+                    ]);
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Anti-bot verification failed. Please try again.'
+                    ], 422);
+                }
+            } catch (\Exception $verifyException) {
+                Log::error('reCAPTCHA verification error: ' . $verifyException->getMessage());
+                // Fallback: allow submission in case of API timeout/downtime to not disrupt real users
+            }
+        }
 
         try {
             // Set timestamp of submission
             $validated['survey_submitted_at'] = now();
 
-            $studentInterest = StudentInterest::create($validated);
+            // Remove token so it doesn't get sent to Google Sheets
+            unset($validated['recaptcha_token']);
 
-            // Send to Google Sheets webhook asynchronously
-            $webhookUrl = env('GOOGLE_SHEET_WEBHOOK_URL');
+            // Send to Google Sheets webhook asynchronously using validated payload keys with signature
+            $webhookUrl = config('services.google_sheets.student_webhook_url') ?: config('services.google_sheets.webhook_url');
             if ($webhookUrl) {
                 try {
-                    Http::timeout(5)->post($webhookUrl, $validated);
+                    $secret = config('services.google_sheets.webhook_secret', 'secret_key');
+                    $signature = hash_hmac('sha256', json_encode($validated), $secret);
+                    $response = Http::timeout(5)->withHeaders([
+                        'X-Webhook-Signature' => $signature
+                    ])->post($webhookUrl, $validated);
+                    if (!$response->successful()) {
+                        Log::error('Student Google Sheet Webhook failed with status ' . $response->status() . ': ' . $response->body());
+                    } else {
+                        $resJson = $response->json();
+                        if (is_array($resJson) && isset($resJson['success']) && !$resJson['success']) {
+                            Log::error('Student Google Sheet Apps Script execution error: ' . ($resJson['error'] ?? 'Unknown script error'));
+                        }
+                    }
                 } catch (\Exception $sheetException) {
                     // Log error but do not disrupt student user experience
                     Log::error('Google Sheet Sync Error: ' . $sheetException->getMessage());
@@ -64,11 +112,10 @@ class StudentInterestController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Student academic interests recorded successfully.',
-                'data' => $studentInterest
+                'message' => 'Student academic interests recorded successfully.'
             ], 201);
         } catch (\Exception $e) {
-            Log::error('Failed to save student interest: ' . $e->getMessage());
+            Log::error('Failed to submit student interest: ' . $e->getMessage());
 
             return response()->json([
                 'success' => false,
@@ -312,6 +359,268 @@ class StudentInterestController extends Controller
             ]);
         } catch (\Exception $e) {
             Log::error('Failed to delete university opportunity config: ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Store a new industry analysis survey submission.
+     */
+    public function storeIndustry(Request $request)
+    {
+        $validated = $request->validate([
+            'company_name' => 'required|string',
+            'industry_sector' => 'required|string',
+            'organization_size' => 'nullable|string',
+            'primary_academic_field' => 'required|string',
+            'secondary_academic_field' => 'nullable|string',
+            'third_academic_field' => 'nullable|string',
+            'required_skills' => 'nullable|string',
+            'academic_practices' => 'nullable|string',
+            'minimum_qualification' => 'nullable|string',
+            'minimum_degree_result' => 'nullable|string',
+            'certification_importance' => 'nullable|integer|min:1|max:5',
+            'emerging_fields' => 'nullable|string',
+            'new_program_suggestion' => 'nullable|string',
+            'graduate_skill_gaps' => 'nullable|string',
+            'additional_recommendations' => 'nullable|string',
+            'recaptcha_token' => 'nullable|string',
+        ]);
+
+        // Verify reCAPTCHA if credentials are provided and not set to placeholder
+        $recaptchaSecret = config('services.recaptcha.secret');
+        if ($recaptchaSecret && $recaptchaSecret !== '6Ld_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx') {
+            $token = $request->input('recaptcha_token');
+            if (!$token) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'reCAPTCHA token is missing.'
+                ], 422);
+            }
+
+            try {
+                $verifyResponse = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
+                    'secret' => $recaptchaSecret,
+                    'response' => $token,
+                    'remoteip' => $request->ip(),
+                ]);
+
+                if (!$verifyResponse->successful() || !$verifyResponse->json('success') || $verifyResponse->json('score') < 0.5) {
+                    Log::warning('reCAPTCHA validation failed for industry survey', [
+                        'ip' => $request->ip(),
+                        'response' => $verifyResponse->json()
+                    ]);
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Anti-bot verification failed. Please try again.'
+                    ], 422);
+                }
+            } catch (\Exception $verifyException) {
+                Log::error('reCAPTCHA verification error for industry: ' . $verifyException->getMessage());
+            }
+        }
+
+        try {
+            $validated['survey_submitted_at'] = now();
+            unset($validated['recaptcha_token']);
+
+            // Send to Google Sheets webhook asynchronously using validated payload keys with signature
+            $webhookUrl = config('services.google_sheets.industry_webhook_url') ?: config('services.google_sheets.webhook_url');
+            if ($webhookUrl) {
+                try {
+                    $secret = config('services.google_sheets.webhook_secret', 'secret_key');
+                    $signature = hash_hmac('sha256', json_encode($validated), $secret);
+                    $response = Http::timeout(5)->withHeaders([
+                        'X-Webhook-Signature' => $signature
+                    ])->post($webhookUrl, $validated);
+                    if (!$response->successful()) {
+                        Log::error('Industry Google Sheet Webhook failed with status ' . $response->status() . ': ' . $response->body());
+                    } else {
+                        $resJson = $response->json();
+                        if (is_array($resJson) && isset($resJson['success']) && !$resJson['success']) {
+                            Log::error('Industry Google Sheet Apps Script execution error: ' . ($resJson['error'] ?? 'Unknown script error'));
+                        }
+                    }
+                } catch (\Exception $sheetException) {
+                    // Log error but do not disrupt user experience
+                    Log::error('Industry Google Sheet Sync Error: ' . $sheetException->getMessage());
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Industry requirements submitted successfully.'
+            ], 201);
+        } catch (\Exception $e) {
+            Log::error('Failed to submit industry requirement: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while saving industry requirements.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get active dynamic configuration of industry sectors.
+     */
+    public function getIndustrySectors()
+    {
+        try {
+            $sectors = DB::connection('analytics')->table('industry_sectors_config')->get()->map(function ($s) {
+                return [
+                    'id' => $s->id,
+                    'sector_name' => $s->sector_name
+                ];
+            });
+
+            return response()->json($sectors);
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve industry sectors config: ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Create or update industry sector configuration (Admin).
+     */
+    public function storeIndustrySector(Request $request)
+    {
+        $validated = $request->validate([
+            'id' => 'nullable|integer',
+            'sector_name' => 'required|string',
+        ]);
+
+        try {
+            if (!empty($validated['id'])) {
+                DB::connection('analytics')->table('industry_sectors_config')
+                    ->where('id', $validated['id'])
+                    ->update([
+                        'sector_name' => $validated['sector_name'],
+                        'updated_at' => now()
+                    ]);
+                $id = $validated['id'];
+            } else {
+                $id = DB::connection('analytics')->table('industry_sectors_config')->insertGetId([
+                    'sector_name' => $validated['sector_name'],
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'id' => $id,
+                'message' => 'Industry sector saved successfully.'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to save industry sector config: ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Delete an industry sector configuration (Admin).
+     */
+    public function deleteIndustrySector($id)
+    {
+        try {
+            DB::connection('analytics')->table('industry_sectors_config')
+                ->where('id', $id)
+                ->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Industry sector configuration deleted successfully.'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to delete industry sector config: ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Get active dynamic configuration of industry academic interest fields and sub-disciplines.
+     */
+    public function getIndustryConfig()
+    {
+        try {
+            $configs = DB::connection('analytics')->table('industry_interests_config')->get()->map(function ($c) {
+                $skillsArray = array_filter(array_map('trim', explode(',', $c->skills)));
+                return [
+                    'id' => $c->id,
+                    'interest_field' => $c->interest_field,
+                    'skills' => array_values($skillsArray)
+                ];
+            });
+
+            return response()->json($configs);
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve industry survey config: ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Create or update industry interest field configuration (Admin).
+     */
+    public function storeIndustryConfig(Request $request)
+    {
+        $validated = $request->validate([
+            'id' => 'nullable|integer',
+            'interest_field' => 'required|string',
+            'skills' => 'required|array'
+        ]);
+
+        $skillsList = array_filter(array_map('trim', $validated['skills']));
+        $skillsString = implode(', ', $skillsList);
+
+        try {
+            if (!empty($validated['id'])) {
+                DB::connection('analytics')->table('industry_interests_config')
+                    ->where('id', $validated['id'])
+                    ->update([
+                        'interest_field' => $validated['interest_field'],
+                        'skills' => $skillsString,
+                        'updated_at' => now()
+                    ]);
+                $id = $validated['id'];
+            } else {
+                $id = DB::connection('analytics')->table('industry_interests_config')->insertGetId([
+                    'interest_field' => $validated['interest_field'],
+                    'skills' => $skillsString,
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'id' => $id,
+                'message' => 'Industry academic field configuration saved successfully.'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to save industry survey config: ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Delete an industry interest field configuration (Admin).
+     */
+    public function deleteIndustryConfig($id)
+    {
+        try {
+            DB::connection('analytics')->table('industry_interests_config')
+                ->where('id', $id)
+                ->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Industry academic field configuration deleted successfully.'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to delete industry survey config: ' . $e->getMessage());
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }

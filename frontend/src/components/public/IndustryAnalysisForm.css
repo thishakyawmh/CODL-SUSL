@@ -1,0 +1,565 @@
+/* ============================================================
+   INDUSTRY ANALYSIS FORM STYLING
+   Center for Open and Distance Learning - SUSL
+   Consistent with StudentInterestForm design
+   ============================================================ */
+
+.industry-analysis-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  font-family: var(--font-family, 'Poppins', sans-serif);
+  padding-bottom: var(--space-2xl, 48px);
+}
+
+.industry-analysis-header-card {
+  width: 90%;
+  max-width: 850px;
+  margin: var(--space-xl, 32px) auto 0 auto;
+  background: linear-gradient(135deg, #ffffff 0%, #faf8ff 50%, #f5f3ff 100%);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-left: 4px solid var(--primary-color, #7c3aed);
+  border-radius: var(--card-radius, 20px);
+  box-shadow: 0 4px 20px rgba(124, 58, 237, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+  padding: var(--space-xl, 36px) var(--space-xl, 32px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xl, 32px);
+  overflow: hidden;
+  position: relative;
+}
+
+.industry-analysis-header-card h1 {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text-dark, #1e293b);
+  margin-bottom: 16px;
+  line-height: 1.25;
+  letter-spacing: -0.3px;
+  position: relative;
+  display: inline-block;
+}
+
+.industry-analysis-header-card h1::after {
+  content: '';
+  display: block;
+  width: 50%;
+  height: 3px;
+  background: linear-gradient(90deg, #7c3aed 0%, #a78bfa 60%, transparent 100%);
+  border-radius: 4px;
+  margin-top: 12px;
+}
+
+.industry-analysis-header-card p {
+  color: var(--text-secondary, #64748b);
+  font-size: 14.5px;
+  line-height: 1.65;
+  font-weight: 500;
+  letter-spacing: 0.1px;
+}
+
+.industry-analysis-description-card {
+  width: 90%;
+  max-width: 850px;
+  margin: var(--space-md, 16px) auto 0 auto;
+  background: #f7ebfb;
+  border: 1px solid #eef2f6;
+  border-radius: var(--card-radius, 20px);
+  padding: 20px 24px;
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  box-shadow: 0 4px 15px rgba(124, 58, 237, 0.02);
+}
+
+.industry-analysis-description-card .info-icon-wrapper {
+  color: #7c3aed;
+  background: #f5f3ff;
+  padding: 8px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.industry-analysis-description-card .description-text {
+  color: var(--text-secondary, #475569);
+  font-size: var(--text-md, 14.5px);
+  line-height: var(--leading-relaxed, 1.6);
+}
+
+.interest-form {
+  width: 90%;
+  max-width: 850px;
+  margin: 24px auto var(--space-xl, 32px) auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg, 24px);
+}
+
+.form-section {
+  background-color: #fafbff;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 16px;
+  padding: 24px;
+  transition: all var(--transition-base, 0.2s);
+}
+
+.form-section:hover {
+  border-color: rgba(124, 58, 237, 0.25);
+  background-color: #fbfdff;
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.02);
+}
+
+.section-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-md, 16px);
+  border-bottom: 1px solid var(--border-color, #e2e8f0);
+  padding-bottom: 8px;
+}
+
+.form-section-title {
+  font-size: var(--text-lg, 16px);
+  font-weight: 600;
+  color: var(--primary-color, #7c3aed);
+  border-left: 4px solid var(--primary-color, #7c3aed);
+  padding-left: var(--space-sm, 8px);
+  margin-bottom: 0;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-lg, 24px);
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm, 8px);
+}
+
+.form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+.form-group label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #4b5563;
+}
+
+.form-input,
+.form-select,
+.form-textarea {
+  font-family: inherit;
+  font-size: 13.5px;
+  padding: 12px 16px;
+  border-radius: var(--input-radius, 10px);
+  border: 1.5px solid var(--border-color, #e2e8f0);
+  background-color: var(--white, #ffffff);
+  color: var(--text-dark, #1e293b);
+  transition: all var(--transition-fast, 0.15s);
+  outline: none;
+}
+
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
+  border-color: var(--primary-color, #7c3aed);
+  box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.15);
+}
+
+.form-textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+/* Submission States & Error banners */
+.form-alert {
+  padding: 12px 16px;
+  border-radius: var(--input-radius, 10px);
+  font-size: var(--text-md, 13px);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.form-alert.error {
+  background-color: var(--danger-light, #fee2e2);
+  color: var(--danger, #ef4444);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.form-actions {
+  margin-top: var(--space-md, 16px);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.submit-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: inherit;
+  font-size: var(--text-md, 14px);
+  font-weight: 600;
+  padding: 14px 28px;
+  border-radius: var(--btn-radius, 12px);
+  border: none;
+  background-color: var(--primary-color, #7c3aed);
+  color: var(--white, #ffffff);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.3);
+}
+
+.submit-btn:hover:not(:disabled) {
+  background-color: var(--primary-hover, #6d28d9);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.4);
+}
+
+.submit-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.submit-btn:disabled {
+  background-color: var(--surface-3, #cbd5e1);
+  color: var(--text-light, #94a3b8);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Success Layout — consistent with student form */
+.success-card {
+  width: 90%;
+  max-width: 850px;
+  margin: 24px auto;
+  background-color: #fafbff;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 16px;
+  padding: var(--space-xl, 32px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  animation: scaleUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.success-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 90px;
+  height: 90px;
+  background-color: var(--success-light, #dcfce7);
+  color: var(--success, #10b981);
+  border-radius: 50%;
+  margin-bottom: var(--space-lg, 24px);
+  box-shadow: 0 10px 25px rgba(16, 185, 129, 0.2);
+}
+
+.success-card h2 {
+  font-size: var(--text-3xl, 22px);
+  font-weight: 700;
+  color: var(--text-dark, #1e293b);
+  margin-bottom: var(--space-sm, 8px);
+}
+
+.success-card p {
+  color: var(--text-secondary, #64748b);
+  font-size: var(--text-md, 14px);
+  max-width: 480px;
+  margin-bottom: var(--space-xl, 32px);
+  line-height: var(--leading-normal);
+}
+
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: inherit;
+  font-size: var(--text-md, 14px);
+  font-weight: 600;
+  padding: 12px 24px;
+  border-radius: var(--btn-radius, 12px);
+  border: 1.5px solid var(--border-color, #e2e8f0);
+  background-color: var(--white, #ffffff);
+  color: var(--text-dark, #1e293b);
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.back-btn:hover {
+  background-color: var(--surface-1, #f1f5f9);
+  border-color: var(--surface-3, #cbd5e1);
+  transform: translateY(-1px);
+}
+
+.banner-image-placeholder {
+  width: 350px;
+  max-width: 45%;
+  height: 190px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.banner-image-placeholder img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+@media (max-width: 1024px) {
+  .banner-image-placeholder {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .industry-analysis-header-card {
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+    padding: 24px 16px;
+    gap: 16px;
+  }
+
+  .industry-analysis-header-card h1 {
+    font-size: 22px;
+    margin-bottom: 12px;
+  }
+
+  .header-uni-logo {
+    width: 30px;
+    height: 30px;
+  }
+
+  .header-subtitle-container {
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .subtitle-line1 {
+    font-size: 9px;
+    white-space: nowrap;
+  }
+
+  .subtitle-line2 {
+    font-size: 7.5px;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 600px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-group.full-width {
+    grid-column: span 1;
+  }
+
+  .banner-image-placeholder {
+    width: 100%;
+    height: 180px;
+    margin-top: 16px;
+  }
+
+  .header-subtitle-container {
+    justify-content: flex-start;
+    text-align: left;
+  }
+}
+
+/* University Logo Header Styling */
+.header-subtitle-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.header-uni-logo {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+}
+
+.subtitle-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.35;
+}
+
+.subtitle-line1 {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--text-dark, #334155);
+}
+
+.subtitle-line2 {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary, #64748b);
+}
+
+/* ============================================================
+   CHOICE CHIP SELECTORS
+   Matches StudentInterestForm .choice-chip / .choice-chip.active
+   ============================================================ */
+
+.sub-discipline-hint {
+  font-weight: 400;
+  font-size: 12px;
+  color: #94a3b8;
+  margin-left: 4px;
+}
+
+/* Chip flow container — same as .choice-grid */
+.subdiscipline-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm, 8px);
+}
+
+/* Individual chip pill — matches .choice-chip */
+.subdiscipline-chip {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  border-radius: var(--chip-radius, 100px);
+  border: 1.5px solid var(--border-color, #e2e8f0);
+  background-color: var(--white, #ffffff);
+  font-family: inherit;
+  font-size: var(--text-sm, 12px);
+  font-weight: 500;
+  color: var(--text-secondary, #64748b);
+  transition: all var(--transition-fast);
+  user-select: none;
+}
+
+.subdiscipline-chip:hover:not(.selected):not(:disabled) {
+  border-color: var(--primary-color, #7c3aed);
+  color: var(--primary-color, #7c3aed);
+  background-color: rgba(124, 58, 237, 0.03);
+}
+
+/* Active state — matches .choice-chip.active */
+.subdiscipline-chip.selected {
+  background-color: var(--primary-color, #7c3aed);
+  border-color: var(--primary-color, #7c3aed);
+  color: var(--white, #ffffff);
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.25);
+}
+
+.subdiscipline-chip.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.max-reached-note {
+  font-size: 12px;
+  color: #f59e0b;
+  font-weight: 500;
+  margin-top: 6px;
+}
+
+.field-helper-text {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+/* ============================================================
+   CREDENTIALS IMPORTANCE SCALE
+   Matches StudentInterestForm .learning-balance-selector
+   ============================================================ */
+
+.credentials-scale {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--space-xs, 8px);
+  margin-top: var(--space-xs, 8px);
+}
+
+.credentials-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background-color: var(--white, #ffffff);
+  border: 1.5px solid var(--border-color, #e2e8f0);
+  border-radius: var(--input-radius, 12px);
+  padding: 12px 6px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  outline: none;
+  font-family: inherit;
+}
+
+.credentials-option:hover {
+  border-color: var(--primary-color, #7c3aed);
+  background-color: rgba(124, 58, 237, 0.03);
+}
+
+.credentials-option.active {
+  background-color: var(--primary-color, #7c3aed);
+  border-color: var(--primary-color, #7c3aed);
+  color: var(--white, #ffffff);
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.25);
+}
+
+.credentials-number {
+  font-size: var(--text-lg, 16px);
+  font-weight: 700;
+}
+
+.credentials-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-align: center;
+  color: inherit;
+}
+
+.credentials-option:not(.active) .credentials-label {
+  color: var(--text-secondary, #64748b);
+}
+
+@media (max-width: 600px) {
+  .credentials-scale {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .credentials-option {
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 12px 16px;
+  }
+}
+
+/* Animation */
+@keyframes scaleUp {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { GraduationCap, CheckCircle2, AlertCircle, Loader2, Send, Plus, Trash2, Info } from 'lucide-react';
+import { GraduationCap, BookOpen, CheckCircle2, AlertCircle, Loader2, Send, Plus, Trash2, Info } from 'lucide-react';
 import { studentInterestService } from '../../services/apiService';
 import './StudentInterestForm.css';
 
@@ -109,8 +109,8 @@ const DEFAULT_FALLBACK_CONFIG: InterestConfig[] = [
 
 export const StudentInterestForm: React.FC = () => {
     // Determine backend URL dynamically
-    const backendUrl = (import.meta.env.VITE_API_URL || 'http://localhost:8000/api').replace(/\/api$/, '');
-    const bannerImgUrl = `${backendUrl}/storage/form1.webp`;
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+    const bannerImgUrl = `${backendUrl}/storage/student-interests.webp`;
 
     // Provinces and Districts mapping in Sri Lanka
     const provinceDistricts: Record<string, string[]> = {
@@ -200,6 +200,35 @@ export const StudentInterestForm: React.FC = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [errorMsg, setErrorMsg] = useState('');
+
+    // Load Google reCAPTCHA v3 script dynamically
+    useEffect(() => {
+        const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
+        if (!siteKey) return;
+
+        // Check if script is already loaded
+        const existingScript = document.getElementById('recaptcha-script');
+        if (existingScript) return;
+
+        const script = document.createElement('script');
+        script.id = 'recaptcha-script';
+        script.src = `https://www.google.com/recaptcha/api.js?render=${siteKey}`;
+        script.async = true;
+        script.defer = true;
+        document.body.appendChild(script);
+
+        return () => {
+            // Clean up badge and script on unmount
+            const badge = document.querySelector('.grecaptcha-badge');
+            if (badge) {
+                badge.remove();
+            }
+            const loadedScript = document.getElementById('recaptcha-script');
+            if (loadedScript) {
+                loadedScript.remove();
+            }
+        };
+    }, []);
 
     // Fetch config on mount
     useEffect(() => {
@@ -430,6 +459,19 @@ export const StudentInterestForm: React.FC = () => {
         }
 
         try {
+            // Get reCAPTCHA v3 token if configured
+            let recaptchaToken = null;
+            const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
+            const recaptcha = (window as any).grecaptcha;
+
+            if (siteKey && recaptcha) {
+                try {
+                    recaptchaToken = await recaptcha.execute(siteKey, { action: 'submit_survey' });
+                } catch (recaptchaErr) {
+                    console.error('reCAPTCHA execution failed:', recaptchaErr);
+                }
+            }
+
             // Prepare payload
             const payload = {
                 email: formData.email.trim() || null,
@@ -461,6 +503,9 @@ export const StudentInterestForm: React.FC = () => {
 
                 // New Program Suggestion (Optional)
                 new_program_suggestion: formData.new_program_suggestion.trim() || null,
+
+                // Google reCAPTCHA Token
+                recaptcha_token: recaptchaToken,
             };
 
             await studentInterestService.submit(payload);
@@ -494,17 +539,20 @@ export const StudentInterestForm: React.FC = () => {
             <div className="student-interest-container">
                 <div className="student-interest-header-card">
                     <div className="header-text-section">
-                        <h1>Student Academic Interests</h1>
-                        <p>
-                            Center for Open and Distance Learning <br />
-                            Sabaragamuwa University of Sri Lanka
-                        </p>
+                        <h1>Student Academic Interest</h1>
+                        <div className="header-subtitle-container">
+                            <img src="/images/logo.png" className="header-uni-logo" alt="SUSL Logo" />
+                            <div className="subtitle-text">
+                                <span className="subtitle-line1">Center for Open and Distance Learning</span>
+                                <span className="subtitle-line2">Sabaragamuwa University of Sri Lanka</span>
+                            </div>
+                        </div>
                     </div>
                     <div className="banner-image-placeholder">
                         <img src={bannerImgUrl} alt="Student Interest Survey Banner" />
                     </div>
                 </div>
-                <div className="student-interest-card">
+                <div className="form-section" style={{ margin: '24px auto', maxWidth: '850px', width: '90%' }}>
                     <div className="success-layout">
                         <div className="success-icon-wrapper">
                             <CheckCircle2 size={48} />
@@ -546,11 +594,14 @@ export const StudentInterestForm: React.FC = () => {
         <div className="student-interest-container">
             <div className="student-interest-header-card">
                 <div className="header-text-section">
-                    <h1>Student Academic Interests</h1>
-                    <p>
-                        Center for Open and Distance Learning <br />
-                        Sabaragamuwa University of Sri Lanka
-                    </p>
+                    <h1>Student Academic Interest</h1>
+                    <div className="header-subtitle-container">
+                        <img src="/images/logo.png" className="header-uni-logo" alt="SUSL Logo" />
+                        <div className="subtitle-text">
+                            <span className="subtitle-line1">Center for Open and Distance Learning</span>
+                            <span className="subtitle-line2">Sabaragamuwa University of Sri Lanka</span>
+                        </div>
+                    </div>
                 </div>
                 <div className="banner-image-placeholder">
                     <img src={bannerImgUrl} alt="Student Interest Survey Banner" />
@@ -565,12 +616,15 @@ export const StudentInterestForm: React.FC = () => {
                 </div>
             </div>
 
-            <div className="student-interest-card">
-                <form onSubmit={handleSubmit} className="interest-form">
+            <form onSubmit={handleSubmit} className="interest-form">
 
                     {/* Part 1: Profile & Contact */}
                     <div className="form-section">
-                        <h3 className="form-section-title">Profile & Contact Details</h3>
+                        <div className="section-header-row">
+                            <h3 className="form-section-title" style={{ borderLeftColor: '#7C3AED', marginBottom: 0 }}>
+                                Profile & Contact Details
+                            </h3>
+                        </div>
                         <div className="form-grid">
 
                             {/* Education level */}
@@ -1080,8 +1134,7 @@ export const StudentInterestForm: React.FC = () => {
                         </button>
                     </div>
 
-                </form>
-            </div>
+            </form>
         </div>
     );
 };

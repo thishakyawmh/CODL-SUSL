@@ -4,7 +4,7 @@ import {
     X, Calendar, Award,
     ArrowUpRight, UserCheck, FileText, CheckCircle2, Layers,
     ArrowLeft, Eye, Check, XCircle, Edit3, Save, User, ShieldCheck, Clock, Trash2,
-    MapPin, CheckSquare
+    MapPin, CheckSquare, Info
 } from 'lucide-react';
 import { mockAdminCourses } from '../../data/mockAdminData';
 import type {
@@ -142,6 +142,7 @@ export const Applications: React.FC = () => {
                 documents: app.documents || {},
                 documentsVerified: app.documents_verified || { personal: false, educational: false },
                 status: app.status,
+                approvalLevel: app.approval_level,
                 applicationDate: app.created_at ? app.created_at.split('T')[0] : '',
                 approvalStages: [
                     {
@@ -1018,14 +1019,37 @@ export const Applications: React.FC = () => {
                         )}
                         {currentAdminRole !== 'super_admin' && selectedApplication.status === 'pending' && (
                             isEnrollment ? (
-                                <>
-                                    <button className="am-reject-btn" style={{ background: '#FEE2E2', color: '#DC2626', border: '1px solid #FEE2E2' }} onClick={() => handleRejectClick(selectedApplication.id, 'enrollment')}>
-                                        <XCircle size={18} /> Reject
-                                    </button>
-                                    <button className="am-approve-btn" onClick={() => handleAction(selectedApplication.id, 'approved', 'enrollment')}>
-                                        <Check size={18} /> Approve
-                                    </button>
-                                </>
+                                (
+                                    (selectedApplication.approvalLevel === 0 && currentAdminRole === 'secretary') ||
+                                    (selectedApplication.approvalLevel === 1 && currentAdminRole === 'coordinator') ||
+                                    (selectedApplication.approvalLevel === 2 && currentAdminRole === 'director')
+                                ) ? (
+                                    <>
+                                        <button className="am-reject-btn" style={{ background: '#FEE2E2', color: '#DC2626', border: '1px solid #FEE2E2' }} onClick={() => handleRejectClick(selectedApplication.id, 'enrollment')}>
+                                            <XCircle size={18} /> Reject
+                                        </button>
+                                        <button className="am-approve-btn" onClick={() => handleAction(selectedApplication.id, 'approved', 'enrollment')}>
+                                            <Check size={18} /> Approve
+                                        </button>
+                                    </>
+                                ) : (
+                                    <div className="am-waiting-badge" style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '8px',
+                                        background: '#FEF3C7',
+                                        color: '#D97706',
+                                        padding: '10px 20px',
+                                        borderRadius: '8px',
+                                        border: '1px solid #FDE68A',
+                                        fontWeight: 700,
+                                        fontSize: '13px',
+                                        width: '100%',
+                                        justifyContent: 'center'
+                                    }}>
+                                        <Info size={16} /> Waiting for {selectedApplication.approvalLevel === 1 ? 'Coordinator' : 'Director'} Approval
+                                    </div>
+                                )
                             ) : (
                                 (
                                     (selectedApplication.currentStep === 1 && currentAdminRole === 'secretary') ||
@@ -1085,7 +1109,8 @@ export const Applications: React.FC = () => {
                 const regNo = app.isNewApplicant ? '' : `CODL/ST/2024/${app.id.split('-')[1]}`;
                 const regMatch = regNo.toLowerCase().includes(query);
                 const idMatch = String(app.id || '').toLowerCase().includes(query);
-                matchesSearch = nameMatch || emailMatch || regMatch || idMatch;
+                const studentNumberMatch = (app.studentNumber || '').toLowerCase().includes(query);
+                matchesSearch = nameMatch || emailMatch || regMatch || idMatch || studentNumberMatch;
             }
 
             return matchesCourse && matchesType && matchesSearch;
