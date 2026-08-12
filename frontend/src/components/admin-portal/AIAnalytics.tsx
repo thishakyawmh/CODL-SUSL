@@ -2309,10 +2309,18 @@ const InteractiveSriLankaMap: React.FC = () => {
                             </p>
                             <ResponsiveContainer width="100%" height={340}>
                                 <PieChart>
-                                    <Pie data={allIslandPieData} cx="50%" cy="50%" outerRadius={120} paddingAngle={3} dataKey="value"
+                                    <defs>
+                                        {CHART_GRADIENTS.map(g => (
+                                            <linearGradient id={g.id} key={g.id} x1="0" y1="0" x2="1" y2="1">
+                                                <stop offset="0%" stopColor={g.start} />
+                                                <stop offset="100%" stopColor={g.end} />
+                                            </linearGradient>
+                                        ))}
+                                    </defs>
+                                    <Pie data={allIslandPieData} cx="50%" cy="50%" innerRadius={70} outerRadius={110} paddingAngle={3} dataKey="value"
                                         onClick={(entry: any) => handleAllIslandFieldClick(entry.name)} style={{ cursor: 'pointer' }}>
                                         {allIslandPieData.map((entry, i) => (
-                                            <Cell key={i} fill={MAP_CHART_COLORS[i % MAP_CHART_COLORS.length]}
+                                            <Cell key={i} fill={`url(#${CHART_GRADIENTS[i % CHART_GRADIENTS.length].id})`}
                                                 stroke={allIslandSelectedField === entry.name ? '#0F172A' : 'transparent'}
                                                 strokeWidth={allIslandSelectedField === entry.name ? 3 : 0}
                                                 opacity={allIslandSelectedField && allIslandSelectedField !== entry.name ? 0.45 : 1} />
@@ -2333,7 +2341,7 @@ const InteractiveSriLankaMap: React.FC = () => {
                         {allIslandSelectedField && (
                             <div style={{ animation: 'fadeInRight 0.3s ease' }}>
                                 <h4 style={{ margin: '0 0 4px 0', fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>Top Skills for <span style={{ background: 'linear-gradient(135deg, #EDE9FE, #DDD6FE)', color: '#6D28D9', padding: '2px 10px', borderRadius: '6px', fontWeight: 800 }}>{allIslandSelectedField}</span></h4>
-                                <p style={{ margin: '0 0 16px 0', fontSize: '12px', color: '#64748B', fontWeight: 500 }}>All Island · All Education Levels</p>
+                                <p style={{ margin: '0 0 16px 0', fontSize: '12px', color: '#64748B', fontWeight: 500 }}>Nationwide Student Interests (All education levels)</p>
                                 {loadingAllIslandSkills ? (
                                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '300px' }}>
                                         <div style={{ width: '28px', height: '28px', borderRadius: '50%', border: '3px solid #E9D5FF', borderTopColor: '#7C3AED', animation: 'spin 0.9s linear infinite' }}></div>
@@ -2343,8 +2351,16 @@ const InteractiveSriLankaMap: React.FC = () => {
                                 ) : (
                                     <ResponsiveContainer width="100%" height={340}>
                                         <PieChart>
-                                            <Pie data={allIslandSkills.map(s => ({ ...s, value: s.score }))} cx="50%" cy="50%" outerRadius={115} paddingAngle={2} dataKey="value">
-                                                {allIslandSkills.map((_, i) => <Cell key={i} fill={MAP_CHART_COLORS[i % MAP_CHART_COLORS.length]} />)}
+                                            <defs>
+                                                {CHART_GRADIENTS.map(g => (
+                                                    <linearGradient id={g.id} key={g.id} x1="0" y1="0" x2="1" y2="1">
+                                                        <stop offset="0%" stopColor={g.start} />
+                                                        <stop offset="100%" stopColor={g.end} />
+                                                    </linearGradient>
+                                                ))}
+                                            </defs>
+                                            <Pie data={allIslandSkills.map(s => ({ ...s, value: s.score }))} cx="50%" cy="50%" innerRadius={85} outerRadius={105} paddingAngle={2} dataKey="value">
+                                                {allIslandSkills.map((_, i) => <Cell key={i} fill={`url(#${CHART_GRADIENTS[i % CHART_GRADIENTS.length].id})`} />)}
                                             </Pie>
                                             <Tooltip content={({ active, payload }: any) => {
                                                 if (active && payload?.length) {
@@ -2379,10 +2395,18 @@ const InteractiveSriLankaMap: React.FC = () => {
                             </p>
                             <ResponsiveContainer width="100%" height={340}>
                                 <PieChart>
-                                    <Pie data={geoData?.industry_domains || []} cx="50%" cy="50%" outerRadius={120} paddingAngle={3} dataKey="value"
+                                    <defs>
+                                        {CHART_GRADIENTS.map(g => (
+                                            <linearGradient id={g.id} key={g.id} x1="0" y1="0" x2="1" y2="1">
+                                                <stop offset="0%" stopColor={g.start} />
+                                                <stop offset="100%" stopColor={g.end} />
+                                            </linearGradient>
+                                        ))}
+                                    </defs>
+                                    <Pie data={geoData?.industry_domains || []} cx="50%" cy="50%" innerRadius={70} outerRadius={110} paddingAngle={3} dataKey="value"
                                         onClick={(entry: any) => handleIndustryFieldClick(entry.name)} style={{ cursor: 'pointer' }}>
                                         {(geoData?.industry_domains || []).map((entry, i) => (
-                                            <Cell key={i} fill={MAP_CHART_COLORS[i % MAP_CHART_COLORS.length]}
+                                            <Cell key={i} fill={`url(#${CHART_GRADIENTS[i % CHART_GRADIENTS.length].id})`}
                                                 stroke={industrySelectedField === entry.name ? '#0F172A' : 'transparent'}
                                                 strokeWidth={industrySelectedField === entry.name ? 3 : 0}
                                                 opacity={industrySelectedField && industrySelectedField !== entry.name ? 0.45 : 1} />
@@ -2402,8 +2426,8 @@ const InteractiveSriLankaMap: React.FC = () => {
                         </div>
                         {industrySelectedField && (
                             <div style={{ animation: 'fadeInRight 0.3s ease' }}>
-                                <h4 style={{ margin: '0 0 4px 0', fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>Top 7 Soft Skills for <span style={{ background: 'linear-gradient(135deg, #ECFDF5, #D1FAE5)', color: '#047857', padding: '2px 10px', borderRadius: '6px', fontWeight: 800 }}>{industrySelectedField}</span></h4>
-                                <p style={{ margin: '0 0 16px 0', fontSize: '12px', color: '#64748B', fontWeight: 500 }}>All Island · Industry Demands</p>
+                                <h4 style={{ margin: '0 0 4px 0', fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>Top 7 Sub Skills for <span style={{ background: 'linear-gradient(135deg, #ECFDF5, #D1FAE5)', color: '#047857', padding: '2px 10px', borderRadius: '6px', fontWeight: 800 }}>{industrySelectedField}</span></h4>
+                                <p style={{ margin: '0 0 16px 0', fontSize: '12px', color: '#64748B', fontWeight: 500 }}>National Industry Requirements (All sectors combined)</p>
                                 {loadingIndustrySkills ? (
                                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '300px' }}>
                                         <div style={{ width: '28px', height: '28px', borderRadius: '50%', border: '3px solid #E9D5FF', borderTopColor: '#7C3AED', animation: 'spin 0.9s linear infinite' }}></div>
@@ -2413,9 +2437,17 @@ const InteractiveSriLankaMap: React.FC = () => {
                                 ) : (
                                     <ResponsiveContainer width="100%" height={300}>
                                         <PieChart>
-                                            <Pie data={industrySkills} cx="50%" cy="50%" innerRadius={50} outerRadius={85} paddingAngle={4} dataKey="value">
+                                            <defs>
+                                                {CHART_GRADIENTS.map(g => (
+                                                    <linearGradient id={g.id} key={g.id} x1="0" y1="0" x2="1" y2="1">
+                                                        <stop offset="0%" stopColor={g.start} />
+                                                        <stop offset="100%" stopColor={g.end} />
+                                                    </linearGradient>
+                                                ))}
+                                            </defs>
+                                            <Pie data={industrySkills} cx="50%" cy="50%" innerRadius={85} outerRadius={105} paddingAngle={4} dataKey="value">
                                                 {industrySkills.map((entry, idx) => (
-                                                    <Cell key={`cell-ind-skill-${idx}`} fill={MAP_CHART_COLORS[(idx + 2) % MAP_CHART_COLORS.length]} />
+                                                    <Cell key={`cell-ind-skill-${idx}`} fill={`url(#${CHART_GRADIENTS[(idx + 2) % CHART_GRADIENTS.length].id})`} />
                                                 ))}
                                             </Pie>
                                             <Tooltip content={({ active, payload }: any) => {
