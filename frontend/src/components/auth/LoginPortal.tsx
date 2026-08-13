@@ -193,7 +193,9 @@ export const LoginPortal: React.FC = () => {
                             <GraduationCap size={36} className="sync-overlay-icon" style={{ color: '#7C3AED' }} />
                         </div>
                         <h2 className="sync-overlay-title">Authenticating</h2>
-                        <p className="sync-overlay-desc">Verifying your Google identity and loading your student workspace. Please wait...</p>
+                        {activeView === 'new' && (
+                            <p className="sync-overlay-desc">Verifying your Google identity and loading your student workspace. Please wait...</p>
+                        )}
                     </div>
                 </div>
             )}
