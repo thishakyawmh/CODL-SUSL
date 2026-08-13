@@ -358,10 +358,10 @@ export const getInitials = (name: string) => {
 };
 
 export const getAvatarColor = (name: string) => {
-    if (!name) return '#7C3AED'; 
+    if (!name) return 'var(--primary-color)'; 
     const hash = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
     const colors = [
-        '#7C3AED', 
+        'var(--primary-color)', 
         '#2563EB', 
         '#059669', 
         '#D97706', 

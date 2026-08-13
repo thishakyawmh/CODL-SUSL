@@ -24,8 +24,8 @@ export const AdminAnnouncements: React.FC = () => {
 
     const loadAnnouncements = async () => {
         try {
-            const data = await announcementService.getAll();
-            const globalOnly = data.filter((ann: any) => !ann.course_id).map((ann: any) => ({
+            const data = await announcementService.getAll({ global_only: 'true' });
+            const globalOnly = data.map((ann: any) => ({
                 id: String(ann.id),
                 title: ann.title,
                 desc: ann.desc,

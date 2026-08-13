@@ -190,10 +190,12 @@ export const LoginPortal: React.FC = () => {
                             <div className="sync-pulse-ring"></div>
                             <div className="sync-pulse-ring delay-1"></div>
                             <div className="sync-pulse-ring delay-2"></div>
-                            <GraduationCap size={36} className="sync-overlay-icon" style={{ color: '#7C3AED' }} />
+                            <GraduationCap size={36} className="sync-overlay-icon" style={{ color: 'var(--primary-color)' }} />
                         </div>
                         <h2 className="sync-overlay-title">Authenticating</h2>
-                        <p className="sync-overlay-desc">Verifying your Google identity and loading your student workspace. Please wait...</p>
+                        {activeView === 'new' && (
+                            <p className="sync-overlay-desc">Verifying your Google identity and loading your student workspace. Please wait...</p>
+                        )}
                     </div>
                 </div>
             )}

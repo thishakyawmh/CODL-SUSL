@@ -31,5 +31,10 @@ class DatabaseSeeder extends Seeder
             ]);
             echo "Database seeded successfully with default/essential data!\n";
         }
+
+        // Initialize Industry survey configurations
+        $this->call([
+            IndustrySurveyConfigsSeeder::class
+        ]);
     }
 }

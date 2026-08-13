@@ -22,6 +22,7 @@ class SystemSettingController extends Controller
                 'contact_phone' => '045-2280179',
                 'address' => 'Sabaragamuwa University of Sri Lanka, P.O. Box 02, Belihuloya, 70140, Sri Lanka.',
                 'logo' => '/images/logo.png',
+                'primary_color' => '#7C3AED',
                 'website_url' => 'https://www.sab.ac.lk/codl',
                 'academic_year' => '2025/2026',
                 'session_timeout' => 30,
@@ -52,6 +53,7 @@ class SystemSettingController extends Controller
             'maintenance_message' => 'nullable|string',
             'backup_frequency' => 'nullable|string|in:daily,weekly,monthly',
             'backup_retention' => 'nullable|integer|in:7,30,90',
+            'primary_color' => 'nullable|string|max:7',
         ]);
 
         $settings = SystemSetting::first();
@@ -91,6 +93,7 @@ class SystemSettingController extends Controller
                 'contact_phone' => '045-2280179',
                 'address' => 'Sabaragamuwa University of Sri Lanka, P.O. Box 02, Belihuloya, 70140, Sri Lanka.',
                 'logo' => '/images/logo.png',
+                'primary_color' => '#7C3AED',
                 'website_url' => 'https://www.sab.ac.lk/codl',
                 'academic_year' => '2025/2026',
                 'session_timeout' => 30,

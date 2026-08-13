@@ -40,7 +40,7 @@
     align-items: center;
     justify-content: center;
     color: var(--white);
-    background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
+    background: linear-gradient(135deg, #8B5CF6 0%, var(--primary-color) 100%);
     border-radius: 10px;
     padding: 10px;
 }
@@ -144,7 +144,7 @@ textarea.lr-input {
     height: 16px;
     border-radius: 4px;
     cursor: pointer;
-    accent-color: #7C3AED;
+    accent-color: var(--primary-color);
 }
 
 .lr-checkbox span {
@@ -154,7 +154,7 @@ textarea.lr-input {
 }
 
 .lr-agreement {
-    background-color: #EDE9FE;
+    background-color: var(--primary-light);
     padding: 20px;
     border-radius: 12px;
     border-left: 4px solid var(--primary-color);

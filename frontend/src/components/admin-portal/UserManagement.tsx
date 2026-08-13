@@ -24,7 +24,7 @@ const mapUser = (user: any): User => ({
     avatar: user.avatar ? getFullAvatarUrl(user.avatar) : `https://ui-avatars.com/api/?name=${encodeURIComponent(user.full_name)}&background=random`,
     joinDate: user.created_at ? user.created_at.split('T')[0] : 'N/A',
     lastLogin: user.updated_at || new Date().toISOString(),
-    courses: []
+    courses: user.courses ? user.courses.map((c: any) => c.title || c.code) : []
 });
 
 export const UserManagement: React.FC = () => {
@@ -271,16 +271,26 @@ export const UserManagement: React.FC = () => {
         }
     };
 
-    const handleChangeRoleAction = (user: User) => {
+    const handleChangeRoleAction = async (user: User) => {
         if (user.role === 'super_admin') {
             toast.error('Super Administrators cannot be modified.');
             return;
         }
-        setSelectedUser(user);
-        setEditFormData({ ...user });
-        setIsEditMode(true);
-        setShowDetailModal(true);
-        setOpenMenuId(null);
+        try {
+            setIsLoading(true);
+            const fullUser = await userService.getById(user.id);
+            const mapped = mapUser(fullUser);
+            setSelectedUser(mapped);
+            setEditFormData({ ...mapped });
+            setIsEditMode(true);
+            setShowDetailModal(true);
+            setOpenMenuId(null);
+        } catch (err) {
+            console.error("Failed to fetch user details for editing:", err);
+            toast.error("Failed to load user details");
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleExportUsers = () => {
@@ -448,7 +458,23 @@ export const UserManagement: React.FC = () => {
                                         </td>
                                         <td style={{ position: 'relative', zIndex: openMenuId === user.id ? 50 : undefined }}>
                                             <div className="um-actions">
-                                                <button className="um-action-btn" title="View Details" onClick={() => { setSelectedUser(user); setShowDetailModal(true); }}>
+                                                <button
+                                                    className="um-action-btn"
+                                                    title="View Details"
+                                                    onClick={async () => {
+                                                        try {
+                                                            setIsLoading(true);
+                                                            const fullUser = await userService.getById(user.id);
+                                                            setSelectedUser(mapUser(fullUser));
+                                                            setShowDetailModal(true);
+                                                        } catch (err) {
+                                                            console.error("Failed to fetch user details:", err);
+                                                            toast.error("Failed to load user details");
+                                                        } finally {
+                                                            setIsLoading(false);
+                                                        }
+                                                    }}
+                                                >
                                                     <Eye size={15} />
                                                 </button>
                                                 {user.role !== 'super_admin' && (
@@ -794,7 +820,7 @@ export const UserManagement: React.FC = () => {
                         <div className="um-modal-header" style={{ padding: '20px 24px' }}>
                             <div>
                                 <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#1E293B', fontSize: '18px', fontWeight: 700 }}>
-                                    <Key size={20} style={{ color: '#7C3AED' }} /> Confirm Reset Password
+                                    <Key size={20} style={{ color: 'var(--primary-color)' }} /> Confirm Reset Password
                                 </h2>
                                 <p style={{ fontSize: '13px', color: '#64748B', marginTop: '4px', margin: 0 }}>
                                     Are you sure you want to reset this user's password?
@@ -821,7 +847,7 @@ export const UserManagement: React.FC = () => {
                             <button type="button" className="um-btn-cancel" style={{ height: '40px', minWidth: '100px', padding: '0 20px' }} onClick={() => { setShowResetConfirmModal(false); setUserToReset(null); }} disabled={isLoading}>
                                 Cancel
                             </button>
-                            <button type="button" className="um-btn-create" style={{ height: '40px', minWidth: '160px', padding: '0 20px', background: 'linear-gradient(135deg, #7C3AED, #6D28D9)' }} onClick={handleConfirmResetPassword} disabled={isLoading}>
+                            <button type="button" className="um-btn-create" style={{ height: '40px', minWidth: '160px', padding: '0 20px', background: 'linear-gradient(135deg, var(--primary-color), var(--primary-hover))' }} onClick={handleConfirmResetPassword} disabled={isLoading}>
                                 {isLoading ? 'Resetting...' : 'Reset Password'}
                             </button>
                         </div>

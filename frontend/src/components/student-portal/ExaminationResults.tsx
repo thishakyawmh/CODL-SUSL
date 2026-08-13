@@ -281,7 +281,7 @@ const ExaminationResults: React.FC = () => {
         return (
             <div className="course-examinations-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '300px' }}>
                 <div style={{ textAlign: 'center', color: '#64748B' }}>
-                    <div style={{ width: '40px', height: '40px', border: '3px solid #E2E8F0', borderTopColor: '#7C3AED', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 16px' }} />
+                    <div style={{ width: '40px', height: '40px', border: '3px solid #E2E8F0', borderTopColor: 'var(--primary-color)', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 16px' }} />
                     <p style={{ fontWeight: 600 }}>Loading results...</p>
                 </div>
             </div>

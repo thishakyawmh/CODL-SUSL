@@ -150,7 +150,7 @@ export const CourseMaterials: React.FC = () => {
                     }
                 `}</style>
                 <div style={{ textAlign: 'center', color: '#64748B' }}>
-                    <div style={{ width: '40px', height: '40px', border: '3px solid #E2E8F0', borderTopColor: '#7C3AED', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 16px' }} />
+                    <div style={{ width: '40px', height: '40px', border: '3px solid #E2E8F0', borderTopColor: 'var(--primary-color)', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 16px' }} />
                     <p style={{ fontWeight: 600 }}>Loading course materials...</p>
                 </div>
             </div>

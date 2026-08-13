@@ -19,7 +19,36 @@ class UserController extends Controller
         if ($request->boolean('with_courses', false) || $request->input('role') === 'student') {
             $query->with('courses:id,title,code');
         }
+
+        // Select only basic columns to optimize list response payload
+        $query->select([
+            'id',
+            'student_number',
+            'full_name',
+            'display_name',
+            'email',
+            'role',
+            'status',
+            'phone',
+            'avatar',
+            'nic',
+            'created_at',
+            'updated_at'
+        ]);
+
+        $query->orderBy('created_at', 'desc');
+
+        if ($request->has('page')) {
+            return response()->json($query->paginate(15));
+        }
+
         return response()->json($query->get());
+    }
+
+    public function show($id)
+    {
+        $user = User::with('courses:id,title,code')->findOrFail($id);
+        return response()->json($user);
     }
 
     public function store(Request $request)
@@ -307,26 +336,26 @@ class UserController extends Controller
         $user = User::with('courses')->findOrFail($id);
 
         $examApplications = \App\Models\ExamApplication::where('user_id', $user->id)
-            ->with(['course', 'user'])
+            ->with(['course', 'user:id,full_name,student_number'])
             ->get();
 
         $letterRequests = \App\Models\LetterRequest::where('user_id', $user->id)
-            ->with(['course', 'user'])
+            ->with(['course', 'user:id,full_name,student_number'])
             ->get();
 
         $reattemptRequests = \App\Models\ReattemptRequest::where('user_id', $user->id)
-            ->with(['course', 'user', 'subject'])
+            ->with(['course', 'user:id,full_name,student_number', 'subject'])
             ->get();
 
         $postponementRequests = \App\Models\PostponementRequest::where('user_id', $user->id)
-            ->with(['course', 'user', 'assignedExam'])
+            ->with(['course', 'user:id,full_name,student_number', 'assignedExam'])
             ->get();
 
         $examResults = \App\Models\ExamResult::whereHas('grades', function ($query) use ($user) {
                 $query->where('user_id', $user->id);
             })
             ->with(['course', 'subject', 'lecturer', 'grades' => function ($query) use ($user) {
-                $query->where('user_id', $user->id)->with('user');
+                $query->where('user_id', $user->id)->with('user:id,full_name,student_number');
             }])
             ->get();
 

@@ -400,7 +400,7 @@ export const LetterRequests: React.FC = () => {
                                 </div>
                                 <div className="am-detail-item full-width">
                                     <span className="am-label">Letter Type Required</span>
-                                    <span className="am-value" style={{ color: '#7C3AED', fontWeight: 600 }}>{selectedRequest.letter_type}</span>
+                                    <span className="am-value" style={{ color: 'var(--primary-color)', fontWeight: 600 }}>{selectedRequest.letter_type}</span>
                                 </div>
                                 <div className="am-detail-item full-width" style={{ background: '#F8FAFC', padding: '12px 16px', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
                                     <span className="am-label">Reason for Request</span>

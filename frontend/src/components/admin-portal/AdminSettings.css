@@ -51,7 +51,7 @@
 }
 
 .as-nav-item.active {
-    background: linear-gradient(135deg, #7C3AED, #5B21B6);
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
     color: #FFFFFF;
     font-weight: 600;
     box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
@@ -129,7 +129,7 @@
 .as-form-group input:focus,
 .as-form-group select:focus,
 .as-form-group textarea:focus {
-    border-color: #7C3AED;
+    border-color: var(--primary-color);
     box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.08);
 }
 
@@ -152,9 +152,9 @@
 .as-change-logo {
     padding: 6px 16px;
     border-radius: 8px;
-    border: 1px solid #7C3AED;
+    border: 1px solid var(--primary-color);
     background: transparent;
-    color: #7C3AED;
+    color: var(--primary-color);
     font-size: 12px;
     font-weight: 600;
     cursor: pointer;
@@ -163,7 +163,7 @@
 }
 
 .as-change-logo:hover {
-    background: #7C3AED;
+    background: var(--primary-color);
     color: #FFFFFF;
 }
 
@@ -217,7 +217,7 @@
 }
 
 .as-toggle:checked {
-    background: #7C3AED;
+    background: var(--primary-color);
 }
 
 .as-toggle:checked::after {
@@ -248,8 +248,8 @@
     width: 40px;
     height: 40px;
     border-radius: 10px;
-    background: #EDE9FE;
-    color: #7C3AED;
+    background: var(--primary-light);
+    color: var(--primary-color);
     flex-shrink: 0;
 }
 
@@ -295,9 +295,9 @@
     gap: 8px;
     padding: 10px 20px;
     border-radius: 12px;
-    border: 1px solid #7C3AED;
+    border: 1px solid var(--primary-color);
     background: transparent;
-    color: #7C3AED;
+    color: var(--primary-color);
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
@@ -306,7 +306,7 @@
 }
 
 .as-backup-btn:hover {
-    background: #7C3AED;
+    background: var(--primary-color);
     color: #FFFFFF;
     box-shadow: 0 4px 14px rgba(124, 58, 237, 0.3);
 }
@@ -391,7 +391,7 @@
     width: 96px;
     height: 96px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #7C3AED, #5B21B6);
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
     color: white;
     display: flex;
     align-items: center;
@@ -409,7 +409,7 @@
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #7C3AED, #6D28D9);
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
     color: white;
     border: 2px solid #FFFFFF;
     display: flex;
@@ -456,7 +456,7 @@
     padding: 10px 20px;
     border-radius: 10px;
     border: none;
-    background: linear-gradient(135deg, #7C3AED, #6D28D9);
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
     color: #FFFFFF;
     font-size: 13px;
     font-weight: 600;
@@ -538,7 +538,7 @@
     width: 44px;
     height: 44px;
     border-radius: 12px;
-    background: linear-gradient(135deg, #7C3AED, #6D28D9);
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
     color: #FFFFFF;
     flex-shrink: 0;
     box-shadow: 0 2px 8px rgba(124, 58, 237, 0.3);
@@ -579,7 +579,7 @@
 }
 
 .as-password-field input:focus {
-    border-color: #7C3AED;
+    border-color: var(--primary-color);
     box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.08);
 }
 
@@ -612,7 +612,7 @@
     padding: 11px 28px;
     border-radius: 10px;
     border: none;
-    background: linear-gradient(135deg, #7C3AED, #6D28D9);
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
     color: #FFFFFF;
     font-size: 14px;
     font-weight: 600;
@@ -670,7 +670,7 @@
 }
 
 .table-search-input:focus {
-    border-color: #7C3AED;
+    border-color: var(--primary-color);
     background: #FFFFFF;
     box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.08);
 }
@@ -686,7 +686,7 @@
 }
 
 .tables-loading .spinner {
-    color: #7C3AED;
+    color: var(--primary-color);
 }
 
 .animate-spin {
@@ -733,7 +733,7 @@
     width: 44px;
     height: 44px;
     background: #F5F3FF;
-    color: #7C3AED;
+    color: var(--primary-color);
     border-radius: 12px;
     flex-shrink: 0;
 }
@@ -766,7 +766,7 @@
     padding: 8px 12px;
     font-size: 12px;
     font-weight: 600;
-    color: #7C3AED;
+    color: var(--primary-color);
     background: #F5F3FF;
     border: none;
     border-radius: 8px;
@@ -775,7 +775,7 @@
 }
 
 .table-card-action:hover {
-    background: #7C3AED;
+    background: var(--primary-color);
     color: #FFFFFF;
 }
 

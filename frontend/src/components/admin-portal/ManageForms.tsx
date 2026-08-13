@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Database, RefreshCw, Trash2, Edit, GraduationCap, Building } from 'lucide-react';
 import { studentInterestService, industryAnalysisService } from '../../services/apiService';
+import { toast } from '../../utils/toast';
 import './AIAnalytics.css'; 
 
 export const ManageForms: React.FC = () => {
@@ -56,6 +57,18 @@ export const ManageForms: React.FC = () => {
         id: undefined as number | undefined,
         interest_field: '',
         skills: ''
+    });
+
+    const [confirmModal, setConfirmModal] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        onConfirm: () => void;
+    }>({
+        isOpen: false,
+        title: '',
+        message: '',
+        onConfirm: () => {}
     });
 
 
@@ -142,7 +155,7 @@ export const ManageForms: React.FC = () => {
     const handleSaveConfig = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!configForm.interest_field.trim() || !configForm.skills.trim()) {
-            alert('Please fill out all fields.');
+            toast.error('Please fill out all fields.');
             return;
         }
         const skillsArray = configForm.skills.split(',').map(s => s.trim()).filter(s => s.length > 0);
@@ -152,30 +165,36 @@ export const ManageForms: React.FC = () => {
                 interest_field: configForm.interest_field.trim(),
                 skills: skillsArray
             });
-            alert('Academic field saved successfully.');
+            toast.success('Academic field saved successfully.');
             setIsEditingConfig(false);
             setConfigForm({ id: undefined, interest_field: '', skills: '' });
             fetchConfigs();
         } catch (err: any) {
-            alert('Failed to save config: ' + (err.response?.data?.message || err.message));
+            toast.error('Failed to save config: ' + (err.response?.data?.message || err.message));
         }
     };
 
-    const handleDeleteConfig = async (id: number) => {
-        if (!window.confirm('Are you sure you want to delete this academic interest area?')) return;
-        try {
-            await studentInterestService.deleteConfig(id);
-            alert('Academic interest area deleted successfully.');
-            fetchConfigs();
-        } catch (err: any) {
-            alert('Failed to delete config: ' + (err.response?.data?.message || err.message));
-        }
+    const handleDeleteConfig = (id: number) => {
+        setConfirmModal({
+            isOpen: true,
+            title: 'Delete Academic Interest',
+            message: 'Are you sure you want to delete this academic interest area? This action cannot be undone.',
+            onConfirm: async () => {
+                try {
+                    await studentInterestService.deleteConfig(id);
+                    toast.success('Academic interest area deleted successfully.');
+                    fetchConfigs();
+                } catch (err: any) {
+                    toast.error('Failed to delete config: ' + (err.response?.data?.message || err.message));
+                }
+            }
+        });
     };
 
     const handleSaveMethod = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!methodForm.method_name.trim()) {
-            alert('Please enter a teaching method name.');
+            toast.error('Please enter a teaching method name.');
             return;
         }
         try {
@@ -183,30 +202,36 @@ export const ManageForms: React.FC = () => {
                 id: methodForm.id,
                 method_name: methodForm.method_name.trim()
             });
-            alert('Teaching method saved successfully.');
+            toast.success('Teaching method saved successfully.');
             setIsEditingMethod(false);
             setMethodForm({ id: undefined, method_name: '' });
             fetchTeachingMethods();
         } catch (err: any) {
-            alert('Failed to save teaching method: ' + (err.response?.data?.message || err.message));
+            toast.error('Failed to save teaching method: ' + (err.response?.data?.message || err.message));
         }
     };
 
-    const handleDeleteMethod = async (id: number) => {
-        if (!window.confirm('Are you sure you want to delete this teaching method?')) return;
-        try {
-            await studentInterestService.deleteTeachingMethod(id);
-            alert('Teaching method deleted successfully.');
-            fetchTeachingMethods();
-        } catch (err: any) {
-            alert('Failed to delete teaching method: ' + (err.response?.data?.message || err.message));
-        }
+    const handleDeleteMethod = (id: number) => {
+        setConfirmModal({
+            isOpen: true,
+            title: 'Delete Teaching Method',
+            message: 'Are you sure you want to delete this teaching method? This action cannot be undone.',
+            onConfirm: async () => {
+                try {
+                    await studentInterestService.deleteTeachingMethod(id);
+                    toast.success('Teaching method deleted successfully.');
+                    fetchTeachingMethods();
+                } catch (err: any) {
+                    toast.error('Failed to delete teaching method: ' + (err.response?.data?.message || err.message));
+                }
+            }
+        });
     };
 
     const handleSaveOpportunity = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!opportunityForm.opportunity_name.trim()) {
-            alert('Please enter a university opportunity name.');
+            toast.error('Please enter a university opportunity name.');
             return;
         }
         try {
@@ -214,24 +239,30 @@ export const ManageForms: React.FC = () => {
                 id: opportunityForm.id,
                 opportunity_name: opportunityForm.opportunity_name.trim()
             });
-            alert('University opportunity saved successfully.');
+            toast.success('University opportunity saved successfully.');
             setIsEditingOpportunity(false);
             setOpportunityForm({ id: undefined, opportunity_name: '' });
             fetchUniversityOpportunities();
         } catch (err: any) {
-            alert('Failed to save university opportunity: ' + (err.response?.data?.message || err.message));
+            toast.error('Failed to save university opportunity: ' + (err.response?.data?.message || err.message));
         }
     };
 
-    const handleDeleteOpportunity = async (id: number) => {
-        if (!window.confirm('Are you sure you want to delete this university opportunity?')) return;
-        try {
-            await studentInterestService.deleteUniversityOpportunity(id);
-            alert('University opportunity deleted successfully.');
-            fetchUniversityOpportunities();
-        } catch (err: any) {
-            alert('Failed to delete university opportunity: ' + (err.response?.data?.message || err.message));
-        }
+    const handleDeleteOpportunity = (id: number) => {
+        setConfirmModal({
+            isOpen: true,
+            title: 'Delete University Opportunity',
+            message: 'Are you sure you want to delete this university opportunity? This action cannot be undone.',
+            onConfirm: async () => {
+                try {
+                    await studentInterestService.deleteUniversityOpportunity(id);
+                    toast.success('University opportunity deleted successfully.');
+                    fetchUniversityOpportunities();
+                } catch (err: any) {
+                    toast.error('Failed to delete university opportunity: ' + (err.response?.data?.message || err.message));
+                }
+            }
+        });
     };
 
 
@@ -240,7 +271,7 @@ export const ManageForms: React.FC = () => {
     const handleSaveSector = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!sectorForm.sector_name.trim()) {
-            alert('Please enter an industry sector name.');
+            toast.error('Please enter an industry sector name.');
             return;
         }
         try {
@@ -248,30 +279,36 @@ export const ManageForms: React.FC = () => {
                 id: sectorForm.id,
                 sector_name: sectorForm.sector_name.trim()
             });
-            alert('Industry sector saved successfully.');
+            toast.success('Industry sector saved successfully.');
             setIsEditingSector(false);
             setSectorForm({ id: undefined, sector_name: '' });
             fetchSectors();
         } catch (err: any) {
-            alert('Failed to save industry sector: ' + (err.response?.data?.message || err.message));
+            toast.error('Failed to save industry sector: ' + (err.response?.data?.message || err.message));
         }
     };
 
-    const handleDeleteSector = async (id: number) => {
-        if (!window.confirm('Are you sure you want to delete this industry sector?')) return;
-        try {
-            await industryAnalysisService.deleteSector(id);
-            alert('Industry sector deleted successfully.');
-            fetchSectors();
-        } catch (err: any) {
-            alert('Failed to delete industry sector: ' + (err.response?.data?.message || err.message));
-        }
+    const handleDeleteSector = (id: number) => {
+        setConfirmModal({
+            isOpen: true,
+            title: 'Delete Industry Sector',
+            message: 'Are you sure you want to delete this industry sector? This action cannot be undone.',
+            onConfirm: async () => {
+                try {
+                    await industryAnalysisService.deleteSector(id);
+                    toast.success('Industry sector deleted successfully.');
+                    fetchSectors();
+                } catch (err: any) {
+                    toast.error('Failed to delete industry sector: ' + (err.response?.data?.message || err.message));
+                }
+            }
+        });
     };
 
     const handleSaveIndConfig = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!indConfigForm.interest_field.trim() || !indConfigForm.skills.trim()) {
-            alert('Please fill out all fields.');
+            toast.error('Please fill out all fields.');
             return;
         }
         const skillsArray = indConfigForm.skills.split(',').map(s => s.trim()).filter(s => s.length > 0);
@@ -281,24 +318,30 @@ export const ManageForms: React.FC = () => {
                 interest_field: indConfigForm.interest_field.trim(),
                 skills: skillsArray
             });
-            alert('Academic domain saved successfully.');
+            toast.success('Academic domain saved successfully.');
             setIsEditingIndConfig(false);
             setIndConfigForm({ id: undefined, interest_field: '', skills: '' });
             fetchIndConfigs();
         } catch (err: any) {
-            alert('Failed to save academic domain: ' + (err.response?.data?.message || err.message));
+            toast.error('Failed to save academic domain: ' + (err.response?.data?.message || err.message));
         }
     };
 
-    const handleDeleteIndConfig = async (id: number) => {
-        if (!window.confirm('Are you sure you want to delete this primary academic domain configuration?')) return;
-        try {
-            await industryAnalysisService.deleteConfig(id);
-            alert('Academic domain deleted successfully.');
-            fetchIndConfigs();
-        } catch (err: any) {
-            alert('Failed to delete configuration: ' + (err.response?.data?.message || err.message));
-        }
+    const handleDeleteIndConfig = (id: number) => {
+        setConfirmModal({
+            isOpen: true,
+            title: 'Delete Academic Domain',
+            message: 'Are you sure you want to delete this primary academic domain configuration? This action cannot be undone.',
+            onConfirm: async () => {
+                try {
+                    await industryAnalysisService.deleteConfig(id);
+                    toast.success('Academic domain deleted successfully.');
+                    fetchIndConfigs();
+                } catch (err: any) {
+                    toast.error('Failed to delete configuration: ' + (err.response?.data?.message || err.message));
+                }
+            }
+        });
     };
 
 
@@ -330,7 +373,7 @@ export const ManageForms: React.FC = () => {
                         style={{ padding: '64px 44px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '28px', transition: 'transform 0.2s, box-shadow 0.2s', border: '1.5px solid #E2E8F0' }}
                         onMouseEnter={(e) => {
                             e.currentTarget.style.transform = 'translateY(-4px)';
-                            e.currentTarget.style.borderColor = '#7C3AED';
+                            e.currentTarget.style.borderColor = 'var(--primary-color)';
                             e.currentTarget.style.boxShadow = '0 12px 24px rgba(124, 58, 237, 0.08)';
                         }}
                         onMouseLeave={(e) => {
@@ -339,7 +382,7 @@ export const ManageForms: React.FC = () => {
                             e.currentTarget.style.boxShadow = 'none';
                         }}
                     >
-                        <div style={{ width: '100px', height: '100px', borderRadius: '50%', backgroundColor: '#EDE9FE', color: '#7C3AED', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ width: '100px', height: '100px', borderRadius: '50%', backgroundColor: 'var(--primary-light)', color: 'var(--primary-color)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <GraduationCap size={50} />
                         </div>
                         <div>
@@ -433,9 +476,9 @@ export const ManageForms: React.FC = () => {
                                 fontSize: '15px',
                                 fontWeight: 600,
                                 border: 'none',
-                                borderBottom: manageTab === 'interests' ? '2.5px solid #7c3aed' : '2.5px solid transparent',
+                                borderBottom: manageTab === 'interests' ? '2.5px solid var(--primary-color)' : '2.5px solid transparent',
                                 backgroundColor: 'transparent',
-                                color: manageTab === 'interests' ? '#7c3aed' : '#64748b',
+                                color: manageTab === 'interests' ? 'var(--primary-color)' : '#64748b',
                                 cursor: 'pointer',
                                 transition: 'all 0.2s',
                                 fontFamily: 'inherit'
@@ -453,9 +496,9 @@ export const ManageForms: React.FC = () => {
                                 fontSize: '15px',
                                 fontWeight: 600,
                                 border: 'none',
-                                borderBottom: manageTab === 'methods' ? '2.5px solid #7c3aed' : '2.5px solid transparent',
+                                borderBottom: manageTab === 'methods' ? '2.5px solid var(--primary-color)' : '2.5px solid transparent',
                                 backgroundColor: 'transparent',
-                                color: manageTab === 'methods' ? '#7c3aed' : '#64748b',
+                                color: manageTab === 'methods' ? 'var(--primary-color)' : '#64748b',
                                 cursor: 'pointer',
                                 transition: 'all 0.2s',
                                 fontFamily: 'inherit'
@@ -473,9 +516,9 @@ export const ManageForms: React.FC = () => {
                                 fontSize: '15px',
                                 fontWeight: 600,
                                 border: 'none',
-                                borderBottom: manageTab === 'opportunities' ? '2.5px solid #7c3aed' : '2.5px solid transparent',
+                                borderBottom: manageTab === 'opportunities' ? '2.5px solid var(--primary-color)' : '2.5px solid transparent',
                                 backgroundColor: 'transparent',
-                                color: manageTab === 'opportunities' ? '#7c3aed' : '#64748b',
+                                color: manageTab === 'opportunities' ? 'var(--primary-color)' : '#64748b',
                                 cursor: 'pointer',
                                 transition: 'all 0.2s',
                                 fontFamily: 'inherit'
@@ -540,7 +583,7 @@ export const ManageForms: React.FC = () => {
                                                 <span style={{ fontSize: '16px', fontWeight: 700, color: '#0F172A' }}>{cfg.interest_field}</span>
                                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                                                     {cfg.skills.map((skill: string) => (
-                                                        <span key={skill} style={{ fontSize: '11px', fontWeight: 600, padding: '4px 10px', background: '#EDE9FE', color: '#7C3AED', borderRadius: '20px' }}>
+                                                        <span key={skill} style={{ fontSize: '11px', fontWeight: 600, padding: '4px 10px', background: 'var(--primary-light)', color: 'var(--primary-color)', borderRadius: '20px' }}>
                                                             {skill}
                                                         </span>
                                                     ))}
@@ -669,7 +712,7 @@ export const ManageForms: React.FC = () => {
                                 ) : (
                                     opportunitiesList.map(opp => (
                                         <div key={opp.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 14px', background: '#FDF4FF', border: '1px solid #E9D5FF', borderRadius: '100px' }}>
-                                            <span style={{ fontSize: '14px', fontWeight: 600, color: '#7C3AED' }}>{opp.opportunity_name}</span>
+                                            <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--primary-color)' }}>{opp.opportunity_name}</span>
                                             <button
                                                 style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', padding: '2px', borderRadius: '50%' }}
                                                 onClick={() => handleDeleteOpportunity(opp.id)}
@@ -918,6 +961,68 @@ export const ManageForms: React.FC = () => {
                     )
                 )}
             </div>
+            {confirmModal.isOpen && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(15, 23, 42, 0.4)',
+                    backdropFilter: 'blur(4px)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 99999,
+                    animation: 'fadeIn 0.2s ease-out'
+                }}>
+                    <style>{`
+                        @keyframes fadeIn {
+                            from { opacity: 0; }
+                            to { opacity: 1; }
+                        }
+                        @keyframes scaleIn {
+                            from { transform: scale(0.95); opacity: 0; }
+                            to { transform: scale(1); opacity: 1; }
+                        }
+                    `}</style>
+                    <div style={{
+                        background: '#FFFFFF',
+                        borderRadius: '20px',
+                        padding: '32px',
+                        maxWidth: '440px',
+                        width: '100%',
+                        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '24px',
+                        animation: 'scaleIn 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)'
+                    }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <h3 style={{ margin: 0, fontSize: '20px', fontWeight: 700, color: '#0F172A' }}>{confirmModal.title}</h3>
+                            <p style={{ margin: 0, fontSize: '15px', color: '#64748B', lineHeight: 1.5 }}>{confirmModal.message}</p>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+                            <button
+                                className="admin-btn-outline"
+                                onClick={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+                                style={{ padding: '10px 20px', borderRadius: '10px', fontSize: '14px', fontWeight: 600, border: '1px solid #E2E8F0', backgroundColor: '#FFFFFF', color: '#64748B', cursor: 'pointer' }}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => {
+                                    confirmModal.onConfirm();
+                                    setConfirmModal(prev => ({ ...prev, isOpen: false }));
+                                }}
+                                style={{ backgroundColor: '#EF4444', border: 'none', color: '#FFFFFF', padding: '10px 20px', borderRadius: '10px', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}
+                            >
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

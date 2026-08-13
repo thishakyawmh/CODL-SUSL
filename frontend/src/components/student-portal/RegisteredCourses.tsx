@@ -160,7 +160,7 @@ export const RegisteredCourses: React.FC<RegisteredCoursesProps> = ({ onSelect }
 
     const getTypeColor = (type: string) => {
         switch (type) {
-            case 'Degree': return { bg: '#EDE9FE', text: '#7C3AED' }; 
+            case 'Degree': return { bg: 'var(--primary-light)', text: 'var(--primary-color)' }; 
             case 'Diploma': return { bg: '#F3E8FF', text: '#9333EA' }; 
             case 'Certification': return { bg: '#CCFBF1', text: '#0D9488' }; 
             default: return { bg: '#F1F5F9', text: '#475569' }; 
