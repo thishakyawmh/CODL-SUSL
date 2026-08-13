@@ -15,9 +15,7 @@ use Illuminate\Support\Facades\Log;
 
 class AIAnalyticsController extends Controller
 {
-    /**
-     * Get all programs grouped by level
-     */
+     
     public function getPrograms()
     {
         $courses = Course::withCount('batches')->get()->map(function($c) {
@@ -51,11 +49,11 @@ class AIAnalyticsController extends Controller
     public function getOverview($courseId)
     {
         $cache = $this->getCacheForCourse($courseId);
-        if (!$cache) return response()->json(null); // Triggers empty state
+        if (!$cache) return response()->json(null); 
 
         return response()->json([
             'kpis' => $cache->kpis,
-            'last_generated' => $cache->generated_at->format('M j, Y - g:i A'),
+            'last_generated' => $cache->generated_at->toIso8601String(),
             'coverage_percent' => isset($cache->kpis['coverage_percent']) ? $cache->kpis['coverage_percent'] : null,
             'missing_subjects' => $cache->kpis['missing_subjects'] ?? [],
             'outdated_subjects' => $cache->kpis['outdated_subjects'] ?? [],
@@ -114,6 +112,14 @@ class AIAnalyticsController extends Controller
         return response()->json($cache->emerging_technologies);
     }
 
+    public function getAcademicEntryRequirements($courseId)
+    {
+        $cache = $this->getCacheForCourse($courseId);
+        if (!$cache) return response()->json(null);
+
+        return response()->json($cache->academic_entry_requirements);
+    }
+
     public function getGlobalOverview(AnalyticsNLPService $nlpService)
     {
         $analytics = $nlpService->processAll(null);
@@ -146,9 +152,7 @@ class AIAnalyticsController extends Controller
         ]);
     }
 
-    /**
-     * Fetch all survey responses.
-     */
+     
     public function getSurveys()
     {
         $studentSurveys = \App\AI\Models\StudentInterest::orderBy('created_at', 'desc')->get()->map(function($item) {
@@ -166,11 +170,7 @@ class AIAnalyticsController extends Controller
         return response()->json($surveys);
     }
 
-    /**
-     * Get geography-based interest distribution for the interactive Sri Lanka map.
-     * Returns weighted interest scores grouped by province → education_level.
-     * Weights: primary × 1.0, secondary × 0.6, ternary × 0.3
-     */
+     
     public function getGeographyData()
     {
         $allRows = DB::connection('analytics')->table('student_interests')
@@ -180,7 +180,7 @@ class AIAnalyticsController extends Controller
             ->where('province', '!=', '')
             ->get();
 
-        // Compute weighted interest scores per province+edu_level
+
         $byProvince = [];
         $allIsland = [];
         $districtCounts = [];
@@ -191,12 +191,12 @@ class AIAnalyticsController extends Controller
             $eduLevel = trim($row->education_level ?: 'Not Specified');
             $district = trim($row->district ?: '');
 
-            // Track district counts for map coloring
+
             if ($district) {
                 $districtCounts[$district] = ($districtCounts[$district] ?? 0) + 1;
             }
 
-            // Track education level counts for pie chart
+
             $educationLevels[$eduLevel] = ($educationLevels[$eduLevel] ?? 0) + 1;
 
             $interests = [
@@ -210,16 +210,16 @@ class AIAnalyticsController extends Controller
                 if (!$field) continue;
                 $w = $entry['weight'];
 
-                // By province + edu level
+
                 $byProvince[$province][$eduLevel][$field] = 
                     ($byProvince[$province][$eduLevel][$field] ?? 0) + $w;
 
-                // All island
+
                 $allIsland[$field] = ($allIsland[$field] ?? 0) + $w;
             }
         }
 
-        // Sort and format province data
+
         $formattedProvince = [];
         foreach ($byProvince as $province => $eduLevels) {
             $formattedProvince[$province] = [];
@@ -233,14 +233,14 @@ class AIAnalyticsController extends Controller
             }
         }
 
-        // Sort and format all-island data
+
         arsort($allIsland);
         $formattedAllIsland = array_map(
             fn($name, $score) => ['name' => $name, 'score' => round($score, 2)],
             array_keys($allIsland), array_values($allIsland)
         );
 
-        // Format education levels for pie chart
+
         $formattedEducationLevels = [];
         foreach ($educationLevels as $name => $count) {
             $formattedEducationLevels[] = [
@@ -249,7 +249,7 @@ class AIAnalyticsController extends Controller
             ];
         }
 
-        // Get industry sector distribution
+
         $industrySectors = IndustryRequirement::select('industry_sector', \DB::raw('count(*) as count'))
             ->whereNotNull('industry_sector')
             ->where('industry_sector', '!=', '')
@@ -264,19 +264,34 @@ class AIAnalyticsController extends Controller
             ->values()
             ->toArray();
 
+
+        $topDomains = IndustryRequirement::select('primary_academic_field', \DB::raw('count(*) as count'))
+            ->whereNotNull('primary_academic_field')
+            ->where('primary_academic_field', '!=', '')
+            ->groupBy('primary_academic_field')
+            ->orderBy('count', 'desc')
+            ->limit(5)
+            ->get()
+            ->map(function($item) {
+                return [
+                    'name' => trim($item->primary_academic_field),
+                    'value' => (int) $item->count
+                ];
+            })
+            ->values()
+            ->toArray();
+
         return response()->json([
-            'by_province'     => $formattedProvince,
-            'all_island'      => $formattedAllIsland,
-            'district_counts' => $districtCounts,
+            'by_province'      => $formattedProvince,
+            'all_island'       => $formattedAllIsland,
+            'district_counts'  => $districtCounts,
             'education_levels' => $formattedEducationLevels,
             'industry_sectors' => $industrySectors,
+            'industry_domains' => $topDomains,
         ]);
     }
 
-    /**
-     * Get top skills for a specific interest field, with optional province + education_level filters.
-     * Skills are aggregated from primary/secondary/ternary_skills when the matching interest = the target field.
-     */
+     
     public function getGeographySkills(Request $request)
     {
         $field    = trim($request->query('field', ''));
@@ -304,7 +319,7 @@ class AIAnalyticsController extends Controller
         $skillScores = [];
 
         foreach ($rows as $row) {
-            // Accumulate skills when the matching interest equals the target field
+
             $pairs = [
                 ['interest' => $row->primary_interest,   'skills' => $row->primary_skills,   'weight' => 1.0],
                 ['interest' => $row->secondary_interest,  'skills' => $row->secondary_skills,  'weight' => 0.6],
@@ -315,7 +330,7 @@ class AIAnalyticsController extends Controller
                 if (trim($pair['interest'] ?? '') !== $field) continue;
                 if (empty(trim($pair['skills'] ?? ''))) continue;
 
-                // Skills stored as comma-separated values
+
                 $skills = array_map('trim', explode(',', $pair['skills']));
                 foreach ($skills as $skill) {
                     $skill = trim($skill);
@@ -343,10 +358,55 @@ class AIAnalyticsController extends Controller
         ]);
     }
 
-    /**
-     * Count university_opportunities values directly from student_interests.
-     * Values are comma-separated in the column. No NLP — pure counting.
-     */
+     
+    public function getIndustrySkills(Request $request)
+    {
+        $field = trim($request->query('field', ''));
+
+        if (!$field) {
+            return response()->json(['error' => 'field parameter is required'], 422);
+        }
+
+        $rows = DB::connection('analytics')->table('industry_requirements')
+            ->select('required_skills')
+            ->where('primary_academic_field', $field)
+            ->get();
+
+        $skillScores = [];
+
+        foreach ($rows as $row) {
+            if (empty(trim($row->required_skills ?? ''))) continue;
+
+            $skills = array_map('trim', explode(',', $row->required_skills));
+            foreach ($skills as $skill) {
+                $skill = trim($skill);
+                if (!$skill) continue;
+
+                $skillFormatted = ucwords(strtolower($skill));
+                $skillScores[$skillFormatted] = ($skillScores[$skillFormatted] ?? 0) + 1;
+            }
+        }
+
+        arsort($skillScores);
+        $top = array_slice($skillScores, 0, 7, true);
+        $total = array_sum($top) ?: 1;
+
+        $result = array_map(function($name, $score) use ($total) {
+            return [
+                'name'  => $name,
+                'score' => $score,
+                'value' => $score,
+                'percentage' => round(($score / $total) * 100, 1),
+            ];
+        }, array_keys($top), array_values($top));
+
+        return response()->json([
+            'field'  => $field,
+            'skills' => $result,
+        ]);
+    }
+
+     
     public function getUniversityOpportunities()
     {
         $rows = DB::connection('analytics')
@@ -379,9 +439,7 @@ class AIAnalyticsController extends Controller
         return response()->json(array_values($result));
     }
 
-    /**
-     * Store a manual survey.
-     */
+     
     public function storeSurvey(Request $request)
     {
         $request->validate([
@@ -391,7 +449,7 @@ class AIAnalyticsController extends Controller
 
         $data = $request->data;
 
-        // Convert array values into comma-separated strings for database insertion
+
         $parsedData = [];
         foreach ($data as $key => $value) {
             if (is_array($value)) {
@@ -402,7 +460,7 @@ class AIAnalyticsController extends Controller
         }
 
         if ($request->survey_type === 'student') {
-            // Note: Our current form doesn't capture all of these exactly, but maps to them
+
             \App\AI\Models\StudentInterest::create([
                 'education_level' => $parsedData['education_level'] ?? 'Not Specified',
                 'primary_field' => $parsedData['preferred_field'] ?? 'Various',
@@ -415,7 +473,7 @@ class AIAnalyticsController extends Controller
                 'company_name' => $parsedData['company_name'] ?? null,
                 'industry_sector' => $parsedData['industry_sector'] ?? 'Unknown',
                 'organization_size' => $parsedData['organization_size'] ?? null,
-                'primary_academic_field' => $parsedData['preferred_field'] ?? 'Various', // Using preferred_field mapped from form
+                'primary_academic_field' => $parsedData['preferred_field'] ?? 'Various', 
                 'required_skills' => $parsedData['required_skills'] ?? null,
                 'academic_practices' => $parsedData['academic_practices'] ?? null,
                 'minimum_qualification' => $parsedData['min_qualification'] ?? null,
@@ -431,21 +489,19 @@ class AIAnalyticsController extends Controller
         return response()->json(['message' => 'Survey response successfully logged.']);
     }
 
-    /**
-     * Sync data from Google Sheets CSV.
-     */
+     
     public function syncGoogleSheet(Request $request, AnalyticsNLPService $nlpService, RecommendationEngineService $recommendationEngine)
     {
-        set_time_limit(300); // Allow up to 5 minutes for sync + AI pipeline
+        set_time_limit(300); 
         $startTime = microtime(true);
         
-        // If neither type nor sheet_url is provided, perform a dual sync using configured .env URLs
+
         if (!$request->has('type') && !$request->has('sheet_url') && !$request->has('url')) {
-            $studentUrl = env('GOOGLE_SHEET_STUDENT_URL');
-            $industryUrl = env('GOOGLE_SHEET_INDUSTRY_URL');
+            $studentUrl = config('services.google_sheets.student_url');
+            $industryUrl = config('services.google_sheets.industry_url');
 
             if (!$studentUrl || !$industryUrl) {
-                return response()->json(['error' => 'Google Sheets URLs are not fully configured in .env. Please set GOOGLE_SHEET_STUDENT_URL and GOOGLE_SHEET_INDUSTRY_URL.'], 422);
+                return response()->json(['error' => 'Google Sheets URLs are not fully configured in config/services.php. Please set GOOGLE_SHEET_STUDENT_URL and GOOGLE_SHEET_INDUSTRY_URL.'], 422);
             }
 
             $studentResult = $this->executeSingleSync('student', $studentUrl);
@@ -458,9 +514,9 @@ class AIAnalyticsController extends Controller
                 return response()->json(['error' => 'Industry Sync Failed: ' . $industryResult['error']], 500);
             }
 
-            // Trigger Background NLP Processing Pipeline
+
             try {
-                \App\Jobs\ProcessAnalyticsPipelineJob::dispatch();
+                \App\Jobs\ProcessAnalyticsPipelineJob::dispatchSync();
             } catch (\Exception $e) {
                 \Log::error('Failed to dispatch ProcessAnalyticsPipelineJob: ' . $e->getMessage());
             }
@@ -476,7 +532,7 @@ class AIAnalyticsController extends Controller
             ]);
         }
 
-        // Legacy individual sheet sync path
+
         if (!$request->has('sheet_url') && $request->has('url')) {
             $request->merge(['sheet_url' => $request->input('url')]);
         }
@@ -491,9 +547,9 @@ class AIAnalyticsController extends Controller
             return response()->json(['error' => $singleResult['error']], 500);
         }
 
-        // Trigger Background NLP Processing Pipeline
+
         try {
-            \App\Jobs\ProcessAnalyticsPipelineJob::dispatch();
+            \App\Jobs\ProcessAnalyticsPipelineJob::dispatchSync();
         } catch (\Exception $e) {
             \Log::error('Failed to dispatch ProcessAnalyticsPipelineJob: ' . $e->getMessage());
         }
@@ -510,7 +566,7 @@ class AIAnalyticsController extends Controller
 
     private function executeSingleSync($type, $url)
     {
-        // 1. URL Rewriting
+
         if (str_contains($url, 'format=csv') || str_contains($url, 'output=csv')) {
             $csvUrl = $url;
         } elseif (preg_match('/\/d\/([a-zA-Z0-9-_]+)/', $url, $matches)) {
@@ -524,7 +580,7 @@ class AIAnalyticsController extends Controller
             return ['error' => 'Invalid Google Sheets URL format.'];
         }
 
-        // 2. HTTP Fetch
+
         try {
             $response = Http::get($csvUrl);
             if (!$response->successful()) {
@@ -535,7 +591,7 @@ class AIAnalyticsController extends Controller
             return ['error' => 'HTTP request failed: ' . $e->getMessage()];
         }
 
-        // 3. Parsing CSV using native stream to handle multi-line fields correctly
+
         $tempStream = fopen('php://temp', 'r+');
         fwrite($tempStream, $csvData);
         rewind($tempStream);
@@ -558,7 +614,7 @@ class AIAnalyticsController extends Controller
             return trim(preg_replace('/\s+/', ' ', $h));
         }, $headers);
 
-        // 4. Configurable Mapping Dictionary
+
         $studentHeaderMap = [
             'Timestamp' => 'survey_submitted_at',
             'Email' => 'email',
@@ -616,12 +672,12 @@ class AIAnalyticsController extends Controller
         
         $mappedIndexes = [];
         
-        // Find exact matches first, then keyword matches
+
         foreach ($headers as $index => $header) {
             $headerLower = strtolower(trim($header));
             $foundMatch = false;
 
-            // Try exact match in map keys
+
             foreach ($mapToUse as $mapKey => $dbColumn) {
                 if (strtolower($mapKey) === $headerLower) {
                     $mappedIndexes[$dbColumn] = $index;
@@ -630,7 +686,7 @@ class AIAnalyticsController extends Controller
                 }
             }
 
-            // If no exact match, fallback to simple keyword matching
+
             if (!$foundMatch) {
                 foreach ($mapToUse as $mapKey => $dbColumn) {
                     $cleanHeader = strtolower(preg_replace('/[^a-z0-9]/i', '', $headerLower));
@@ -652,7 +708,7 @@ class AIAnalyticsController extends Controller
             }
         }
 
-        // 5. Add Validation for required columns
+
         $missingColumns = [];
         foreach ($requiredColumns as $reqCol) {
             if (!isset($mappedIndexes[$reqCol])) {
@@ -664,7 +720,7 @@ class AIAnalyticsController extends Controller
             return ['error' => 'Missing required columns in Google Sheet based on mapping: ' . implode(', ', $missingColumns)];
         }
 
-        // 6: Wrap Upsert in Transaction
+
         $rowsImported = 0;
         $rowsIgnored = 0;
 
@@ -673,13 +729,13 @@ class AIAnalyticsController extends Controller
                 $processedIds = [];
                 
                 foreach ($allRows as $row) {
-                    // Simple skip if row doesn't have enough columns
+
                     if (count($row) <= max(array_values($mappedIndexes))) {
                         $rowsIgnored++;
                         continue;
                     }
 
-                    // Check if required columns are present and not empty
+
                     $hasRequired = true;
                     foreach ($requiredColumns as $reqCol) {
                         $colIdx = $mappedIndexes[$reqCol] ?? null;
@@ -708,7 +764,7 @@ class AIAnalyticsController extends Controller
                             }
                         }
 
-                        // Convert student learning balance strings to tinyint (1-5)
+
                         if (in_array($dbColumn, ['primary_learning_balance', 'secondary_learning_balance', 'ternary_learning_balance']) && $val) {
                             if (is_numeric($val)) {
                                 $val = (int) $val;
@@ -730,7 +786,7 @@ class AIAnalyticsController extends Controller
                             }
                         }
 
-                        // Convert industry certification importance strings/numbers to tinyint (1-5)
+
                         if ($dbColumn === 'certification_importance' && $val) {
                             if (is_numeric($val)) {
                                 $val = (int) $val;
@@ -753,7 +809,7 @@ class AIAnalyticsController extends Controller
                         $record[$dbColumn] = $val;
                     }
                     
-                    // Perform validation on the parsed record
+
                     if ($type === 'student') {
                         $validator = \Illuminate\Support\Facades\Validator::make($record, [
                             'email' => 'nullable|email',
@@ -807,7 +863,7 @@ class AIAnalyticsController extends Controller
                     $rowsImported++;
                 }
 
-                // Delete missing surveys (Mirror Sync) to reflect manually deleted rows from Google Sheet
+
                 if ($type === 'student') {
                     StudentInterest::whereNotIn('id', $processedIds)->delete();
                 } else {
@@ -841,7 +897,7 @@ class AIAnalyticsController extends Controller
             ]);
         }
 
-        // 1. Student Interests by Province
+
         $provincesData = [];
         $groupedByProvince = $surveys->groupBy('province');
         foreach ($groupedByProvince as $provinceName => $provinceSurveys) {
@@ -880,7 +936,7 @@ class AIAnalyticsController extends Controller
             $provincesData[$provinceName] = $topFields;
         }
 
-        // 2. Overall Student Demand by Academic Field
+
         $overallScores = [];
         foreach ($surveys as $survey) {
             if ($survey->primary_interest) {
@@ -917,7 +973,7 @@ class AIAnalyticsController extends Controller
             ];
         }
 
-        // 3. High-Demand Skills (Emerging Skills Demand)
+
         $skillScores = [];
         foreach ($surveys as $survey) {
             if ($survey->primary_skills) {
@@ -954,7 +1010,7 @@ class AIAnalyticsController extends Controller
             ];
         }
 
-        // 4. University Opportunities Themes
+
         $oppList = [];
         foreach ($surveys as $survey) {
             if ($survey->university_opportunities) {
@@ -980,8 +1036,8 @@ class AIAnalyticsController extends Controller
             ];
         }
 
-        // 5. Learning Preferences
-        // A. Preferred Learning Methods
+
+
         $methodList = [];
         foreach ($surveys as $survey) {
             $methodsText = implode(',', array_filter([$survey->primary_learning_methods, $survey->secondary_learning_methods, $survey->ternary_learning_methods]));
@@ -1008,7 +1064,7 @@ class AIAnalyticsController extends Controller
             ];
         }
 
-        // B. Learning Balance distribution
+
         $balanceScores = [];
         foreach ($surveys as $survey) {
             if ($survey->primary_learning_balance !== null) {
@@ -1135,12 +1191,12 @@ class AIAnalyticsController extends Controller
         $callback = function() use ($cache) {
             $file = fopen('php://output', 'w');
             
-            // Header information
+
             fputcsv($file, ['CODL-SUSL AI Analytics Export']);
             fputcsv($file, ['Generated At', $cache->generated_at ? $cache->generated_at->toDateTimeString() : '']);
             fputcsv($file, []);
 
-            // KPIs
+
             fputcsv($file, ['KPI Key', 'KPI Value']);
             if (is_array($cache->kpis)) {
                 foreach ($cache->kpis as $k => $v) {
@@ -1150,7 +1206,7 @@ class AIAnalyticsController extends Controller
             }
             fputcsv($file, []);
 
-            // Emerging Tech
+
             fputcsv($file, ['Emerging Technologies']);
             if (is_array($cache->emerging_technologies)) {
                 foreach ($cache->emerging_technologies as $tech) {
@@ -1159,7 +1215,7 @@ class AIAnalyticsController extends Controller
             }
             fputcsv($file, []);
 
-            // Skill Gaps
+
             fputcsv($file, ['Skill Gaps']);
             if (is_array($cache->skill_gaps)) {
                 foreach ($cache->skill_gaps as $gap) {
@@ -1168,7 +1224,7 @@ class AIAnalyticsController extends Controller
             }
             fputcsv($file, []);
 
-            // Recommendations
+
             fputcsv($file, ['Recommendation Type', 'Recommendation Subject', 'Recommendation Text']);
             if (is_array($cache->generated_recommendations)) {
                 foreach ($cache->generated_recommendations as $rec) {

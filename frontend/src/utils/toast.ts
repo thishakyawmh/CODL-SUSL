@@ -1,4 +1,4 @@
-// Self-contained custom toast utility for the CODL portal
+
 
 const injectStyles = () => {
     if (typeof document === 'undefined' || document.getElementById('custom-toast-styles')) return;

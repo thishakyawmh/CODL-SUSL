@@ -12,14 +12,11 @@ use Illuminate\Support\Facades\DB;
 
 class CourseApplicationController extends Controller
 {
-    /**
-     * List all applications (admin).
-     * Optionally filter by course_id, batch_id, status.
-     */
+     
     public function index(Request $request)
     {
         $user = $request->user();
-        // Eager load with only the columns needed for display
+
         $query = CourseApplication::with([
             'course:id,title,code',
             'batch:id,name,course_id',
@@ -29,7 +26,7 @@ class CourseApplicationController extends Controller
             'directorApprover:id,full_name',
         ]);
 
-        // Use direct whereIn instead of slow whereHas (avoids correlated subqueries)
+
         if ($user && $user->role === 'secretary') {
             $courseIds = Course::where('secretary_id', $user->id)->pluck('id');
             $query->whereIn('course_id', $courseIds);
@@ -53,9 +50,7 @@ class CourseApplicationController extends Controller
         return response()->json($query->orderBy('created_at', 'desc')->get());
     }
 
-    /**
-     * Get applications for the authenticated applicant user.
-     */
+     
     public function myApplications(Request $request)
     {
         $user = $request->user();
@@ -70,9 +65,7 @@ class CourseApplicationController extends Controller
         return response()->json($apps);
     }
 
-    /**
-     * Show a single application.
-     */
+     
     public function show($id)
     {
         $application = CourseApplication::with(['course', 'batch', 'user',
@@ -82,10 +75,7 @@ class CourseApplicationController extends Controller
         return response()->json($application);
     }
 
-    /**
-     * Submit a new course application.
-     * Validates NIC uniqueness against both users and existing applications.
-     */
+     
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -117,7 +107,7 @@ class CourseApplicationController extends Controller
 
         $userId = $request->user() ? $request->user()->id : null;
 
-        // Check NIC uniqueness against existing student users (excluding current user)
+
         $existingUser = User::where('nic', $validated['applicant_nic'])
             ->where('role', 'student')
             ->when($userId, function ($q) use ($userId) {
@@ -132,7 +122,7 @@ class CourseApplicationController extends Controller
             ], 422);
         }
 
-        // Check NIC uniqueness against pending/approved applications (excluding current user's applications)
+
         $existingApp = CourseApplication::where('applicant_nic', $validated['applicant_nic'])
             ->whereIn('status', ['pending', 'approved'])
             ->when($userId, function ($q) use ($userId) {
@@ -147,7 +137,7 @@ class CourseApplicationController extends Controller
             ], 422);
         }
 
-        // Check if the user already has a pending application for this specific course
+
         if ($userId) {
             $existingUserApp = CourseApplication::where('user_id', $userId)
                 ->where('course_id', $validated['course_id'])
@@ -180,9 +170,7 @@ class CourseApplicationController extends Controller
         );
     }
 
-    /**
-     * Check if NIC already exists.
-     */
+     
     public function checkNic(Request $request)
     {
         $request->validate(['nic' => 'required|string']);
@@ -203,12 +191,7 @@ class CourseApplicationController extends Controller
         ]);
     }
 
-    /**
-     * Approve an application at the current approval level.
-     * Level 1: Course Secretary
-     * Level 2: Course Coordinator
-     * Level 3: Director (final — triggers account generation)
-     */
+     
     public function approve(Request $request, $id)
     {
         return DB::transaction(function () use ($request, $id) {
@@ -235,12 +218,12 @@ class CourseApplicationController extends Controller
                 return response()->json(['message' => 'Application is already fully approved.'], 400);
             }
 
-            // Update documents verified if provided
+
             if ($documentsVerified) {
                 $application->documents_verified = $documentsVerified;
             }
 
-            // Update approval based on level
+
             switch ($nextLevel) {
                 case 1:
                     if ($user->role !== 'secretary') {
@@ -250,7 +233,7 @@ class CourseApplicationController extends Controller
                     $application->secretary_comment = $comment;
                     $application->secretary_approved_at = now();
                     $application->approval_level = 1;
-                    $application->status = 'pending'; // Still pending higher approval
+                    $application->status = 'pending'; 
                     break;
                 case 2:
                     if ($user->role !== 'coordinator') {
@@ -274,18 +257,18 @@ class CourseApplicationController extends Controller
 
                     $newUser = null;
                     if ($application->is_new_applicant) {
-                        // Generate student account
+
                         $studentNumber = $this->generateStudentNumber($application);
                         $application->generated_student_number = $studentNumber;
 
-                        // Check if user already exists as applicant/user
+
                         $existingUser = User::where('email', $application->applicant_email)->first();
                         if ($existingUser) {
                             $existingUser->update([
                                 'student_number' => $studentNumber,
                                 'full_name' => $application->applicant_name,
                                 'display_name' => $application->display_name,
-                                // Set password to their NIC (auto-hashed by model casts/mutators) so they can log in
+
                                 'password' => $application->applicant_nic,
                                 'nic' => $application->applicant_nic,
                                 'role' => 'student',
@@ -310,13 +293,13 @@ class CourseApplicationController extends Controller
                             ]);
                             $newUser = $existingUser;
                         } else {
-                            // Create the student user account
+
                             $newUser = User::create([
                                 'student_number' => $studentNumber,
                                 'full_name' => $application->applicant_name,
                                 'display_name' => $application->display_name,
                                 'email' => $application->applicant_email,
-                                'password' => $application->applicant_nic, // Will be auto-hashed by model cast
+                                'password' => $application->applicant_nic, 
                                 'nic' => $application->applicant_nic,
                                 'role' => 'student',
                                 'status' => 'active',
@@ -340,7 +323,7 @@ class CourseApplicationController extends Controller
                             ]);
                         }
                     } else {
-                        // Existing student, no account generation
+
                         $newUser = User::find($application->user_id);
                         if (!$newUser) {
                             $newUser = User::where('email', $application->applicant_email)->first();
@@ -351,7 +334,7 @@ class CourseApplicationController extends Controller
                     }
 
                     if ($newUser) {
-                        // Enroll student in the course with batch
+
                         $batchName = $application->batch ? $application->batch->name : null;
                         $newUser->courses()->syncWithoutDetaching([$application->course_id => ['batch' => $batchName]]);
                         $application->user_id = $newUser->id;
@@ -362,7 +345,7 @@ class CourseApplicationController extends Controller
             $application->save();
             \App\Http\Controllers\CourseController::clearManageCourseCache($application->course_id);
 
-            // Log admin activity
+
             $targetDesc = "Application #{$application->id} ({$application->applicant_name}) for course " . ($application->course ? $application->course->code : 'N/A');
             \App\Models\ActivityLog::log(
                 $user->id,
@@ -377,9 +360,7 @@ class CourseApplicationController extends Controller
         });
     }
 
-    /**
-     * Reject an application.
-     */
+     
     public function reject(Request $request, $id)
     {
         return DB::transaction(function () use ($request, $id) {
@@ -428,7 +409,7 @@ class CourseApplicationController extends Controller
             $application->save();
             \App\Http\Controllers\CourseController::clearManageCourseCache($application->course_id);
 
-            // Log admin activity
+
             $targetDesc = "Application #{$application->id} ({$application->applicant_name}) for course " . ($application->course ? $application->course->code : 'N/A');
             \App\Models\ActivityLog::log(
                 $user->id,
@@ -441,9 +422,7 @@ class CourseApplicationController extends Controller
         });
     }
 
-    /**
-     * Update the documents verified status for an application.
-     */
+     
     public function updateDocumentsVerified(Request $request, $id)
     {
         $application = CourseApplication::with('course')->findOrFail($id);
@@ -454,7 +433,7 @@ class CourseApplicationController extends Controller
             $application->documents_verified = $documentsVerified;
             $application->save();
 
-            // Log admin activity
+
             $targetDesc = "Application #{$application->id} ({$application->applicant_name}) for course " . ($application->course ? $application->course->code : 'N/A');
             \App\Models\ActivityLog::log(
                 $user->id,
@@ -467,16 +446,13 @@ class CourseApplicationController extends Controller
         return response()->json($application);
     }
 
-    /**
-     * Generate the next sequential student number for a course safely.
-     * Format: {YY}CODL{SEQ} (e.g. 26CODL0001)
-     */
+     
     private function generateStudentNumber(CourseApplication $application): string
     {
-        $year = date('y'); // Last 2 digits of year (e.g. "26")
+        $year = date('y'); 
         $prefix = "{$year}CODL";
 
-        // Find max sequence number atomically
+
         $users = User::where('student_number', 'like', $prefix . '%')
             ->lockForUpdate()
             ->get();
@@ -496,9 +472,7 @@ class CourseApplicationController extends Controller
         return $prefix . str_pad($nextSeq, 4, '0', STR_PAD_LEFT);
     }
 
-    /**
-     * Delete an application completely (super admin only).
-     */
+     
     public function destroy(Request $request, $id)
     {
         $user = $request->user();

@@ -33,7 +33,7 @@ export const GradingScale: React.FC<GradingScaleProps> = ({ isEmbedded }) => {
                 </button>
             )}
 
-            {/* Removed Back button as requested */}
+            { }
 
             {!isEmbedded && (
                 <div className="grading-header">

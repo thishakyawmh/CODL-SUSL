@@ -14,7 +14,7 @@ class SystemSettingController extends Controller
         $settings = SystemSetting::first();
 
         if (!$settings) {
-            // Seed default settings if none exist
+
             $settings = SystemSetting::create([
                 'institution_name' => 'Centre for Open & Distance Learning',
                 'university_name' => 'Sabaragamuwa University of Sri Lanka',
@@ -63,7 +63,7 @@ class SystemSettingController extends Controller
         $settings->fill($validated);
         $settings->save();
 
-        // Log administrative action
+
         $user = $request->user();
         if ($user) {
             ActivityLog::log($user->id, 'Updated System Settings', 'General Configuration', 'system');
@@ -102,7 +102,7 @@ class SystemSettingController extends Controller
             ]);
         }
 
-        // Delete old logo if it exists in storage and is not the default public image path
+
         if ($settings->logo && !str_contains($settings->logo, '/images/logo.png')) {
             $oldFilename = basename($settings->logo);
             if (Storage::disk('public')->exists('logos/' . $oldFilename)) {
@@ -118,7 +118,7 @@ class SystemSettingController extends Controller
         $settings->logo = $url;
         $settings->save();
 
-        // Log administrative action
+
         $user = $request->user();
         if ($user) {
             ActivityLog::log($user->id, 'Uploaded new system logo', 'Branding Logo', 'system');

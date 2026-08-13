@@ -24,6 +24,7 @@ export const AdminSettings: React.FC = () => {
     const [activeSection, setActiveSection] = useState(isCoordinator ? 'profile' : (isDirector ? 'profile' : 'general'));
     const [saved, setSaved] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const [avatarError, setAvatarError] = useState(false);
 
     const [profileData, setProfileData] = useState({
         fullName: user.fullName,
@@ -58,7 +59,7 @@ export const AdminSettings: React.FC = () => {
     const [logoPreview, setLogoPreview] = useState<string | null>(null);
     const [isUploadingLogo, setIsUploadingLogo] = useState<boolean>(false);
 
-    // Avatar upload state
+
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [avatarFile, setAvatarFile] = useState<File | null>(null);
     const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -223,7 +224,7 @@ export const AdminSettings: React.FC = () => {
         setLogoPreview(previewUrl);
     };
 
-    // Password change state
+
     const [passwordData, setPasswordData] = useState({
         currentPassword: '',
         newPassword: '',
@@ -298,19 +299,19 @@ export const AdminSettings: React.FC = () => {
         }
     };
 
-    // Avatar file selection handler
+
     const handleAvatarFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        // Validate file type
+
         const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'image/webp'];
         if (!allowedTypes.includes(file.type)) {
             toast.error('Please select a valid image file (JPEG, PNG, GIF, or WebP).');
             return;
         }
 
-        // Validate file size (max 2MB)
+
         if (file.size > 2 * 1024 * 1024) {
             toast.error('Image file must be less than 2MB.');
             return;
@@ -319,6 +320,7 @@ export const AdminSettings: React.FC = () => {
         setAvatarFile(file);
         const previewUrl = URL.createObjectURL(file);
         setAvatarPreview(previewUrl);
+        setAvatarError(false);
     };
 
     const handleRemoveAvatar = () => {
@@ -358,7 +360,7 @@ export const AdminSettings: React.FC = () => {
         }
     };
 
-    // Password change handler
+
     const validatePassword = () => {
         const errors: {[key: string]: string} = {};
         if (!passwordData.currentPassword) {
@@ -407,7 +409,7 @@ export const AdminSettings: React.FC = () => {
             setIsSaving(true);
             try {
                 let currentAvatar = profileData.avatar;
-                // If there's a new avatar file, upload it first
+
                 if (avatarFile) {
                     try {
                         const uploadedUrl = await handleUploadAvatar();
@@ -415,7 +417,7 @@ export const AdminSettings: React.FC = () => {
                             currentAvatar = uploadedUrl;
                         }
                     } catch (uploadErr) {
-                        // Error toast is already displayed inside handleUploadAvatar
+
                         setIsSaving(false);
                         return;
                     }
@@ -495,7 +497,7 @@ export const AdminSettings: React.FC = () => {
         }
     };
 
-    // Password Change Form (reusable)
+
     const renderPasswordChangeForm = () => (
         <div className="as-password-change-section">
             <div className="as-password-header">
@@ -615,7 +617,7 @@ export const AdminSettings: React.FC = () => {
             </div>
 
             <div className="as-layout">
-                {/* Settings Navigation */}
+                { }
                 <div className="as-nav">
                     {sections.map(section => (
                         <button
@@ -629,7 +631,7 @@ export const AdminSettings: React.FC = () => {
                     ))}
                 </div>
 
-                {/* Settings Content */}
+                { }
                 <div className="as-content">
                     {activeSection === 'general' && (
                         loadingSettings ? (
@@ -742,11 +744,12 @@ export const AdminSettings: React.FC = () => {
                                 <div className="as-form-group full-width">
                                     <div className="as-avatar-upload-zone">
                                         <div className="as-avatar-preview-container">
-                                            {(avatarPreview || profileData.avatar) ? (
+                                            {(avatarPreview || (profileData.avatar && !avatarError)) ? (
                                                 <img 
                                                     src={avatarPreview || getFullAvatarUrl(profileData.avatar)} 
                                                     alt="Profile" 
                                                     className="as-avatar-image" 
+                                                    onError={() => setAvatarError(true)}
                                                 />
                                             ) : (
                                                 <div className="as-avatar-placeholder">

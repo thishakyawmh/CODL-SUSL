@@ -6,10 +6,7 @@ use App\AI\Models\RecommendationRule;
 
 class RecommendationEngineService
 {
-    /**
-     * Consumes the processed analytics data from the NLP service
-     * and generates actionable curriculum recommendations.
-     */
+     
     public function generateRecommendations(array $analyticsData): array
     {
         $evidenceStatus = $analyticsData['kpis']['evidence_status'] ?? 'sufficient';
@@ -83,7 +80,7 @@ class RecommendationEngineService
         $studentFrequencies = $analyticsData['domain_frequency_counts']['student'] ?? [];
         $totalIndustryDemand = array_sum($industryFrequencies) ?: 1;
 
-        // 1. Process standard static rules (MVP Rules)
+
         foreach ($rules as $rule) {
             $matchData = $this->evaluateRule($rule, $industryFrequencies, $totalIndustryDemand);
             if ($matchData) {
@@ -108,7 +105,7 @@ class RecommendationEngineService
             }
         }
 
-        // 2. Generate Curriculum Anomaly Warnings (from real curriculum anomalies)
+
         if (!empty($analyticsData['outdated_subjects'])) {
             foreach ($analyticsData['outdated_subjects'] as $idx => $anomaly) {
                 $affected = $anomaly['affected_subject'];
@@ -147,12 +144,12 @@ class RecommendationEngineService
             }
         }
 
-        // 3. Generate Missing Subject Recommendations (real curriculum gap analysis)
+
         if (!empty($analyticsData['missing_subjects'])) {
             foreach ($analyticsData['missing_subjects'] as $idx => $subject) {
                 $classification = $subject['classification'] ?? 'Core Curriculum Gap';
                 
-                // Skip emerging trends that are not program-relevant core gaps
+
                 if ($classification === 'Emerging / Industry Technology Trend' || $classification === 'Already Covered') {
                     continue;
                 }
@@ -184,7 +181,7 @@ class RecommendationEngineService
             }
         }
 
-        // 5. Generate learning preferences and teaching method suggestions
+
         if (!empty($analyticsData['learning_preferences_data'])) {
             $prefData = $analyticsData['learning_preferences_data'];
             
@@ -231,7 +228,7 @@ class RecommendationEngineService
             }
         }
 
-        // Add a fallback recommendation if no rules triggered and no gaps found
+
         if (empty($recommendations)) {
             $recommendations[] = [
                 'id' => 'fallback_999',
@@ -256,9 +253,7 @@ class RecommendationEngineService
         return $recommendations;
     }
 
-    /**
-     * Loads active recommendation rules from the database and sorts them by priority.
-     */
+     
     protected function loadRules()
     {
         $rules = RecommendationRule::where('is_active', true)->get();
@@ -270,15 +265,13 @@ class RecommendationEngineService
             'Low' => 1
         ];
 
-        // Sort rules so highest priority triggers first
+
         return $rules->sortByDesc(function ($rule) use ($priorityMap) {
             return $priorityMap[$rule->priority] ?? 0;
         })->values();
     }
 
-    /**
-     * Evaluates a single rule against the processed analytics data (normalized domains).
-     */
+     
     protected function evaluateRule(RecommendationRule $rule, array $industryFrequencies, int $totalDemand)
     {
         $triggerPattern = $rule->trigger_skill_pattern;

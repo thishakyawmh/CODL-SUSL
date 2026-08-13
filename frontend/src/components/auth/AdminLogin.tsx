@@ -1,11 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, MapPin, Phone, Mail, ShieldCheck, Eye, EyeOff } from 'lucide-react';
+import { ArrowRight, MapPin, Phone, Mail, ShieldCheck, Eye, EyeOff, Monitor } from 'lucide-react';
 import { authService } from '../../services/apiService';
-import './LoginPortal.css'; // Reusing existing styles for consistency
+import './LoginPortal.css'; 
 
 export const AdminLogin: React.FC = () => {
     const navigate = useNavigate();
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
+
+    useEffect(() => {
+        const handleResize = () => {
+            setIsMobile(window.innerWidth < 1024);
+        };
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     const getBranding = () => {
         const cached = localStorage.getItem('systemSettings');
@@ -60,10 +69,10 @@ export const AdminLogin: React.FC = () => {
         try {
             const data = await authService.login({ login: loginId, password });
 
-            // Only staff/admin roles can log in from the staff portal
+
             const studentRoles = ['student', 'applicant'];
             if (studentRoles.includes(data.user.role)) {
-                // Immediately revoke the session — this portal is not for students
+
                 try { await authService.logout(); } catch (_) { }
                 setError('This portal is for staff only. Please use the Student Portal to sign in.');
                 setIsLoading(false);
@@ -85,9 +94,28 @@ export const AdminLogin: React.FC = () => {
         }
     };
 
+    if (isMobile) {
+        return (
+            <div className="admin-mobile-block">
+                <div className="admin-mobile-block-card">
+                    <div className="admin-mobile-block-icon">
+                        <Monitor size={48} />
+                    </div>
+                    <h2>Desktop Screen Required</h2>
+                    <p>
+                        The CODL SUSL Admin Portal is optimized for desktop computers and larger screens. Please log in to the staff workspace using a desktop screen.
+                    </p>
+                    <div className="admin-mobile-block-footer">
+                        Please open this page on a device with a screen width of at least 1024px.
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="login-portal-wrapper">
-            {/* Left Side - Branding & Information */}
+            { }
             <div className="login-left-pane">
                 <div className="branding-container">
                     <div className="branding-header-group">
@@ -135,10 +163,26 @@ export const AdminLogin: React.FC = () => {
                 </div>
             </div>
 
-            {/* Right Side - Staff Authentication Form */}
+            { }
             <div className="login-right-pane">
+                { }
+                <div className="mobile-header-banner">
+                    <div className="mobile-branding-header">
+                        <img src={branding.logo} alt="Logo" className="mobile-branding-logo" />
+                        <div className="mobile-branding-title-group">
+                            <h1 className="mobile-branding-institution">{branding.institution}</h1>
+                            <p className="mobile-branding-university">{branding.university}</p>
+                        </div>
+                    </div>
+
+                    <div className="mobile-welcome-header">
+                        <h2 className="mobile-welcome-title">Welcome to CODL</h2>
+                        <p className="mobile-welcome-subtitle">Administrative & Staff Workspace Login</p>
+                    </div>
+                </div>
+
                 <div className="login-form-container">
-                    <div className="welcome-header">
+                    <div className="welcome-header desktop-only">
                         <h2 className="welcome-title">Welcome to CODL</h2>
                         <p className="welcome-subtitle">Administrative & Staff Workspace Login</p>
                     </div>

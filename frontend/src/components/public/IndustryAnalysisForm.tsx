@@ -3,9 +3,9 @@ import { GraduationCap, CheckCircle2, AlertCircle, Loader2, Send, Info } from 'l
 import { industryAnalysisService } from '../../services/apiService';
 import './IndustryAnalysisForm.css';
 
-// ───────────────────────────────────────────────────────────────────────
-// Data: Primary Academic Domains & their Sub-Disciplines
-// ───────────────────────────────────────────────────────────────────────
+
+
+
 const ACADEMIC_DOMAINS: Record<string, string[]> = {
     'Computing & Information Technology': [
         'Computer Science', 'Software Engineering', 'Information Systems', 'Cybersecurity',
@@ -157,7 +157,7 @@ export function IndustryAnalysisForm() {
     const [industrySectors, setIndustrySectors] = useState<string[]>([]);
     const [academicDomains, setAcademicDomains] = useState<any[]>([]);
 
-    // Load Google reCAPTCHA v3 script dynamically
+
     useEffect(() => {
         const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
         if (!siteKey) return;
@@ -184,7 +184,7 @@ export function IndustryAnalysisForm() {
         };
     }, []);
 
-    // Fetch config on mount
+
     useEffect(() => {
         const loadConfigs = async () => {
             try {
@@ -239,11 +239,10 @@ export function IndustryAnalysisForm() {
         loadConfigs();
     }, []);
 
-    // Determine backend URL dynamically
-    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
-    const bannerImgUrl = `${backendUrl}/storage/industry-analysis.webp`;
 
-    // Available sub-disciplines for the currently selected primary domain
+    const bannerImgUrl = "/images/industry-analysis.webp";
+
+
     const selectedDomainObj = academicDomains.find(d => d.interest_field === formData.primary_academic_field);
     const availableSubDisciplines: string[] = selectedDomainObj ? selectedDomainObj.skills : [];
 
@@ -260,8 +259,8 @@ export function IndustryAnalysisForm() {
         setFormData(prev => ({
             ...prev,
             primary_academic_field: value,
-            sub_disciplines: [],   // reset sub-disciplines when domain changes
-            tech_stacks: ''        // reset tech stacks too
+            sub_disciplines: [],   
+            tech_stacks: ''        
         }));
         if (value !== 'Other') setCustomDomain('');
     };
@@ -272,7 +271,7 @@ export function IndustryAnalysisForm() {
             if (current.includes(discipline)) {
                 return { ...prev, sub_disciplines: current.filter(d => d !== discipline) };
             }
-            if (current.length >= 5) return prev; // max 5
+            if (current.length >= 5) return prev; 
             return { ...prev, sub_disciplines: [...current, discipline] };
         });
     };
@@ -309,7 +308,7 @@ export function IndustryAnalysisForm() {
         setIsLoading(true);
         setErrorMsg('');
 
-        // Basic validations
+
         if (!formData.company_name.trim()) {
             setErrorMsg('Please enter your company/organization name.');
             setIsLoading(false);
@@ -332,7 +331,7 @@ export function IndustryAnalysisForm() {
         }
 
         try {
-            // Get reCAPTCHA v3 token if configured
+
             let recaptchaToken = null;
             const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
             const recaptcha = (window as any).grecaptcha;
@@ -345,7 +344,7 @@ export function IndustryAnalysisForm() {
                 }
             }
 
-            // Map frontend state → backend fields
+
             const payload = {
                 company_name: formData.company_name,
                 industry_sector: formData.industry_sector,
@@ -380,7 +379,7 @@ export function IndustryAnalysisForm() {
     if (isSubmitted) {
         return (
             <div className="industry-analysis-container">
-                {/* Top Header Card */}
+                { }
                 <div className="industry-analysis-header-card">
                     <div className="header-text-section">
                         <h1>Industry Requirements</h1>
@@ -437,7 +436,7 @@ export function IndustryAnalysisForm() {
 
     return (
         <div className="industry-analysis-container">
-            {/* Top Header Card */}
+            { }
             <div className="industry-analysis-header-card">
                 <div className="header-text-section">
                     <h1>Industry Requirements</h1>
@@ -454,17 +453,17 @@ export function IndustryAnalysisForm() {
                 </div>
             </div>
 
-            {/* Premium Info Card */}
+            { }
             <div className="industry-analysis-description-card">
                 <div className="description-text">
                     This survey gathers industry feedback to identify current skill demands and emerging trends, supporting curriculum advancement and the development of relevant future degree programs.
                 </div>
             </div>
 
-            {/* Form */}
+            { }
             <form onSubmit={handleSubmit} className="interest-form">
 
-                {/* Part 1: Company Profile */}
+                { }
                 <div className="form-section">
                     <div className="section-header-row">
                         <h3 className="form-section-title" style={{ borderLeftColor: '#7C3AED' }}>
@@ -521,7 +520,7 @@ export function IndustryAnalysisForm() {
                     </div>
                 </div>
 
-                {/* Part 2: Academic & Skill Alignment */}
+                { }
                 <div className="form-section">
                     <div className="section-header-row">
                         <h3 className="form-section-title" style={{ borderLeftColor: '#3B82F6' }}>
@@ -529,7 +528,7 @@ export function IndustryAnalysisForm() {
                         </h3>
                     </div>
                     <div className="form-grid">
-                        {/* Primary Academic Domain */}
+                        { }
                         <div className="form-group full-width">
                             <label htmlFor="primary_academic_field">Primary Academic Domain of Interest *</label>
                             <select
@@ -548,7 +547,7 @@ export function IndustryAnalysisForm() {
                             </select>
                         </div>
 
-                        {/* Custom domain input when "Other" is selected */}
+                        { }
                         {formData.primary_academic_field === 'Other' && (
                             <div className="form-group full-width">
                                 <label htmlFor="custom_domain">Specify Your Academic Domain *</label>
@@ -564,7 +563,7 @@ export function IndustryAnalysisForm() {
                             </div>
                         )}
 
-                        {/* Sub-Disciplines (shown only when a known domain is selected) */}
+                        { }
                         {availableSubDisciplines.length > 0 && (
                             <div className="form-group full-width">
                                 <label>
@@ -572,7 +571,7 @@ export function IndustryAnalysisForm() {
                                     <span className="sub-discipline-hint"> (select up to 5)</span>
                                 </label>
 
-                                {/* Clickable chip selector */}
+                                { }
                                 <div className="subdiscipline-chips">
                                     {availableSubDisciplines.map(disc => {
                                         const isSelected = formData.sub_disciplines.includes(disc);
@@ -597,7 +596,7 @@ export function IndustryAnalysisForm() {
                             </div>
                         )}
 
-                        {/* Tech Stacks / Specialized Areas */}
+                        { }
                         {formData.primary_academic_field && (
                             <div className="form-group full-width">
                                 <label htmlFor="tech_stacks">Tech Stacks / Specialized Areas Needed</label>
@@ -616,7 +615,7 @@ export function IndustryAnalysisForm() {
                     </div>
                 </div>
 
-                {/* Part 3: Skill Sets & Training Preferences */}
+                { }
                 <div className="form-section">
                     <div className="section-header-row">
                         <h3 className="form-section-title" style={{ borderLeftColor: '#F59E0B' }}>
@@ -624,7 +623,7 @@ export function IndustryAnalysisForm() {
                         </h3>
                     </div>
                     <div className="form-grid">
-                        {/* Soft Skills */}
+                        { }
                         <div className="form-group full-width">
                             <label>Soft Skills Needed</label>
                             <div className="subdiscipline-chips">
@@ -644,7 +643,7 @@ export function IndustryAnalysisForm() {
                             </div>
                         </div>
 
-                        {/* Training Practices */}
+                        { }
                         <div className="form-group full-width">
                             <label>Training Practices Requested</label>
                             <div className="subdiscipline-chips">
@@ -664,7 +663,7 @@ export function IndustryAnalysisForm() {
                             </div>
                         </div>
 
-                        {/* Minimum Education Required */}
+                        { }
                         <div className="form-group">
                             <label htmlFor="minimum_qualification">Minimum Education Required</label>
                             <select

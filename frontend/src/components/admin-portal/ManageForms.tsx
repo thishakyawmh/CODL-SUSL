@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Database, RefreshCw, Trash2, Edit, GraduationCap, Building } from 'lucide-react';
 import { studentInterestService, industryAnalysisService } from '../../services/apiService';
-import './AIAnalytics.css'; // Leverage existing dashboard styles and variables
+import './AIAnalytics.css'; 
 
 export const ManageForms: React.FC = () => {
     const navigate = useNavigate();
@@ -10,9 +10,9 @@ export const ManageForms: React.FC = () => {
     const [manageTab, setManageTab] = useState<'interests' | 'methods' | 'opportunities'>('interests');
     const [industryTab, setIndustryTab] = useState<'sectors' | 'interests'>('sectors');
 
-    // ───────────────────────────────────────────────────────────────────────
-    // Student Form States
-    // ───────────────────────────────────────────────────────────────────────
+
+
+
     const [configs, setConfigs] = useState<any[]>([]);
     const [configsLoading, setConfigsLoading] = useState(false);
     const [isEditingConfig, setIsEditingConfig] = useState(false);
@@ -38,9 +38,9 @@ export const ManageForms: React.FC = () => {
         opportunity_name: ''
     });
 
-    // ───────────────────────────────────────────────────────────────────────
-    // Industry Form States
-    // ───────────────────────────────────────────────────────────────────────
+
+
+
     const [sectors, setSectors] = useState<any[]>([]);
     const [sectorsLoading, setSectorsLoading] = useState(false);
     const [isEditingSector, setIsEditingSector] = useState(false);
@@ -58,9 +58,9 @@ export const ManageForms: React.FC = () => {
         skills: ''
     });
 
-    // ───────────────────────────────────────────────────────────────────────
-    // Fetch Student Survey Configs
-    // ───────────────────────────────────────────────────────────────────────
+
+
+
     const fetchConfigs = async () => {
         setConfigsLoading(true);
         try {
@@ -97,9 +97,9 @@ export const ManageForms: React.FC = () => {
         }
     };
 
-    // ───────────────────────────────────────────────────────────────────────
-    // Fetch Industry Survey Configs
-    // ───────────────────────────────────────────────────────────────────────
+
+
+
     const fetchSectors = async () => {
         setSectorsLoading(true);
         try {
@@ -124,7 +124,7 @@ export const ManageForms: React.FC = () => {
         }
     };
 
-    // Effect for Form Selection & Tab Navigation
+
     useEffect(() => {
         if (formType === 'student') {
             if (manageTab === 'interests') fetchConfigs();
@@ -136,9 +136,9 @@ export const ManageForms: React.FC = () => {
         }
     }, [formType, manageTab, industryTab]);
 
-    // ───────────────────────────────────────────────────────────────────────
-    // Student Form Handlers
-    // ───────────────────────────────────────────────────────────────────────
+
+
+
     const handleSaveConfig = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!configForm.interest_field.trim() || !configForm.skills.trim()) {
@@ -234,9 +234,9 @@ export const ManageForms: React.FC = () => {
         }
     };
 
-    // ───────────────────────────────────────────────────────────────────────
-    // Industry Form Handlers
-    // ───────────────────────────────────────────────────────────────────────
+
+
+
     const handleSaveSector = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!sectorForm.sector_name.trim()) {
@@ -301,9 +301,9 @@ export const ManageForms: React.FC = () => {
         }
     };
 
-    // ───────────────────────────────────────────────────────────────────────
-    // Render Selection Screen
-    // ───────────────────────────────────────────────────────────────────────
+
+
+
     if (formType === null) {
         return (
             <div className="ai-analytics-page" style={{ minHeight: '100vh', background: '#F8FAFC' }}>
@@ -323,7 +323,7 @@ export const ManageForms: React.FC = () => {
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(460px, 1fr))', gap: '40px', maxWidth: '1100px', margin: '56px auto 0 auto', padding: '0 20px' }}>
 
-                    {/* Student Interests Card */}
+                    { }
                     <div
                         className="ai-roadmap-card"
                         onClick={() => { setFormType('student'); setManageTab('interests'); }}
@@ -350,7 +350,7 @@ export const ManageForms: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Industry Requirements Card */}
+                    { }
                     <div
                         className="ai-roadmap-card"
                         onClick={() => { setFormType('industry'); setIndustryTab('sectors'); }}
@@ -382,9 +382,9 @@ export const ManageForms: React.FC = () => {
         );
     }
 
-    // ───────────────────────────────────────────────────────────────────────
-    // Render Student Survey Form configuration tab
-    // ───────────────────────────────────────────────────────────────────────
+
+
+
     if (formType === 'student') {
         return (
             <div className="ai-analytics-page" style={{ minHeight: '100vh', background: '#F8FAFC' }}>
@@ -690,9 +690,9 @@ export const ManageForms: React.FC = () => {
         );
     }
 
-    // ───────────────────────────────────────────────────────────────────────
-    // Render Industry Survey Form configuration tab
-    // ───────────────────────────────────────────────────────────────────────
+
+
+
     return (
         <div className="ai-analytics-page" style={{ minHeight: '100vh', background: '#F8FAFC' }}>
             <div className="admin-page-header">
@@ -771,7 +771,7 @@ export const ManageForms: React.FC = () => {
                     </button>
                 </div>
 
-                {/* Industry Sectors Tab Content */}
+                { }
                 {industryTab === 'sectors' && (
                     sectorsLoading ? (
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 0', color: '#64748B', gap: '12px' }}>
@@ -827,7 +827,7 @@ export const ManageForms: React.FC = () => {
                     )
                 )}
 
-                {/* Academic Domains & Sub-Disciplines Tab Content */}
+                { }
                 {industryTab === 'interests' && (
                     indConfigsLoading ? (
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 0', color: '#64748B', gap: '12px' }}>

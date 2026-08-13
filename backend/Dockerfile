@@ -29,5 +29,8 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction
 # Set permissions
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
-EXPOSE 9000
-CMD ["php-fpm"]
+# Create storage symbolic link
+RUN php artisan storage:link
+
+EXPOSE 8000
+CMD php artisan serve --host=0.0.0.0 --port=${PORT:-8000}

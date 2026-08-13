@@ -24,18 +24,18 @@ export const Applications: React.FC = () => {
     const [isEditMode, setIsEditMode] = useState(false);
     const currentAdminRole = sessionStorage.getItem('adminRole');
 
-    // Filter states
+
     const [typeFilter, setTypeFilter] = useState<'all' | 'new' | 'existing'>('all');
     const [applicantSearchTerm, setApplicantSearchTerm] = useState('');
 
-    // Form state for editing
+
     const [editForm, setEditForm] = useState<any>({});
 
     const [searchTerm, setSearchTerm] = useState('');
     const [levelFilter, setLevelFilter] = useState<string>('all');
     const [showCreateModal, setShowCreateModal] = useState(false);
 
-    // Local state for applications to allow functional updates
+
     const [enrollmentApps, setEnrollmentApps] = useState<CourseApplication[]>([]);
     const [realEnrollmentApps, setRealEnrollmentApps] = useState<any[]>([]);
     const [isLoadingApps, setIsLoadingApps] = useState(true);
@@ -190,13 +190,13 @@ export const Applications: React.FC = () => {
     const [postponementReqs, setPostponementReqs] = useState<PostponementRequestAdmin[]>([]);
     const [reattemptReqs, setReattemptReqs] = useState<ReattemptRequestAdmin[]>([]);
 
-    // Rejection Modal State
+
     const [showRejectModal, setShowRejectModal] = useState(false);
     const [rejectionReason, setRejectionReason] = useState('');
     const [pendingAction, setPendingAction] = useState<{ id: string, type: string } | null>(null);
 
     const handleAction = async (id: string, action: 'approved' | 'rejected', type: string, reason?: string) => {
-        // Check if it's a real application
+
         const isReal = realEnrollmentApps.some(app => app.id === id);
 
         if (type === 'exam') {
@@ -271,8 +271,8 @@ export const Applications: React.FC = () => {
                         documents_verified: docsVerified
                     });
 
-                    // If application fully approved, the backend automatically enrolls the student
-                    // No need to manually update localStorage
+
+
 
                     toast.success('Application approved successfully!');
                 } else {
@@ -438,7 +438,7 @@ export const Applications: React.FC = () => {
     const renderApplicationModal = () => {
         if (!selectedApplication) return null;
 
-        // Determine request type
+
         const isEnrollment = 'applicantName' in selectedApplication;
         const displayName = isEnrollment ? (selectedApplication.displayName || selectedApplication.applicantName) : selectedApplication.studentName;
         const displayId = isEnrollment ? selectedApplication.applicantNic : selectedApplication.studentNumber;
@@ -1100,7 +1100,7 @@ export const Applications: React.FC = () => {
                 (typeFilter === 'new' && app.isNewApplicant) ||
                 (typeFilter === 'existing' && !app.isNewApplicant);
 
-            // Search query (name or ID / reg no)
+
             let matchesSearch = true;
             if (applicantSearchTerm.trim()) {
                 const query = applicantSearchTerm.toLowerCase();
@@ -1155,7 +1155,7 @@ export const Applications: React.FC = () => {
                                 />
                             </div>
 
-                            {/* Type Filter Pills */}
+                            { }
                             <div className="cm-filter-pills" style={{ margin: 0 }}>
                                 {[
                                     { id: 'all', label: 'All' },
@@ -1374,7 +1374,7 @@ export const Applications: React.FC = () => {
                 </div>
             )}
 
-            {/* Stats (Shown when no search/filter) */}
+            { }
             {levelFilter === 'all' && !searchTerm && (
                 <div className="cm-stats-row">
                     <div className="cm-stat-card">
@@ -1408,7 +1408,7 @@ export const Applications: React.FC = () => {
                 </div>
             )}
 
-            {/* Search Filters */}
+            { }
             {levelFilter === 'all' && !searchTerm && (
                 <div className="cm-filters" style={{ marginBottom: '24px', marginTop: '8px' }}>
                     <div className="cm-search" style={{ maxWidth: '100%' }}>
@@ -1423,7 +1423,7 @@ export const Applications: React.FC = () => {
                 </div>
             )}
 
-            {/* Categories (Shown when no search/filter) */}
+            { }
             {levelFilter === 'all' && !searchTerm && (
                 <div className="cm-categories-grid">
                     {[
@@ -1448,7 +1448,7 @@ export const Applications: React.FC = () => {
                 </div>
             )}
 
-            {/* Course Content Grid */}
+            { }
             {(levelFilter !== 'all' || searchTerm !== '') && (
                 <>
                     <div className="admin-page-header" style={{ marginBottom: '16px' }}>
@@ -1543,7 +1543,7 @@ export const Applications: React.FC = () => {
                 </>
             )}
 
-            {/* Create Item Modal */}
+            { }
             {showCreateModal && (
                 <div className="cm-modal-overlay" onClick={() => setShowCreateModal(false)}>
                     <div className="cm-modal" onClick={(e) => e.stopPropagation()}>
@@ -1583,7 +1583,7 @@ export const Applications: React.FC = () => {
 
             {renderApplicationModal()}
 
-            {/* Rejection Modal */}
+            { }
             <RejectionModal
                 isOpen={showRejectModal}
                 onClose={() => setShowRejectModal(false)}
@@ -1595,7 +1595,7 @@ export const Applications: React.FC = () => {
     );
 };
 
-// Rejection Modal Helper Component
+
 const RejectionModal: React.FC<{ isOpen: boolean, onClose: () => void, onConfirm: () => void, reason: string, setReason: (v: string) => void }> = ({ isOpen, onClose, onConfirm, reason, setReason }) => {
     if (!isOpen) return null;
     return (

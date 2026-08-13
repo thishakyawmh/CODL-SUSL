@@ -29,7 +29,7 @@ class AuthController extends Controller
             'full_name' => $validated['full_name'],
             'email' => $validated['email'],
             'password' => $validated['password'],
-            'role' => 'applicant', // Default role for self-registered users
+            'role' => 'applicant', 
             'status' => 'active',
         ]);
 
@@ -46,7 +46,7 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $request->validate([
-            'login' => 'required', // Can be email or student_number
+            'login' => 'required', 
             'password' => 'required',
         ]);
 
@@ -90,7 +90,7 @@ class AuthController extends Controller
             ], 401);
         }
 
-        // Create token with role-based abilities
+
         $token = $user->createToken('auth_token', ['role:' . $user->role])->plainTextToken;
 
         \Log::info('Login successful', ['user_id' => $user->id, 'role' => $user->role]);
@@ -120,7 +120,7 @@ class AuthController extends Controller
 
         $credential = $request->credential;
 
-        // Validate Google ID token cryptographically using Google's tokeninfo API
+
         try {
             $googleResponse = \Illuminate\Support\Facades\Http::timeout(10)->get('https://oauth2.googleapis.com/tokeninfo', [
                 'id_token' => $credential,
@@ -145,7 +145,7 @@ class AuthController extends Controller
             return response()->json(['message' => 'Google identity does not contain a verified email address.'], 400);
         }
 
-        // Check if user exists by email
+
         $user = User::where('email', $email)->first();
 
         $settings = \App\Models\SystemSetting::first();
@@ -159,23 +159,23 @@ class AuthController extends Controller
         }
 
         if (!$user) {
-            // Create user
+
             $user = User::create([
                 'full_name' => $name,
                 'email' => $email,
-                'password' => bin2hex(random_bytes(16)), // random secure password, auto-hashed by cast
-                'role' => 'applicant', // Default role for self-registered users
+                'password' => bin2hex(random_bytes(16)), 
+                'role' => 'applicant', 
                 'status' => 'active',
                 'avatar' => $avatar,
             ]);
         } else {
-            // Update avatar if not set
+
             if ($avatar && !$user->avatar) {
                 $user->update(['avatar' => $avatar]);
             }
         }
 
-        // Create Sanctum Token
+
         $token = $user->createToken('auth_token', ['role:' . $user->role])->plainTextToken;
 
         if (in_array($user->role, ['super_admin', 'director', 'coordinator', 'secretary', 'lecturer', 'student', 'pro_student', 'applicant'])) {
@@ -212,10 +212,10 @@ class AuthController extends Controller
             ], 422);
         }
 
-        // Generate secure random token
+
         $token = \Illuminate\Support\Str::random(64);
 
-        // Store token in password_reset_tokens table
+
         \Illuminate\Support\Facades\DB::table('password_reset_tokens')->updateOrInsert(
             ['email' => $request->email],
             [
@@ -224,7 +224,7 @@ class AuthController extends Controller
             ]
         );
 
-        // Send reset email
+
         try {
             \Illuminate\Support\Facades\Mail::to($user->email)->send(
                 new \App\Mail\ResetPasswordMail($user, $token)
@@ -249,7 +249,7 @@ class AuthController extends Controller
             'password' => 'required|string|min:8|confirmed',
         ]);
 
-        // Find token record
+
         $record = \Illuminate\Support\Facades\DB::table('password_reset_tokens')
             ->where('email', $request->email)
             ->where('token', $request->token)
@@ -261,7 +261,7 @@ class AuthController extends Controller
             ], 422);
         }
 
-        // Check expiry (60 minutes)
+
         if (now()->subMinutes(60)->gt($record->created_at)) {
             return response()->json([
                 'message' => 'This password reset link has expired.'
@@ -275,11 +275,11 @@ class AuthController extends Controller
             ], 404);
         }
 
-        // Update password (hashed automatically via setPasswordAttribute mutator)
+
         $user->password = $request->password;
         $user->save();
 
-        // Delete token record
+
         \Illuminate\Support\Facades\DB::table('password_reset_tokens')
             ->where('email', $request->email)
             ->delete();

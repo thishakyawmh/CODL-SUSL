@@ -14,18 +14,19 @@ export const Sidebar: React.FC = () => {
     const handleSignOutConfirm = () => {
         setIsSignOutOpen(false);
         
-        // Clear local storage first to guarantee UI updates instantly
+
         sessionStorage.clear();
         
-        // Call API in background
+
         authService.logout().catch(() => {});
         
         navigate('/login', { replace: true });
     };
 
     const [isMobileOpen, setIsMobileOpen] = useState(false);
+    const [avatarError, setAvatarError] = useState(false);
 
-    // Close sidebar on route change for mobile
+
     useEffect(() => {
         setIsMobileOpen(false);
     }, [location.pathname]);
@@ -79,7 +80,7 @@ export const Sidebar: React.FC = () => {
 
     return (
         <>
-            {/* Mobile Header Toggle */}
+            { }
             <div className="mobile-header">
                 <div className="logo-mobile">
                     <img src={branding.logo} alt="Logo" />
@@ -92,7 +93,7 @@ export const Sidebar: React.FC = () => {
                 </button>
             </div>
 
-            {/* Mobile Overlay */}
+            { }
             {isMobileOpen && (
                 <div className="sidebar-overlay" onClick={() => setIsMobileOpen(false)}></div>
             )}
@@ -116,8 +117,13 @@ export const Sidebar: React.FC = () => {
                     <div className="sidebar-profile-card">
                         <div className="sidebar-profile-content">
                             <div className="sidebar-profile-avatar-wrapper">
-                                {avatar ? (
-                                    <img src={getFullAvatarUrl(avatar)} alt="Profile" className="sidebar-profile-image" />
+                                {avatar && !avatarError ? (
+                                    <img 
+                                        src={getFullAvatarUrl(avatar)} 
+                                        alt="Profile" 
+                                        className="sidebar-profile-image" 
+                                        onError={() => setAvatarError(true)}
+                                    />
                                 ) : (
                                     <div 
                                         className="sidebar-profile-initials"

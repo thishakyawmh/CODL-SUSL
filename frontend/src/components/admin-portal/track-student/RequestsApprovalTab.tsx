@@ -72,7 +72,7 @@ export const RequestsApprovalTab: React.FC<RequestsApprovalTabProps> = ({ studen
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {/* Exam Applications */}
+            { }
             <div style={{ background: '#FFFFFF', padding: '24px', borderRadius: '12px', border: '1px solid #E2E8F0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
                 <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#1E293B', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <ClipboardCheck size={18} color="#2563EB" /> Exam Admission Applications ({studentData?.examApps.length || 0})
@@ -99,7 +99,7 @@ export const RequestsApprovalTab: React.FC<RequestsApprovalTabProps> = ({ studen
                 )}
             </div>
 
-            {/* Letter Requests */}
+            { }
             <div style={{ background: '#FFFFFF', padding: '24px', borderRadius: '12px', border: '1px solid #E2E8F0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
                 <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#1E293B', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <FileText size={18} color="#2563EB" /> Official Letter Requests ({studentData?.letterReqs.length || 0})

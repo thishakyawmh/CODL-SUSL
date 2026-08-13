@@ -31,17 +31,13 @@ class ProcessAnalyticsPipelineJob implements ShouldQueue
      */
     public $timeout = 300;
 
-    /**
-     * Create a new job instance.
-     */
+     
     public function __construct()
     {
-        //
+
     }
 
-    /**
-     * Execute the job.
-     */
+     
     public function handle(AnalyticsNLPService $nlpService, RecommendationEngineService $recommendationEngine): void
     {
         Log::info('Background NLP Pipeline processing started.');
@@ -61,6 +57,11 @@ class ProcessAnalyticsPipelineJob implements ShouldQueue
                 $kpis['low_demand_subjects'] = $analytics['low_demand_subjects'] ?? [];
                 $kpis['learning_preferences_data'] = $analytics['learning_preferences_data'] ?? null;
 
+
+                AnalyticsCache::where('scope_type', 'program')
+                    ->where('scope_id', $course->id)
+                    ->delete();
+
                 AnalyticsCache::create([
                     'scope_type' => 'program',
                     'scope_id' => $course->id,
@@ -72,6 +73,7 @@ class ProcessAnalyticsPipelineJob implements ShouldQueue
                     'jaccard_similarity_results' => $analytics['jaccard_similarity_results'] ?? [],
                     'kpis' => $kpis,
                     'generated_recommendations' => $recommendations,
+                    'academic_entry_requirements' => $analytics['academic_entry_requirements'] ?? null,
                     'generated_at' => now(),
                 ]);
             }

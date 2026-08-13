@@ -9,9 +9,7 @@ use Illuminate\Support\Facades\DB;
 
 class BackupController extends Controller
 {
-    /**
-     * Ensure only Super Admin can access backup manager.
-     */
+     
     private function checkAuthorization(Request $request)
     {
         $user = $request->user();
@@ -26,7 +24,7 @@ class BackupController extends Controller
 
         $settings = SystemSetting::first();
 
-        // Seed default settings if none exist
+
         if (!$settings) {
             $settings = SystemSetting::create([
                 'institution_name' => 'Centre for Open & Distance Learning',
@@ -60,7 +58,7 @@ class BackupController extends Controller
             }
         }
 
-        // Sort files by creation date descending
+
         usort($files, function($a, $b) {
             return strcmp($b['created_at'], $a['created_at']);
         });
@@ -81,7 +79,7 @@ class BackupController extends Controller
         }
 
         try {
-            // Ensure backups directory exists
+
             if (!Storage::disk('local')->exists('backups')) {
                 Storage::disk('local')->makeDirectory('backups');
             }
@@ -107,7 +105,7 @@ class BackupController extends Controller
             $relativeFilePath = 'backups/' . $filename;
             $fullPath = Storage::disk('local')->path($relativeFilePath);
 
-            // Stream dump to file to prevent memory OOM crashes
+
             $handle = fopen($fullPath, 'w');
             if (!$handle) {
                 throw new \Exception("Unable to open backup file stream for writing.");
@@ -121,12 +119,12 @@ class BackupController extends Controller
             }
 
             foreach ($tables as $table) {
-                // Sanitize table identifier
+
                 if (!preg_match('/^[a-zA-Z0-9_]+$/', $table)) {
                     continue;
                 }
 
-                // Get Table Schema safely
+
                 if ($driver === 'sqlite') {
                     $createTableResult = DB::select("SELECT sql FROM sqlite_master WHERE type='table' AND name=?", [$table]);
                     $createTableSql = $createTableResult[0]->sql ?? '';
@@ -138,7 +136,7 @@ class BackupController extends Controller
                 fwrite($handle, "DROP TABLE IF EXISTS `{$table}`;\n");
                 fwrite($handle, $createTableSql . ";\n\n");
 
-                // Stream Table Data using chunking to prevent memory OOM
+
                 DB::table($table)->orderBy(DB::raw('1'))->chunk(500, function ($rows) use ($handle, $table) {
                     foreach ($rows as $row) {
                         $rowArray = (array)$row;
@@ -163,7 +161,7 @@ class BackupController extends Controller
 
             fclose($handle);
 
-            // Compute next backup time
+
             $now = now();
             $nextBackup = now();
             if ($settings->backup_frequency === 'weekly') {
@@ -174,14 +172,14 @@ class BackupController extends Controller
                 $nextBackup = $now->addDay();
             }
 
-            // Update settings record
+
             $settings->update([
                 'last_backup_at' => $now,
                 'last_backup_status' => 'successful',
                 'next_backup_at' => $nextBackup,
             ]);
 
-            // Enforce retention period (delete files older than backup_retention days)
+
             $retentionDays = $settings->backup_retention ?: 30;
             $allFiles = Storage::disk('local')->files('backups');
             foreach ($allFiles as $file) {
@@ -193,7 +191,7 @@ class BackupController extends Controller
                 }
             }
 
-            // Log administrative action
+
             $user = $request->user();
             if ($user) {
                 \App\Models\ActivityLog::log($user->id, 'Ran database backup manually', 'Database Backup', 'system');
@@ -222,7 +220,7 @@ class BackupController extends Controller
     {
         $this->checkAuthorization($request);
 
-        // Prevent path traversal
+
         $filename = basename($filename);
         $path = 'backups/' . $filename;
 

@@ -108,11 +108,10 @@ const DEFAULT_FALLBACK_CONFIG: InterestConfig[] = [
 ];
 
 export const StudentInterestForm: React.FC = () => {
-    // Determine backend URL dynamically
-    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
-    const bannerImgUrl = `${backendUrl}/storage/student-interests.webp`;
 
-    // Provinces and Districts mapping in Sri Lanka
+    const bannerImgUrl = "/images/student-interests.webp";
+
+
     const provinceDistricts: Record<string, string[]> = {
         'Western': ['Colombo', 'Gampaha', 'Kalutara'],
         'Central': ['Kandy', 'Matale', 'Nuwara Eliya'],
@@ -159,10 +158,10 @@ export const StudentInterestForm: React.FC = () => {
     const [universityOpportunities, setUniversityOpportunities] = useState<string[]>(DEFAULT_UNIVERSITY_OPPORTUNITIES);
     const [selectedOpportunities, setSelectedOpportunities] = useState<string[]>([]);
 
-    // State for configs loaded from admin backend
+
     const [interestConfig, setInterestConfig] = useState<InterestConfig[]>(DEFAULT_FALLBACK_CONFIG);
 
-    // State for profile data
+
     const [formData, setFormData] = useState({
         email: '',
         whatsapp_no: '',
@@ -173,7 +172,7 @@ export const StudentInterestForm: React.FC = () => {
         new_program_suggestion: ''
     });
 
-    // Dynamic sections state
+
     const [primaryInterest, setPrimaryInterest] = useState({
         field: '',
         skills: [] as string[],
@@ -201,12 +200,12 @@ export const StudentInterestForm: React.FC = () => {
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [errorMsg, setErrorMsg] = useState('');
 
-    // Load Google reCAPTCHA v3 script dynamically
+
     useEffect(() => {
         const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
         if (!siteKey) return;
 
-        // Check if script is already loaded
+
         const existingScript = document.getElementById('recaptcha-script');
         if (existingScript) return;
 
@@ -218,7 +217,7 @@ export const StudentInterestForm: React.FC = () => {
         document.body.appendChild(script);
 
         return () => {
-            // Clean up badge and script on unmount
+
             const badge = document.querySelector('.grecaptcha-badge');
             if (badge) {
                 badge.remove();
@@ -230,7 +229,7 @@ export const StudentInterestForm: React.FC = () => {
         };
     }, []);
 
-    // Fetch config on mount
+
     useEffect(() => {
         const loadConfig = async () => {
             try {
@@ -271,7 +270,7 @@ export const StudentInterestForm: React.FC = () => {
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
 
-        // If province changes, reset district
+
         if (name === 'province') {
             setFormData(prev => ({
                 ...prev,
@@ -286,13 +285,13 @@ export const StudentInterestForm: React.FC = () => {
         }
     };
 
-    // Helper to get skills list for a selected interest field
+
     const getSkillsForField = (fieldName: string): string[] => {
         const matched = interestConfig.find(c => c.interest_field === fieldName);
         return matched ? matched.skills : [];
     };
 
-    // Helper to manage skill selection (Max 5)
+
     const handleSkillToggle = (
         interestType: 'primary' | 'secondary' | 'ternary',
         skill: string
@@ -312,7 +311,7 @@ export const StudentInterestForm: React.FC = () => {
             set({ ...state, skills: current });
         } else {
             if (current.length >= 5) {
-                // Ignore if already reached 5
+
                 return;
             }
             current.push(skill);
@@ -320,7 +319,7 @@ export const StudentInterestForm: React.FC = () => {
         }
     };
 
-    // Helper to toggle teaching methods
+
     const handleMethodToggle = (
         interestType: 'primary' | 'secondary' | 'ternary',
         method: string
@@ -373,7 +372,7 @@ export const StudentInterestForm: React.FC = () => {
         setIsLoading(true);
         setErrorMsg('');
 
-        // Basic Profile validations
+
         if (!formData.province) {
             setErrorMsg('Please select your province.');
             setIsLoading(false);
@@ -385,7 +384,7 @@ export const StudentInterestForm: React.FC = () => {
             return;
         }
 
-        // Determine final education level text
+
         const finalEducationLevel = formData.education_level === 'Other'
             ? formData.custom_education_level.trim()
             : formData.education_level;
@@ -396,7 +395,7 @@ export const StudentInterestForm: React.FC = () => {
             return;
         }
 
-        // Primary Interest validations
+
         if (!primaryInterest.field) {
             setErrorMsg('Primary Academic Interest is required.');
             setIsLoading(false);
@@ -413,7 +412,7 @@ export const StudentInterestForm: React.FC = () => {
             return;
         }
 
-        // Secondary Interest validations
+
         if (showSecondary) {
             if (!secondaryInterest.field) {
                 setErrorMsg('Please select an interest field for your Secondary Interest, or remove the section.');
@@ -432,7 +431,7 @@ export const StudentInterestForm: React.FC = () => {
             }
         }
 
-        // Ternary Interest validations
+
         if (showTernary) {
             if (!ternaryInterest.field) {
                 setErrorMsg('Please select an interest field for your Ternary Interest, or remove the section.');
@@ -451,7 +450,7 @@ export const StudentInterestForm: React.FC = () => {
             }
         }
 
-        // University Opportunities validation
+
         if (selectedOpportunities.length === 0) {
             setErrorMsg('Please select at least one university opportunity that is important to you.');
             setIsLoading(false);
@@ -459,7 +458,7 @@ export const StudentInterestForm: React.FC = () => {
         }
 
         try {
-            // Get reCAPTCHA v3 token if configured
+
             let recaptchaToken = null;
             const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
             const recaptcha = (window as any).grecaptcha;
@@ -472,7 +471,7 @@ export const StudentInterestForm: React.FC = () => {
                 }
             }
 
-            // Prepare payload
+
             const payload = {
                 email: formData.email.trim() || null,
                 whatsapp_no: formData.whatsapp_no.trim() || null,
@@ -480,31 +479,31 @@ export const StudentInterestForm: React.FC = () => {
                 province: formData.province,
                 district: formData.district,
 
-                // Primary Interest
+
                 primary_field: primaryInterest.field,
                 primary_skills: primaryInterest.skills.join(', '),
                 primary_teaching_methods: primaryInterest.teaching_methods.join(', '),
                 primary_theory_practical: primaryInterest.theory_practical,
 
-                // Secondary Interest
+
                 secondary_field: showSecondary ? secondaryInterest.field : null,
                 secondary_skills: showSecondary ? secondaryInterest.skills.join(', ') : null,
                 secondary_teaching_methods: showSecondary ? secondaryInterest.teaching_methods.join(', ') : null,
                 secondary_theory_practical: showSecondary ? secondaryInterest.theory_practical : null,
 
-                // Ternary Interest
+
                 third_field: showTernary ? ternaryInterest.field : null,
                 third_skills: showTernary ? ternaryInterest.skills.join(', ') : null,
                 third_teaching_methods: showTernary ? ternaryInterest.teaching_methods.join(', ') : null,
                 third_theory_practical: showTernary ? ternaryInterest.theory_practical : null,
 
-                // University Opportunities
+
                 university_opportunities: selectedOpportunities.join(', '),
 
-                // New Program Suggestion (Optional)
+
                 new_program_suggestion: formData.new_program_suggestion.trim() || null,
 
-                // Google reCAPTCHA Token
+
                 recaptcha_token: recaptchaToken,
             };
 
@@ -523,7 +522,7 @@ export const StudentInterestForm: React.FC = () => {
 
     const activeDistricts = formData.province ? provinceDistricts[formData.province] : [];
 
-    // Filter dynamic configuration list so that students don't select the same category twice
+
     const getAvailableFields = (currentField: string) => {
         const selectedFields = [
             primaryInterest.field,
@@ -618,12 +617,16 @@ export const StudentInterestForm: React.FC = () => {
 
             <form onSubmit={handleSubmit} className="interest-form">
 
-                    {/* Part 1: Profile & Contact */}
+                    { }
                     <div className="form-section">
-                        <h3 className="form-section-title">Profile & Contact Details</h3>
+                        <div className="section-header-row">
+                            <h3 className="form-section-title" style={{ borderLeftColor: '#7C3AED', marginBottom: 0 }}>
+                                Profile & Contact Details
+                            </h3>
+                        </div>
                         <div className="form-grid">
 
-                            {/* Education level */}
+                            { }
                             <div className="form-group">
                                 <label htmlFor="education_level">Current Education Level</label>
                                 <select
@@ -642,7 +645,7 @@ export const StudentInterestForm: React.FC = () => {
                                 </select>
                             </div>
 
-                            {/* Custom education level input when "Other" is chosen */}
+                            { }
                             {formData.education_level === 'Other' && (
                                 <div className="form-group">
                                     <label htmlFor="custom_education_level">Specify Education Level *</label>
@@ -659,7 +662,7 @@ export const StudentInterestForm: React.FC = () => {
                                 </div>
                             )}
 
-                            {/* Province */}
+                            { }
                             <div className="form-group">
                                 <label htmlFor="province">Province *</label>
                                 <select
@@ -677,7 +680,7 @@ export const StudentInterestForm: React.FC = () => {
                                 </select>
                             </div>
 
-                            {/* District (Filtered) */}
+                            { }
                             <div className="form-group">
                                 <label htmlFor="district">District *</label>
                                 <select
@@ -698,7 +701,7 @@ export const StudentInterestForm: React.FC = () => {
                                 </select>
                             </div>
 
-                            {/* Email Address */}
+                            { }
                             <div className="form-group">
                                 <label htmlFor="email">Email Address</label>
                                 <input
@@ -712,7 +715,7 @@ export const StudentInterestForm: React.FC = () => {
                                 />
                             </div>
 
-                            {/* WhatsApp Number */}
+                            { }
                             <div className="form-group">
                                 <label htmlFor="whatsapp_no">WhatsApp Number</label>
                                 <input
@@ -728,7 +731,7 @@ export const StudentInterestForm: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Part 2: Primary Academic Interest */}
+                    { }
                     <div className="form-section">
                         <div className="section-header-row">
                             <h3 className="form-section-title" style={{ borderLeftColor: '#7C3AED', marginBottom: 0 }}>
@@ -762,7 +765,7 @@ export const StudentInterestForm: React.FC = () => {
 
                             {primaryInterest.field && (
                                 <>
-                                    {/* Skills associated */}
+                                    { }
                                     <div className="form-group full-width">
                                         <label>Select up to 5 Key Skills of interest for this area * (Selected: {primaryInterest.skills.length}/5)</label>
                                         <div className="choice-grid">
@@ -778,7 +781,7 @@ export const StudentInterestForm: React.FC = () => {
                                         </div>
                                     </div>
 
-                                    {/* Teaching Methods */}
+                                    { }
                                     <div className="form-group full-width">
                                         <label>Suggested Teaching Methods for this academic area *</label>
                                         <div className="choice-grid">
@@ -794,7 +797,7 @@ export const StudentInterestForm: React.FC = () => {
                                         </div>
                                     </div>
 
-                                    {/* Preferred Learning Balance */}
+                                    { }
                                     <div className="form-group full-width slider-container">
                                         <label>Preferred Learning Balance *</label>
                                         <div className="learning-balance-selector">
@@ -821,7 +824,7 @@ export const StudentInterestForm: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Part 3: Secondary Academic Interest (Optional) */}
+                    { }
                     {showSecondary && (
                         <div className="form-section">
                             <div className="section-header-row">
@@ -834,7 +837,7 @@ export const StudentInterestForm: React.FC = () => {
                                     onClick={() => {
                                         setShowSecondary(false);
                                         setSecondaryInterest({ field: '', skills: [], teaching_methods: [], theory_practical: 3 });
-                                        // If secondary is removed, ternary must also be removed/shifted
+
                                         setShowTernary(false);
                                         setTernaryInterest({ field: '', skills: [], teaching_methods: [], theory_practical: 3 });
                                     }}
@@ -869,7 +872,7 @@ export const StudentInterestForm: React.FC = () => {
 
                                 {secondaryInterest.field && (
                                     <>
-                                        {/* Skills associated */}
+                                        { }
                                         <div className="form-group full-width">
                                             <label>Select up to 5 Key Skills of interest for this area * (Selected: {secondaryInterest.skills.length}/5)</label>
                                             <div className="choice-grid">
@@ -885,7 +888,7 @@ export const StudentInterestForm: React.FC = () => {
                                             </div>
                                         </div>
 
-                                        {/* Teaching Methods */}
+                                        { }
                                         <div className="form-group full-width">
                                             <label>Suggested Teaching Methods for this academic area *</label>
                                             <div className="choice-grid">
@@ -901,7 +904,7 @@ export const StudentInterestForm: React.FC = () => {
                                             </div>
                                         </div>
 
-                                        {/* Preferred Learning Balance */}
+                                        { }
                                         <div className="form-group full-width slider-container">
                                             <label>Preferred Learning Balance *</label>
                                             <div className="learning-balance-selector">
@@ -929,7 +932,7 @@ export const StudentInterestForm: React.FC = () => {
                         </div>
                     )}
 
-                    {/* Part 4: Ternary Academic Interest (Optional) */}
+                    { }
                     {showTernary && (
                         <div className="form-section">
                             <div className="section-header-row">
@@ -974,7 +977,7 @@ export const StudentInterestForm: React.FC = () => {
 
                                 {ternaryInterest.field && (
                                     <>
-                                        {/* Skills associated */}
+                                        { }
                                         <div className="form-group full-width">
                                             <label>Select up to 5 Key Skills of interest for this area * (Selected: {ternaryInterest.skills.length}/5)</label>
                                             <div className="choice-grid">
@@ -990,7 +993,7 @@ export const StudentInterestForm: React.FC = () => {
                                             </div>
                                         </div>
 
-                                        {/* Teaching Methods */}
+                                        { }
                                         <div className="form-group full-width">
                                             <label>Suggested Teaching Methods for this academic area *</label>
                                             <div className="choice-grid">
@@ -1006,7 +1009,7 @@ export const StudentInterestForm: React.FC = () => {
                                             </div>
                                         </div>
 
-                                        {/* Theory vs Practical */}
+                                        { }
                                         <div className="form-group full-width slider-container">
                                             <label>Preferred Learning Balance *</label>
                                             <div className="learning-balance-selector">
@@ -1034,7 +1037,7 @@ export const StudentInterestForm: React.FC = () => {
                         </div>
                     )}
 
-                    {/* Button to add secondary/ternary section */}
+                    { }
                     {interestConfig.length > 0 && primaryInterest.field && (
                         <div style={{ display: 'flex', gap: '16px' }}>
                             {!showSecondary && (
@@ -1058,7 +1061,7 @@ export const StudentInterestForm: React.FC = () => {
                         </div>
                     )}
 
-                    {/* Part 5: University Opportunities */}
+                    { }
                     <div className="form-section">
                         <div className="section-header-row">
                             <h3 className="form-section-title" style={{ borderLeftColor: '#10B981', marginBottom: 0 }}>
@@ -1084,7 +1087,7 @@ export const StudentInterestForm: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Part 6: New Program Suggestion */}
+                    { }
                     <div className="form-section">
                         <div className="section-header-row">
                             <h3 className="form-section-title" style={{ borderLeftColor: '#F59E0B', marginBottom: 0 }}>
@@ -1105,7 +1108,7 @@ export const StudentInterestForm: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Error Alerts */}
+                    { }
                     {errorMsg && (
                         <div className="form-alert error">
                             <AlertCircle size={18} />
@@ -1113,7 +1116,7 @@ export const StudentInterestForm: React.FC = () => {
                         </div>
                     )}
 
-                    {/* Form Submission actions */}
+                    { }
                     <div className="form-actions">
                         <button type="submit" className="submit-btn" disabled={isLoading}>
                             {isLoading ? (

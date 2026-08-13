@@ -4,14 +4,14 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
 
 const api = axios.create({
     baseURL: API_BASE_URL,
-    timeout: 60000, // 60 second timeout for remote Azure DB latency
+    timeout: 60000, 
     headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
     },
 });
 
-// Add a request interceptor to include the auth token
+
 api.interceptors.request.use((config) => {
     const token = sessionStorage.getItem('token');
     if (token) {
@@ -22,7 +22,7 @@ api.interceptors.request.use((config) => {
     return Promise.reject(error);
 });
 
-// Add a response interceptor to handle maintenance mode and unauthorized redirects
+
 api.interceptors.response.use((response) => {
     return response;
 }, (error) => {
@@ -554,6 +554,10 @@ export const aiAnalyticsService = {
         const response = await api.get(`/admin/ai-analytics/${courseId}/recommendations`);
         return response.data;
     },
+    getAcademicEntryRequirements: async (courseId: string) => {
+        const response = await api.get(`/admin/ai-analytics/${courseId}/academic-entry`);
+        return response.data;
+    },
     getSurveys: async () => {
         const response = await api.get('/admin/ai-analytics/surveys');
         return response.data;
@@ -564,7 +568,7 @@ export const aiAnalyticsService = {
     },
     syncGoogleSheet: async (data?: { type?: 'student' | 'industry'; url?: string }) => {
         const response = await api.post('/admin/ai-analytics/sync-sheet', data || {}, {
-            timeout: 300000 // 5 minutes (300,000 ms) for large datasets and AI processing
+            timeout: 300000 
         });
         return response.data;
     },
@@ -577,6 +581,10 @@ export const aiAnalyticsService = {
         if (province) params.append('province', province);
         if (educationLevel) params.append('education_level', educationLevel);
         const response = await api.get(`/admin/ai-analytics/geography/skills?${params.toString()}`);
+        return response.data;
+    },
+    getIndustrySkills: async (field: string) => {
+        const response = await api.get(`/admin/ai-analytics/industry/skills?field=${encodeURIComponent(field)}`);
         return response.data;
     },
     getUniversityOpportunities: async () => {

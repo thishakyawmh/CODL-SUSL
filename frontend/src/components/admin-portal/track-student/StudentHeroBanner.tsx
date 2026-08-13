@@ -34,7 +34,7 @@ export const StudentHeroBanner: React.FC<StudentHeroBannerProps> = ({
 
     return (
         <div style={{ marginBottom: '24px' }}>
-            {/* Top Navigation Bar: Back button on top of the section */}
+            { }
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                 <button
                     onClick={onBack}
@@ -78,7 +78,7 @@ export const StudentHeroBanner: React.FC<StudentHeroBannerProps> = ({
                 </button>
             </div>
 
-            {/* Light Colored Student Header Card Matching Web Color Theme */}
+            { }
             <div style={{
                 background: '#FFFFFF',
                 borderRadius: '16px',
@@ -145,7 +145,7 @@ export const StudentHeroBanner: React.FC<StudentHeroBannerProps> = ({
                     </div>
                 </div>
 
-                {/* Stat Metrics: Exactly No. of Courses & Pending Requests */}
+                { }
                 <div style={{ display: 'flex', gap: '12px' }}>
                     <div style={{
                         background: '#F8FAFC',
