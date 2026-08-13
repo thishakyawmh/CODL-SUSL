@@ -62,16 +62,26 @@ export const ManageExamStudents: React.FC = () => {
     const [studentRequests, setStudentRequests] = useState<any[]>([]);
     const [examApplications, setExamApplications] = useState<any[]>([]);
 
+    // Track which app IDs are currently being actioned (for spinner / disabled state)
+    const [actioningIds, setActioningIds] = useState<Set<string | number>>(new Set());
+    const addActioning = (id: string | number) => setActioningIds(prev => new Set(prev).add(id));
+    const removeActioning = (id: string | number) => setActioningIds(prev => { const s = new Set(prev); s.delete(id); return s; });
+
+    // Helper: patch a single exam application in state without full refetch
+    const patchExamApp = (id: string | number, patch: Partial<any>) => {
+        setExamApplications(prev => prev.map(a => a.id?.toString() === id?.toString() ? { ...a, ...patch } : a));
+    };
+
     const fetchRegulars = React.useCallback(async (isSilent = false) => {
         if (!id || !examId) return;
         if (!isSilent) setIsLoading(true);
         try {
-
-            const courseData = await courseService.getById(courseId);
+            const courseManageData = await courseService.getManageCourseData(courseId);
+            
+            const courseData = courseManageData.course || {};
             setCourseTitle(courseData.title || '');
 
-
-            const exams = await examService.getByCourse(courseId);
+            const exams = courseManageData.exams || [];
             const exam = exams.find((e: any) => e.id.toString() === examId.toString());
             if (exam) {
                 setExamName(exam.title || '');
@@ -83,12 +93,9 @@ export const ManageExamStudents: React.FC = () => {
                 }
             }
 
-
-            const students = await courseService.getEnrolledStudents(courseId);
+            const students = courseManageData.enrolled_students || [];
             setEnrolledStudents(students);
 
-
-            const courseManageData = await courseService.getManageCourseData(courseId);
             const examApps = (courseManageData.exam_applications || []).filter((app: any) => {
                 const titleMatch = app.exam_title?.toLowerCase().trim() === exam?.title?.toLowerCase().trim() ||
                     (app.exam_id && app.exam_id.toString() === examId?.toString());
@@ -192,8 +199,11 @@ export const ManageExamStudents: React.FC = () => {
         }
     }, [id, examId, courseId]);
 
+    const isFetchingRef = React.useRef(false);
     const fetchAll = React.useCallback(async (isSilent = false) => {
         if (!id || !examId) return;
+        if (isFetchingRef.current) return;
+        isFetchingRef.current = true;
         if (!isSilent) setIsLoading(true);
         try {
             await Promise.all([
@@ -206,6 +216,7 @@ export const ManageExamStudents: React.FC = () => {
             toast.error('Failed to load student data.');
         } finally {
             if (!isSilent) setIsLoading(false);
+            isFetchingRef.current = false;
         }
     }, [fetchRegulars, fetchPostponements, fetchReattempts, id, examId]);
 
@@ -268,6 +279,9 @@ export const ManageExamStudents: React.FC = () => {
     };
 
     const handleApprove = async (app: any) => {
+        if (actioningIds.has(app.id)) return;
+        addActioning(app.id);
+
         const user = getCurrentAdminUser();
         const userRole = user?.role || 'super_admin';
 
@@ -293,6 +307,7 @@ export const ManageExamStudents: React.FC = () => {
         } else if (userRole === 'coordinator') {
             if (nextStages.secretary !== 'approved') {
                 toast.error('Secretary must approve first before Coordinator can act.');
+                removeActioning(app.id);
                 return;
             }
             nextStages.coordinator = 'approved';
@@ -301,6 +316,7 @@ export const ManageExamStudents: React.FC = () => {
         } else if (userRole === 'director') {
             if (nextStages.coordinator !== 'approved') {
                 toast.error('Coordinator must approve first before Director can act.');
+                removeActioning(app.id);
                 return;
             }
             nextStages.director = 'approved';
@@ -314,6 +330,10 @@ export const ManageExamStudents: React.FC = () => {
             currentStep = 3;
         }
 
+        // Optimistic update
+        patchExamApp(app.id, { status: nextStatus, stages: nextStages, current_step: currentStep });
+        setSelectedAppDetails((prev: any) => prev?.id === app.id ? { ...prev, status: nextStatus, stages: nextStages, current_step: currentStep } : prev);
+
         try {
             await examApplicationService.update(app.id, {
                 status: nextStatus,
@@ -322,14 +342,21 @@ export const ManageExamStudents: React.FC = () => {
                 rejection_reason: null
             });
             toast.success(nextStatus === 'approved' ? 'Application fully approved!' : 'Application level approved successfully!');
-            await fetchAll(true);
         } catch (err: any) {
+            // Rollback
+            patchExamApp(app.id, { status: app.status, stages: app.stages, current_step: app.current_step });
+            setSelectedAppDetails((prev: any) => prev?.id === app.id ? { ...prev, status: app.status, stages: app.stages, current_step: app.current_step } : prev);
             console.error('Failed to approve application:', err);
             toast.error(err.response?.data?.message || 'Failed to approve application.');
+        } finally {
+            removeActioning(app.id);
         }
     };
 
     const handleReject = async (app: any, reason: string) => {
+        if (actioningIds.has(app.id)) return;
+        addActioning(app.id);
+
         const user = getCurrentAdminUser();
         const userRole = user?.role || 'super_admin';
 
@@ -357,6 +384,10 @@ export const ManageExamStudents: React.FC = () => {
             nextStages.director = 'rejected';
         }
 
+        // Optimistic update
+        patchExamApp(app.id, { status: 'rejected', stages: nextStages, rejection_reason: reason });
+        setSelectedAppDetails((prev: any) => prev?.id === app.id ? { ...prev, status: 'rejected', stages: nextStages, rejection_reason: reason } : prev);
+
         try {
             await examApplicationService.update(app.id, {
                 status: 'rejected',
@@ -365,14 +396,21 @@ export const ManageExamStudents: React.FC = () => {
                 rejection_reason: reason || 'Rejected'
             });
             toast.success('Application rejected successfully.');
-            await fetchAll(true);
         } catch (err: any) {
+            // Rollback
+            patchExamApp(app.id, { status: app.status, stages: app.stages, rejection_reason: app.rejection_reason });
+            setSelectedAppDetails((prev: any) => prev?.id === app.id ? { ...prev, status: app.status, stages: app.stages, rejection_reason: app.rejection_reason } : prev);
             console.error('Failed to reject application:', err);
             toast.error(err.response?.data?.message || 'Failed to reject application.');
+        } finally {
+            removeActioning(app.id);
         }
     };
 
     const handleApproveStage = async (app: any, stageName: 'secretary' | 'coordinator' | 'director') => {
+        if (actioningIds.has(app.id)) return;
+        addActioning(app.id);
+
         const user = getCurrentAdminUser();
         const approvedBy = user?.fullName || 'Admin';
         const approvedAt = new Date().toLocaleDateString('en-US');
@@ -410,6 +448,13 @@ export const ManageExamStudents: React.FC = () => {
             nextStatus = 'pending';
         }
 
+        // Optimistic update
+        patchExamApp(app.id, { status: nextStatus, stages: nextStages, current_step: currentStep, rejection_reason: null });
+        setSelectedAppDetails((prev: any) => {
+            if (prev && prev.id === app.id) return { ...prev, status: nextStatus, stages: nextStages, current_step: currentStep, rejection_reason: null };
+            return prev;
+        });
+
         try {
             await examApplicationService.update(app.id, {
                 status: nextStatus,
@@ -418,26 +463,21 @@ export const ManageExamStudents: React.FC = () => {
                 rejection_reason: null
             });
             toast.success(`Stage ${stageName.charAt(0).toUpperCase() + stageName.slice(1)} approved successfully!`);
-            await fetchAll(true);
-            setSelectedAppDetails((prev: any) => {
-                if (prev && prev.id === app.id) {
-                    return {
-                        ...prev,
-                        status: nextStatus,
-                        stages: nextStages,
-                        current_step: currentStep,
-                        rejection_reason: null
-                    };
-                }
-                return prev;
-            });
         } catch (err: any) {
+            // Rollback
+            patchExamApp(app.id, { status: app.status, stages: app.stages, current_step: app.current_step });
+            setSelectedAppDetails((prev: any) => prev?.id === app.id ? { ...prev, status: app.status, stages: app.stages, current_step: app.current_step } : prev);
             console.error('Failed to approve stage:', err);
             toast.error(err.response?.data?.message || 'Failed to approve stage.');
+        } finally {
+            removeActioning(app.id);
         }
     };
 
     const handleRejectStage = async (app: any, stageName: 'secretary' | 'coordinator' | 'director', reason: string) => {
+        if (actioningIds.has(app.id)) return;
+        addActioning(app.id);
+
         let nextStages = app.stages && typeof app.stages === 'object' && !Array.isArray(app.stages)
             ? { ...app.stages }
             : { secretary: 'pending', coordinator: 'pending', director: 'pending' };
@@ -452,6 +492,13 @@ export const ManageExamStudents: React.FC = () => {
 
         nextStages[stageName] = 'rejected';
 
+        // Optimistic update
+        patchExamApp(app.id, { status: 'rejected', stages: nextStages, rejection_reason: reason });
+        setSelectedAppDetails((prev: any) => {
+            if (prev && prev.id === app.id) return { ...prev, status: 'rejected', stages: nextStages, rejection_reason: reason };
+            return prev;
+        });
+
         try {
             await examApplicationService.update(app.id, {
                 status: 'rejected',
@@ -460,21 +507,14 @@ export const ManageExamStudents: React.FC = () => {
                 rejection_reason: reason || 'Rejected'
             });
             toast.success(`Stage ${stageName.charAt(0).toUpperCase() + stageName.slice(1)} rejected.`);
-            await fetchAll(true);
-            setSelectedAppDetails((prev: any) => {
-                if (prev && prev.id === app.id) {
-                    return {
-                        ...prev,
-                        status: 'rejected',
-                        stages: nextStages,
-                        rejection_reason: reason
-                    };
-                }
-                return prev;
-            });
         } catch (err: any) {
+            // Rollback
+            patchExamApp(app.id, { status: app.status, stages: app.stages, rejection_reason: app.rejection_reason });
+            setSelectedAppDetails((prev: any) => prev?.id === app.id ? { ...prev, status: app.status, stages: app.stages, rejection_reason: app.rejection_reason } : prev);
             console.error('Failed to reject stage:', err);
             toast.error(err.response?.data?.message || 'Failed to reject stage.');
+        } finally {
+            removeActioning(app.id);
         }
     };
 

@@ -194,7 +194,7 @@ class CourseApplicationController extends Controller
      
     public function approve(Request $request, $id)
     {
-        return DB::transaction(function () use ($request, $id) {
+        $result = DB::transaction(function () use ($request, $id) {
             $application = CourseApplication::with(['course', 'batch'])
                 ->lockForUpdate()
                 ->findOrFail($id);
@@ -343,27 +343,42 @@ class CourseApplicationController extends Controller
             }
 
             $application->save();
-            \App\Http\Controllers\CourseController::clearManageCourseCache($application->course_id);
 
-
-            $targetDesc = "Application #{$application->id} ({$application->applicant_name}) for course " . ($application->course ? $application->course->code : 'N/A');
-            \App\Models\ActivityLog::log(
-                $user->id,
-                "Approved Stage {$nextLevel} of Course Application",
-                $targetDesc,
-                'approval'
-            );
-
-            return response()->json(
-                $application->load(['course', 'batch', 'user', 'secretaryApprover', 'coordinatorApprover', 'directorApprover'])
-            );
+            // Return data needed for post-transaction side-effects
+            return [
+                'response' => $application->load(['course', 'batch', 'user', 'secretaryApprover', 'coordinatorApprover', 'directorApprover']),
+                'course_id' => $application->course_id,
+                'user_id' => $user->id,
+                'next_level' => $nextLevel,
+                'applicant_name' => $application->applicant_name,
+                'app_id' => $application->id,
+                'course_code' => $application->course ? $application->course->code : 'N/A',
+            ];
         });
+
+        // If the transaction returned a JSON response (error), return it directly
+        if ($result instanceof \Illuminate\Http\JsonResponse) {
+            return $result;
+        }
+
+        // ── Side-effects OUTSIDE the transaction (no lock held) ──
+        \App\Http\Controllers\CourseController::clearManageCourseCache($result['course_id']);
+
+        $targetDesc = "Application #{$result['app_id']} ({$result['applicant_name']}) for course {$result['course_code']}";
+        \App\Models\ActivityLog::log(
+            $result['user_id'],
+            "Approved Stage {$result['next_level']} of Course Application",
+            $targetDesc,
+            'approval'
+        );
+
+        return response()->json($result['response']);
     }
 
      
     public function reject(Request $request, $id)
     {
-        return DB::transaction(function () use ($request, $id) {
+        $result = DB::transaction(function () use ($request, $id) {
             $application = CourseApplication::lockForUpdate()->findOrFail($id);
             
             if ($application->status !== 'pending') {
@@ -407,24 +422,41 @@ class CourseApplicationController extends Controller
 
             $application->status = 'rejected';
             $application->save();
-            \App\Http\Controllers\CourseController::clearManageCourseCache($application->course_id);
 
-
-            $targetDesc = "Application #{$application->id} ({$application->applicant_name}) for course " . ($application->course ? $application->course->code : 'N/A');
-            \App\Models\ActivityLog::log(
-                $user->id,
-                "Rejected Course Application (Stage {$nextLevel})",
-                $targetDesc,
-                'approval'
-            );
-
-            return response()->json($application);
+            return [
+                'response' => $application,
+                'course_id' => $application->course_id,
+                'user_id' => $user->id,
+                'next_level' => $nextLevel,
+                'applicant_name' => $application->applicant_name,
+                'app_id' => $application->id,
+                'course_code' => optional($application->course)->code ?? 'N/A',
+            ];
         });
+
+        if ($result instanceof \Illuminate\Http\JsonResponse) {
+            return $result;
+        }
+
+        // ── Side-effects OUTSIDE the transaction (no lock held) ──
+        \App\Http\Controllers\CourseController::clearManageCourseCache($result['course_id']);
+
+        $targetDesc = "Application #{$result['app_id']} ({$result['applicant_name']}) for course {$result['course_code']}";
+        \App\Models\ActivityLog::log(
+            $result['user_id'],
+            "Rejected Course Application (Stage {$result['next_level']})",
+            $targetDesc,
+            'approval'
+        );
+
+        return response()->json($result['response']);
     }
 
      
     public function updateDocumentsVerified(Request $request, $id)
     {
+
+
         $application = CourseApplication::with('course')->findOrFail($id);
         $documentsVerified = $request->input('documents_verified');
         $user = $request->user();

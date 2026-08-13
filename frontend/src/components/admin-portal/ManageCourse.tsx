@@ -6,7 +6,7 @@ import {
     BookOpen, Calendar, Layers, FileSpreadsheet,
     AlertCircle, CheckCircle, Download, Upload,
     X, Users, Search, Mail,
-    Send, ClipboardList, Eye, XCircle, Clock, MoreVertical,
+    Send, ClipboardList, Eye, XCircle, Clock, MoreVertical, Loader,
     ChevronRight, Play, FileArchive, FileText, Video, EyeOff, List,
     Award, ShieldCheck, UserCheck, User, Edit3, RefreshCw, UserPlus, History
 } from 'lucide-react';
@@ -966,13 +966,78 @@ export const ManageCourse: React.FC = () => {
     const [enrollmentRequests, setEnrollmentRequests] = useState<any[]>([]);
     const [approvalRequests, setApprovalRequests] = useState<any[]>([]);
     const [isLoadingApprovals, setIsLoadingApprovals] = useState(false);
+
+    // Track IDs currently being actioned (for disabling buttons / showing spinner)
+    const [actioningIds, setActioningIds] = useState<Set<string | number>>(new Set());
+    const addActioning = (id: string | number) => setActioningIds(prev => new Set(prev).add(id));
+    const removeActioning = (id: string | number) => setActioningIds(prev => { const s = new Set(prev); s.delete(id); return s; });
+
     const handleActionRequest = async (requestId: string, action: 'approved' | 'rejected', type: 'approval' | 'enrollment', reason?: string) => {
+        if (actioningIds.has(requestId)) return;
+        addActioning(requestId);
+
+        const originalEnrollmentRequests = [...enrollmentRequests];
+        const originalApprovalRequests = [...approvalRequests];
+        const originalSelectedDetails = selectedRequestDetails ? { ...selectedRequestDetails } : null;
+
         if (type === 'enrollment') {
+            const nextLevelMap: Record<string, number> = {
+                secretary: 1,
+                coordinator: 2,
+                director: 3,
+                super_admin: 3
+            };
+            const nextLevel = nextLevelMap[userRole] || 3;
+
+            // Optimistic UI update
+            setEnrollmentRequests(prev => prev.map(req => {
+                if (req.realId?.toString() !== requestId?.toString()) return req;
+                const newStatus = action === 'rejected' ? 'rejected' : (nextLevel >= 3 ? 'approved' : 'pending');
+                const newLevel = action === 'rejected' ? req.rawApp?.approval_level : nextLevel;
+                const updatedRaw = req.rawApp ? {
+                    ...req.rawApp,
+                    status: newStatus,
+                    approval_level: newLevel
+                } : null;
+                return {
+                    ...req,
+                    status: newStatus,
+                    stages: {
+                        secretary: newLevel >= 1 || (newStatus === 'rejected' && newLevel === 0) ? (newStatus === 'rejected' && newLevel === 0 ? 'rejected' : 'approved') : 'pending',
+                        coordinator: newLevel >= 2 || (newStatus === 'rejected' && newLevel === 1) ? (newStatus === 'rejected' && newLevel === 1 ? 'rejected' : 'approved') : 'pending',
+                        director: newLevel >= 3 || (newStatus === 'rejected' && newLevel === 2) ? (newStatus === 'rejected' && newLevel === 2 ? 'rejected' : 'approved') : 'pending'
+                    },
+                    rawApp: updatedRaw
+                };
+            }));
+
+            if (selectedRequestDetails && selectedRequestDetails.realId?.toString() === requestId?.toString()) {
+                setSelectedRequestDetails((prev: any) => {
+                    if (!prev) return null;
+                    const newStatus = action === 'rejected' ? 'rejected' : (nextLevel >= 3 ? 'approved' : 'pending');
+                    const newLevel = action === 'rejected' ? prev.rawApp?.approval_level : nextLevel;
+                    const updatedRaw = prev.rawApp ? {
+                        ...prev.rawApp,
+                        status: newStatus,
+                        approval_level: newLevel
+                    } : null;
+                    return {
+                        ...prev,
+                        status: newStatus,
+                        stages: {
+                            secretary: newLevel >= 1 || (newStatus === 'rejected' && newLevel === 0) ? (newStatus === 'rejected' && newLevel === 0 ? 'rejected' : 'approved') : 'pending',
+                            coordinator: newLevel >= 2 || (newStatus === 'rejected' && newLevel === 1) ? (newStatus === 'rejected' && newLevel === 1 ? 'rejected' : 'approved') : 'pending',
+                            director: newLevel >= 3 || (newStatus === 'rejected' && newLevel === 2) ? (newStatus === 'rejected' && newLevel === 2 ? 'rejected' : 'approved') : 'pending'
+                        },
+                        rawApp: updatedRaw
+                    };
+                });
+            }
+
             try {
                 if (action === 'approved') {
                     const response = await courseApplicationService.approve(requestId);
                     toast.success('Application approved successfully!');
-
 
                     if (response.status === 'approved' && response.user) {
                         const newStudent: EnrolledStudent = {
@@ -997,13 +1062,22 @@ export const ManageCourse: React.FC = () => {
                 }
                 loadAllCourseData(false);
             } catch (err: any) {
+                // Rollback
+                setEnrollmentRequests(originalEnrollmentRequests);
+                if (originalSelectedDetails) {
+                    setSelectedRequestDetails(originalSelectedDetails);
+                }
                 console.error('Error updating application', err);
                 toast.error(err.response?.data?.message || 'Failed to update application');
+            } finally {
+                removeActioning(requestId);
             }
         } else {
-
             const req = approvalRequests.find(r => r.id === requestId);
-            if (!req) return;
+            if (!req) {
+                removeActioning(requestId);
+                return;
+            }
 
             let nextStages = { ...req.stages };
             let nextStatus = req.status;
@@ -1026,6 +1100,7 @@ export const ManageCourse: React.FC = () => {
                 } else if (userRole === 'coordinator') {
                     if (req.stages?.secretary !== 'approved') {
                         toast.error('Secretary must approve first before Coordinator can act.');
+                        removeActioning(requestId);
                         return;
                     }
                     nextStages.coordinator = 'approved';
@@ -1034,12 +1109,36 @@ export const ManageCourse: React.FC = () => {
                 } else if (userRole === 'director') {
                     if (req.stages?.coordinator !== 'approved') {
                         toast.error('Coordinator must approve first before Director can act.');
+                        removeActioning(requestId);
                         return;
                     }
                     nextStages.director = 'approved';
                     nextStatus = 'approved';
                     currentStep = 3;
                 }
+            }
+
+            // Optimistic UI update
+            setApprovalRequests(prev => prev.map(item => {
+                if (item.id?.toString() !== requestId?.toString()) return item;
+                return {
+                    ...item,
+                    status: nextStatus,
+                    stages: nextStages,
+                    currentStep: currentStep
+                };
+            }));
+
+            if (selectedRequestDetails && selectedRequestDetails.id?.toString() === requestId?.toString()) {
+                setSelectedRequestDetails((prev: any) => {
+                    if (!prev) return null;
+                    return {
+                        ...prev,
+                        status: nextStatus,
+                        stages: nextStages,
+                        currentStep: currentStep
+                    };
+                });
             }
 
             try {
@@ -1074,8 +1173,15 @@ export const ManageCourse: React.FC = () => {
 
                 loadAllCourseData(false);
             } catch (err: any) {
+                // Rollback
+                setApprovalRequests(originalApprovalRequests);
+                if (originalSelectedDetails) {
+                    setSelectedRequestDetails(originalSelectedDetails);
+                }
                 console.error('Failed to update request:', err);
                 toast.error(err.response?.data?.message || 'Failed to update request.');
+            } finally {
+                removeActioning(requestId);
             }
         }
     };
@@ -4620,7 +4726,15 @@ export const ManageCourse: React.FC = () => {
                                                                         (req.rawApp.approval_level === 1 && userRole === 'coordinator') ||
                                                                         (req.rawApp.approval_level === 2 && userRole === 'director')
                                                                     )) && (
-                                                                            <button className="at-action-btn approve" title={req.rawApp ? `Approve (Stage ${req.rawApp.approval_level + 1}/3)` : "Approve"} onClick={() => handleActionRequest(req.realId, 'approved', 'enrollment')}><Check size={16} /></button>
+                                                                            <button
+                                                                                className="at-action-btn approve"
+                                                                                title={req.rawApp ? `Approve (Stage ${req.rawApp.approval_level + 1}/3)` : "Approve"}
+                                                                                onClick={() => handleActionRequest(req.realId, 'approved', 'enrollment')}
+                                                                                disabled={actioningIds.has(req.realId)}
+                                                                                style={{ opacity: actioningIds.has(req.realId) ? 0.6 : 1 }}
+                                                                            >
+                                                                                {actioningIds.has(req.realId) ? <Loader size={14} style={{ animation: 'spin 0.7s linear infinite' }} /> : <Check size={16} />}
+                                                                            </button>
                                                                         )}
                                                                 </div>
                                                             </td>
@@ -4716,7 +4830,15 @@ export const ManageCourse: React.FC = () => {
                                                                     (userRole === 'coordinator' && (req.stages?.secretary || 'pending').toLowerCase() === 'approved' && (req.stages?.coordinator || 'pending').toLowerCase() === 'pending') ||
                                                                     (userRole === 'director' && (req.stages?.coordinator || 'pending').toLowerCase() === 'approved' && (req.stages?.director || 'pending').toLowerCase() === 'pending')
                                                                 ) && (
-                                                                        <button className="at-action-btn approve" title="Approve Request" onClick={() => handleActionRequest(req.id, 'approved', 'approval')}><Check size={16} /></button>
+                                                                        <button
+                                                                            className="at-action-btn approve"
+                                                                            title="Approve Request"
+                                                                            onClick={() => handleActionRequest(req.id, 'approved', 'approval')}
+                                                                            disabled={actioningIds.has(req.id)}
+                                                                            style={{ opacity: actioningIds.has(req.id) ? 0.6 : 1 }}
+                                                                        >
+                                                                            {actioningIds.has(req.id) ? <Loader size={14} style={{ animation: 'spin 0.7s linear infinite' }} /> : <Check size={16} />}
+                                                                        </button>
                                                                     )}
                                                             </div>
                                                         </td>
