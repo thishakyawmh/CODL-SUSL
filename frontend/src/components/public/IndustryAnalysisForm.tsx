@@ -466,7 +466,7 @@ export function IndustryAnalysisForm() {
                 { }
                 <div className="form-section">
                     <div className="section-header-row">
-                        <h3 className="form-section-title" style={{ borderLeftColor: '#7C3AED' }}>
+                        <h3 className="form-section-title" style={{ borderLeftColor: 'var(--primary-color)' }}>
                             Company Profile
                         </h3>
                     </div>

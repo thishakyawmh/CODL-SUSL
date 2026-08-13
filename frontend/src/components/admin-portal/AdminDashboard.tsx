@@ -75,8 +75,8 @@ const EnrollmentTrendChart: React.FC<{ data: MonthlyData[] }> = ({ data }) => {
                 <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                     <defs>
                         <linearGradient id="colorEnrollment" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#7C3AED" stopOpacity="0.3" />
-                            <stop offset="95%" stopColor="#7C3AED" stopOpacity="0.0" />
+                            <stop offset="5%" stopColor="var(--primary-color)" stopOpacity="0.3" />
+                            <stop offset="95%" stopColor="var(--primary-color)" stopOpacity="0.0" />
                         </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
@@ -97,11 +97,11 @@ const EnrollmentTrendChart: React.FC<{ data: MonthlyData[] }> = ({ data }) => {
                     <Area
                         type="monotone"
                         dataKey="count"
-                        stroke="#7C3AED"
+                        stroke="var(--primary-color)"
                         strokeWidth={3}
                         fillOpacity={1}
                         fill="url(#colorEnrollment)"
-                        activeDot={{ r: 6, stroke: '#FFFFFF', strokeWidth: 2, fill: '#7C3AED' }}
+                        activeDot={{ r: 6, stroke: '#FFFFFF', strokeWidth: 2, fill: 'var(--primary-color)' }}
                     />
                 </AreaChart>
             </ResponsiveContainer>
@@ -123,7 +123,7 @@ const ProgramLevelChart: React.FC<{ data: LevelData[] }> = ({ data }) => {
         );
     }
 
-    const COLORS = ['#7C3AED', '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#64748B'];
+    const COLORS = ['var(--primary-color)', '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#64748B'];
 
     const onPieEnter = (_: any, index: number) => {
         setActiveIndex(index);
@@ -258,7 +258,7 @@ const GeographicHotspotsChart: React.FC<{ data: [string, number][] }> = ({ data 
                             const ratio = count / maxCount;
                             const lightness = 85 - (ratio * 40);
                             fillColor = `hsl(262, 80%, ${lightness}%)`;
-                            strokeColor = '#7C3AED';
+                            strokeColor = 'var(--primary-color)';
                             strokeWidth = '1.5';
                         }
 
@@ -328,7 +328,7 @@ const GeographicHotspotsChart: React.FC<{ data: [string, number][] }> = ({ data 
                                 background: `hsl(262, 80%, ${85 - ((count / maxCount) * 40)}%)`
                             }}></span>
                             <span style={{ fontWeight: 600, color: '#334155', flex: 1 }}>{dist}</span>
-                            <span style={{ fontWeight: 700, color: '#7C3AED', fontSize: '11px' }}>{count}</span>
+                            <span style={{ fontWeight: 700, color: 'var(--primary-color)', fontSize: '11px' }}>{count}</span>
                         </div>
                     ))}
                 </div>
@@ -591,7 +591,7 @@ export const AdminDashboard: React.FC = () => {
         return (
             <div className="admin-dashboard" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '450px' }}>
                 <div style={{ textAlign: 'center', color: '#64748B' }}>
-                    <div style={{ width: '48px', height: '48px', border: '3px solid #E2E8F0', borderTopColor: '#7C3AED', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 16px' }} />
+                    <div style={{ width: '48px', height: '48px', border: '3px solid #E2E8F0', borderTopColor: 'var(--primary-color)', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 16px' }} />
                     <p style={{ fontWeight: 600 }}>Loading dashboard statistics...</p>
                 </div>
             </div>
@@ -646,7 +646,7 @@ export const AdminDashboard: React.FC = () => {
                                             onClick={() => setSelectedTimeframe(tf)}
                                             style={{
                                                 border: 'none',
-                                                background: selectedTimeframe === tf ? '#7C3AED' : 'transparent',
+                                                background: selectedTimeframe === tf ? 'var(--primary-color)' : 'transparent',
                                                 color: selectedTimeframe === tf ? '#FFFFFF' : '#64748B',
                                                 padding: '4px 10px',
                                                 borderRadius: '6px',
@@ -689,15 +689,15 @@ export const AdminDashboard: React.FC = () => {
                                 <AreaChart data={demographics.ageSpread} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
                                     <defs>
                                         <linearGradient id="colorAge" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#7C3AED" stopOpacity={0.3} />
-                                            <stop offset="95%" stopColor="#7C3AED" stopOpacity={0.0} />
+                                            <stop offset="5%" stopColor="var(--primary-color)" stopOpacity={0.3} />
+                                            <stop offset="95%" stopColor="var(--primary-color)" stopOpacity={0.0} />
                                         </linearGradient>
                                     </defs>
                                     <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
                                     <XAxis dataKey="range" tickLine={false} axisLine={false} style={{ fontSize: '11px', fontWeight: 600, fill: '#64748B' }} />
                                     <YAxis tickLine={false} axisLine={false} style={{ fontSize: '11px', fontWeight: 600, fill: '#64748B' }} />
                                     <ChartTooltip content={<CustomTooltip />} />
-                                    <Area type="monotone" dataKey="count" name="Students" stroke="#7C3AED" strokeWidth={2.5} fillOpacity={1} fill="url(#colorAge)" />
+                                    <Area type="monotone" dataKey="count" name="Students" stroke="var(--primary-color)" strokeWidth={2.5} fillOpacity={1} fill="url(#colorAge)" />
                                 </AreaChart>
                             </ResponsiveContainer>
                         </div>
@@ -804,7 +804,7 @@ export const AdminDashboard: React.FC = () => {
                                     </div>
                                     <div className="activity-content">
                                         <div className="activity-action">
-                                            <strong>{log.user}</strong> <span style={{ fontSize: '11px', fontWeight: 600, color: '#7C3AED', background: '#F5F3FF', border: '1px solid #DDD6FE', padding: '2px 8px', borderRadius: '12px', marginLeft: '4px', marginRight: '4px' }}>{log.role}</span> {log.action}
+                                            <strong>{log.user}</strong> <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--primary-color)', background: '#F5F3FF', border: '1px solid #DDD6FE', padding: '2px 8px', borderRadius: '12px', marginLeft: '4px', marginRight: '4px' }}>{log.role}</span> {log.action}
                                         </div>
                                         <div className="activity-target">{log.target}</div>
                                         <div className="activity-time">

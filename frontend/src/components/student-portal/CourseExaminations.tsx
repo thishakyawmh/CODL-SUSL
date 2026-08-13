@@ -284,7 +284,7 @@ export const CourseExaminations: React.FC = () => {
         return (
             <div className="course-examinations-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '400px' }}>
                 <div style={{ textAlign: 'center', color: '#64748B' }}>
-                    <div style={{ width: '48px', height: '48px', border: '3px solid #E2E8F0', borderTopColor: '#7C3AED', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 16px' }} />
+                    <div style={{ width: '48px', height: '48px', border: '3px solid #E2E8F0', borderTopColor: 'var(--primary-color)', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 16px' }} />
                     <p style={{ fontWeight: 600, color: '#64748B' }}>Loading examinations...</p>
                 </div>
             </div>
@@ -346,7 +346,7 @@ export const CourseExaminations: React.FC = () => {
                                 alignItems: 'center',
                                 gap: '8px',
                                 padding: '8px 22px',
-                                background: 'linear-gradient(135deg, #4F46E5, #7C3AED)',
+                                background: 'linear-gradient(135deg, #4F46E5, var(--primary-color))',
                                 color: 'white',
                                 border: 'none',
                                 borderRadius: '50px',
@@ -943,8 +943,8 @@ export const CourseExaminations: React.FC = () => {
                                                 </div>
                                             </div>
                                             {(showDetailsModal.assignedExam.status === 'Results Released' || showDetailsModal.assignedExam.status === 'Result Updated') && (
-                                                <div style={{ marginTop: '20px', background: '#F5F3FF', border: '1px solid #EDE9FE', padding: '16px 20px', borderRadius: '12px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
-                                                    <span style={{ fontSize: '14px', color: '#5B21B6', fontWeight: 700 }}>🎉 Results are released for this assigned exam! Your grade has been updated in your original results sheet.</span>
+                                                <div style={{ marginTop: '20px', background: '#F5F3FF', border: '1px solid var(--primary-light)', padding: '16px 20px', borderRadius: '12px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+                                                    <span style={{ fontSize: '14px', color: 'var(--primary-dark)', fontWeight: 700 }}>🎉 Results are released for this assigned exam! Your grade has been updated in your original results sheet.</span>
                                                     <button
                                                         className="pro-action-btn primary small"
                                                         style={{ width: 'auto', background: '#8B5CF6', color: '#FFFFFF', padding: '8px 24px', borderRadius: '8px' }}

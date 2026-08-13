@@ -32,7 +32,7 @@
     align-items: center;
     gap: 8px;
     padding: 14px 24px;
-    background: linear-gradient(135deg, #4F46E5, #7C3AED);
+    background: linear-gradient(135deg, #4F46E5, var(--primary-color));
     color: white;
     border: none;
     border-radius: 50px;
@@ -522,7 +522,7 @@
 .exam-pro-card[data-status="Pending approvals"] .status-indicator-dot { background: #F59E0B; }
 
 .exam-pro-card[data-status="Results released"] .pro-status-tag,
-.exam-pro-card[data-status="Result Released"] .pro-status-tag { background: #F5F3FF; color: #5B21B6; border-color: #EDE9FE; }
+.exam-pro-card[data-status="Result Released"] .pro-status-tag { background: #F5F3FF; color: var(--primary-dark); border-color: var(--primary-light); }
 .exam-pro-card[data-status="Results released"] .status-indicator-dot,
 .exam-pro-card[data-status="Result Released"] .status-indicator-dot { background: #8B5CF6; }
 
@@ -602,12 +602,12 @@
 .exam-pro-card[data-status="Application rejected"] .status-indicator-dot { background: #EF4444; box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1); }
 .exam-pro-card[data-status="Application pending"] .status-indicator-dot { background: #F59E0B; box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.1); }
 .exam-pro-card[data-status="Results released"] .status-indicator-dot,
-.exam-pro-card[data-status="Result Released"] .status-indicator-dot { background: #7C3AED; box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.1); }
+.exam-pro-card[data-status="Result Released"] .status-indicator-dot { background: var(--primary-color); box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.1); }
 .exam-pro-card[data-status="postponement"] .status-indicator-dot { background: #3B82F6; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); }
 .exam-pro-card[data-status="reattempt"] .status-indicator-dot { background: #F59E0B; box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.1); }
 
 .strip-action-btn { background: #0F172A; }
-.exam-strip-card:hover .strip-action-btn { background: linear-gradient(135deg, #4F46E5, #7C3AED); }
+.exam-strip-card:hover .strip-action-btn { background: linear-gradient(135deg, #4F46E5, var(--primary-color)); }
 
 .exam-card-status { 
     position: absolute;
@@ -900,8 +900,8 @@
     width: 64px;
     height: 64px;
     border-radius: 20px;
-    background: linear-gradient(135deg, #EDE9FE, #F5F3FF);
-    color: #7C3AED;
+    background: linear-gradient(135deg, var(--primary-light), #F5F3FF);
+    color: var(--primary-color);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1386,7 +1386,7 @@
 }
 
 .exam-tab.active:hover {
-    background: #6D28D9;
+    background: var(--primary-hover);
     color: #FFFFFF;
 }
 

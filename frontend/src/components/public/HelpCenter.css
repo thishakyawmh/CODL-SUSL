@@ -107,7 +107,7 @@
 }
 
 .hc-lang-select:focus {
-    border-color: #7C3AED;
+    border-color: var(--primary-color);
     box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.08);
 }
 
@@ -137,21 +137,21 @@
 /* Header Specific Back Button Style (Purple themed on the purple banner) */
 .help-center-header .hc-back-btn {
     background: #FFFFFF;
-    color: #7C3AED;
+    color: var(--primary-color);
     border: none;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .help-center-header .hc-back-btn:hover {
     background: #F8FAFC;
-    color: #6D28D9;
+    color: var(--primary-hover);
     transform: translateY(-2px);
     box-shadow: 0 6px 14px rgba(0, 0, 0, 0.12);
 }
 
 /* Hero Section */
 .help-center-hero {
-    background: linear-gradient(135deg, #5B21B6, #7C3AED);
+    background: linear-gradient(135deg, var(--primary-dark), var(--primary-color));
     padding: 54px 36px;
     border-radius: 24px;
     text-align: center;
@@ -286,7 +286,7 @@
     gap: 8px;
     font-size: 13px;
     font-weight: 700;
-    color: #7C3AED;
+    color: var(--primary-color);
     margin-top: auto;
     transition: all 0.2s ease;
 }
@@ -385,7 +385,7 @@
     width: 24px;
     height: 24px;
     border-radius: 50%;
-    background: #7C3AED;
+    background: var(--primary-color);
     color: #FFFFFF;
     font-size: 12px;
     font-weight: 700;

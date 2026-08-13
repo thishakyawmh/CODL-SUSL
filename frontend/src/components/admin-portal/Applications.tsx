@@ -390,7 +390,7 @@ export const Applications: React.FC = () => {
 
     const getLevelColor = (level: string) => {
         switch (level) {
-            case 'Degree': return { bg: '#EDE9FE', text: '#7C3AED' };
+            case 'Degree': return { bg: 'var(--primary-light)', text: 'var(--primary-color)' };
             case 'Diploma': return { bg: '#DBEAFE', text: '#2563EB' };
             case 'Certificate': return { bg: '#CCFBF1', text: '#0D9488' };
             default: return { bg: '#F1F5F9', text: '#475569' };
@@ -676,7 +676,7 @@ export const Applications: React.FC = () => {
                                 <div className="am-details-grid">
                                     <div className="am-detail-item">
                                         <span className="am-label">Exam Title</span>
-                                        <span className="am-value" style={{ color: '#7C3AED', fontWeight: 600 }}>{selectedApplication.examTitle}</span>
+                                        <span className="am-value" style={{ color: 'var(--primary-color)', fontWeight: 600 }}>{selectedApplication.examTitle}</span>
                                     </div>
                                     <div className="am-detail-item">
                                         <span className="am-label">Semester</span>
@@ -732,7 +732,7 @@ export const Applications: React.FC = () => {
                                                             <td style={{ fontWeight: 600, color: '#475569' }}>{sub.code}</td>
                                                             <td style={{ fontWeight: 600, color: '#1E293B' }}>{sub.name}</td>
                                                             <td style={{ textAlign: 'center' }}>
-                                                                <span className="am-grade-sm" style={{ background: '#EDE9FE', color: '#7C3AED', padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 600 }}>
+                                                                <span className="am-grade-sm" style={{ background: 'var(--primary-light)', color: 'var(--primary-color)', padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 600 }}>
                                                                     {sub.attempt === '1' ? '1st Attempt' :
                                                                         sub.attempt === '2' ? '2nd Attempt' :
                                                                             sub.attempt === '3' ? '3rd Attempt' :
@@ -782,7 +782,7 @@ export const Applications: React.FC = () => {
                                 <div className="am-details-grid">
                                     <div className="am-detail-item full-width">
                                         <span className="am-label">Request For</span>
-                                        <span className="am-value" style={{ color: '#7C3AED', fontWeight: 600 }}>
+                                        <span className="am-value" style={{ color: 'var(--primary-color)', fontWeight: 600 }}>
                                             {selectedApplication.examTitle || selectedApplication.subject || 'Administrative Request'}
                                         </span>
                                     </div>
@@ -1207,7 +1207,7 @@ export const Applications: React.FC = () => {
                                             </div>
                                         </td>
                                         <td>
-                                            <div style={{ fontSize: '13px', fontWeight: 500, color: app.isNewApplicant ? '#94A3B8' : '#7C3AED' }}>
+                                            <div style={{ fontSize: '13px', fontWeight: 500, color: app.isNewApplicant ? '#94A3B8' : 'var(--primary-color)' }}>
                                                 {app.studentNumber || '-'}
                                             </div>
                                         </td>
@@ -1378,7 +1378,7 @@ export const Applications: React.FC = () => {
             {levelFilter === 'all' && !searchTerm && (
                 <div className="cm-stats-row">
                     <div className="cm-stat-card">
-                        <div className="cm-stat-icon" style={{ background: 'linear-gradient(135deg, #7C3AED, #5B21B6)' }}><BookOpen size={20} /></div>
+                        <div className="cm-stat-icon" style={{ background: 'linear-gradient(135deg, var(--primary-color), var(--primary-dark))' }}><BookOpen size={20} /></div>
                         <div className="cm-stat-info">
                             <span className="cm-stat-val">{mockAdminCourses.length}</span>
                             <span className="cm-stat-label">Total Items</span>
@@ -1427,7 +1427,7 @@ export const Applications: React.FC = () => {
             {levelFilter === 'all' && !searchTerm && (
                 <div className="cm-categories-grid">
                     {[
-                        { name: 'Degree', desc: '4-Year Academic Programs', icon: BookOpen, color: '#7C3AED', count: mockAdminCourses.filter(c => c.level === 'Degree').length },
+                        { name: 'Degree', desc: '4-Year Academic Programs', icon: BookOpen, color: 'var(--primary-color)', count: mockAdminCourses.filter(c => c.level === 'Degree').length },
                         { name: 'Higher National Diploma', desc: 'Advanced Professional Diplomas', icon: Layers, color: '#F59E0B', count: mockAdminCourses.filter(c => c.level === 'Higher National Diploma').length },
                         { name: 'Diploma', desc: '1-2 Year Specialized Courses', icon: BookOpen, color: '#3B82F6', count: mockAdminCourses.filter(c => c.level === 'Diploma').length },
                         { name: 'Advanced Certificate', desc: 'Intermediate Level Certifications', icon: Award, color: '#EC4899', count: mockAdminCourses.filter(c => c.level === 'Advanced Certificate').length },

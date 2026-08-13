@@ -52,7 +52,7 @@
 
 .selection-card-icon-wrapper.purple {
     background: #F5F3FF;
-    color: #7C3AED;
+    color: var(--primary-color);
 }
 
 .selection-card-icon-wrapper.blue {
@@ -82,7 +82,7 @@
 }
 
 .selection-arrow {
-    color: #7C3AED;
+    color: var(--primary-color);
     transform: rotate(180deg);
 }
 
@@ -136,7 +136,7 @@
 }
 
 .adv-back-link:hover {
-    color: #7C3AED;
+    color: var(--primary-color);
     transform: translateX(-4px);
 }
 
@@ -163,7 +163,7 @@
 }
 
 .as-card.active-group {
-    border-color: #7C3AED;
+    border-color: var(--primary-color);
     box-shadow: 0 10px 30px rgba(124, 58, 237, 0.08);
 }
 
@@ -250,7 +250,7 @@
 
 .approval-tab.active {
     background: #FFFFFF;
-    color: #7C3AED;
+    color: var(--primary-color);
     font-weight: 600;
     box-shadow: 0 4px 12px rgba(124, 58, 237, 0.1);
 }
@@ -283,7 +283,7 @@
 }
 
 .af-search:focus-within {
-    border-color: #7C3AED;
+    border-color: var(--primary-color);
     box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
 }
 
@@ -341,14 +341,14 @@
 }
 
 .af-status-chip:hover {
-    border-color: #7C3AED;
-    color: #7C3AED;
+    border-color: var(--primary-color);
+    color: var(--primary-color);
 }
 
 .af-status-chip.active {
-    background: #7C3AED;
+    background: var(--primary-color);
     color: #FFFFFF;
-    border-color: #7C3AED;
+    border-color: var(--primary-color);
 }
 
 /* Table */
@@ -416,8 +416,8 @@
     width: 36px;
     height: 36px;
     border-radius: 10px;
-    background: linear-gradient(135deg, #EDE9FE, #DDD6FE);
-    color: #7C3AED;
+    background: linear-gradient(135deg, var(--primary-light), #DDD6FE);
+    color: var(--primary-color);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -442,7 +442,7 @@
 
 .at-reg {
     font-size: 13px;
-    color: #7C3AED;
+    color: var(--primary-color);
     font-weight: 500;
 }
 
@@ -487,8 +487,8 @@
     font-weight: 600;
     padding: 3px 10px;
     border-radius: 6px;
-    background: #EDE9FE;
-    color: #7C3AED;
+    background: var(--primary-light);
+    color: var(--primary-color);
 }
 
 .at-sem-badge {
@@ -586,7 +586,7 @@
 }
 
 .at-action-btn.view:hover {
-    background: #7C3AED;
+    background: var(--primary-color);
     color: #FFFFFF;
     transform: scale(1.1);
 }
@@ -999,7 +999,7 @@
 }
 
 .am-section-divider h4 svg {
-    color: #7C3AED;
+    color: var(--primary-color);
 }
 
 /* Qualification Blocks */
@@ -1063,8 +1063,8 @@
     justify-content: center;
     min-width: 24px;
     height: 24px;
-    background: #EDE9FE;
-    color: #7C3AED;
+    background: var(--primary-light);
+    color: var(--primary-color);
     border-radius: 6px;
     font-weight: 700;
     font-size: 12px;
@@ -1081,7 +1081,7 @@
     background: #F8FAFC;
     padding: 12px;
     border-radius: 8px;
-    border-left: 3px solid #7C3AED;
+    border-left: 3px solid var(--primary-color);
     margin-top: 6px;
 }
 

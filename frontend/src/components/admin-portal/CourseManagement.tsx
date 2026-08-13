@@ -177,7 +177,7 @@ export const CourseManagement: React.FC = () => {
 
     const getLevelColor = (level: string) => {
         switch (level) {
-            case 'Degree': return { bg: '#EDE9FE', text: '#7C3AED' };
+            case 'Degree': return { bg: 'var(--primary-light)', text: 'var(--primary-color)' };
             case 'Diploma': return { bg: '#DBEAFE', text: '#2563EB' };
             case 'Higher National Diploma': return { bg: '#FEF3C7', text: '#D97706' };
             case 'Advanced Certificate': return { bg: '#FCE7F3', text: '#DB2777' };
@@ -190,7 +190,7 @@ export const CourseManagement: React.FC = () => {
         return (
             <div className="cm-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '400px' }}>
                 <div style={{ textAlign: 'center', color: '#64748B' }}>
-                    <div style={{ width: '48px', height: '48px', border: '3px solid #E2E8F0', borderTopColor: '#7C3AED', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 16px' }} />
+                    <div style={{ width: '48px', height: '48px', border: '3px solid #E2E8F0', borderTopColor: 'var(--primary-color)', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 16px' }} />
                     <p style={{ fontWeight: 600 }}>Loading courses...</p>
                 </div>
             </div>
@@ -254,7 +254,7 @@ export const CourseManagement: React.FC = () => {
                         </div>
                     )}
                     <div className="cm-stat-card">
-                        <div className="cm-stat-icon" style={{ background: 'linear-gradient(135deg, #7C3AED, #5B21B6)' }}><BookOpen size={20} /></div>
+                        <div className="cm-stat-icon" style={{ background: 'linear-gradient(135deg, var(--primary-color), var(--primary-dark))' }}><BookOpen size={20} /></div>
                         <div className="cm-stat-info">
                             <span className="cm-stat-val">{allCourses.length}</span>
                             <span className="cm-stat-label">Total Courses</span>
@@ -312,7 +312,7 @@ export const CourseManagement: React.FC = () => {
                 ) : (
                     <div className="cm-categories-grid">
                         {[
-                            { name: 'Degree', desc: '4-Year Academic Programs', icon: BookOpen, color: '#7C3AED', count: allCourses.filter(c => c.level === 'Degree').length },
+                            { name: 'Degree', desc: '4-Year Academic Programs', icon: BookOpen, color: 'var(--primary-color)', count: allCourses.filter(c => c.level === 'Degree').length },
                             { name: 'Higher National Diploma', desc: 'Advanced Professional Diplomas', icon: Layers, color: '#F59E0B', count: allCourses.filter(c => c.level === 'Higher National Diploma').length },
                             { name: 'Diploma', desc: '1-2 Year Specialized Courses', icon: BookOpen, color: '#3B82F6', count: allCourses.filter(c => c.level === 'Diploma').length },
                             { name: 'Advanced Certificate', desc: 'Intermediate Level Certifications', icon: Award, color: '#EC4899', count: allCourses.filter(c => c.level === 'Advanced Certificate').length },

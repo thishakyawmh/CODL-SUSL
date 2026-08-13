@@ -27,7 +27,7 @@
 .header-icon {
     width: 64px;
     height: 64px;
-    background: linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%);
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
     color: white;
     border-radius: 18px;
     display: flex;
@@ -141,7 +141,7 @@
     border-radius: 12px;
     font-family: 'Monaco', 'Menlo', monospace;
     font-weight: 700;
-    color: #7C3AED;
+    color: var(--primary-color);
     text-align: center;
     font-size: 14px;
 }

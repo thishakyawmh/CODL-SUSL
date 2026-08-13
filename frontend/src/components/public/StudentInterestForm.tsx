@@ -620,7 +620,7 @@ export const StudentInterestForm: React.FC = () => {
                     { }
                     <div className="form-section">
                         <div className="section-header-row">
-                            <h3 className="form-section-title" style={{ borderLeftColor: '#7C3AED', marginBottom: 0 }}>
+                            <h3 className="form-section-title" style={{ borderLeftColor: 'var(--primary-color)', marginBottom: 0 }}>
                                 Profile & Contact Details
                             </h3>
                         </div>
@@ -734,7 +734,7 @@ export const StudentInterestForm: React.FC = () => {
                     { }
                     <div className="form-section">
                         <div className="section-header-row">
-                            <h3 className="form-section-title" style={{ borderLeftColor: '#7C3AED', marginBottom: 0 }}>
+                            <h3 className="form-section-title" style={{ borderLeftColor: 'var(--primary-color)', marginBottom: 0 }}>
                                 Primary Academic Interest *
                             </h3>
                         </div>

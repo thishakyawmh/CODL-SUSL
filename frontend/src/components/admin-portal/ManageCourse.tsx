@@ -2376,7 +2376,7 @@ export const ManageCourse: React.FC = () => {
         return (
             <div className="cm-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '400px' }}>
                 <div style={{ textAlign: 'center', color: '#64748B' }}>
-                    <div style={{ width: '48px', height: '48px', border: '3px solid #E2E8F0', borderTopColor: '#7C3AED', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 16px' }} />
+                    <div style={{ width: '48px', height: '48px', border: '3px solid #E2E8F0', borderTopColor: 'var(--primary-color)', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 16px' }} />
                     <p style={{ fontWeight: 600 }}>Loading course...</p>
                 </div>
             </div>
@@ -2493,7 +2493,7 @@ export const ManageCourse: React.FC = () => {
 
                     <div className="admin-header-actions">
                         {!selectedBatch && !activeSection && (userRole === 'secretary' || userRole === 'coordinator' || userRole === 'director') && (
-                            <button className="create-exam-btn" onClick={() => setActiveSection('waitlist')} style={{ background: 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)', boxShadow: '0 4px 15px rgba(124,58,237,0.2)' }}>
+                            <button className="create-exam-btn" onClick={() => setActiveSection('waitlist')} style={{ background: 'linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%)', boxShadow: '0 4px 15px rgba(124,58,237,0.2)' }}>
                                 <List size={18} /> Waitlist
                             </button>
                         )}
@@ -2577,8 +2577,8 @@ export const ManageCourse: React.FC = () => {
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
                                         <div style={{
                                             width: '50px', height: '50px',
-                                            background: 'linear-gradient(135deg, #F5F3FF 0%, #EDE9FE 100%)',
-                                            color: '#7C3AED', borderRadius: '14px',
+                                            background: 'linear-gradient(135deg, #F5F3FF 0%, var(--primary-light) 100%)',
+                                            color: 'var(--primary-color)', borderRadius: '14px',
                                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                                             boxShadow: '0 4px 10px rgba(124, 58, 237, 0.1)'
                                         }}>
@@ -2606,7 +2606,7 @@ export const ManageCourse: React.FC = () => {
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                 <span style={{ fontSize: '11px', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>ENROLLED STUDENTS</span>
-                                                <span style={{ fontSize: '14px', fontWeight: 800, color: '#7C3AED' }}>{enrolledCount} / {maxEnrollment}</span>
+                                                <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--primary-color)' }}>{enrolledCount} / {maxEnrollment}</span>
                                             </div>
                                             {status.label === 'Upcoming' && (
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -2632,7 +2632,7 @@ export const ManageCourse: React.FC = () => {
                                             style={{
                                                 flex: 1, height: '48px', borderRadius: '12px',
                                                 fontSize: '14px', fontWeight: 700,
-                                                background: 'linear-gradient(to right, #7C3AED, #6D28D9)',
+                                                background: 'linear-gradient(to right, var(--primary-color), var(--primary-hover))',
                                                 border: 'none', color: '#FFFFFF', cursor: 'pointer',
                                                 boxShadow: '0 4px 12px rgba(124, 58, 237, 0.2)',
                                                 display: 'flex', alignItems: 'center', justifyContent: 'center'
@@ -2731,7 +2731,7 @@ export const ManageCourse: React.FC = () => {
                             <button
                                 onClick={() => setShowBatchModal(true)}
                                 style={{
-                                    background: 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)',
+                                    background: 'linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%)',
                                     color: '#FFF', border: 'none', padding: '16px 24px',
                                     borderRadius: '30px', display: 'flex', alignItems: 'center', gap: '8px',
                                     fontWeight: 600, fontSize: '15px',
@@ -2760,7 +2760,7 @@ export const ManageCourse: React.FC = () => {
                             borderRadius: '20px',
                             background: 'rgba(124, 58, 237, 0.08)',
                             border: '1px solid rgba(124, 58, 237, 0.2)',
-                            color: '#7C3AED',
+                            color: 'var(--primary-color)',
                             fontSize: '11px',
                             fontWeight: 800,
                             textTransform: 'uppercase',
@@ -2774,8 +2774,8 @@ export const ManageCourse: React.FC = () => {
                                 width: '6px',
                                 height: '6px',
                                 borderRadius: '50%',
-                                background: '#7C3AED',
-                                boxShadow: '0 0 8px #7C3AED'
+                                background: 'var(--primary-color)',
+                                boxShadow: '0 0 8px var(--primary-color)'
                             }}></span>
                             {userRole === 'super_admin' ? 'Super Admin' : userRole.split('_').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
                         </div>
@@ -2943,7 +2943,7 @@ export const ManageCourse: React.FC = () => {
                                                                 padding: '16px',
                                                                 borderRadius: '12px',
                                                                 background: '#F8FAFC',
-                                                                borderLeft: `4px solid ${ann.iconColor || '#7C3AED'}`
+                                                                borderLeft: `4px solid ${ann.iconColor || 'var(--primary-color)'}`
                                                             }}
                                                         >
                                                             <div>
@@ -3338,7 +3338,7 @@ export const ManageCourse: React.FC = () => {
                                                                 </div>
                                                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                                     <span style={{ fontSize: '11px', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>REG. STUDENTS</span>
-                                                                    <span style={{ fontSize: '14px', fontWeight: 800, color: '#7C3AED' }}>{getRegisteredStudentCount(exam)}</span>
+                                                                    <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--primary-color)' }}>{getRegisteredStudentCount(exam)}</span>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -3353,7 +3353,7 @@ export const ManageCourse: React.FC = () => {
                                                                     borderRadius: '12px',
                                                                     fontSize: '14px',
                                                                     fontWeight: 700,
-                                                                    background: 'linear-gradient(to right, #7C3AED, #6D28D9)',
+                                                                    background: 'linear-gradient(to right, var(--primary-color), var(--primary-hover))',
                                                                     border: 'none',
                                                                     color: '#FFFFFF',
                                                                     cursor: 'pointer',
@@ -3432,7 +3432,7 @@ export const ManageCourse: React.FC = () => {
                                                                                 navigate(`/admin/courses/manage/${id}/exams/edit/${exam.id}?batch=${encodeURIComponent(selectedBatch || '')}`);
                                                                             }}
                                                                         >
-                                                                            <Edit2 size={15} style={{ color: '#7C3AED' }} />
+                                                                            <Edit2 size={15} style={{ color: 'var(--primary-color)' }} />
                                                                             Edit
                                                                         </button>
                                                                         <div style={{ height: '1px', background: '#F1F5F9', margin: '0 12px' }} />
@@ -3566,7 +3566,7 @@ export const ManageCourse: React.FC = () => {
                                                             </div>
                                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                                 <span style={{ fontSize: '11px', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase' }}>REG. STUDENTS</span>
-                                                                <span style={{ fontSize: '14px', fontWeight: 800, color: '#7C3AED' }}>{getRegisteredStudentCount(exam)}</span>
+                                                                <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--primary-color)' }}>{getRegisteredStudentCount(exam)}</span>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -3723,7 +3723,7 @@ export const ManageCourse: React.FC = () => {
                                                                                     padding: '10px 20px',
                                                                                     borderRadius: '12px',
                                                                                     border: 'none',
-                                                                                    background: isActive ? '#7C3AED' : 'transparent',
+                                                                                    background: isActive ? 'var(--primary-color)' : 'transparent',
                                                                                     color: isActive ? '#FFFFFF' : '#64748B',
                                                                                     fontWeight: 700,
                                                                                     fontSize: '14px',
@@ -3829,7 +3829,7 @@ export const ManageCourse: React.FC = () => {
                                                                                         cursor: isRefreshing ? 'not-allowed' : 'pointer',
                                                                                         transition: 'all 0.2s ease'
                                                                                     }}
-                                                                                    onMouseEnter={(e) => { if (!isRefreshing) { e.currentTarget.style.background = '#F8FAFC'; e.currentTarget.style.color = '#7C3AED'; } }}
+                                                                                    onMouseEnter={(e) => { if (!isRefreshing) { e.currentTarget.style.background = '#F8FAFC'; e.currentTarget.style.color = 'var(--primary-color)'; } }}
                                                                                     onMouseLeave={(e) => { if (!isRefreshing) { e.currentTarget.style.background = '#FFFFFF'; e.currentTarget.style.color = '#64748B'; } }}
                                                                                 >
                                                                                     <RefreshCw
@@ -4040,21 +4040,21 @@ export const ManageCourse: React.FC = () => {
                                                                                                             height: '32px',
                                                                                                             borderRadius: '8px',
                                                                                                             cursor: 'pointer',
-                                                                                                            border: '1.5px solid #7C3AED',
+                                                                                                            border: '1.5px solid var(--primary-color)',
                                                                                                             background: '#FFFFFF',
-                                                                                                            color: '#7C3AED',
+                                                                                                            color: 'var(--primary-color)',
                                                                                                             display: 'flex',
                                                                                                             alignItems: 'center',
                                                                                                             justifyContent: 'center',
                                                                                                             transition: 'all 0.15s ease'
                                                                                                         }}
                                                                                                         onMouseEnter={(e) => {
-                                                                                                            e.currentTarget.style.background = '#7C3AED';
+                                                                                                            e.currentTarget.style.background = 'var(--primary-color)';
                                                                                                             e.currentTarget.style.color = '#FFFFFF';
                                                                                                         }}
                                                                                                         onMouseLeave={(e) => {
                                                                                                             e.currentTarget.style.background = '#FFFFFF';
-                                                                                                            e.currentTarget.style.color = '#7C3AED';
+                                                                                                            e.currentTarget.style.color = 'var(--primary-color)';
                                                                                                         }}
                                                                                                     >
                                                                                                         <Edit2 size={14} />
@@ -4587,7 +4587,7 @@ export const ManageCourse: React.FC = () => {
                                                                 </div>
                                                             </td>
                                                             <td>
-                                                                <div style={{ fontSize: '13px', fontWeight: 500, color: req.type.toLowerCase() === 'new' ? '#94A3B8' : '#7C3AED' }}>
+                                                                <div style={{ fontSize: '13px', fontWeight: 500, color: req.type.toLowerCase() === 'new' ? '#94A3B8' : 'var(--primary-color)' }}>
                                                                     {req.studentNumber || '-'}
                                                                 </div>
                                                             </td>
@@ -4770,7 +4770,7 @@ export const ManageCourse: React.FC = () => {
                             <button
                                 onClick={() => handleOpenAddWaitlistModal()}
                                 className="create-exam-btn"
-                                style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', height: '40px', padding: '0 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, border: 'none', background: 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)', color: '#FFFFFF', boxShadow: '0 4px 15px rgba(124,58,237,0.2)' }}
+                                style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', height: '40px', padding: '0 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, border: 'none', background: 'linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%)', color: '#FFFFFF', boxShadow: '0 4px 15px rgba(124,58,237,0.2)' }}
                             >
                                 <Plus size={18} /> Add Student
                             </button>
@@ -4814,7 +4814,7 @@ export const ManageCourse: React.FC = () => {
                                                 const isApproved = postponement.status === 'approved';
                                                 return (
                                                     <tr key={postponement.id}>
-                                                        <td style={{ paddingLeft: '24px', fontWeight: 700, color: '#7C3AED' }}>
+                                                        <td style={{ paddingLeft: '24px', fontWeight: 700, color: 'var(--primary-color)' }}>
                                                             {postponement.application_id}
                                                         </td>
                                                         <td>
@@ -4884,7 +4884,7 @@ export const ManageCourse: React.FC = () => {
                                                 const isApproved = reattempt.status === 'approved';
                                                 return (
                                                     <tr key={reattempt.id}>
-                                                        <td style={{ paddingLeft: '24px', fontWeight: 700, color: '#7C3AED' }}>
+                                                        <td style={{ paddingLeft: '24px', fontWeight: 700, color: 'var(--primary-color)' }}>
                                                             {reattempt.application_id}
                                                         </td>
                                                         <td>
@@ -5152,7 +5152,7 @@ export const ManageCourse: React.FC = () => {
                                                                             }));
                                                                         }
                                                                     }}
-                                                                    style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#7C3AED' }}
+                                                                    style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--primary-color)' }}
                                                                 />
                                                                 {subLabel}
                                                             </label>
@@ -5186,7 +5186,7 @@ export const ManageCourse: React.FC = () => {
                                             checked={waitlistForm.approved}
                                             onChange={e => setWaitlistForm(prev => ({ ...prev, approved: e.target.checked }))}
                                             onClick={e => e.stopPropagation()}
-                                            style={{ width: '20px', height: '20px', cursor: 'pointer', accentColor: '#7C3AED', margin: 0 }}
+                                            style={{ width: '20px', height: '20px', cursor: 'pointer', accentColor: 'var(--primary-color)', margin: 0 }}
                                         />
                                         <label htmlFor="addApprovedCheckbox" style={{ fontWeight: 600, color: '#334155', cursor: 'pointer', userSelect: 'none', fontSize: '14px', margin: 0 }}>Application Approved</label>
                                     </div>
@@ -5195,7 +5195,7 @@ export const ManageCourse: React.FC = () => {
 
                             <div className="cm-modal-footer">
                                 <button type="button" className="admin-btn-outline" onClick={() => setShowWaitlistAddModal(false)}>Cancel</button>
-                                <button type="submit" className="create-exam-btn" disabled={isSavingWaitlist} style={{ background: isSavingWaitlist ? '#A78BFA' : 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)', border: 'none', color: '#FFFFFF', opacity: isSavingWaitlist ? 0.7 : 1, cursor: isSavingWaitlist ? 'not-allowed' : 'pointer' }}>{isSavingWaitlist ? 'Saving...' : 'Add to Waitlist'}</button>
+                                <button type="submit" className="create-exam-btn" disabled={isSavingWaitlist} style={{ background: isSavingWaitlist ? '#A78BFA' : 'linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%)', border: 'none', color: '#FFFFFF', opacity: isSavingWaitlist ? 0.7 : 1, cursor: isSavingWaitlist ? 'not-allowed' : 'pointer' }}>{isSavingWaitlist ? 'Saving...' : 'Add to Waitlist'}</button>
                             </div>
                         </form>
                     </div>
@@ -5367,7 +5367,7 @@ export const ManageCourse: React.FC = () => {
                                                                             }));
                                                                         }
                                                                     }}
-                                                                    style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#7C3AED' }}
+                                                                    style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--primary-color)' }}
                                                                 />
                                                                 {subLabel}
                                                             </label>
@@ -5401,7 +5401,7 @@ export const ManageCourse: React.FC = () => {
                                             checked={waitlistForm.approved}
                                             onChange={e => setWaitlistForm(prev => ({ ...prev, approved: e.target.checked }))}
                                             onClick={e => e.stopPropagation()}
-                                            style={{ width: '20px', height: '20px', cursor: 'pointer', accentColor: '#7C3AED', margin: 0 }}
+                                            style={{ width: '20px', height: '20px', cursor: 'pointer', accentColor: 'var(--primary-color)', margin: 0 }}
                                         />
                                         <label htmlFor="editApprovedCheckbox" style={{ fontWeight: 600, color: '#334155', cursor: 'pointer', userSelect: 'none', fontSize: '14px', margin: 0 }}>Application Approved</label>
                                     </div>
@@ -5419,7 +5419,7 @@ export const ManageCourse: React.FC = () => {
                                 </button>
                                 <div style={{ display: 'flex', gap: '12px' }}>
                                     <button type="button" className="admin-btn-outline" onClick={() => { setShowWaitlistEditModal(false); setEditingWaitlistRecord(null); }}>Cancel</button>
-                                    <button type="submit" className="create-exam-btn" disabled={isSavingWaitlist} style={{ background: isSavingWaitlist ? '#A78BFA' : 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)', border: 'none', color: '#FFFFFF', opacity: isSavingWaitlist ? 0.7 : 1, cursor: isSavingWaitlist ? 'not-allowed' : 'pointer' }}>{isSavingWaitlist ? 'Saving...' : 'Save Changes'}</button>
+                                    <button type="submit" className="create-exam-btn" disabled={isSavingWaitlist} style={{ background: isSavingWaitlist ? '#A78BFA' : 'linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%)', border: 'none', color: '#FFFFFF', opacity: isSavingWaitlist ? 0.7 : 1, cursor: isSavingWaitlist ? 'not-allowed' : 'pointer' }}>{isSavingWaitlist ? 'Saving...' : 'Save Changes'}</button>
                                 </div>
                             </div>
                         </form>
@@ -5651,7 +5651,7 @@ export const ManageCourse: React.FC = () => {
                                 <button
                                     type="submit"
                                     className="admin-btn-primary"
-                                    style={{ background: '#7C3AED' }}
+                                    style={{ background: 'var(--primary-color)' }}
                                     disabled={isSubmittingBatch}
                                 >
                                     {isSubmittingBatch ? 'Creating...' : 'Create Batch'}

@@ -820,7 +820,7 @@ export const UserManagement: React.FC = () => {
                         <div className="um-modal-header" style={{ padding: '20px 24px' }}>
                             <div>
                                 <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#1E293B', fontSize: '18px', fontWeight: 700 }}>
-                                    <Key size={20} style={{ color: '#7C3AED' }} /> Confirm Reset Password
+                                    <Key size={20} style={{ color: 'var(--primary-color)' }} /> Confirm Reset Password
                                 </h2>
                                 <p style={{ fontSize: '13px', color: '#64748B', marginTop: '4px', margin: 0 }}>
                                     Are you sure you want to reset this user's password?
@@ -847,7 +847,7 @@ export const UserManagement: React.FC = () => {
                             <button type="button" className="um-btn-cancel" style={{ height: '40px', minWidth: '100px', padding: '0 20px' }} onClick={() => { setShowResetConfirmModal(false); setUserToReset(null); }} disabled={isLoading}>
                                 Cancel
                             </button>
-                            <button type="button" className="um-btn-create" style={{ height: '40px', minWidth: '160px', padding: '0 20px', background: 'linear-gradient(135deg, #7C3AED, #6D28D9)' }} onClick={handleConfirmResetPassword} disabled={isLoading}>
+                            <button type="button" className="um-btn-create" style={{ height: '40px', minWidth: '160px', padding: '0 20px', background: 'linear-gradient(135deg, var(--primary-color), var(--primary-hover))' }} onClick={handleConfirmResetPassword} disabled={isLoading}>
                                 {isLoading ? 'Resetting...' : 'Reset Password'}
                             </button>
                         </div>

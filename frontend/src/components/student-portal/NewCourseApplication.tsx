@@ -342,7 +342,7 @@ export const NewCourseApplication: React.FC = () => {
                         <form onSubmit={handleSubmitApplication} className="attractive-registration-form">
 
                             <div className="form-section-panel">
-                                <h4 className="panel-heading"><BookOpen size={20} style={{ marginRight: '8px', color: '#7C3AED', verticalAlign: 'text-bottom' }} /> 1. Course Selection</h4>
+                                <h4 className="panel-heading"><BookOpen size={20} style={{ marginRight: '8px', color: 'var(--primary-color)', verticalAlign: 'text-bottom' }} /> 1. Course Selection</h4>
                                 <div className="form-grid" style={{ marginBottom: 0, marginTop: 0 }}>
                                     <div className="form-group full-width">
                                         <label>Course Type</label>

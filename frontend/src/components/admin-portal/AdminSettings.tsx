@@ -40,6 +40,7 @@ export const AdminSettings: React.FC = () => {
         contact_phone: '',
         address: '',
         logo: '',
+        primary_color: 'var(--primary-color)',
         website_url: '',
         academic_year: '2025/2026',
         session_timeout: 30,
@@ -729,6 +730,28 @@ export const AdminSettings: React.FC = () => {
                                             <option value="2026/2027">2026/2027</option>
                                         </select>
                                     </div>
+                                    <div className="as-form-group">
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                            <span style={{ display: 'inline-block', width: '12px', height: '12px', borderRadius: '50%', backgroundColor: generalData.primary_color || 'var(--primary-color)', border: '1px solid #CBD5E1' }}></span>
+                                            Primary Theme Color
+                                        </label>
+                                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                                            <input 
+                                                type="color" 
+                                                value={generalData.primary_color || 'var(--primary-color)'} 
+                                                onChange={e => setGeneralData(prev => ({ ...prev, primary_color: e.target.value }))}
+                                                style={{ border: '1px solid #E2E8F0', padding: 0, width: '40px', height: '40px', borderRadius: '8px', cursor: 'pointer', backgroundColor: 'transparent' }}
+                                            />
+                                            <input 
+                                                type="text" 
+                                                value={generalData.primary_color || 'var(--primary-color)'} 
+                                                onChange={e => setGeneralData(prev => ({ ...prev, primary_color: e.target.value }))}
+                                                placeholder="var(--primary-color)"
+                                                maxLength={7}
+                                                style={{ width: '120px', fontFamily: 'monospace', textTransform: 'uppercase' }}
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         )
@@ -946,10 +969,10 @@ export const AdminSettings: React.FC = () => {
                                 <div style={{ background: '#F8FAFC', border: '1px solid #F1F5F9', padding: '20px', borderRadius: '12px' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '13px', fontWeight: 600, color: '#475569' }}>
                                         <span>Cache Hit Rate</span>
-                                        <span style={{ color: '#7C3AED', fontWeight: 700 }}>94.2%</span>
+                                        <span style={{ color: 'var(--primary-color)', fontWeight: 700 }}>94.2%</span>
                                     </div>
                                     <div style={{ width: '100%', height: '8px', background: '#E2E8F0', borderRadius: '4px', overflow: 'hidden' }}>
-                                        <div style={{ width: '94.2%', height: '100%', background: '#7C3AED', borderRadius: '4px' }}></div>
+                                        <div style={{ width: '94.2%', height: '100%', background: 'var(--primary-color)', borderRadius: '4px' }}></div>
                                     </div>
                                     <span style={{ fontSize: '11px', color: '#94A3B8', marginTop: '6px', display: 'block' }}>Redis Cache Driver Active</span>
                                 </div>

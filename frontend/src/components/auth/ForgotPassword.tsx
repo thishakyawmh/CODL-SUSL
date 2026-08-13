@@ -130,7 +130,7 @@ export const ForgotPassword: React.FC = () => {
                         </button>
 
                         <div className="auth-card existing-student-card">
-                            <div className="card-top-indicator" style={{ background: '#7C3AED' }}></div>
+                            <div className="card-top-indicator" style={{ background: 'var(--primary-color)' }}></div>
                             <div className="auth-card-header">
                                 <div className="icon-wrapper purple-icon">
                                     <Mail size={20} />

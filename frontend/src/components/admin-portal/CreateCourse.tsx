@@ -356,8 +356,8 @@ export const CreateCourse: React.FC = () => {
                 { }
                 <div className="form-section-card" style={{ border: '2px solid #7C3AED20', background: '#F5F3FF40' }}>
                     <div className="section-header">
-                        <Layers size={20} color="#7C3AED" />
-                        <h3 style={{ color: '#7C3AED' }}>Course Category</h3>
+                        <Layers size={20} color="var(--primary-color)" />
+                        <h3 style={{ color: 'var(--primary-color)' }}>Course Category</h3>
                     </div>
                     <div className="cm-form-grid">
                         <div className="cm-form-group full-width">

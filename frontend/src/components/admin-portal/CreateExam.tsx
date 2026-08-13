@@ -219,7 +219,7 @@ export const CreateExam: React.FC = () => {
         return (
             <div className="cm-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '400px' }}>
                 <div style={{ textAlign: 'center', color: '#64748B' }}>
-                    <div style={{ width: '48px', height: '48px', border: '3px solid #E2E8F0', borderTopColor: '#7C3AED', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 16px' }} />
+                    <div style={{ width: '48px', height: '48px', border: '3px solid #E2E8F0', borderTopColor: 'var(--primary-color)', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 16px' }} />
                     <p style={{ fontWeight: 600 }}>Loading course details...</p>
                 </div>
             </div>
@@ -396,10 +396,10 @@ export const CreateExam: React.FC = () => {
                                     input.click();
                                 }}
                             >
-                                <div style={{ color: '#7C3AED', marginBottom: '12px' }}>
+                                <div style={{ color: 'var(--primary-color)', marginBottom: '12px' }}>
                                     <div style={{ width: '40px', height: '40px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                         {isUploading ? (
-                                            <div style={{ width: '28px', height: '28px', border: '3px solid #E2E8F0', borderTopColor: '#7C3AED', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                                            <div style={{ width: '28px', height: '28px', border: '3px solid #E2E8F0', borderTopColor: 'var(--primary-color)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
                                         ) : (
                                             <FileText size={40} style={{ opacity: 0.6 }} />
                                         )}

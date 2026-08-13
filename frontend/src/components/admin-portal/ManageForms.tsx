@@ -373,7 +373,7 @@ export const ManageForms: React.FC = () => {
                         style={{ padding: '64px 44px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '28px', transition: 'transform 0.2s, box-shadow 0.2s', border: '1.5px solid #E2E8F0' }}
                         onMouseEnter={(e) => {
                             e.currentTarget.style.transform = 'translateY(-4px)';
-                            e.currentTarget.style.borderColor = '#7C3AED';
+                            e.currentTarget.style.borderColor = 'var(--primary-color)';
                             e.currentTarget.style.boxShadow = '0 12px 24px rgba(124, 58, 237, 0.08)';
                         }}
                         onMouseLeave={(e) => {
@@ -382,7 +382,7 @@ export const ManageForms: React.FC = () => {
                             e.currentTarget.style.boxShadow = 'none';
                         }}
                     >
-                        <div style={{ width: '100px', height: '100px', borderRadius: '50%', backgroundColor: '#EDE9FE', color: '#7C3AED', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ width: '100px', height: '100px', borderRadius: '50%', backgroundColor: 'var(--primary-light)', color: 'var(--primary-color)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <GraduationCap size={50} />
                         </div>
                         <div>
@@ -476,9 +476,9 @@ export const ManageForms: React.FC = () => {
                                 fontSize: '15px',
                                 fontWeight: 600,
                                 border: 'none',
-                                borderBottom: manageTab === 'interests' ? '2.5px solid #7c3aed' : '2.5px solid transparent',
+                                borderBottom: manageTab === 'interests' ? '2.5px solid var(--primary-color)' : '2.5px solid transparent',
                                 backgroundColor: 'transparent',
-                                color: manageTab === 'interests' ? '#7c3aed' : '#64748b',
+                                color: manageTab === 'interests' ? 'var(--primary-color)' : '#64748b',
                                 cursor: 'pointer',
                                 transition: 'all 0.2s',
                                 fontFamily: 'inherit'
@@ -496,9 +496,9 @@ export const ManageForms: React.FC = () => {
                                 fontSize: '15px',
                                 fontWeight: 600,
                                 border: 'none',
-                                borderBottom: manageTab === 'methods' ? '2.5px solid #7c3aed' : '2.5px solid transparent',
+                                borderBottom: manageTab === 'methods' ? '2.5px solid var(--primary-color)' : '2.5px solid transparent',
                                 backgroundColor: 'transparent',
-                                color: manageTab === 'methods' ? '#7c3aed' : '#64748b',
+                                color: manageTab === 'methods' ? 'var(--primary-color)' : '#64748b',
                                 cursor: 'pointer',
                                 transition: 'all 0.2s',
                                 fontFamily: 'inherit'
@@ -516,9 +516,9 @@ export const ManageForms: React.FC = () => {
                                 fontSize: '15px',
                                 fontWeight: 600,
                                 border: 'none',
-                                borderBottom: manageTab === 'opportunities' ? '2.5px solid #7c3aed' : '2.5px solid transparent',
+                                borderBottom: manageTab === 'opportunities' ? '2.5px solid var(--primary-color)' : '2.5px solid transparent',
                                 backgroundColor: 'transparent',
-                                color: manageTab === 'opportunities' ? '#7c3aed' : '#64748b',
+                                color: manageTab === 'opportunities' ? 'var(--primary-color)' : '#64748b',
                                 cursor: 'pointer',
                                 transition: 'all 0.2s',
                                 fontFamily: 'inherit'
@@ -583,7 +583,7 @@ export const ManageForms: React.FC = () => {
                                                 <span style={{ fontSize: '16px', fontWeight: 700, color: '#0F172A' }}>{cfg.interest_field}</span>
                                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                                                     {cfg.skills.map((skill: string) => (
-                                                        <span key={skill} style={{ fontSize: '11px', fontWeight: 600, padding: '4px 10px', background: '#EDE9FE', color: '#7C3AED', borderRadius: '20px' }}>
+                                                        <span key={skill} style={{ fontSize: '11px', fontWeight: 600, padding: '4px 10px', background: 'var(--primary-light)', color: 'var(--primary-color)', borderRadius: '20px' }}>
                                                             {skill}
                                                         </span>
                                                     ))}
@@ -712,7 +712,7 @@ export const ManageForms: React.FC = () => {
                                 ) : (
                                     opportunitiesList.map(opp => (
                                         <div key={opp.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 14px', background: '#FDF4FF', border: '1px solid #E9D5FF', borderRadius: '100px' }}>
-                                            <span style={{ fontSize: '14px', fontWeight: 600, color: '#7C3AED' }}>{opp.opportunity_name}</span>
+                                            <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--primary-color)' }}>{opp.opportunity_name}</span>
                                             <button
                                                 style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', padding: '2px', borderRadius: '50%' }}
                                                 onClick={() => handleDeleteOpportunity(opp.id)}

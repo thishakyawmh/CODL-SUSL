@@ -619,7 +619,7 @@ export const ManageExamStudents: React.FC = () => {
         return (
             <div className="cm-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
                 <div style={{ textAlign: 'center', color: '#64748B' }}>
-                    <div style={{ width: '48px', height: '48px', border: '3px solid #E2E8F0', borderTopColor: '#7C3AED', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 16px' }} />
+                    <div style={{ width: '48px', height: '48px', border: '3px solid #E2E8F0', borderTopColor: 'var(--primary-color)', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 16px' }} />
                     <p style={{ fontWeight: 600, margin: 0 }}>Loading students...</p>
                 </div>
             </div>
@@ -644,7 +644,7 @@ export const ManageExamStudents: React.FC = () => {
                         <div>
                             <h1 style={{ fontSize: '28px', fontWeight: 800, color: '#0F172A', margin: 0 }}>Manage Students</h1>
                             <p style={{ color: '#64748B', margin: '6px 0 0 0', fontSize: '15px' }}>
-                                {courseTitle} {examBatch && `• ${examBatch}`} • <span style={{ fontWeight: 700, color: '#7C3AED' }}>{examName}</span>
+                                {courseTitle} {examBatch && `• ${examBatch}`} • <span style={{ fontWeight: 700, color: 'var(--primary-color)' }}>{examName}</span>
                             </p>
                         </div>
                         <div style={{ display: 'flex', gap: '12px' }}>
@@ -673,7 +673,7 @@ export const ManageExamStudents: React.FC = () => {
                 <div className="create-course-form" style={{ marginTop: '24px' }}>
                     { }
                     <div style={{
-                        background: 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)',
+                        background: 'linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%)',
                         borderRadius: '20px',
                         padding: '24px 32px',
                         marginBottom: '28px',
@@ -717,7 +717,7 @@ export const ManageExamStudents: React.FC = () => {
                                     padding: '10px 20px',
                                     borderRadius: '12px',
                                     border: 'none',
-                                    background: activeTab === tab.key ? '#7C3AED' : 'transparent',
+                                    background: activeTab === tab.key ? 'var(--primary-color)' : 'transparent',
                                     color: activeTab === tab.key ? '#FFFFFF' : '#64748B',
                                     fontWeight: 700,
                                     fontSize: '14px',
@@ -790,7 +790,7 @@ export const ManageExamStudents: React.FC = () => {
                                             cursor: isRefreshing ? 'not-allowed' : 'pointer',
                                             transition: 'all 0.2s ease'
                                         }}
-                                        onMouseEnter={(e) => { if (!isRefreshing) { e.currentTarget.style.background = '#F8FAFC'; e.currentTarget.style.color = '#7C3AED'; } }}
+                                        onMouseEnter={(e) => { if (!isRefreshing) { e.currentTarget.style.background = '#F8FAFC'; e.currentTarget.style.color = 'var(--primary-color)'; } }}
                                         onMouseLeave={(e) => { if (!isRefreshing) { e.currentTarget.style.background = '#FFFFFF'; e.currentTarget.style.color = '#64748B'; } }}
                                     >
                                         <RefreshCw 
@@ -940,9 +940,9 @@ export const ManageExamStudents: React.FC = () => {
                                                                             height: '32px',
                                                                             borderRadius: '8px',
                                                                             cursor: 'pointer',
-                                                                            border: '1.5px solid #7C3AED',
+                                                                            border: '1.5px solid var(--primary-color)',
                                                                             background: '#FFFFFF',
-                                                                            color: '#7C3AED',
+                                                                            color: 'var(--primary-color)',
                                                                             display: 'flex',
                                                                             alignItems: 'center',
                                                                             justifyContent: 'center',
@@ -1022,7 +1022,7 @@ export const ManageExamStudents: React.FC = () => {
                                             cursor: isRefreshing ? 'not-allowed' : 'pointer',
                                             transition: 'all 0.2s ease'
                                         }}
-                                        onMouseEnter={(e) => { if (!isRefreshing) { e.currentTarget.style.background = '#F8FAFC'; e.currentTarget.style.color = '#7C3AED'; } }}
+                                        onMouseEnter={(e) => { if (!isRefreshing) { e.currentTarget.style.background = '#F8FAFC'; e.currentTarget.style.color = 'var(--primary-color)'; } }}
                                         onMouseLeave={(e) => { if (!isRefreshing) { e.currentTarget.style.background = '#FFFFFF'; e.currentTarget.style.color = '#64748B'; } }}
                                     >
                                         <RefreshCw 
@@ -1083,7 +1083,7 @@ export const ManageExamStudents: React.FC = () => {
                                                             <span style={{
                                                                 padding: '4px 8px',
                                                                 background: '#F5F3FF',
-                                                                color: '#6D28D9',
+                                                                color: 'var(--primary-hover)',
                                                                 borderRadius: '6px',
                                                                 fontSize: '11px',
                                                                 fontWeight: 700
@@ -1169,7 +1169,7 @@ export const ManageExamStudents: React.FC = () => {
                                             cursor: isRefreshing ? 'not-allowed' : 'pointer',
                                             transition: 'all 0.2s ease'
                                         }}
-                                        onMouseEnter={(e) => { if (!isRefreshing) { e.currentTarget.style.background = '#F8FAFC'; e.currentTarget.style.color = '#7C3AED'; } }}
+                                        onMouseEnter={(e) => { if (!isRefreshing) { e.currentTarget.style.background = '#F8FAFC'; e.currentTarget.style.color = 'var(--primary-color)'; } }}
                                         onMouseLeave={(e) => { if (!isRefreshing) { e.currentTarget.style.background = '#FFFFFF'; e.currentTarget.style.color = '#64748B'; } }}
                                     >
                                         <RefreshCw 
@@ -1330,13 +1330,13 @@ export const ManageExamStudents: React.FC = () => {
                                                 <div style={{ flex: 1 }}>
                                                     <div style={{ fontWeight: 600, color: '#1E293B', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                                                         <span>{pp.studentNumber}{pp.batch ? ` , ${pp.batch}` : ''}</span>
-                                                        {pp.application_id && <span style={{ padding: '2px 6px', background: '#F5F3FF', color: '#6D28D9', borderRadius: '4px', fontSize: '9px', fontWeight: 700 }}>{pp.application_id}</span>}
+                                                        {pp.application_id && <span style={{ padding: '2px 6px', background: '#F5F3FF', color: 'var(--primary-hover)', borderRadius: '4px', fontSize: '9px', fontWeight: 700 }}>{pp.application_id}</span>}
                                                     </div>
                                                     <div style={{ fontSize: '12px', color: '#64748B', marginTop: '4px' }}>{pp.studentName}</div>
                                                 </div>
                                                 <input
                                                     type="checkbox"
-                                                    style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#7C3AED' }}
+                                                    style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--primary-color)' }}
                                                     checked={isChecked}
                                                     onChange={(e) => {
                                                         if (e.target.checked) {
@@ -1509,7 +1509,7 @@ export const ManageExamStudents: React.FC = () => {
                                     style={{
                                         background: 'none',
                                         border: 'none',
-                                        color: '#7C3AED',
+                                        color: 'var(--primary-color)',
                                         fontSize: '13px',
                                         fontWeight: 700,
                                         cursor: 'pointer'
@@ -1549,7 +1549,7 @@ export const ManageExamStudents: React.FC = () => {
                                                 </div>
                                                 <input
                                                     type="checkbox"
-                                                    style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#7C3AED' }}
+                                                    style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--primary-color)' }}
                                                     checked={isChecked}
                                                     onChange={(e) => {
                                                         if (e.target.checked) {
@@ -1641,7 +1641,7 @@ export const ManageExamStudents: React.FC = () => {
                             <div className="modal-body" style={{ padding: '24px', overflowY: 'auto', maxHeight: '60vh' }}>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid #F1F5F9', paddingBottom: '8px' }}>
-                                        <User size={16} style={{ color: '#7C3AED' }} />
+                                        <User size={16} style={{ color: 'var(--primary-color)' }} />
                                         <span style={{ fontWeight: 700, color: '#1E293B', fontSize: '14px' }}>Personal Information</span>
                                     </div>
 
@@ -1673,7 +1673,7 @@ export const ManageExamStudents: React.FC = () => {
                                     </div>
 
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid #F1F5F9', paddingBottom: '8px', marginTop: '16px' }}>
-                                        <MapPin size={16} style={{ color: '#7C3AED' }} />
+                                        <MapPin size={16} style={{ color: 'var(--primary-color)' }} />
                                         <span style={{ fontWeight: 700, color: '#1E293B', fontSize: '14px' }}>Address Details</span>
                                     </div>
 
@@ -1689,7 +1689,7 @@ export const ManageExamStudents: React.FC = () => {
                                     </div>
 
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid #F1F5F9', paddingBottom: '8px', marginTop: '16px' }}>
-                                        <FileText size={16} style={{ color: '#7C3AED' }} />
+                                        <FileText size={16} style={{ color: 'var(--primary-color)' }} />
                                         <span style={{ fontWeight: 700, color: '#1E293B', fontSize: '14px' }}>Application Details</span>
                                     </div>
 
@@ -1733,7 +1733,7 @@ export const ManageExamStudents: React.FC = () => {
                                     </div>
 
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid #F1F5F9', paddingBottom: '8px', marginTop: '16px' }}>
-                                        <CreditCard size={16} style={{ color: '#7C3AED' }} />
+                                        <CreditCard size={16} style={{ color: 'var(--primary-color)' }} />
                                         <span style={{ fontWeight: 700, color: '#1E293B', fontSize: '14px' }}>Payment Details</span>
                                     </div>
 
