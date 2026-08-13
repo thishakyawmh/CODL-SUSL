@@ -1298,27 +1298,15 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                 </button>
             </div>
 
-<<<<<<< HEAD
             {/* Tab 1: AI Insights */}
-            <div className="pdf-insights-section" style={{ display: activeTab === 'insights' ? 'flex' : 'none' }}>
-                <h3 className="pdf-only-title" style={{ display: 'none', fontSize: '20px', fontWeight: 800, color: '#1E293B', borderBottom: '2px solid #E2E8F0', paddingBottom: '8px', marginBottom: '24px', marginTop: '24px' }}>I. AI Analytics & Survey Insights</h3>
-
-                {/* Category 1: Curriculum & Teaching Delivery */}
-                <div className="category-section category-purple">
-                    <div className="category-header">
-                        <div className="category-title-wrapper">
-                            <div className="category-icon-box purple">
-=======
-            { }
             <div className="pdf-insights-section" style={{ display: activeTab === 'insights' ? 'flex' : 'none', flexDirection: 'column', gap: '36px' }}>
                 <h3 className="pdf-only-title" style={{ display: 'none', fontSize: '20px', fontWeight: 800, color: '#1E293B', borderBottom: '2px solid #E2E8F0', paddingBottom: '8px', marginBottom: '24px', marginTop: '24px' }}>I. AI Analytics & Survey Insights</h3>
 
-                { }
+                {/* Category 1: Curriculum & Delivery Insights */}
                 <div className="category-section" style={{ background: '#FAF5FF50', border: '1px solid #7C3AED10', padding: '28px', borderRadius: '24px', boxShadow: '0 4px 20px rgba(124, 58, 237, 0.02)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                             <div style={{ backgroundColor: '#F3E8FF', color: '#7C3AED', padding: '10px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
->>>>>>> 8dbe9391d3e5782e6f39b08ef90e1606ebddfd33
                                 <BookOpen size={20} />
                             </div>
                             <div className="category-title-text">
@@ -1337,17 +1325,10 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                             </div>
                         </div>
 
-<<<<<<< HEAD
                         {/* Score badge next to the title (right corner) */}
-                        <div className="category-score-badge">
-                            <span className="score-val">{overview.coverage_percent !== null ? `${overview.coverage_percent}%` : 'N/A'}</span>
-                            <span className="score-label">Curriculum Coverage</span>
-=======
-                        { }
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', backgroundColor: '#F3E8FF70', padding: '10px 18px', borderRadius: '16px', border: '1px solid #7C3AED15' }}>
                             <span style={{ fontSize: '24px', fontWeight: 800, color: '#7C3AED', lineHeight: 1.1 }}>{overview.coverage_percent !== null ? `${overview.coverage_percent}%` : 'N/A'}</span>
                             <span style={{ fontSize: '12px', fontWeight: 500, color: '#6B21A8', marginTop: '4px' }}>Curriculum Coverage</span>
->>>>>>> 8dbe9391d3e5782e6f39b08ef90e1606ebddfd33
                         </div>
                     </div>
 
@@ -1589,7 +1570,6 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                                             <span>Theory ({overview.learning_preferences_data?.student_theory_percent || 0}%)</span>
                                             <span>Practical ({overview.learning_preferences_data?.student_practical_percent || 0}%)</span>
                                         </div>
-<<<<<<< HEAD
                                         <div style={{ width: '100%', height: '24px', borderRadius: '12px', display: 'flex', overflow: 'hidden', backgroundColor: '#F1F5F9', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.06)' }}>
                                             {(overview.learning_preferences_data?.student_theory_percent || 0) > 0 && (
                                                 <div style={{ width: `${overview.learning_preferences_data?.student_theory_percent || 0}%`, backgroundColor: '#C084FC', height: '100%', transition: 'all 0.5s ease' }} />
@@ -1614,90 +1594,87 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                                     </div>
                                 </div>
                             </div>
-=======
-                                    );
-                                })()}
-                                {/* Preferred Learning & Training Methods */}
-                                <div className="ai-chart-card" style={{ marginTop: '20px' }}>
-                                    <h4>Preferred Learning & Training Methods</h4>
-                                    <p className="text-slate-400 text-xs mb-4" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Teaching and training modes preferred by applicants and employers ranked by weighted overall demand (70% Industry / 30% Student).</p>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '12px' }}>
-                                        {(() => {
-                                            const studentMethods = overview.learning_preferences_data?.student_methods || [];
-                                            const industryPractices = overview.learning_preferences_data?.industry_practices || [];
 
-                                            const methodMap: Record<string, { student: number; industry: number }> = {};
+                            {/* Preferred Learning & Training Methods */}
+                            <div className="ai-chart-card" style={{ marginTop: '20px' }}>
+                                <h4>Preferred Learning & Training Methods</h4>
+                                <p className="text-slate-400 text-xs mb-4" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Teaching and training modes preferred by applicants and employers ranked by weighted overall demand (70% Industry / 30% Student).</p>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '12px' }}>
+                                    {(() => {
+                                        const studentMethods = overview.learning_preferences_data?.student_methods || [];
+                                        const industryPractices = overview.learning_preferences_data?.industry_practices || [];
 
-                                            studentMethods.forEach((m: any) => {
-                                                const name = m.name;
-                                                if (!methodMap[name]) {
-                                                    methodMap[name] = { student: 0, industry: 0 };
-                                                }
-                                                methodMap[name].student = m.value;
-                                            });
+                                        const methodMap: Record<string, { student: number; industry: number }> = {};
 
-                                            industryPractices.forEach((p: any) => {
-                                                const name = p.name;
-                                                if (!methodMap[name]) {
-                                                    methodMap[name] = { student: 0, industry: 0 };
-                                                }
-                                                methodMap[name].industry = p.value;
-                                            });
-
-                                            const combinedMethods = Object.keys(methodMap).map(name => {
-                                                const { student, industry } = methodMap[name];
-                                                const overallVal = Math.round((industry * 0.70) + (student * 0.30));
-                                                const studentMatch = studentMethods.find((m: any) => m.name === name);
-                                                const alignmentLevel = studentMatch?.alignment_level || (overallVal >= 15 ? 'High' : (overallVal >= 8 ? 'Medium' : 'Low'));
-
-                                                return {
-                                                    name,
-                                                    studentVal: student,
-                                                    industryVal: industry,
-                                                    overallVal,
-                                                    alignment_level: alignmentLevel
-                                                };
-                                            });
-
-                                            const topMethods = combinedMethods
-                                                .sort((a, b) => b.overallVal - a.overallVal)
-                                                .slice(0, 4);
-
-                                            if (topMethods.length === 0) {
-                                                return <div className="text-center text-slate-400 py-6 text-sm">Insufficient data points.</div>;
+                                        studentMethods.forEach((m: any) => {
+                                            const name = m.name;
+                                            if (!methodMap[name]) {
+                                                methodMap[name] = { student: 0, industry: 0 };
                                             }
+                                            methodMap[name].student = m.value;
+                                        });
 
-                                            return topMethods.map((item: any, idx: number) => (
-                                                <div key={idx} style={{
-                                                    borderBottom: '1px solid #F1F5F9',
-                                                    paddingBottom: '12px',
-                                                    fontSize: '13px'
-                                                }}>
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                                                        <span style={{ fontWeight: 700, color: '#1E293B' }}>{item.name}</span>
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                            <span style={{ fontWeight: 800, color: '#7C3AED' }}>{item.overallVal}% Overall Demand</span>
-                                                            <span style={{
-                                                                backgroundColor: item.alignment_level === 'High' ? '#DCFCE7' : (item.alignment_level === 'Medium' ? '#FEF3C7' : '#F1F5F9'),
-                                                                color: item.alignment_level === 'High' ? '#15803D' : (item.alignment_level === 'Medium' ? '#B45309' : '#475569'),
-                                                                padding: '2px 6px',
-                                                                borderRadius: '6px',
-                                                                fontSize: '10px',
-                                                                fontWeight: 700
-                                                            }}>
-                                                                {item.alignment_level} Alignment
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                    <div className="bar-bg" style={{ height: '8px', backgroundColor: '#F3F4F6', borderRadius: '4px', margin: '4px 0 0 0' }}>
-                                                        <div className="bar-fill purple" style={{ width: `${item.overallVal}%`, height: '100%', backgroundColor: '#8B5CF6', borderRadius: '4px' }}></div>
+                                        industryPractices.forEach((p: any) => {
+                                            const name = p.name;
+                                            if (!methodMap[name]) {
+                                                methodMap[name] = { student: 0, industry: 0 };
+                                            }
+                                            methodMap[name].industry = p.value;
+                                        });
+
+                                        const combinedMethods = Object.keys(methodMap).map(name => {
+                                            const { student, industry } = methodMap[name];
+                                            const overallVal = Math.round((industry * 0.70) + (student * 0.30));
+                                            const studentMatch = studentMethods.find((m: any) => m.name === name);
+                                            const alignmentLevel = studentMatch?.alignment_level || (overallVal >= 15 ? 'High' : (overallVal >= 8 ? 'Medium' : 'Low'));
+
+                                            return {
+                                                name,
+                                                studentVal: student,
+                                                industryVal: industry,
+                                                overallVal,
+                                                alignment_level: alignmentLevel
+                                            };
+                                        });
+
+                                        const topMethods = combinedMethods
+                                            .sort((a, b) => b.overallVal - a.overallVal)
+                                            .slice(0, 4);
+
+                                        if (topMethods.length === 0) {
+                                            return <div className="text-center text-slate-400 py-6 text-sm">Insufficient data points.</div>;
+                                        }
+
+                                        return topMethods.map((item: any, idx: number) => (
+                                            <div key={idx} style={{
+                                                borderBottom: '1px solid #F1F5F9',
+                                                paddingBottom: '12px',
+                                                fontSize: '13px'
+                                            }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                                                    <span style={{ fontWeight: 700, color: '#1E293B' }}>{item.name}</span>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                        <span style={{ fontWeight: 800, color: '#7C3AED' }}>{item.overallVal}% Overall Demand</span>
+                                                        <span style={{
+                                                            backgroundColor: item.alignment_level === 'High' ? '#DCFCE7' : (item.alignment_level === 'Medium' ? '#FEF3C7' : '#F1F5F9'),
+                                                            color: item.alignment_level === 'High' ? '#15803D' : (item.alignment_level === 'Medium' ? '#B45309' : '#475569'),
+                                                            padding: '2px 6px',
+                                                            borderRadius: '6px',
+                                                            fontSize: '10px',
+                                                            fontWeight: 700
+                                                        }}>
+                                                            {item.alignment_level} Alignment
+                                                        </span>
                                                     </div>
                                                 </div>
-                                            ));
-                                        })()}
-                                    </div>
-                                </div>                            </div>
->>>>>>> 8dbe9391d3e5782e6f39b08ef90e1606ebddfd33
+                                                <div className="bar-bg" style={{ height: '8px', backgroundColor: '#F3F4F6', borderRadius: '4px', margin: '4px 0 0 0' }}>
+                                                    <div className="bar-fill purple" style={{ width: `${item.overallVal}%`, height: '100%', backgroundColor: '#8B5CF6', borderRadius: '4px' }}></div>
+                                                </div>
+                                            </div>
+                                        ));
+                                    })()}
+                                </div>
+                            </div>
                         </div>
                     )}
                 </div>
@@ -1722,76 +1699,6 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                         </div>
                     </div>
 
-<<<<<<< HEAD
-                    <div className="ai-category-grid">
-                        {/* Combined Curriculum Demand (Gaps) */}
-                        <div className="ai-chart-card" style={{ margin: 0 }}>
-                            <h4 className="ai-card-title">Combined Curriculum Demand</h4>
-                            <p className="ai-card-subtitle">Combined demand scores for curriculum gaps from industry and student tables.</p>
-                            <div className="ai-chart-body" style={{ marginTop: '12px' }}>
-                                {overview.missing_subjects && overview.missing_subjects.length > 0 ? (
-                                    overview.missing_subjects.map((sub: any, idx: number) => (
-                                        <div key={idx} className="chart-bar-row">
-                                            <div className="label"><span>{sub.name}</span> <span>{sub.combined_pct}%</span></div>
-                                            <div className="bar-bg"><div className="bar-fill purple" style={{ width: `${sub.combined_pct}%` }}></div></div>
-                                        </div>
-                                    ))
-                                ) : (
-                                    <div className="text-center text-slate-400 py-6 text-sm">No curriculum gaps detected.</div>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Training Practices Requested */}
-                        <div className="ai-chart-card" style={{ margin: 0 }}>
-                            <h4 className="ai-card-title">Training Practices Requested</h4>
-                            <p className="ai-card-subtitle">Academic training methods requested by graduate employers.</p>
-                            <div className="ai-chart-body" style={{ marginTop: '12px' }}>
-                                {overview.learning_preferences_data?.industry_practices && overview.learning_preferences_data?.industry_practices.length > 0 ? (
-                                    overview.learning_preferences_data.industry_practices.map((p: any, idx: number) => (
-                                        <div key={idx} className="chart-bar-row">
-                                            <div className="label"><span>{p.name}</span> <span>{p.value}%</span></div>
-                                            <div className="bar-bg"><div className="bar-fill indigo" style={{ width: `${p.value}%` }}></div></div>
-                                        </div>
-                                    ))
-                                ) : (
-                                    <div className="text-center text-slate-400 py-6 text-sm">Insufficient data points.</div>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Student Learning Preferences (Spans full width in row 2) */}
-                        <div className="ai-chart-card" style={{ margin: 0, gridColumn: '1 / -1' }}>
-                            <h4 className="ai-card-title">Student Learning Preferences</h4>
-                            <p className="ai-card-subtitle">Teaching modes preferred by prospective applicants with industry alignment context.</p>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '12px' }}>
-                                {overview.learning_preferences_data?.student_methods && overview.learning_preferences_data?.student_methods.length > 0 ? (
-                                    overview.learning_preferences_data.student_methods.map((m: any, idx: number) => (
-                                        <div key={idx} style={{
-                                            borderBottom: '1px solid #F1F5F9',
-                                            paddingBottom: '12px',
-                                            fontSize: '13px'
-                                        }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                                                <span style={{ fontWeight: 700, color: '#1E293B' }}>{m.name}</span>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                    <span style={{ fontWeight: 800, color: '#7C3AED' }}>{m.value}% Student</span>
-                                                    <span className={`evidence-alert-badge ${m.alignment_level === 'High' ? 'sufficient' : (m.alignment_level === 'Medium' ? 'sufficient' : 'insufficient')}`} style={{ margin: 0, padding: '2px 6px', fontSize: '9.5px', borderRadius: '4px' }}>
-                                                        {m.alignment_level} Alignment
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            <p style={{ margin: 0, color: '#64748B', fontSize: '12px', fontStyle: 'italic' }}>
-                                                🎯 {m.industry_evidence}
-                                            </p>
-                                        </div>
-                                    ))
-                                ) : (
-                                    <div className="text-center text-slate-400 py-6 text-sm">Insufficient data points.</div>
-                                )}
-                            </div>
-                        </div>
-=======
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '24px' }}>
                         <div className="ai-chart-card" style={{ margin: 0, border: '1px solid #D1FAE5', background: 'linear-gradient(135deg, #ECFDF5 0%, #F0FDF4 100%)' }}>
                             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '20px' }}>
@@ -1929,7 +1836,6 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                                 </div>
                             )}
                         </div>
->>>>>>> 8dbe9391d3e5782e6f39b08ef90e1606ebddfd33
                     </div>
                 </div>
             </div>
