@@ -36,6 +36,12 @@ class UserController extends Controller
             'updated_at'
         ]);
 
+        $query->orderBy('created_at', 'desc');
+
+        if ($request->has('page')) {
+            return response()->json($query->paginate(15));
+        }
+
         return response()->json($query->get());
     }
 
@@ -330,26 +336,26 @@ class UserController extends Controller
         $user = User::with('courses')->findOrFail($id);
 
         $examApplications = \App\Models\ExamApplication::where('user_id', $user->id)
-            ->with(['course', 'user'])
+            ->with(['course', 'user:id,full_name,student_number'])
             ->get();
 
         $letterRequests = \App\Models\LetterRequest::where('user_id', $user->id)
-            ->with(['course', 'user'])
+            ->with(['course', 'user:id,full_name,student_number'])
             ->get();
 
         $reattemptRequests = \App\Models\ReattemptRequest::where('user_id', $user->id)
-            ->with(['course', 'user', 'subject'])
+            ->with(['course', 'user:id,full_name,student_number', 'subject'])
             ->get();
 
         $postponementRequests = \App\Models\PostponementRequest::where('user_id', $user->id)
-            ->with(['course', 'user', 'assignedExam'])
+            ->with(['course', 'user:id,full_name,student_number', 'assignedExam'])
             ->get();
 
         $examResults = \App\Models\ExamResult::whereHas('grades', function ($query) use ($user) {
                 $query->where('user_id', $user->id);
             })
             ->with(['course', 'subject', 'lecturer', 'grades' => function ($query) use ($user) {
-                $query->where('user_id', $user->id)->with('user');
+                $query->where('user_id', $user->id)->with('user:id,full_name,student_number');
             }])
             ->get();
 

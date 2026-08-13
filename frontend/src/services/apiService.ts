@@ -425,7 +425,7 @@ export const examResultService = {
 };
 
 export const announcementService = {
-    getAll: async (params?: { course_id?: string | number; batch?: string }) => {
+    getAll: async (params?: any) => {
         const response = await api.get('/announcements', { params });
         return response.data;
     },
