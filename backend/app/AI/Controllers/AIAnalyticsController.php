@@ -122,7 +122,10 @@ class AIAnalyticsController extends Controller
 
     public function getGlobalOverview(AnalyticsNLPService $nlpService)
     {
-        $analytics = $nlpService->processAll(null);
+        $analytics = \Illuminate\Support\Facades\Cache::remember('ai_analytics_global_overview', 600, function () use ($nlpService) {
+            return $nlpService->processAll(null);
+        });
+        
         $lastSync = \App\AI\Models\AnalyticsCache::orderBy('generated_at', 'desc')->first();
         $lastSyncTime = $lastSync ? $lastSync->generated_at->toIso8601String() : null;
 
@@ -173,122 +176,126 @@ class AIAnalyticsController extends Controller
      
     public function getGeographyData()
     {
-        $allRows = DB::connection('analytics')->table('student_interests')
-            ->select('province', 'education_level', 'district',
-                'primary_interest', 'secondary_interest', 'ternary_interest')
-            ->whereNotNull('province')
-            ->where('province', '!=', '')
-            ->get();
+        $data = \Illuminate\Support\Facades\Cache::remember('ai_analytics_geography_data', 600, function () {
+            $allRows = DB::connection('analytics')->table('student_interests')
+                ->select('province', 'education_level', 'district',
+                    'primary_interest', 'secondary_interest', 'ternary_interest')
+                ->whereNotNull('province')
+                ->where('province', '!=', '')
+                ->get();
 
 
-        $byProvince = [];
-        $allIsland = [];
-        $districtCounts = [];
-        $educationLevels = [];
+            $byProvince = [];
+            $allIsland = [];
+            $districtCounts = [];
+            $educationLevels = [];
 
-        foreach ($allRows as $row) {
-            $province = trim($row->province);
-            $eduLevel = trim($row->education_level ?: 'Not Specified');
-            $district = trim($row->district ?: '');
-
-
-            if ($district) {
-                $districtCounts[$district] = ($districtCounts[$district] ?? 0) + 1;
-            }
+            foreach ($allRows as $row) {
+                $province = trim($row->province);
+                $eduLevel = trim($row->education_level ?: 'Not Specified');
+                $district = trim($row->district ?: '');
 
 
-            $educationLevels[$eduLevel] = ($educationLevels[$eduLevel] ?? 0) + 1;
-
-            $interests = [
-                ['field' => $row->primary_interest,   'weight' => 1.0],
-                ['field' => $row->secondary_interest,  'weight' => 0.6],
-                ['field' => $row->ternary_interest,    'weight' => 0.3],
-            ];
-
-            foreach ($interests as $entry) {
-                $field = trim($entry['field'] ?? '');
-                if (!$field) continue;
-                $w = $entry['weight'];
+                if ($district) {
+                    $districtCounts[$district] = ($districtCounts[$district] ?? 0) + 1;
+                }
 
 
-                $byProvince[$province][$eduLevel][$field] = 
-                    ($byProvince[$province][$eduLevel][$field] ?? 0) + $w;
+                $educationLevels[$eduLevel] = ($educationLevels[$eduLevel] ?? 0) + 1;
 
-
-                $allIsland[$field] = ($allIsland[$field] ?? 0) + $w;
-            }
-        }
-
-
-        $formattedProvince = [];
-        foreach ($byProvince as $province => $eduLevels) {
-            $formattedProvince[$province] = [];
-            foreach ($eduLevels as $eduLevel => $fields) {
-                arsort($fields);
-                $top = array_slice($fields, 0, 5, true);
-                $formattedProvince[$province][$eduLevel] = array_map(
-                    fn($name, $score) => ['name' => $name, 'score' => round($score, 2)],
-                    array_keys($top), array_values($top)
-                );
-            }
-        }
-
-
-        arsort($allIsland);
-        $formattedAllIsland = array_map(
-            fn($name, $score) => ['name' => $name, 'score' => round($score, 2)],
-            array_keys($allIsland), array_values($allIsland)
-        );
-
-
-        $formattedEducationLevels = [];
-        foreach ($educationLevels as $name => $count) {
-            $formattedEducationLevels[] = [
-                'name' => $name,
-                'value' => $count
-            ];
-        }
-
-
-        $industrySectors = IndustryRequirement::select('industry_sector', \DB::raw('count(*) as count'))
-            ->whereNotNull('industry_sector')
-            ->where('industry_sector', '!=', '')
-            ->groupBy('industry_sector')
-            ->get()
-            ->map(function($item) {
-                return [
-                    'name' => trim($item->industry_sector),
-                    'value' => (int) $item->count
+                $interests = [
+                    ['field' => $row->primary_interest,   'weight' => 1.0],
+                    ['field' => $row->secondary_interest,  'weight' => 0.6],
+                    ['field' => $row->ternary_interest,    'weight' => 0.3],
                 ];
-            })
-            ->values()
-            ->toArray();
+
+                foreach ($interests as $entry) {
+                    $field = trim($entry['field'] ?? '');
+                    if (!$field) continue;
+                    $w = $entry['weight'];
 
 
-        $topDomains = IndustryRequirement::select('primary_academic_field', \DB::raw('count(*) as count'))
-            ->whereNotNull('primary_academic_field')
-            ->where('primary_academic_field', '!=', '')
-            ->groupBy('primary_academic_field')
-            ->orderBy('count', 'desc')
-            ->limit(5)
-            ->get()
-            ->map(function($item) {
-                return [
-                    'name' => trim($item->primary_academic_field),
-                    'value' => (int) $item->count
+                    $byProvince[$province][$eduLevel][$field] = 
+                        ($byProvince[$province][$eduLevel][$field] ?? 0) + $w;
+
+
+                    $allIsland[$field] = ($allIsland[$field] ?? 0) + $w;
+                }
+            }
+
+
+            $formattedProvince = [];
+            foreach ($byProvince as $province => $eduLevels) {
+                $formattedProvince[$province] = [];
+                foreach ($eduLevels as $eduLevel => $fields) {
+                    arsort($fields);
+                    $top = array_slice($fields, 0, 5, true);
+                    $formattedProvince[$province][$eduLevel] = array_map(
+                        fn($name, $score) => ['name' => $name, 'score' => round($score, 2)],
+                        array_keys($top), array_values($top)
+                    );
+                }
+            }
+
+
+            arsort($allIsland);
+            $formattedAllIsland = array_map(
+                fn($name, $score) => ['name' => $name, 'score' => round($score, 2)],
+                array_keys($allIsland), array_values($allIsland)
+            );
+
+
+            $formattedEducationLevels = [];
+            foreach ($educationLevels as $name => $count) {
+                $formattedEducationLevels[] = [
+                    'name' => $name,
+                    'value' => $count
                 ];
-            })
-            ->values()
-            ->toArray();
+            }
 
-        return response()->json([
-            'by_province'      => $formattedProvince,
-            'all_island'       => $formattedAllIsland,
-            'district_counts'  => $districtCounts,
-            'education_levels' => $formattedEducationLevels,
-            'industry_sectors' => $industrySectors,
-            'industry_domains' => $topDomains,
-        ]);
+
+            $industrySectors = IndustryRequirement::select('industry_sector', \DB::raw('count(*) as count'))
+                ->whereNotNull('industry_sector')
+                ->where('industry_sector', '!=', '')
+                ->groupBy('industry_sector')
+                ->get()
+                ->map(function($item) {
+                    return [
+                        'name' => trim($item->industry_sector),
+                        'value' => (int) $item->count
+                    ];
+                })
+                ->values()
+                ->toArray();
+
+
+            $topDomains = IndustryRequirement::select('primary_academic_field', \DB::raw('count(*) as count'))
+                ->whereNotNull('primary_academic_field')
+                ->where('primary_academic_field', '!=', '')
+                ->groupBy('primary_academic_field')
+                ->orderBy('count', 'desc')
+                ->limit(5)
+                ->get()
+                ->map(function($item) {
+                    return [
+                        'name' => trim($item->primary_academic_field),
+                        'value' => (int) $item->count
+                    ];
+                })
+                ->values()
+                ->toArray();
+
+            return [
+                'by_province'      => $formattedProvince,
+                'all_island'       => $formattedAllIsland,
+                'district_counts'  => $districtCounts,
+                'education_levels' => $formattedEducationLevels,
+                'industry_sectors' => $industrySectors,
+                'industry_domains' => $topDomains,
+            ];
+        });
+
+        return response()->json($data);
     }
 
      
@@ -521,6 +528,10 @@ class AIAnalyticsController extends Controller
                 \Log::error('Failed to dispatch ProcessAnalyticsPipelineJob: ' . $e->getMessage());
             }
 
+            \Illuminate\Support\Facades\Cache::forget('ai_analytics_global_overview');
+            \Illuminate\Support\Facades\Cache::forget('ai_analytics_geography_data');
+            \Illuminate\Support\Facades\Cache::forget('ai_analytics_common_overview');
+
             return response()->json([
                 'message' => 'Sync completed successfully for both Student and Industry sheets.',
                 'student_imported' => $studentResult['imported'],
@@ -553,6 +564,10 @@ class AIAnalyticsController extends Controller
         } catch (\Exception $e) {
             \Log::error('Failed to dispatch ProcessAnalyticsPipelineJob: ' . $e->getMessage());
         }
+
+        \Illuminate\Support\Facades\Cache::forget('ai_analytics_global_overview');
+        \Illuminate\Support\Facades\Cache::forget('ai_analytics_geography_data');
+        \Illuminate\Support\Facades\Cache::forget('ai_analytics_common_overview');
 
         return response()->json([
             'message' => ucfirst($request->type) . ' Survey Imported Successfully',
@@ -882,235 +897,239 @@ class AIAnalyticsController extends Controller
 
     public function getCommonOverview(AnalyticsNLPService $nlpService)
     {
-        $surveys = StudentInterest::all();
-        $totalSurveysCount = $surveys->count();
+        $data = \Illuminate\Support\Facades\Cache::remember('ai_analytics_common_overview', 600, function () use ($nlpService) {
+            $surveys = StudentInterest::all();
+            $totalSurveysCount = $surveys->count();
 
-        if ($totalSurveysCount === 0) {
-            return response()->json([
-                'total_surveys' => 0,
-                'provinces_data' => [],
-                'overall_demand' => [],
-                'high_demand_skills' => [],
-                'opportunities' => [],
-                'learning_methods' => [],
-                'learning_balance' => []
-            ]);
-        }
+            if ($totalSurveysCount === 0) {
+                return [
+                    'total_surveys' => 0,
+                    'provinces_data' => [],
+                    'overall_demand' => [],
+                    'high_demand_skills' => [],
+                    'opportunities' => [],
+                    'learning_methods' => [],
+                    'learning_balance' => []
+                ];
+            }
 
 
-        $provincesData = [];
-        $groupedByProvince = $surveys->groupBy('province');
-        foreach ($groupedByProvince as $provinceName => $provinceSurveys) {
-            if (empty($provinceName)) continue;
-            
-            $fieldScores = [];
-            foreach ($provinceSurveys as $survey) {
+            $provincesData = [];
+            $groupedByProvince = $surveys->groupBy('province');
+            foreach ($groupedByProvince as $provinceName => $provinceSurveys) {
+                if (empty($provinceName)) continue;
+                
+                $fieldScores = [];
+                foreach ($provinceSurveys as $survey) {
+                    if ($survey->primary_interest) {
+                        $fieldScores[$survey->primary_interest] = ($fieldScores[$survey->primary_interest] ?? 0) + 1.0;
+                    }
+                    if ($survey->secondary_interest) {
+                        $fieldScores[$survey->secondary_interest] = ($fieldScores[$survey->secondary_interest] ?? 0) + 0.6;
+                    }
+                    if ($survey->ternary_interest) {
+                        $fieldScores[$survey->ternary_interest] = ($fieldScores[$survey->ternary_interest] ?? 0) + 0.3;
+                    }
+                }
+                
+                $totalWeightedScore = array_sum($fieldScores);
+                if ($totalWeightedScore === 0) continue;
+                
+                arsort($fieldScores);
+                
+                $topFields = [];
+                $rank = 1;
+                foreach (array_slice($fieldScores, 0, 3, true) as $field => $score) {
+                    $topFields[] = [
+                        'province' => $provinceName,
+                        'field' => $field,
+                        'count' => round($score, 1),
+                        'percentage' => round(($score / $totalWeightedScore) * 100, 1),
+                        'rank' => $rank++
+                    ];
+                }
+                
+                $provincesData[$provinceName] = $topFields;
+            }
+
+
+            $overallScores = [];
+            foreach ($surveys as $survey) {
                 if ($survey->primary_interest) {
-                    $fieldScores[$survey->primary_interest] = ($fieldScores[$survey->primary_interest] ?? 0) + 1.0;
+                    $overallScores[$survey->primary_interest] = ($overallScores[$survey->primary_interest] ?? 0) + 1.0;
                 }
                 if ($survey->secondary_interest) {
-                    $fieldScores[$survey->secondary_interest] = ($fieldScores[$survey->secondary_interest] ?? 0) + 0.6;
+                    $overallScores[$survey->secondary_interest] = ($overallScores[$survey->secondary_interest] ?? 0) + 0.6;
                 }
                 if ($survey->ternary_interest) {
-                    $fieldScores[$survey->ternary_interest] = ($fieldScores[$survey->ternary_interest] ?? 0) + 0.3;
+                    $overallScores[$survey->ternary_interest] = ($overallScores[$survey->ternary_interest] ?? 0) + 0.3;
                 }
             }
             
-            $totalWeightedScore = array_sum($fieldScores);
-            if ($totalWeightedScore === 0) continue;
+            arsort($overallScores);
+            $overallTotal = array_sum($overallScores) ?: 1;
+            $topFields = array_slice($overallScores, 0, 6, true);
+            $remaining = array_slice($overallScores, 6, null, true);
             
-            arsort($fieldScores);
-            
-            $topFields = [];
-            $rank = 1;
-            foreach (array_slice($fieldScores, 0, 3, true) as $field => $score) {
-                $topFields[] = [
-                    'province' => $provinceName,
-                    'field' => $field,
+            $overallData = [];
+            foreach ($topFields as $field => $score) {
+                $overallData[] = [
+                    'name' => $field,
                     'count' => round($score, 1),
-                    'percentage' => round(($score / $totalWeightedScore) * 100, 1),
-                    'rank' => $rank++
+                    'value' => round(($score / $overallTotal) * 100, 1)
                 ];
             }
             
-            $provincesData[$provinceName] = $topFields;
-        }
-
-
-        $overallScores = [];
-        foreach ($surveys as $survey) {
-            if ($survey->primary_interest) {
-                $overallScores[$survey->primary_interest] = ($overallScores[$survey->primary_interest] ?? 0) + 1.0;
+            if (count($remaining) > 0) {
+                $otherScore = array_sum($remaining);
+                $overallData[] = [
+                    'name' => 'Other',
+                    'count' => round($otherScore, 1),
+                    'value' => round(($otherScore / $overallTotal) * 100, 1)
+                ];
             }
-            if ($survey->secondary_interest) {
-                $overallScores[$survey->secondary_interest] = ($overallScores[$survey->secondary_interest] ?? 0) + 0.6;
-            }
-            if ($survey->ternary_interest) {
-                $overallScores[$survey->ternary_interest] = ($overallScores[$survey->ternary_interest] ?? 0) + 0.3;
-            }
-        }
-        
-        arsort($overallScores);
-        $overallTotal = array_sum($overallScores) ?: 1;
-        $topFields = array_slice($overallScores, 0, 6, true);
-        $remaining = array_slice($overallScores, 6, null, true);
-        
-        $overallData = [];
-        foreach ($topFields as $field => $score) {
-            $overallData[] = [
-                'name' => $field,
-                'count' => round($score, 1),
-                'value' => round(($score / $overallTotal) * 100, 1)
-            ];
-        }
-        
-        if (count($remaining) > 0) {
-            $otherScore = array_sum($remaining);
-            $overallData[] = [
-                'name' => 'Other',
-                'count' => round($otherScore, 1),
-                'value' => round(($otherScore / $overallTotal) * 100, 1)
-            ];
-        }
 
 
-        $skillScores = [];
-        foreach ($surveys as $survey) {
-            if ($survey->primary_skills) {
-                $domains = $nlpService->extractDomains($survey->primary_skills);
-                foreach ($domains as $d) {
-                    $skillScores[$d] = ($skillScores[$d] ?? 0) + 1.0;
+            $skillScores = [];
+            foreach ($surveys as $survey) {
+                if ($survey->primary_skills) {
+                    $domains = $nlpService->extractDomains($survey->primary_skills);
+                    foreach ($domains as $d) {
+                        $skillScores[$d] = ($skillScores[$d] ?? 0) + 1.0;
+                    }
                 }
-            }
-            if ($survey->secondary_skills) {
-                $domains = $nlpService->extractDomains($survey->secondary_skills);
-                foreach ($domains as $d) {
-                    $skillScores[$d] = ($skillScores[$d] ?? 0) + 0.6;
+                if ($survey->secondary_skills) {
+                    $domains = $nlpService->extractDomains($survey->secondary_skills);
+                    foreach ($domains as $d) {
+                        $skillScores[$d] = ($skillScores[$d] ?? 0) + 0.6;
+                    }
                 }
-            }
-            if ($survey->ternary_skills) {
-                $domains = $nlpService->extractDomains($survey->ternary_skills);
-                foreach ($domains as $d) {
-                    $skillScores[$d] = ($skillScores[$d] ?? 0) + 0.3;
-                }
-            }
-        }
-        
-        arsort($skillScores);
-        $skillsTotal = array_sum($skillScores) ?: 1;
-        
-        $highDemandSkills = [];
-        $rank = 1;
-        foreach (array_slice($skillScores, 0, 10, true) as $skill => $score) {
-            $highDemandSkills[] = [
-                'name' => $skill,
-                'count' => round($score, 1),
-                'percentage' => round(($score / $skillsTotal) * 100, 1),
-                'rank' => $rank++
-            ];
-        }
-
-
-        $oppList = [];
-        foreach ($surveys as $survey) {
-            if ($survey->university_opportunities) {
-                $items = array_map('trim', explode(',', $survey->university_opportunities));
-                foreach ($items as $item) {
-                    if (!empty($item)) {
-                        $oppList[] = $item;
+                if ($survey->ternary_skills) {
+                    $domains = $nlpService->extractDomains($survey->ternary_skills);
+                    foreach ($domains as $d) {
+                        $skillScores[$d] = ($skillScores[$d] ?? 0) + 0.3;
                     }
                 }
             }
-        }
-        
-        $oppCounts = array_count_values($oppList);
-        arsort($oppCounts);
-        $oppTotal = array_sum($oppCounts) ?: 1;
-        
-        $opportunitiesData = [];
-        foreach (array_slice($oppCounts, 0, 10, true) as $opp => $count) {
-            $opportunitiesData[] = [
-                'name' => $opp,
-                'count' => $count,
-                'percentage' => round(($count / $oppTotal) * 100, 1)
-            ];
-        }
+            
+            arsort($skillScores);
+            $skillsTotal = array_sum($skillScores) ?: 1;
+            
+            $highDemandSkills = [];
+            $rank = 1;
+            foreach (array_slice($skillScores, 0, 10, true) as $skill => $score) {
+                $highDemandSkills[] = [
+                    'name' => $skill,
+                    'count' => round($score, 1),
+                    'percentage' => round(($score / $skillsTotal) * 100, 1),
+                    'rank' => $rank++
+                ];
+            }
 
 
-
-        $methodList = [];
-        foreach ($surveys as $survey) {
-            $methodsText = implode(',', array_filter([$survey->primary_learning_methods, $survey->secondary_learning_methods, $survey->ternary_learning_methods]));
-            if ($methodsText) {
-                $methods = array_map('trim', explode(',', $methodsText));
-                foreach ($methods as $m) {
-                    if (!empty($m)) {
-                        $methodList[] = $m;
+            $oppList = [];
+            foreach ($surveys as $survey) {
+                if ($survey->university_opportunities) {
+                    $items = array_map('trim', explode(',', $survey->university_opportunities));
+                    foreach ($items as $item) {
+                        if (!empty($item)) {
+                            $oppList[] = $item;
+                        }
                     }
                 }
             }
-        }
-        
-        $methodCounts = array_count_values($methodList);
-        arsort($methodCounts);
-        $methodTotal = array_sum($methodCounts) ?: 1;
-        
-        $learningMethods = [];
-        foreach (array_slice($methodCounts, 0, 10, true) as $method => $count) {
-            $learningMethods[] = [
-                'name' => $method,
-                'count' => $count,
-                'percentage' => round(($count / $methodTotal) * 100, 1)
+            
+            $oppCounts = array_count_values($oppList);
+            arsort($oppCounts);
+            $oppTotal = array_sum($oppCounts) ?: 1;
+            
+            $opportunitiesData = [];
+            foreach (array_slice($oppCounts, 0, 10, true) as $opp => $count) {
+                $opportunitiesData[] = [
+                    'name' => $opp,
+                    'count' => $count,
+                    'percentage' => round(($count / $oppTotal) * 100, 1)
+                ];
+            }
+
+
+
+            $methodList = [];
+            foreach ($surveys as $survey) {
+                $methodsText = implode(',', array_filter([$survey->primary_learning_methods, $survey->secondary_learning_methods, $survey->ternary_learning_methods]));
+                if ($methodsText) {
+                    $methods = array_map('trim', explode(',', $methodsText));
+                    foreach ($methods as $m) {
+                        if (!empty($m)) {
+                            $methodList[] = $m;
+                        }
+                    }
+                }
+            }
+            
+            $methodCounts = array_count_values($methodList);
+            arsort($methodCounts);
+            $methodTotal = array_sum($methodCounts) ?: 1;
+            
+            $learningMethods = [];
+            foreach (array_slice($methodCounts, 0, 10, true) as $method => $count) {
+                $learningMethods[] = [
+                    'name' => $method,
+                    'count' => $count,
+                    'percentage' => round(($count / $methodTotal) * 100, 1)
+                ];
+            }
+
+
+            $balanceScores = [];
+            foreach ($surveys as $survey) {
+                if ($survey->primary_learning_balance !== null) {
+                    $balanceScores[] = (int) $survey->primary_learning_balance;
+                }
+                if ($survey->secondary_learning_balance !== null) {
+                    $balanceScores[] = (int) $survey->secondary_learning_balance;
+                }
+                if ($survey->ternary_learning_balance !== null) {
+                    $balanceScores[] = (int) $survey->ternary_learning_balance;
+                }
+            }
+            
+            $balanceCounts = [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0];
+            foreach ($balanceScores as $val) {
+                if (isset($balanceCounts[$val])) {
+                    $balanceCounts[$val]++;
+                }
+            }
+            
+            $balanceTotal = array_sum($balanceCounts) ?: 1;
+            $learningBalance = [];
+            $labels = [
+                1 => '1 (100% Theory)',
+                2 => '2 (Mostly Theory)',
+                3 => '3 (Balanced)',
+                4 => '4 (Mostly Practical)',
+                5 => '5 (100% Practical)'
             ];
-        }
+            foreach ($balanceCounts as $val => $count) {
+                $learningBalance[] = [
+                    'label' => $labels[$val],
+                    'count' => $count,
+                    'percentage' => round(($count / $balanceTotal) * 100, 1)
+                ];
+            }
 
-
-        $balanceScores = [];
-        foreach ($surveys as $survey) {
-            if ($survey->primary_learning_balance !== null) {
-                $balanceScores[] = (int) $survey->primary_learning_balance;
-            }
-            if ($survey->secondary_learning_balance !== null) {
-                $balanceScores[] = (int) $survey->secondary_learning_balance;
-            }
-            if ($survey->ternary_learning_balance !== null) {
-                $balanceScores[] = (int) $survey->ternary_learning_balance;
-            }
-        }
-        
-        $balanceCounts = [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0];
-        foreach ($balanceScores as $val) {
-            if (isset($balanceCounts[$val])) {
-                $balanceCounts[$val]++;
-            }
-        }
-        
-        $balanceTotal = array_sum($balanceCounts) ?: 1;
-        $learningBalance = [];
-        $labels = [
-            1 => '1 (100% Theory)',
-            2 => '2 (Mostly Theory)',
-            3 => '3 (Balanced)',
-            4 => '4 (Mostly Practical)',
-            5 => '5 (100% Practical)'
-        ];
-        foreach ($balanceCounts as $val => $count) {
-            $learningBalance[] = [
-                'label' => $labels[$val],
-                'count' => $count,
-                'percentage' => round(($count / $balanceTotal) * 100, 1)
+            return [
+                'total_surveys' => $totalSurveysCount,
+                'provinces_data' => $provincesData,
+                'overall_demand' => $overallData,
+                'high_demand_skills' => $highDemandSkills,
+                'opportunities' => $opportunitiesData,
+                'learning_methods' => $learningMethods,
+                'learning_balance' => $learningBalance
             ];
-        }
+        });
 
-        return response()->json([
-            'total_surveys' => $totalSurveysCount,
-            'provinces_data' => $provincesData,
-            'overall_demand' => $overallData,
-            'high_demand_skills' => $highDemandSkills,
-            'opportunities' => $opportunitiesData,
-            'learning_methods' => $learningMethods,
-            'learning_balance' => $learningBalance
-        ]);
+        return response()->json($data);
     }
 
     public function getCommonDrilldown(Request $request, AnalyticsNLPService $nlpService)
