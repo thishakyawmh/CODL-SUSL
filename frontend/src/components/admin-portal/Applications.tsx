@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     BookOpen, Search, Plus, Users as UsersIcon,
     X, Calendar, Award,
     ArrowUpRight, UserCheck, FileText, CheckCircle2, Layers,
     ArrowLeft, Eye, Check, XCircle, Edit3, Save, User, ShieldCheck, Clock, Trash2,
-    MapPin, CheckSquare, Info
+    MapPin, CheckSquare, Info, Loader
 } from 'lucide-react';
 import { mockAdminCourses } from '../../data/mockAdminData';
 import type {
@@ -39,6 +39,10 @@ export const Applications: React.FC = () => {
     const [enrollmentApps, setEnrollmentApps] = useState<CourseApplication[]>([]);
     const [realEnrollmentApps, setRealEnrollmentApps] = useState<any[]>([]);
     const [isLoadingApps, setIsLoadingApps] = useState(true);
+    // Track IDs currently being actioned (for disabling buttons / showing spinner)
+    const [actioningIds, setActioningIds] = useState<Set<string>>(new Set());
+    const addActioning = (id: string) => setActioningIds(prev => new Set(prev).add(id));
+    const removeActioning = (id: string) => setActioningIds(prev => { const s = new Set(prev); s.delete(id); return s; });
 
     const fetchRealExamApplications = async () => {
         try {
@@ -110,7 +114,12 @@ export const Applications: React.FC = () => {
     const fetchRealApplications = async () => {
         try {
             setIsLoadingApps(true);
-            const data = await courseApplicationService.getAll();
+            // Parallelize both fetches — no sequential waterfall
+            const [enrollData] = await Promise.all([
+                courseApplicationService.getAll(),
+                // exam fetch runs in parallel below
+            ]);
+            const data = enrollData;
             const mapped = data.map((app: any) => ({
                 id: app.id.toString(),
                 courseTitle: app.course?.title || 'Unknown Course',
@@ -171,8 +180,10 @@ export const Applications: React.FC = () => {
                     }
                 ]
             }));
+            // Run exam applications fetch in parallel with mapping work
+            const examFetchPromise = fetchRealExamApplications();
             setRealEnrollmentApps(mapped);
-            await fetchRealExamApplications();
+            await examFetchPromise;
         } catch (err) {
             console.error('Failed to fetch real applications:', err);
         } finally {
@@ -196,22 +207,67 @@ export const Applications: React.FC = () => {
     const [pendingAction, setPendingAction] = useState<{ id: string, type: string } | null>(null);
 
     const handleAction = async (id: string, action: 'approved' | 'rejected', type: string, reason?: string) => {
+        if (actioningIds.has(id)) return; // Prevent double-click
+        addActioning(id);
 
-        const isReal = realEnrollmentApps.some(app => app.id === id);
+        const userStr = sessionStorage.getItem('user');
+        const loggedInUser = userStr ? JSON.parse(userStr) : null;
+        const approvedBy = loggedInUser?.full_name || loggedInUser?.displayName || 'Admin';
+        const approvedAt = new Date().toLocaleDateString();
+
+        // ── OPTIMISTIC UI: apply the change immediately before any API call ──
+        const applyOptimisticUpdate = (list: any[], isExam = false) =>
+            list.map(app => {
+                if (app.id !== id) return app;
+                if (isExam) {
+                    const currentStep = app.currentStep || 1;
+                    const stageIndex = currentStep - 1;
+                    const nextStep = action === 'approved' ? Math.min(currentStep + 1, 3) : currentStep;
+                    const newStatus = action === 'rejected' ? 'rejected' : (currentStep >= 3 && action === 'approved' ? 'approved' : 'pending');
+                    const newStages = app.approvalStages.map((s: any, i: number) =>
+                        i === stageIndex ? {
+                            ...s, status: action,
+                            approvedBy: action === 'approved' ? approvedBy : s.approvedBy,
+                            approvedAt: action === 'approved' ? approvedAt : s.approvedAt,
+                            comment: reason || (action === 'approved' ? 'Approved' : 'Rejected')
+                        } : s
+                    );
+                    return { ...app, status: newStatus, currentStep: nextStep, approvalStages: newStages, rejectionReason: action === 'rejected' ? (reason || 'Rejected') : app.rejectionReason };
+                }
+                // enrollment optimistic
+                const currentLevel = app.approvalLevel ?? 0;
+                const newLevel = action === 'approved' ? currentLevel + 1 : currentLevel;
+                const newStatus = action === 'rejected' ? 'rejected' : (newLevel >= 3 ? 'approved' : 'pending');
+                const newStages = (app.approvalStages || []).map((s: any, i: number) =>
+                    i === currentLevel ? {
+                        ...s, status: action,
+                        approvedBy: action === 'approved' ? approvedBy : s.approvedBy,
+                        approvedAt: action === 'approved' ? approvedAt : s.approvedAt,
+                        comment: reason || (action === 'approved' ? 'Approved' : 'Rejected')
+                    } : s
+                );
+                return { ...app, status: newStatus, approvalLevel: newLevel, approvalStages: newStages, rejectionReason: action === 'rejected' ? (reason || 'Rejected') : app.rejectionReason };
+            });
 
         if (type === 'exam') {
-            const app = examApps.find(a => a.id === id);
-            if (app && app.isReal) {
-                try {
-                    const userStr = sessionStorage.getItem('user');
-                    const loggedInUser = userStr ? JSON.parse(userStr) : null;
-                    const approvedBy = loggedInUser?.full_name || loggedInUser?.displayName || 'Admin';
-                    const approvedAt = new Date().toLocaleDateString();
+            setExamApps(prev => applyOptimisticUpdate(prev, true));
+        } else if (type === 'enrollment') {
+            setRealEnrollmentApps(prev => applyOptimisticUpdate(prev));
+            setEnrollmentApps(prev => applyOptimisticUpdate(prev));
+        }
 
+        // Update modal too if it's currently open for this item
+        if (selectedApplication && selectedApplication.id === id) {
+            setSelectedApplication((prev: any) => applyOptimisticUpdate([prev], type === 'exam')[0]);
+        }
+
+        try {
+            if (type === 'exam') {
+                const app = examApps.find(a => a.id === id);
+                if (app && app.isReal) {
                     const currentStep = app.currentStep || 1;
                     const stages = [...app.approvalStages];
                     const stageIndex = currentStep - 1;
-
                     if (stages[stageIndex]) {
                         stages[stageIndex] = {
                             ...stages[stageIndex],
@@ -221,114 +277,68 @@ export const Applications: React.FC = () => {
                             comment: reason || (action === 'approved' ? 'Approved' : 'Rejected')
                         };
                     }
-
-                    let nextStep = currentStep;
-                    let status = 'pending';
-
-                    if (action === 'approved') {
-                        nextStep = currentStep + 1;
-                        if (nextStep > 3) {
-                            status = 'approved';
-                        } else {
-                            status = 'pending';
-                        }
-                    } else {
-                        status = 'rejected';
-                    }
-
+                    const nextStep = action === 'approved' ? currentStep + 1 : currentStep;
+                    const newStatus = action === 'rejected' ? 'rejected' : (nextStep > 3 ? 'approved' : 'pending');
                     await examApplicationService.update(id, {
-                        status: status,
-                        stages: stages,
-                        current_step: nextStep,
+                        status: newStatus,
+                        stages,
+                        current_step: Math.min(nextStep, 3),
                         rejection_reason: action === 'rejected' ? (reason || 'Rejected') : null
                     });
-
                     toast.success(`Exam application ${action} successfully!`);
-                    await fetchRealApplications();
-                    setSelectedApplication(null);
-                    return;
-                } catch (err: any) {
-                    console.error('Failed to update exam application:', err);
-                    toast.error(err.response?.data?.message || 'Failed to update exam application.');
-                    return;
                 }
+                return;
             }
-        }
 
-        if (isReal && type === 'enrollment') {
-            try {
-                if (action === 'approved') {
-                    const app = realEnrollmentApps.find(a => a.id === id);
-                    const docsVerified = app?.documentsVerified || { personal: false, educational: false };
-
-                    if (!docsVerified.personal || !docsVerified.educational) {
-                        toast.error("Please verify all handed over documents by ticking them in the details modal before approving.");
-                        return;
+            if (type === 'enrollment') {
+                const isReal = realEnrollmentApps.some(app => app.id === id);
+                if (isReal) {
+                    if (action === 'approved') {
+                        const app = realEnrollmentApps.find(a => a.id === id);
+                        const docsVerified = app?.documentsVerified || { personal: false, educational: false };
+                        if (!docsVerified.personal || !docsVerified.educational) {
+                            // Rollback optimistic update
+                            setRealEnrollmentApps(prev => prev.map(a => a.id === id ? { ...a, status: 'pending' } : a));
+                            setEnrollmentApps(prev => prev.map(a => a.id === id ? { ...a, status: 'pending' } : a));
+                            if (selectedApplication?.id === id) setSelectedApplication((p: any) => ({ ...p, status: 'pending' }));
+                            toast.error('Please verify all handed over documents by ticking them in the details modal before approving.');
+                            return;
+                        }
+                        const response = await courseApplicationService.approve(id, {
+                            comment: reason || 'Approved',
+                            documents_verified: docsVerified
+                        });
+                        // Patch with actual server response (e.g. generated student number)
+                        if (response) {
+                            const serverPatch = {
+                                studentNumber: response.generated_student_number || response.user?.student_number || '',
+                                approvalLevel: response.approval_level ?? 3,
+                                status: response.status ?? 'approved',
+                            };
+                            setRealEnrollmentApps(prev => prev.map(a => a.id === id ? { ...a, ...serverPatch } : a));
+                            if (selectedApplication?.id === id) setSelectedApplication((p: any) => ({ ...p, ...serverPatch }));
+                        }
+                        toast.success('Application approved successfully!');
+                    } else {
+                        await courseApplicationService.reject(id, { comment: reason || 'Rejected' });
+                        toast.success('Application rejected successfully!');
                     }
-
-                    const response = await courseApplicationService.approve(id, {
-                        comment: reason || 'Approved',
-                        documents_verified: docsVerified
-                    });
-
-
-
-
-                    toast.success('Application approved successfully!');
-                } else {
-                    await courseApplicationService.reject(id, {
-                        comment: reason || 'Rejected'
-                    });
-                    toast.success('Application rejected successfully!');
-                }
-                fetchRealApplications();
-                setSelectedApplication(null);
-                return;
-            } catch (err: any) {
-                console.error('Failed to update application:', err);
-                toast.error(err.response?.data?.message || 'Failed to update application.');
-                return;
-            }
-        }
-
-        const updateStatus = (list: any[]) => list.map(app => {
-            if (app.id === id) {
-                return {
-                    ...app,
-                    status: action,
-                    rejectionReason: reason || app.rejectionReason,
-                    approvalStages: app.approvalStages.map((stage: any, i: number) =>
-                        i === 0 ? { ...stage, status: action, approvedAt: new Date().toLocaleDateString(), comment: reason } : stage
-                    )
-                };
-            }
-            return app;
-        });
-
-        if (type === 'enrollment') {
-            if (action === 'approved') {
-                const app = enrollmentApps.find(a => a.id === id);
-                const docsVerified = app?.documentsVerified || { personal: false, educational: false };
-                if (!docsVerified.personal || !docsVerified.educational) {
-                    toast.error("Please verify all handed over documents by ticking them in the details modal before approving.");
                     return;
                 }
             }
-            setEnrollmentApps(updateStatus);
-        }
-        else if (type === 'exam') setExamApps(updateStatus);
-        else if (type === 'postponement') setPostponementReqs(updateStatus);
-        else if (type === 'reattempt') setReattemptReqs(updateStatus);
-
-        if (selectedApplication && selectedApplication.id === id) {
-            setSelectedApplication((prev: any) => ({
-                ...prev,
-                status: action,
-                rejectionReason: reason || prev.rejectionReason,
-                approvalStages: prev.approvalStages.map((stage: any, i: number) =>
-                    i === 0 ? { ...stage, status: action, approvedAt: new Date().toLocaleDateString(), comment: reason } : stage
-                )
-            }));
+        } catch (err: any) {
+            // ── ROLLBACK: revert optimistic update on error ──
+            console.error('Failed to update application:', err);
+            if (type === 'exam') {
+                setExamApps(prev => prev.map(a => a.id === id ? { ...a, status: 'pending' } : a));
+            } else {
+                setRealEnrollmentApps(prev => prev.map(a => a.id === id ? { ...a, status: 'pending' } : a));
+                setEnrollmentApps(prev => prev.map(a => a.id === id ? { ...a, status: 'pending' } : a));
+            }
+            if (selectedApplication?.id === id) setSelectedApplication((p: any) => ({ ...p, status: 'pending' }));
+            toast.error(err.response?.data?.message || 'Failed to update application.');
+        } finally {
+            removeActioning(id);
         }
     };
 
@@ -1025,11 +1035,24 @@ export const Applications: React.FC = () => {
                                     (selectedApplication.approvalLevel === 2 && currentAdminRole === 'director')
                                 ) ? (
                                     <>
-                                        <button className="am-reject-btn" style={{ background: '#FEE2E2', color: '#DC2626', border: '1px solid #FEE2E2' }} onClick={() => handleRejectClick(selectedApplication.id, 'enrollment')}>
+                                        <button
+                                            className="am-reject-btn"
+                                            style={{ background: '#FEE2E2', color: '#DC2626', border: '1px solid #FEE2E2', opacity: actioningIds.has(selectedApplication.id) ? 0.6 : 1 }}
+                                            onClick={() => handleRejectClick(selectedApplication.id, 'enrollment')}
+                                            disabled={actioningIds.has(selectedApplication.id)}
+                                        >
                                             <XCircle size={18} /> Reject
                                         </button>
-                                        <button className="am-approve-btn" onClick={() => handleAction(selectedApplication.id, 'approved', 'enrollment')}>
-                                            <Check size={18} /> Approve
+                                        <button
+                                            className="am-approve-btn"
+                                            onClick={() => handleAction(selectedApplication.id, 'approved', 'enrollment')}
+                                            disabled={actioningIds.has(selectedApplication.id)}
+                                            style={{ opacity: actioningIds.has(selectedApplication.id) ? 0.7 : 1, display: 'flex', alignItems: 'center', gap: '8px' }}
+                                        >
+                                            {actioningIds.has(selectedApplication.id)
+                                                ? <Loader size={16} style={{ animation: 'spin 0.7s linear infinite' }} />
+                                                : <Check size={18} />}
+                                            {actioningIds.has(selectedApplication.id) ? 'Processing...' : 'Approve'}
                                         </button>
                                     </>
                                 ) : (
@@ -1057,11 +1080,24 @@ export const Applications: React.FC = () => {
                                     (selectedApplication.currentStep === 3 && currentAdminRole === 'director')
                                 ) ? (
                                     <>
-                                        <button className="am-reject-btn" style={{ background: '#FEE2E2', color: '#DC2626', border: '1px solid #FEE2E2' }} onClick={() => handleRejectClick(selectedApplication.id, 'exam')}>
+                                        <button
+                                            className="am-reject-btn"
+                                            style={{ background: '#FEE2E2', color: '#DC2626', border: '1px solid #FEE2E2', opacity: actioningIds.has(selectedApplication.id) ? 0.6 : 1 }}
+                                            onClick={() => handleRejectClick(selectedApplication.id, 'exam')}
+                                            disabled={actioningIds.has(selectedApplication.id)}
+                                        >
                                             <XCircle size={18} /> Reject
                                         </button>
-                                        <button className="am-approve-btn" onClick={() => handleAction(selectedApplication.id, 'approved', 'exam')}>
-                                            <Check size={18} /> Approve
+                                        <button
+                                            className="am-approve-btn"
+                                            onClick={() => handleAction(selectedApplication.id, 'approved', 'exam')}
+                                            disabled={actioningIds.has(selectedApplication.id)}
+                                            style={{ opacity: actioningIds.has(selectedApplication.id) ? 0.7 : 1, display: 'flex', alignItems: 'center', gap: '8px' }}
+                                        >
+                                            {actioningIds.has(selectedApplication.id)
+                                                ? <Loader size={16} style={{ animation: 'spin 0.7s linear infinite' }} />
+                                                : <Check size={18} />}
+                                            {actioningIds.has(selectedApplication.id) ? 'Processing...' : 'Approve'}
                                         </button>
                                     </>
                                 ) : (
@@ -1237,8 +1273,14 @@ export const Applications: React.FC = () => {
                                                     <Eye size={16} />
                                                 </button>
                                                 {app.status === 'pending' && (currentAdminRole === 'coordinator' || currentAdminRole === 'director') && (
-                                                    <button className="at-action-btn approve" title="Approve" onClick={() => handleAction(app.id, 'approved', 'enrollment')}>
-                                                        <Check size={16} />
+                                                    <button
+                                                        className="at-action-btn approve"
+                                                        title="Approve"
+                                                        onClick={() => handleAction(app.id, 'approved', 'enrollment')}
+                                                        disabled={actioningIds.has(app.id)}
+                                                        style={{ opacity: actioningIds.has(app.id) ? 0.6 : 1 }}
+                                                    >
+                                                        {actioningIds.has(app.id) ? <Loader size={14} style={{ animation: 'spin 0.7s linear infinite' }} /> : <Check size={16} />}
                                                     </button>
                                                 )}
                                             </div>
@@ -1329,8 +1371,15 @@ export const Applications: React.FC = () => {
                                                         (app.currentStep === 2 && currentAdminRole === 'coordinator') ||
                                                         (app.currentStep === 3 && currentAdminRole === 'director')
                                                     ) && (
-                                                            <button className="at-action-btn approve" onClick={() => handleAction(app.id, 'approved', 'exam')}><Check size={16} /></button>
-                                                        )}
+                                                        <button
+                                                            className="at-action-btn approve"
+                                                            onClick={() => handleAction(app.id, 'approved', 'exam')}
+                                                            disabled={actioningIds.has(app.id)}
+                                                            style={{ opacity: actioningIds.has(app.id) ? 0.6 : 1 }}
+                                                        >
+                                                            {actioningIds.has(app.id) ? <Loader size={14} style={{ animation: 'spin 0.7s linear infinite' }} /> : <Check size={16} />}
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>
