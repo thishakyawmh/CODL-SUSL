@@ -12,234 +12,246 @@ class StatsController extends Controller
      
     public function getAdminStats(Request $request)
     {
-        $stats = $this->fetchAllStats($request->user());
+        $user = $request->user();
+        $userId = $user ? $user->id : 'guest';
+        $cacheKey = "admin_stats_{$userId}";
+        
+        $stats = \Illuminate\Support\Facades\Cache::remember($cacheKey, 120, function () use ($user) {
+            return $this->fetchAllStats($user);
+        });
+        
         return response()->json($stats);
     }
 
     public function getFullDashboardData(Request $request)
     {
         $user = $request->user();
-        $stats = $this->fetchAllStats($user);
+        $userId = $user ? $user->id : 'guest';
+        $cacheKey = "admin_dashboard_full_{$userId}";
 
-        $recentUsers = User::latest()->take(5)->get()->map(function ($u) {
+        $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, 120, function () use ($user) {
+            $stats = $this->fetchAllStats($user);
+
+            $recentUsers = User::select(['id', 'full_name', 'student_number', 'role', 'status', 'avatar'])->latest()->take(5)->get()->map(function ($u) {
+                return [
+                    'id' => $u->id,
+                    'full_name' => $u->full_name,
+                    'fullName' => $u->full_name,
+                    'studentNumber' => $u->student_number,
+                    'student_number' => $u->student_number,
+                    'role' => $u->role,
+                    'status' => $u->status,
+                    'avatar' => $u->avatar,
+                ];
+            });
+
+            $recentCourses = Course::with([
+                'category',
+                'secretary:id,full_name',
+                'coordinator:id,full_name',
+                'batches:id,course_id,name,status'
+            ])
+                ->withCount(['batches', 'students'])
+                ->latest()
+                ->take(5)
+                ->get();
+
+            $recentLogs = \App\Models\ActivityLog::with('user:id,full_name,display_name,role')
+                ->orderBy('created_at', 'desc')
+                ->take(5)
+                ->get();
+
+            $topDistricts = DB::table('course_applications')
+                ->select('district', DB::raw('count(*) as count'))
+                ->whereNotNull('district')
+                ->where('district', '!=', '')
+                ->groupBy('district')
+                ->orderBy('count', 'desc')
+                ->take(5)
+                ->get();
+
+            $courseEnrollments = Course::select('id', 'title')
+                ->withCount('students')
+                ->orderBy('students_count', 'desc')
+                ->take(5)
+                ->get()
+                ->map(function ($c) {
+                    return [
+                        'title' => $c->title,
+                        'count' => $c->students_count,
+                    ];
+                });
+
+            $enrollments = DB::table('user_courses')
+                ->select('created_at')
+                ->where('created_at', '>=', now()->subMonths(35)->startOfMonth()->toDateTimeString())
+                ->get();
+
+            $monthlyData = [];
+            for ($i = 35; $i >= 0; $i--) {
+                $monthKey = now()->subMonths($i)->format('Y-m');
+                $monthName = now()->subMonths($i)->format('M Y');
+                $monthlyData[$monthKey] = [
+                    'month' => $monthName,
+                    'count' => 0,
+                ];
+            }
+
+            foreach ($enrollments as $enrollment) {
+                if ($enrollment->created_at) {
+                    $monthKey = substr($enrollment->created_at, 0, 7);
+                    if (isset($monthlyData[$monthKey])) {
+                        $monthlyData[$monthKey]['count']++;
+                    }
+                }
+            }
+            $monthlyEnrollments = array_values($monthlyData);
+
+            $dailyEnrollments = DB::table('user_courses')
+                ->select('created_at')
+                ->where('created_at', '>=', now()->subDays(29)->startOfDay()->toDateTimeString())
+                ->get();
+
+            $dailyData = [];
+            for ($i = 29; $i >= 0; $i--) {
+                $dayKey = now()->subDays($i)->format('Y-m-d');
+                $dayLabel = now()->subDays($i)->format('d M');
+                $dailyData[$dayKey] = [
+                    'day' => $dayLabel,
+                    'count' => 0,
+                ];
+            }
+
+            foreach ($dailyEnrollments as $enrollment) {
+                if ($enrollment->created_at) {
+                    $dayKey = substr($enrollment->created_at, 0, 10);
+                    if (isset($dailyData[$dayKey])) {
+                        $dailyData[$dayKey]['count']++;
+                    }
+                }
+            }
+            $dailyEnrollmentsList = array_values($dailyData);
+
+            $levelDistribution = Course::join('user_courses', 'courses.id', '=', 'user_courses.course_id')
+                ->select('courses.level', DB::raw('count(*) as count'))
+                ->groupBy('courses.level')
+                ->get()
+                ->map(function ($c) {
+                    return [
+                        'level' => $c->level ?: 'Other',
+                        'count' => (int) $c->count,
+                    ];
+                });
+
+            $logs = DB::table('activity_logs')
+                ->select('created_at')
+                ->where('created_at', '>=', now()->subDays(30)->toDateTimeString())
+                ->get();
+
+            $hourlyData = [];
+            for ($i = 0; $i < 24; $i++) {
+                $hourLabel = sprintf('%02d:00', $i);
+                $hourlyData[$i] = [
+                    'hour' => $hourLabel,
+                    'count' => 0,
+                ];
+            }
+
+            foreach ($logs as $log) {
+                if ($log->created_at) {
+                    $hour = (int) substr($log->created_at, 11, 2);
+                    if (isset($hourlyData[$hour])) {
+                        $hourlyData[$hour]['count']++;
+                    }
+                }
+            }
+            $activityFlow = array_values($hourlyData);
+
+            $students = DB::table('users')
+                ->where('role', 'student')
+                ->select('dob', 'sex')
+                ->get();
+
+            $ageSpread = [
+                '18-24' => 0,
+                '25-34' => 0,
+                '35+' => 0,
+            ];
+            $genderRatio = [
+                'male' => 0,
+                'female' => 0,
+            ];
+
+            foreach ($students as $student) {
+                if ($student->sex) {
+                    $g = strtolower($student->sex);
+                    if ($g === 'male' || $g === 'm') {
+                        $genderRatio['male']++;
+                    } else if ($g === 'female' || $g === 'f') {
+                        $genderRatio['female']++;
+                    }
+                }
+
+                if ($student->dob) {
+                    try {
+                        $birthDate = new \DateTime($student->dob);
+                        $today = new \DateTime();
+                        $age = $today->diff($birthDate)->y;
+
+                        if ($age >= 18 && $age <= 24) {
+                            $ageSpread['18-24']++;
+                        } elseif ($age >= 25 && $age <= 34) {
+                            $ageSpread['25-34']++;
+                        } elseif ($age >= 35) {
+                            $ageSpread['35+']++;
+                        }
+                    } catch (\Exception $e) {
+                    }
+                }
+            }
+
+            if ($ageSpread['18-24'] === 0 && $ageSpread['25-34'] === 0 && $ageSpread['35+'] === 0) {
+                $ageSpread = [
+                    '18-24' => 45,
+                    '25-34' => 32,
+                    '35+' => 12,
+                ];
+            }
+            if ($genderRatio['male'] === 0 && $genderRatio['female'] === 0) {
+                $genderRatio = [
+                    'male' => 52,
+                    'female' => 37,
+                ];
+            }
+
+            $demographics = [
+                'ageSpread' => [
+                    ['range' => '18-24', 'count' => $ageSpread['18-24']],
+                    ['range' => '25-34', 'count' => $ageSpread['25-34']],
+                    ['range' => '35+', 'count' => $ageSpread['35+']],
+                ],
+                'genderRatio' => [
+                    ['name' => 'Male', 'value' => $genderRatio['male'], 'fill' => '#3B82F6'],
+                    ['name' => 'Female', 'value' => $genderRatio['female'], 'fill' => '#EC4899'],
+                ]
+            ];
+
             return [
-                'id' => $u->id,
-                'full_name' => $u->full_name,
-                'fullName' => $u->full_name,
-                'studentNumber' => $u->student_number,
-                'student_number' => $u->student_number,
-                'role' => $u->role,
-                'status' => $u->status,
-                'avatar' => $u->avatar,
+                'stats' => $stats,
+                'recentUsers' => $recentUsers,
+                'recentCourses' => $recentCourses,
+                'recentLogs' => $recentLogs,
+                'topDistricts' => $topDistricts,
+                'courseEnrollments' => $courseEnrollments,
+                'monthlyEnrollments' => $monthlyEnrollments,
+                'dailyEnrollments' => $dailyEnrollmentsList,
+                'levelDistribution' => $levelDistribution,
+                'activityFlow' => $activityFlow,
+                'demographics' => $demographics,
             ];
         });
 
-        $recentCourses = Course::with(['category', 'secretary', 'coordinator', 'batches'])
-            ->withCount(['batches', 'students'])
-            ->latest()
-            ->take(5)
-            ->get();
-
-        $recentLogs = \App\Models\ActivityLog::with('user:id,full_name,display_name,role')
-            ->orderBy('created_at', 'desc')
-            ->take(5)
-            ->get();
-
-        $topDistricts = DB::table('course_applications')
-            ->select('district', DB::raw('count(*) as count'))
-            ->whereNotNull('district')
-            ->where('district', '!=', '')
-            ->groupBy('district')
-            ->orderBy('count', 'desc')
-            ->take(5)
-            ->get();
-
-        $courseEnrollments = Course::select('id', 'title')
-            ->withCount('students')
-            ->orderBy('students_count', 'desc')
-            ->take(5)
-            ->get()
-            ->map(function ($c) {
-                return [
-                    'title' => $c->title,
-                    'count' => $c->students_count,
-                ];
-            });
-
-
-        $enrollments = DB::table('user_courses')
-            ->select('created_at')
-            ->where('created_at', '>=', now()->subMonths(35)->startOfMonth()->toDateTimeString())
-            ->get();
-
-        $monthlyData = [];
-        for ($i = 35; $i >= 0; $i--) {
-            $monthKey = now()->subMonths($i)->format('Y-m');
-            $monthName = now()->subMonths($i)->format('M Y');
-            $monthlyData[$monthKey] = [
-                'month' => $monthName,
-                'count' => 0,
-            ];
-        }
-
-        foreach ($enrollments as $enrollment) {
-            if ($enrollment->created_at) {
-                $monthKey = substr($enrollment->created_at, 0, 7);
-                if (isset($monthlyData[$monthKey])) {
-                    $monthlyData[$monthKey]['count']++;
-                }
-            }
-        }
-        $monthlyEnrollments = array_values($monthlyData);
-
-
-        $dailyEnrollments = DB::table('user_courses')
-            ->select('created_at')
-            ->where('created_at', '>=', now()->subDays(29)->startOfDay()->toDateTimeString())
-            ->get();
-
-        $dailyData = [];
-        for ($i = 29; $i >= 0; $i--) {
-            $dayKey = now()->subDays($i)->format('Y-m-d');
-            $dayLabel = now()->subDays($i)->format('d M');
-            $dailyData[$dayKey] = [
-                'day' => $dayLabel,
-                'count' => 0,
-            ];
-        }
-
-        foreach ($dailyEnrollments as $enrollment) {
-            if ($enrollment->created_at) {
-                $dayKey = substr($enrollment->created_at, 0, 10);
-                if (isset($dailyData[$dayKey])) {
-                    $dailyData[$dayKey]['count']++;
-                }
-            }
-        }
-        $dailyEnrollmentsList = array_values($dailyData);
-
-
-        $levelDistribution = Course::join('user_courses', 'courses.id', '=', 'user_courses.course_id')
-            ->select('courses.level', DB::raw('count(*) as count'))
-            ->groupBy('courses.level')
-            ->get()
-            ->map(function ($c) {
-                return [
-                    'level' => $c->level ?: 'Other',
-                    'count' => (int) $c->count,
-                ];
-            });
-
-
-        $logs = DB::table('activity_logs')
-            ->select('created_at')
-            ->where('created_at', '>=', now()->subDays(30)->toDateTimeString())
-            ->get();
-
-        $hourlyData = [];
-        for ($i = 0; $i < 24; $i++) {
-            $hourLabel = sprintf('%02d:00', $i);
-            $hourlyData[$i] = [
-                'hour' => $hourLabel,
-                'count' => 0,
-            ];
-        }
-
-        foreach ($logs as $log) {
-            if ($log->created_at) {
-                $hour = (int) substr($log->created_at, 11, 2);
-                if (isset($hourlyData[$hour])) {
-                    $hourlyData[$hour]['count']++;
-                }
-            }
-        }
-        $activityFlow = array_values($hourlyData);
-
-
-        $students = DB::table('users')
-            ->where('role', 'student')
-            ->select('dob', 'sex')
-            ->get();
-
-        $ageSpread = [
-            '18-24' => 0,
-            '25-34' => 0,
-            '35+' => 0,
-        ];
-        $genderRatio = [
-            'male' => 0,
-            'female' => 0,
-        ];
-
-        foreach ($students as $student) {
-            if ($student->sex) {
-                $g = strtolower($student->sex);
-                if ($g === 'male' || $g === 'm') {
-                    $genderRatio['male']++;
-                } else if ($g === 'female' || $g === 'f') {
-                    $genderRatio['female']++;
-                }
-            }
-
-            if ($student->dob) {
-                try {
-                    $birthDate = new \DateTime($student->dob);
-                    $today = new \DateTime();
-                    $age = $today->diff($birthDate)->y;
-
-                    if ($age >= 18 && $age <= 24) {
-                        $ageSpread['18-24']++;
-                    } elseif ($age >= 25 && $age <= 34) {
-                        $ageSpread['25-34']++;
-                    } elseif ($age >= 35) {
-                        $ageSpread['35+']++;
-                    }
-                } catch (\Exception $e) {
-
-                }
-            }
-        }
-
-
-        if ($ageSpread['18-24'] === 0 && $ageSpread['25-34'] === 0 && $ageSpread['35+'] === 0) {
-            $ageSpread = [
-                '18-24' => 45,
-                '25-34' => 32,
-                '35+' => 12,
-            ];
-        }
-        if ($genderRatio['male'] === 0 && $genderRatio['female'] === 0) {
-            $genderRatio = [
-                'male' => 52,
-                'female' => 37,
-            ];
-        }
-
-        $demographics = [
-            'ageSpread' => [
-                ['range' => '18-24', 'count' => $ageSpread['18-24']],
-                ['range' => '25-34', 'count' => $ageSpread['25-34']],
-                ['range' => '35+', 'count' => $ageSpread['35+']],
-            ],
-            'genderRatio' => [
-                ['name' => 'Male', 'value' => $genderRatio['male'], 'fill' => '#3B82F6'],
-                ['name' => 'Female', 'value' => $genderRatio['female'], 'fill' => '#EC4899'],
-            ]
-        ];
-
-        return response()->json([
-            'stats' => $stats,
-            'recentUsers' => $recentUsers,
-            'recentCourses' => $recentCourses,
-            'recentLogs' => $recentLogs,
-            'topDistricts' => $topDistricts,
-            'courseEnrollments' => $courseEnrollments,
-            'monthlyEnrollments' => $monthlyEnrollments,
-            'dailyEnrollments' => $dailyEnrollmentsList,
-            'levelDistribution' => $levelDistribution,
-            'activityFlow' => $activityFlow,
-            'demographics' => $demographics,
-        ]);
+        return response()->json($data);
     }
 
     public function getActivityLogs()

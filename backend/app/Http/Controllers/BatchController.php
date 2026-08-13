@@ -81,12 +81,25 @@ class BatchController extends Controller
             ->get();
 
         
-        $batches->each(function ($batch) {
-            $batch->subjects->each(function ($subject) {
+        $instructorIds = [];
+        foreach ($batches as $batch) {
+            foreach ($batch->subjects as $subject) {
+                if ($subject->pivot->instructor_id) {
+                    $instructorIds[] = $subject->pivot->instructor_id;
+                }
+            }
+        }
+        $instructorIds = array_unique($instructorIds);
+        
+        $instructors = !empty($instructorIds) 
+            ? \App\Models\User::whereIn('id', $instructorIds)->select('id', 'full_name')->get()->keyBy('id')
+            : collect();
+
+        $batches->each(function ($batch) use ($instructors) {
+            $batch->subjects->each(function ($subject) use ($instructors) {
                 $instructorId = $subject->pivot->instructor_id;
-                if ($instructorId) {
-                    $instructor = \App\Models\User::select('id', 'full_name')->find($instructorId);
-                    $subject->pivot->instructor_name = $instructor ? $instructor->full_name : null;
+                if ($instructorId && isset($instructors[$instructorId])) {
+                    $subject->pivot->instructor_name = $instructors[$instructorId]->full_name;
                 } else {
                     $subject->pivot->instructor_name = null;
                 }

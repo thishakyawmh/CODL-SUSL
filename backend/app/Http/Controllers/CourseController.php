@@ -482,10 +482,10 @@ class CourseController extends Controller
     private function getCourseRequests($courseId): array
     {
         return [
-            'enrollment_requests' => \App\Models\CourseApplication::where('course_id', $courseId)->with('user')->get(),
-            'exam_applications' => \App\Models\ExamApplication::where('course_id', $courseId)->with('user')->get(),
-            'postponement_requests' => \App\Models\PostponementRequest::where('course_id', $courseId)->with('user')->get(),
-            'reattempt_requests' => \App\Models\ReattemptRequest::where('course_id', $courseId)->with(['user', 'subject'])->get(),
+            'enrollment_requests' => \App\Models\CourseApplication::where('course_id', $courseId)->with('user:id,full_name,display_name,email,student_number')->get(),
+            'exam_applications' => \App\Models\ExamApplication::where('course_id', $courseId)->with('user:id,full_name,display_name,email,student_number')->get(),
+            'postponement_requests' => \App\Models\PostponementRequest::where('course_id', $courseId)->with('user:id,full_name,display_name,email,student_number')->get(),
+            'reattempt_requests' => \App\Models\ReattemptRequest::where('course_id', $courseId)->with(['user:id,full_name,display_name,email,student_number', 'subject'])->get(),
         ];
     }
 }
