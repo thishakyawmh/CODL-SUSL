@@ -386,7 +386,10 @@ export function IndustryAnalysisForm() {
                         <div className="header-subtitle-container">
                             <img src="/images/logo.png" className="header-uni-logo" alt="SUSL Logo" />
                             <div className="subtitle-text">
-                                <span className="subtitle-line1">Center for Open and Distance Learning</span>
+                                <span className="subtitle-line1">
+                                    <span className="full-text">Center for Open and Distance Learning</span>
+                                    <span className="abbr-text">CODL</span>
+                                </span>
                                 <span className="subtitle-line2">Sabaragamuwa University of Sri Lanka</span>
                             </div>
                         </div>
@@ -443,7 +446,10 @@ export function IndustryAnalysisForm() {
                     <div className="header-subtitle-container">
                         <img src="/images/logo.png" className="header-uni-logo" alt="SUSL Logo" />
                         <div className="subtitle-text">
-                            <span className="subtitle-line1">Center for Open and Distance Learning</span>
+                            <span className="subtitle-line1">
+                                <span className="full-text">Center for Open and Distance Learning</span>
+                                <span className="abbr-text">CODL</span>
+                            </span>
                             <span className="subtitle-line2">Sabaragamuwa University of Sri Lanka</span>
                         </div>
                     </div>
