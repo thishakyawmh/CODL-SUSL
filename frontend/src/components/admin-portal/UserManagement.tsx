@@ -24,7 +24,7 @@ const mapUser = (user: any): User => ({
     avatar: user.avatar ? getFullAvatarUrl(user.avatar) : `https://ui-avatars.com/api/?name=${encodeURIComponent(user.full_name)}&background=random`,
     joinDate: user.created_at ? user.created_at.split('T')[0] : 'N/A',
     lastLogin: user.updated_at || new Date().toISOString(),
-    courses: []
+    courses: user.courses ? user.courses.map((c: any) => c.title || c.code) : []
 });
 
 export const UserManagement: React.FC = () => {
@@ -271,16 +271,26 @@ export const UserManagement: React.FC = () => {
         }
     };
 
-    const handleChangeRoleAction = (user: User) => {
+    const handleChangeRoleAction = async (user: User) => {
         if (user.role === 'super_admin') {
             toast.error('Super Administrators cannot be modified.');
             return;
         }
-        setSelectedUser(user);
-        setEditFormData({ ...user });
-        setIsEditMode(true);
-        setShowDetailModal(true);
-        setOpenMenuId(null);
+        try {
+            setIsLoading(true);
+            const fullUser = await userService.getById(user.id);
+            const mapped = mapUser(fullUser);
+            setSelectedUser(mapped);
+            setEditFormData({ ...mapped });
+            setIsEditMode(true);
+            setShowDetailModal(true);
+            setOpenMenuId(null);
+        } catch (err) {
+            console.error("Failed to fetch user details for editing:", err);
+            toast.error("Failed to load user details");
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleExportUsers = () => {
@@ -448,7 +458,23 @@ export const UserManagement: React.FC = () => {
                                         </td>
                                         <td style={{ position: 'relative', zIndex: openMenuId === user.id ? 50 : undefined }}>
                                             <div className="um-actions">
-                                                <button className="um-action-btn" title="View Details" onClick={() => { setSelectedUser(user); setShowDetailModal(true); }}>
+                                                <button
+                                                    className="um-action-btn"
+                                                    title="View Details"
+                                                    onClick={async () => {
+                                                        try {
+                                                            setIsLoading(true);
+                                                            const fullUser = await userService.getById(user.id);
+                                                            setSelectedUser(mapUser(fullUser));
+                                                            setShowDetailModal(true);
+                                                        } catch (err) {
+                                                            console.error("Failed to fetch user details:", err);
+                                                            toast.error("Failed to load user details");
+                                                        } finally {
+                                                            setIsLoading(false);
+                                                        }
+                                                    }}
+                                                >
                                                     <Eye size={15} />
                                                 </button>
                                                 {user.role !== 'super_admin' && (

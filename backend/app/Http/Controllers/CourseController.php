@@ -12,7 +12,12 @@ class CourseController extends Controller
     {
         $user = $request->user();
 
-        $query = Course::with(['category', 'secretary', 'coordinator', 'batches'])->withCount(['batches', 'students']);
+        $query = Course::with([
+            'category',
+            'secretary',
+            'coordinator',
+            'batches:id,course_id,name,start_date,registration_deadline,max_enrollments,subtitle,status'
+        ])->withCount(['batches', 'students']);
         
         if ($user && $user->role === 'secretary') {
             $query->where('secretary_id', $user->id);

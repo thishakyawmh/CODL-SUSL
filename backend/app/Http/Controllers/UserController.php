@@ -19,7 +19,30 @@ class UserController extends Controller
         if ($request->boolean('with_courses', false) || $request->input('role') === 'student') {
             $query->with('courses:id,title,code');
         }
+
+        // Select only basic columns to optimize list response payload
+        $query->select([
+            'id',
+            'student_number',
+            'full_name',
+            'display_name',
+            'email',
+            'role',
+            'status',
+            'phone',
+            'avatar',
+            'nic',
+            'created_at',
+            'updated_at'
+        ]);
+
         return response()->json($query->get());
+    }
+
+    public function show($id)
+    {
+        $user = User::with('courses:id,title,code')->findOrFail($id);
+        return response()->json($user);
     }
 
     public function store(Request $request)
