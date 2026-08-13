@@ -540,6 +540,7 @@
     padding: 4px 12px;
     border-radius: 20px;
     white-space: nowrap;
+    transition: background 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
 }
 
 .at-cert-badge {
@@ -842,6 +843,12 @@
     font-family: var(--font-family);
 }
 
+.am-reject-btn:disabled,
+.am-approve-btn:disabled {
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
 .am-reject-btn {
     background: #FEE2E2;
     color: #DC2626;
@@ -1126,3 +1133,14 @@
         flex-direction: column;
     }
 }
+
+/* ── Spinner for loading states ── */
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* ── Smooth transition on flow step status changes ── */
+.am-flow-step .am-step-marker {
+    transition: background 0.25s ease, border-color 0.25s ease;
+}
