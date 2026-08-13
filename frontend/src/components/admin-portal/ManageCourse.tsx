@@ -184,7 +184,7 @@ export const ManageCourse: React.FC = () => {
                     maxEnrollments: b.max_enrollments.toString(),
                     subtitle: b.subtitle || 'Academic Intake Phase',
                     status: b.status,
-                    materials: b.materials || [],
+                    materials: b.materials,
                     lecturerId: b.instructor_id || undefined,
                     lecturerName: b.instructor?.full_name || '',
                     subjects: (b.subjects || []).map((s: any) => ({
@@ -831,6 +831,11 @@ export const ManageCourse: React.FC = () => {
         const currentBatch = batches.find(b => b.name === selectedBatch);
         if (!currentBatch) return;
 
+        // Skip any materials generation if they haven't been loaded from the backend yet
+        if (currentBatch.materials === undefined) {
+            return;
+        }
+
         if (currentBatch.materials && currentBatch.materials.length > 0) {
             if (JSON.stringify(materialsSemesters) !== JSON.stringify(currentBatch.materials)) {
                 setMaterialsSemesters(currentBatch.materials);
@@ -907,6 +912,34 @@ export const ManageCourse: React.FC = () => {
             saveMaterialsToDatabase(generated);
         }
     }, [selectedBatch, batches, course, courseType]);
+
+
+    // Fetch materials on-demand when activeSection is 'materials' and a batch is selected
+    useEffect(() => {
+        if (!selectedBatch || batches.length === 0 || activeSection !== 'materials') return;
+        const currentBatch = batches.find(b => b.name === selectedBatch);
+        if (!currentBatch) return;
+
+        // Only fetch if materials are not loaded yet (i.e. undefined)
+        if (currentBatch.materials === undefined) {
+            const loadMaterials = async () => {
+                try {
+                    setIsLoadingData(true);
+                    const materials = await batchService.getMaterials(id!, currentBatch.id);
+                    setBatches(prev => prev.map(b => b.id === currentBatch.id ? {
+                        ...b,
+                        materials: materials || []
+                    } : b));
+                } catch (err) {
+                    console.error("Failed to load materials:", err);
+                    toast.error("Failed to load materials for this batch.");
+                } finally {
+                    setIsLoadingData(false);
+                }
+            };
+            loadMaterials();
+        }
+    }, [selectedBatch, activeSection, batches, id]);
 
 
 

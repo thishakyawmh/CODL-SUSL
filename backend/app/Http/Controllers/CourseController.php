@@ -417,7 +417,20 @@ class CourseController extends Controller
             ->where('registration_deadline', '<', now()->toDateString())
             ->update(['status' => 'Active']);
 
-        $batchQuery = \App\Models\Batch::where('course_id', $courseId);
+        $batchQuery = \App\Models\Batch::where('course_id', $courseId)
+            ->select([
+                'id',
+                'course_id',
+                'instructor_id',
+                'name',
+                'start_date',
+                'registration_deadline',
+                'max_enrollments',
+                'subtitle',
+                'status',
+                'created_at',
+                'updated_at'
+            ]);
         if ($user && $user->role === 'lecturer') {
             $batchQuery->where(function ($q) use ($user) {
                 $q->whereHas('subjects', function ($subQ) use ($user) {

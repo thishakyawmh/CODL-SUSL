@@ -50,7 +50,20 @@ class BatchController extends Controller
             ->update(['status' => 'Active']);
 
         
-        $query = Batch::where('course_id', $courseId);
+        $query = Batch::where('course_id', $courseId)
+            ->select([
+                'id',
+                'course_id',
+                'instructor_id',
+                'name',
+                'start_date',
+                'registration_deadline',
+                'max_enrollments',
+                'subtitle',
+                'status',
+                'created_at',
+                'updated_at'
+            ]);
         if ($user && $user->role === 'lecturer') {
             $query->where(function ($q) use ($user) {
                 $q->whereHas('subjects', function ($subQ) use ($user) {
@@ -182,6 +195,12 @@ class BatchController extends Controller
             'filename' => $file->getClientOriginalName(),
             'size' => $file->getSize()
         ]);
+    }
+
+    public function getMaterials($courseId, $batchId)
+    {
+        $batch = Batch::where('course_id', $courseId)->findOrFail($batchId);
+        return response()->json($batch->materials ?: []);
     }
 }
 

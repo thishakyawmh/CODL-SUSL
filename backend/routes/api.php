@@ -158,6 +158,7 @@ Route::middleware('auth:sanctum')->group(function () {
     
     // Batches
     Route::get('/courses/{id}/batches', [BatchController::class, 'index']);
+    Route::get('/courses/{id}/batches/{batchId}/materials', [BatchController::class, 'getMaterials']);
     Route::post('/courses/{id}/batches', [BatchController::class, 'store']);
     Route::put('/courses/{id}/batches/{batchId}', [BatchController::class, 'update']);
     Route::delete('/courses/{id}/batches/{batchId}', [BatchController::class, 'destroy']);

@@ -198,6 +198,10 @@ export const batchService = {
         const response = await api.get(`/courses/${courseId}/batches`);
         return response.data;
     },
+    getMaterials: async (courseId: string | number, batchId: string | number) => {
+        const response = await api.get(`/courses/${courseId}/batches/${batchId}/materials`);
+        return response.data;
+    },
     create: async (courseId: string, data: any) => {
         const response = await api.post(`/courses/${courseId}/batches`, data);
         return response.data;
