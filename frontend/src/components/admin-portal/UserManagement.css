@@ -26,8 +26,8 @@
 }
 
 .admin-btn-outline:hover {
-    border-color: #7C3AED;
-    color: #7C3AED;
+    border-color: var(--primary-color);
+    color: var(--primary-color);
     background: #FAFAFE;
 }
 
@@ -92,7 +92,7 @@
 }
 
 .um-search:focus-within {
-    border-color: #7C3AED;
+    border-color: var(--primary-color);
     box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
 }
 
@@ -147,7 +147,7 @@
 }
 
 .um-select:focus {
-    border-color: #7C3AED;
+    border-color: var(--primary-color);
 }
 
 /* Table Card */
@@ -255,7 +255,7 @@
 
 .um-user-id {
     font-size: 13px;
-    color: #7C3AED;
+    color: var(--primary-color);
     font-weight: 500;
     font-family: 'SF Mono', 'Fira Code', monospace;
 }
@@ -315,8 +315,8 @@
 
 .um-course-count {
     padding: 3px 10px;
-    background: #EDE9FE;
-    color: #7C3AED;
+    background: var(--primary-light);
+    color: var(--primary-color);
     border-radius: 6px;
     font-size: 12px;
     font-weight: 600;
@@ -352,7 +352,7 @@
 }
 
 .um-action-btn:hover {
-    background: #7C3AED;
+    background: var(--primary-color);
     color: #FFFFFF;
     transform: scale(1.1);
 }
@@ -366,7 +366,7 @@
 }
 
 .um-action-btn.active {
-    background: #7C3AED;
+    background: var(--primary-color);
     color: #FFFFFF;
 }
 
@@ -447,7 +447,7 @@
 
 .um-dropdown-menu button:hover {
     background: #F1F5F9;
-    color: #7C3AED;
+    color: var(--primary-color);
 }
 
 .um-dropdown-menu button.delete {
@@ -567,10 +567,10 @@
     align-items: center;
     gap: 10px;
     padding: 12px 16px;
-    background: #EDE9FE;
+    background: var(--primary-light);
     border-radius: 10px;
     margin-bottom: 20px;
-    color: #5B21B6;
+    color: var(--primary-dark);
     font-size: 13px;
     font-weight: 500;
 }
@@ -617,13 +617,13 @@
 
 .um-form-group input:focus,
 .um-form-group select:focus {
-    border-color: #7C3AED;
+    border-color: var(--primary-color);
     box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.08);
 }
 
 .um-form-hint {
     font-size: 11px;
-    color: #7C3AED;
+    color: var(--primary-color);
     font-weight: 500;
 }
 
@@ -648,12 +648,12 @@
 }
 
 .um-course-checkbox:hover {
-    border-color: #7C3AED;
+    border-color: var(--primary-color);
     background: #FAFAFE;
 }
 
 .um-course-checkbox input[type="checkbox"] {
-    accent-color: #7C3AED;
+    accent-color: var(--primary-color);
 }
 
 /* Auto-gen Preview */
@@ -724,15 +724,15 @@
 }
 
 .um-btn-cancel:hover {
-    border-color: #7C3AED;
-    color: #7C3AED;
+    border-color: var(--primary-color);
+    color: var(--primary-color);
     background: #FAFAFE;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
 }
 
 
 .um-btn-create {
-    background: linear-gradient(135deg, #7C3AED, #6D28D9);
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
     color: #FFFFFF;
     border: none;
     box-shadow: 0 6px 16px rgba(124, 58, 237, 0.25);
@@ -770,7 +770,7 @@
     height: 72px;
     border-radius: 18px;
     object-fit: cover;
-    border: 3px solid #EDE9FE;
+    border: 3px solid var(--primary-light);
 }
 
 .um-detail-info h3 {
@@ -782,7 +782,7 @@
 
 .um-detail-id {
     font-size: 13px;
-    color: #7C3AED;
+    color: var(--primary-color);
     font-weight: 500;
     display: block;
     margin-bottom: 8px;
@@ -891,7 +891,7 @@
 .um-perf-val {
     font-size: 20px;
     font-weight: 800;
-    color: #7C3AED;
+    color: var(--primary-color);
 }
 
 .um-perf-label {
@@ -954,8 +954,8 @@
 .um-spinner {
     width: 40px;
     height: 40px;
-    border: 3px solid #EDE9FE;
-    border-top-color: #7C3AED;
+    border: 3px solid var(--primary-light);
+    border-top-color: var(--primary-color);
     border-radius: 50%;
     animation: um-spin 0.8s linear infinite;
 }
@@ -1124,7 +1124,7 @@
 
 .um-timeline-comment-box {
     background: #F8FAFC;
-    border-left: 3px solid #7C3AED;
+    border-left: 3px solid var(--primary-color);
     padding: 8px 12px;
     border-radius: 0 8px 8px 0;
     margin-top: 8px;

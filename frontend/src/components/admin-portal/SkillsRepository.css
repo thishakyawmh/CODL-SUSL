@@ -261,7 +261,7 @@
     display: inline-block;
 }
 
-.cat-label.software-development { background: #EDE9FE; color: #7C3AED; }
+.cat-label.software-development { background: var(--primary-light); color: var(--primary-color); }
 .cat-label.information-systems { background: #DBEAFE; color: #2563EB; }
 .cat-label.intelligent-systems { background: #E0F2FE; color: #0284C7; }
 .cat-label.security { background: #FEE2E2; color: #EF4444; }

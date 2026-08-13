@@ -12,7 +12,12 @@ class CourseController extends Controller
     {
         $user = $request->user();
 
-        $query = Course::with(['category', 'secretary', 'coordinator', 'batches'])->withCount(['batches', 'students']);
+        $query = Course::with([
+            'category',
+            'secretary',
+            'coordinator',
+            'batches:id,course_id,name,start_date,registration_deadline,max_enrollments,subtitle,status'
+        ])->withCount(['batches', 'students']);
         
         if ($user && $user->role === 'secretary') {
             $query->where('secretary_id', $user->id);
@@ -412,7 +417,20 @@ class CourseController extends Controller
             ->where('registration_deadline', '<', now()->toDateString())
             ->update(['status' => 'Active']);
 
-        $batchQuery = \App\Models\Batch::where('course_id', $courseId);
+        $batchQuery = \App\Models\Batch::where('course_id', $courseId)
+            ->select([
+                'id',
+                'course_id',
+                'instructor_id',
+                'name',
+                'start_date',
+                'registration_deadline',
+                'max_enrollments',
+                'subtitle',
+                'status',
+                'created_at',
+                'updated_at'
+            ]);
         if ($user && $user->role === 'lecturer') {
             $batchQuery->where(function ($q) use ($user) {
                 $q->whereHas('subjects', function ($subQ) use ($user) {
@@ -464,10 +482,10 @@ class CourseController extends Controller
     private function getCourseRequests($courseId): array
     {
         return [
-            'enrollment_requests' => \App\Models\CourseApplication::where('course_id', $courseId)->with('user')->get(),
-            'exam_applications' => \App\Models\ExamApplication::where('course_id', $courseId)->with('user')->get(),
-            'postponement_requests' => \App\Models\PostponementRequest::where('course_id', $courseId)->with('user')->get(),
-            'reattempt_requests' => \App\Models\ReattemptRequest::where('course_id', $courseId)->with(['user', 'subject'])->get(),
+            'enrollment_requests' => \App\Models\CourseApplication::where('course_id', $courseId)->with('user:id,full_name,display_name,email,student_number')->get(),
+            'exam_applications' => \App\Models\ExamApplication::where('course_id', $courseId)->with('user:id,full_name,display_name,email,student_number')->get(),
+            'postponement_requests' => \App\Models\PostponementRequest::where('course_id', $courseId)->with('user:id,full_name,display_name,email,student_number')->get(),
+            'reattempt_requests' => \App\Models\ReattemptRequest::where('course_id', $courseId)->with(['user:id,full_name,display_name,email,student_number', 'subject'])->get(),
         ];
     }
 }

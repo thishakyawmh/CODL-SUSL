@@ -43,7 +43,7 @@
 }
 
 .ts-search-bar:focus-within {
-    border-color: #7C3AED;
+    border-color: var(--primary-color);
     box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.08);
 }
 
@@ -281,7 +281,7 @@
     padding: 4px 12px;
     border-radius: 8px;
     background: rgba(124, 58, 237, 0.08);
-    color: #7C3AED;
+    color: var(--primary-color);
 }
 
 .ts-profile-details {
@@ -341,7 +341,7 @@
 }
 
 .ts-tab-btn.active {
-    background: linear-gradient(135deg, #7C3AED, #6D28D9);
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
     color: #FFFFFF;
     box-shadow: 0 4px 12px rgba(124, 58, 237, 0.25);
 }
@@ -417,7 +417,7 @@
     flex-shrink: 0;
 }
 
-.ts-kpi-card.purple .ts-kpi-icon { background: rgba(124, 58, 237, 0.1); color: #7C3AED; }
+.ts-kpi-card.purple .ts-kpi-icon { background: rgba(124, 58, 237, 0.1); color: var(--primary-color); }
 .ts-kpi-card.green .ts-kpi-icon { background: rgba(16, 185, 129, 0.1); color: #10B981; }
 .ts-kpi-card.blue .ts-kpi-icon { background: rgba(59, 130, 246, 0.1); color: #3B82F6; }
 .ts-kpi-card.amber .ts-kpi-icon { background: rgba(245, 158, 11, 0.1); color: #F59E0B; }
@@ -516,7 +516,7 @@
 
 .ts-progress-bar-fill {
     height: 100%;
-    background: linear-gradient(90deg, #7C3AED, #A78BFA);
+    background: linear-gradient(90deg, var(--primary-color), #A78BFA);
     border-radius: 4px;
     transition: width 0.6s ease;
     min-width: 4px;
@@ -777,7 +777,7 @@
     align-items: center;
     justify-content: center;
     background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(109, 40, 217, 0.05));
-    color: #7C3AED;
+    color: var(--primary-color);
     flex-shrink: 0;
 }
 
@@ -810,7 +810,7 @@
 
 .ts-meta-tag.level {
     background: rgba(124, 58, 237, 0.08);
-    color: #7C3AED;
+    color: var(--primary-color);
 }
 
 .ts-course-header-right {
@@ -891,7 +891,7 @@
 }
 
 .ts-semester-title svg {
-    color: #7C3AED;
+    color: var(--primary-color);
 }
 
 .ts-credit-badge {
@@ -1281,7 +1281,7 @@
 
 /* GPA Banner */
 .ts-gpa-banner {
-    background: linear-gradient(135deg, #7C3AED, #6D28D9, #5B21B6);
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-hover), var(--primary-dark));
     border-radius: 20px;
     padding: 32px;
     display: flex;
@@ -1366,7 +1366,7 @@
     padding: 4px 10px;
     border-radius: 8px;
     background: rgba(124, 58, 237, 0.08);
-    color: #7C3AED;
+    color: var(--primary-color);
 }
 
 .ts-results-course-block .ts-table {
@@ -1584,7 +1584,7 @@
     justify-content: center;
     background: linear-gradient(135deg, rgba(124, 58, 237, 0.08), rgba(59, 130, 246, 0.05));
     border-radius: 24px;
-    color: #7C3AED;
+    color: var(--primary-color);
     margin-bottom: 24px;
 }
 
@@ -1618,7 +1618,7 @@
 }
 
 .ts-empty-hints strong {
-    color: #7C3AED;
+    color: var(--primary-color);
     font-weight: 600;
 }
 
@@ -1871,7 +1871,7 @@
 }
 
 .ts-last-login svg {
-    color: #7C3AED;
+    color: var(--primary-color);
 }
 
 .ts-profile-meta-row {
@@ -1921,7 +1921,7 @@
 }
 
 .ts-section-header svg {
-    color: #7C3AED;
+    color: var(--primary-color);
 }
 
 .ts-section-header h3 {
@@ -1945,7 +1945,7 @@
 .ts-info-group h4 {
     font-size: 14px;
     font-weight: 700;
-    color: #7C3AED;
+    color: var(--primary-color);
     margin: 0;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -2016,7 +2016,7 @@
 .ts-academic-sub-header h4 {
     font-size: 14px;
     font-weight: 700;
-    color: #7C3AED;
+    color: var(--primary-color);
     margin: 0;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -2067,7 +2067,7 @@
     border-radius: 6px;
     font-weight: 750;
     background: rgba(124, 58, 237, 0.08);
-    color: #7C3AED;
+    color: var(--primary-color);
     text-align: center;
     min-width: 24px;
 }
@@ -2095,7 +2095,7 @@
 }
 
 .ts-section-title-outer svg {
-    color: #7C3AED;
+    color: var(--primary-color);
 }
 
 .ts-section-title-outer h3 {
@@ -2152,7 +2152,7 @@
     align-items: center;
     justify-content: center;
     background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(109, 40, 217, 0.05));
-    color: #7C3AED;
+    color: var(--primary-color);
     flex-shrink: 0;
     box-shadow: 0 2px 8px rgba(124, 58, 237, 0.05);
 }
@@ -2234,7 +2234,7 @@
 }
 
 .ts-info-chip svg {
-    color: #7C3AED;
+    color: var(--primary-color);
 }
 
 .ts-course-content-grid {
@@ -2283,7 +2283,7 @@
 }
 
 .ts-semester-title svg {
-    color: #7C3AED;
+    color: var(--primary-color);
 }
 
 .ts-credit-badge {
@@ -2345,7 +2345,7 @@
 }
 
 .ts-timeline-header-new svg {
-    color: #7C3AED;
+    color: var(--primary-color);
 }
 
 .ts-course-timeline {

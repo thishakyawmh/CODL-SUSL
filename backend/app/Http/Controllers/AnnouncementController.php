@@ -15,6 +15,10 @@ class AnnouncementController extends Controller
             $query->where('course_id', $request->query('course_id'));
         }
 
+        if ($request->query('global_only') === 'true') {
+            $query->whereNull('course_id');
+        }
+
         if ($request->has('batch')) {
             $query->where(function ($q) use ($request) {
                 $q->where('batch', $request->query('batch'))

@@ -81,6 +81,10 @@ export const userService = {
         const response = await api.get('/users');
         return response.data;
     },
+    getById: async (id: string | number) => {
+        const response = await api.get(`/users/${id}`);
+        return response.data;
+    },
     create: async (data: any) => {
         const response = await api.post('/users', data);
         return response.data;
@@ -192,6 +196,10 @@ export const courseService = {
 export const batchService = {
     getByCourse: async (courseId: string) => {
         const response = await api.get(`/courses/${courseId}/batches`);
+        return response.data;
+    },
+    getMaterials: async (courseId: string | number, batchId: string | number) => {
+        const response = await api.get(`/courses/${courseId}/batches/${batchId}/materials`);
         return response.data;
     },
     create: async (courseId: string, data: any) => {
@@ -417,7 +425,7 @@ export const examResultService = {
 };
 
 export const announcementService = {
-    getAll: async (params?: { course_id?: string | number; batch?: string }) => {
+    getAll: async (params?: any) => {
         const response = await api.get('/announcements', { params });
         return response.data;
     },

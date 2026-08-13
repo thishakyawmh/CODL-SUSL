@@ -184,7 +184,7 @@ export const CourseDetails: React.FC = () => {
             icon: <FileText size={28} />,
             badgeCount: newMaterialsCount,
             bgColor: '#F5F3FF',
-            iconColor: '#7C3AED'
+            iconColor: 'var(--primary-color)'
         },
         {
             id: 'exams',

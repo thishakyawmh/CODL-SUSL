@@ -33,6 +33,22 @@ class DatabaseTableController extends Controller
             'password_resets',
         ];
 
+        // Retrieve row counts in a single query for MySQL
+        $countsMap = [];
+        try {
+            $dbName = DB::connection()->getDatabaseName();
+            $rows = DB::select("
+                SELECT table_name, table_rows 
+                FROM information_schema.tables 
+                WHERE table_schema = ?
+            ", [$dbName]);
+            foreach ($rows as $row) {
+                $countsMap[$row->table_name] = (int)$row->table_rows;
+            }
+        } catch (\Exception $e) {
+            // Fallback to sequential counting
+        }
+
         foreach ($tables as $table) {
             $name = '';
             if (is_array($table)) {
@@ -47,10 +63,14 @@ class DatabaseTableController extends Controller
                 continue;
             }
             
-            try {
-                $count = DB::table($name)->count();
-            } catch (\Exception $e) {
-                $count = 0;
+            if (isset($countsMap[$name])) {
+                $count = $countsMap[$name];
+            } else {
+                try {
+                    $count = DB::table($name)->count();
+                } catch (\Exception $e) {
+                    $count = 0;
+                }
             }
 
             $result[] = [

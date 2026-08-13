@@ -57,7 +57,7 @@ export const HelpCenter: React.FC = () => {
             descEn: 'Setup and activate your new applicant workspace',
             descSi: 'අයදුම්කරුගේ නව ගිණුම සකසා සක්‍රිය කරන ආකාරය',
             icon: UserPlus,
-            color: '#7C3AED',
+            color: 'var(--primary-color)',
             videoId: 'ezbJwaLmOeM', 
             introEn: 'To access CODL student features and submit applications, you need to create a secure personal portal. Watch the guide video below.',
             introSi: 'CODL ශිෂ්‍ය පහසුකම් භාවිතා කිරීමට සහ අයදුම්පත් ඉදිරිපත් කිරීමට, ඔබ ආරක්ෂිත පුද්ගලික ද්වාරයක් සෑදිය යුතුය. මේ සඳහා පහත වීඩියෝ මාර්ගෝපදේශය නරඹන්න.',

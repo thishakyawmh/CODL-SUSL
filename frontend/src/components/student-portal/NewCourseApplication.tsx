@@ -82,6 +82,7 @@ export const NewCourseApplication: React.FC = () => {
                 const user = JSON.parse(storedUser);
                 setFormData(prev => ({
                     ...prev,
+                    fullName: user.full_name || prev.fullName,
                     displayName: user.display_name || prev.displayName,
                     email: user.email || prev.email,
                     nic: user.nic || prev.nic,
@@ -242,7 +243,12 @@ export const NewCourseApplication: React.FC = () => {
                 await outletContext.fetchApplications();
             }
 
-            if (window.location.pathname.includes('/applicant-dashboard')) {
+            const storedUser = sessionStorage.getItem('user');
+            const userObj = storedUser ? JSON.parse(storedUser) : null;
+
+            if (userObj && userObj.role === 'applicant') {
+                navigate('/applicant-dashboard/track-status');
+            } else if (window.location.pathname.includes('/applicant-dashboard')) {
                 navigate('/applicant-dashboard/track-status');
             } else {
                 navigate('/dashboard');
@@ -262,6 +268,7 @@ export const NewCourseApplication: React.FC = () => {
             } else {
                 setSubmitError("An error occurred while submitting your application. Please try again.");
             }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         } finally {
             setIsSubmitting(false);
         }
@@ -335,7 +342,7 @@ export const NewCourseApplication: React.FC = () => {
                         <form onSubmit={handleSubmitApplication} className="attractive-registration-form">
 
                             <div className="form-section-panel">
-                                <h4 className="panel-heading"><BookOpen size={20} style={{ marginRight: '8px', color: '#7C3AED', verticalAlign: 'text-bottom' }} /> 1. Course Selection</h4>
+                                <h4 className="panel-heading"><BookOpen size={20} style={{ marginRight: '8px', color: 'var(--primary-color)', verticalAlign: 'text-bottom' }} /> 1. Course Selection</h4>
                                 <div className="form-grid" style={{ marginBottom: 0, marginTop: 0 }}>
                                     <div className="form-group full-width">
                                         <label>Course Type</label>

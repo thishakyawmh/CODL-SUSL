@@ -162,6 +162,20 @@ function App() {
   });
 
   useEffect(() => {
+    if (settings && settings.primary_color) {
+      document.documentElement.style.setProperty('--primary-color', settings.primary_color);
+      document.documentElement.style.setProperty('--primary-hover', settings.primary_color + 'e0');
+      document.documentElement.style.setProperty('--border-focus', settings.primary_color);
+      document.documentElement.style.setProperty('--sidebar-bg', settings.primary_color);
+    } else {
+      document.documentElement.style.setProperty('--primary-color', '#7C3AED');
+      document.documentElement.style.setProperty('--primary-hover', '#6D28D9');
+      document.documentElement.style.setProperty('--border-focus', '#7C3AED');
+      document.documentElement.style.setProperty('--sidebar-bg', '#7C3AED');
+    }
+  }, [settings]);
+
+  useEffect(() => {
     const loadSettings = async () => {
       try {
         const data = await systemSettingService.getSettings();

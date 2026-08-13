@@ -252,7 +252,7 @@ export const LetterRequest: React.FC = () => {
                         onClick={() => setActiveTab('history')}
                         className="lr-btn-primary"
                         style={{
-                            background: 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)',
+                            background: 'linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%)',
                             boxShadow: '0 4px 12px rgba(124, 58, 237, 0.15)',
                             border: 'none',
                             padding: '10px 20px',
@@ -509,7 +509,7 @@ export const LetterRequest: React.FC = () => {
                                                     <span style={{
                                                         fontSize: '11px',
                                                         fontWeight: 700,
-                                                        color: '#7C3AED',
+                                                        color: 'var(--primary-color)',
                                                         backgroundColor: '#F5F3FF',
                                                         padding: '4px 10px',
                                                         borderRadius: '6px',
@@ -540,7 +540,7 @@ export const LetterRequest: React.FC = () => {
                                                 </h3>
 
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#475569', fontSize: '13px', marginTop: '4px', flexWrap: 'wrap' }}>
-                                                    <BookOpen size={16} style={{ color: '#7C3AED', flexShrink: 0 }} />
+                                                    <BookOpen size={16} style={{ color: 'var(--primary-color)', flexShrink: 0 }} />
                                                     <span><strong>Course Offered:</strong> {req.course ? req.course.title : 'Course'}</span>
                                                     <span style={{ color: '#CBD5E1' }}>•</span>
                                                     <span style={{ backgroundColor: '#F1F5F9', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, color: '#475569' }}>
@@ -768,7 +768,7 @@ export const LetterRequest: React.FC = () => {
                                                             <MessageSquare size={16} style={{ color: '#9333EA', flexShrink: 0, marginTop: '2px' }} />
                                                         )}
                                                         <div>
-                                                            <strong style={{ display: 'block', marginBottom: '2px', color: req.status === 'rejected' ? '#EA580C' : '#7C3AED' }}>
+                                                            <strong style={{ display: 'block', marginBottom: '2px', color: req.status === 'rejected' ? '#EA580C' : 'var(--primary-color)' }}>
                                                                 {req.status === 'rejected' ? 'Director Rejection Reason' : 'Director'} {req.director_user ? `(${req.director_user.display_name || req.director_user.full_name})` : ''}
                                                             </strong>
                                                             <span style={{ lineHeight: '1.5' }}>"{req.director_comment}"</span>

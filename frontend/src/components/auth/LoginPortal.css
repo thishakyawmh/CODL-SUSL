@@ -302,7 +302,7 @@
 
 .purple-icon {
     background-color: #EEF2FF;
-    color: #7C3AED;
+    color: var(--primary-color);
 }
 
 .green-icon {
@@ -335,7 +335,7 @@
     left: 0;
     right: 0;
     height: 4px;
-    background: linear-gradient(90deg, #7C3AED, #818CF8);
+    background: linear-gradient(90deg, var(--primary-color), #818CF8);
 }
 
 .auth-form {
@@ -369,7 +369,7 @@
 
 .form-group input:focus {
     outline: none;
-    border-color: #7C3AED;
+    border-color: var(--primary-color);
     background-color: #ffffff;
     box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
 }
@@ -425,13 +425,13 @@
 }
 
 .remember-me input {
-    accent-color: #7C3AED;
+    accent-color: var(--primary-color);
     width: 16px;
     height: 16px;
 }
 
 .forgot-password {
-    color: #7C3AED;
+    color: var(--primary-color);
     text-decoration: none;
     font-weight: 600;
 }
@@ -441,7 +441,7 @@
 }
 
 .auth-submit-btn {
-    background-color: #7C3AED;
+    background-color: var(--primary-color);
     color: white;
     height: 48px;
     border: none;

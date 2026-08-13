@@ -255,9 +255,9 @@ const ProgramHub: React.FC<{
     studentCount: number,
     industryCount: number,
     levelFilter: string,
-    setLevelFilter: React.Dispatch<React.SetStateAction<string>>,
+    setLevelFilter: (val: string) => void,
     searchTerm: string,
-    setSearchTerm: React.Dispatch<React.SetStateAction<string>>,
+    setSearchTerm: (val: string) => void,
 }> = ({
     programs,
     globalEmergingTech,
@@ -279,7 +279,7 @@ const ProgramHub: React.FC<{
                 name: 'Degree',
                 desc: '4-Year Academic Programs',
                 icon: GraduationCap,
-                color: '#7C3AED',
+                color: 'var(--primary-color)',
                 filter: (p: Course) => p.level.toLowerCase().includes('degree')
             },
             {
@@ -334,7 +334,7 @@ const ProgramHub: React.FC<{
 
         const getLevelColor = (level: string) => {
             switch (level) {
-                case 'Degree': return { bg: '#EDE9FE', text: '#7C3AED' };
+                case 'Degree': return { bg: 'var(--primary-light)', text: 'var(--primary-color)' };
                 case 'Diploma': return { bg: '#DBEAFE', text: '#2563EB' };
                 case 'Higher National Diploma': return { bg: '#FEF3C7', text: '#D97706' };
                 case 'Advanced Certificate': return { bg: '#FCE7F3', text: '#DB2777' };
@@ -428,8 +428,8 @@ const ProgramHub: React.FC<{
                 { }
                 {levelFilter === 'all' && !searchTerm && (
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', marginBottom: '20px' }}>
-                        <div className="ai-chart-card" style={{ display: 'flex', alignItems: 'center', gap: '20px', padding: '20px 24px', margin: 0, borderLeft: '6px solid #7C3AED', background: '#FFFFFF', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.015)', borderRadius: '16px' }}>
-                            <div style={{ backgroundColor: '#F3E8FF', color: '#7C3AED', padding: '12px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div className="ai-chart-card" style={{ display: 'flex', alignItems: 'center', gap: '20px', padding: '20px 24px', margin: 0, borderLeft: '6px solid var(--primary-color)', background: '#FFFFFF', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.015)', borderRadius: '16px' }}>
+                            <div style={{ backgroundColor: '#F3E8FF', color: 'var(--primary-color)', padding: '12px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                 <Users size={28} />
                             </div>
                             <div>
@@ -457,7 +457,7 @@ const ProgramHub: React.FC<{
                                 justifyContent: 'space-between',
                                 padding: '20px 24px',
                                 margin: 0,
-                                background: 'linear-gradient(135deg, #7C3AED, #6D28D9)',
+                                background: 'linear-gradient(135deg, var(--primary-color), var(--primary-hover))',
                                 boxShadow: '0 4px 20px rgba(124, 58, 237, 0.3)',
                                 borderRadius: '16px',
                                 cursor: 'pointer',
@@ -1162,7 +1162,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                                 display: 'flex',
                                 alignItems: 'center',
                                 gap: '8px',
-                                background: '#7C3AED',
+                                background: 'var(--primary-color)',
                                 color: '#FFFFFF',
                                 border: 'none',
                                 padding: '10px 18px',
@@ -1174,10 +1174,10 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                                 boxShadow: '0 4px 12px rgba(124, 58, 237, 0.2)'
                             }}
                             onMouseEnter={(e) => {
-                                e.currentTarget.style.background = '#6D28D9';
+                                e.currentTarget.style.background = 'var(--primary-hover)';
                             }}
                             onMouseLeave={(e) => {
-                                e.currentTarget.style.background = '#7C3AED';
+                                e.currentTarget.style.background = 'var(--primary-color)';
                             }}
                         >
                             <Download size={16} />
@@ -1211,9 +1211,9 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                         fontSize: '15px',
                         fontWeight: 700,
                         border: 'none',
-                        borderBottom: activeTab === 'insights' ? '3px solid #7C3AED' : '3px solid transparent',
+                        borderBottom: activeTab === 'insights' ? '3px solid var(--primary-color)' : '3px solid transparent',
                         backgroundColor: activeTab === 'insights' ? '#F3E8FF' : 'transparent',
-                        color: activeTab === 'insights' ? '#7C3AED' : '#64748B',
+                        color: activeTab === 'insights' ? 'var(--primary-color)' : '#64748B',
                         borderRadius: '12px 12px 0 0',
                         cursor: 'pointer',
                         transition: 'all 0.2s ease',
@@ -1235,9 +1235,9 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                         fontSize: '15px',
                         fontWeight: 700,
                         border: 'none',
-                        borderBottom: activeTab === 'recommendations' ? '3px solid #7C3AED' : '3px solid transparent',
+                        borderBottom: activeTab === 'recommendations' ? '3px solid var(--primary-color)' : '3px solid transparent',
                         backgroundColor: activeTab === 'recommendations' ? '#F3E8FF' : 'transparent',
-                        color: activeTab === 'recommendations' ? '#7C3AED' : '#64748B',
+                        color: activeTab === 'recommendations' ? 'var(--primary-color)' : '#64748B',
                         borderRadius: '12px 12px 0 0',
                         cursor: 'pointer',
                         transition: 'all 0.2s ease',
@@ -1255,7 +1255,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                         <span
                             style={{
                                 padding: '2px 8px',
-                                background: activeTab === 'recommendations' ? '#7C3AED' : '#E2E8F0',
+                                background: activeTab === 'recommendations' ? 'var(--primary-color)' : '#E2E8F0',
                                 color: activeTab === 'recommendations' ? '#FFFFFF' : '#475569',
                                 borderRadius: '12px',
                                 fontSize: '11px',
@@ -1279,9 +1279,9 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                         fontSize: '15px',
                         fontWeight: 700,
                         border: 'none',
-                        borderBottom: activeTab === 'curriculum' ? '3px solid #7C3AED' : '3px solid transparent',
+                        borderBottom: activeTab === 'curriculum' ? '3px solid var(--primary-color)' : '3px solid transparent',
                         backgroundColor: activeTab === 'curriculum' ? '#F3E8FF' : 'transparent',
-                        color: activeTab === 'curriculum' ? '#7C3AED' : '#64748B',
+                        color: activeTab === 'curriculum' ? 'var(--primary-color)' : '#64748B',
                         borderRadius: '12px 12px 0 0',
                         cursor: 'pointer',
                         transition: 'all 0.2s ease',
@@ -1298,22 +1298,36 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                 </button>
             </div>
 
-            {/* Tab 1: AI Insights */}
+            { }
             <div className="pdf-insights-section" style={{ display: activeTab === 'insights' ? 'flex' : 'none', flexDirection: 'column', gap: '36px' }}>
                 <h3 className="pdf-only-title" style={{ display: 'none', fontSize: '20px', fontWeight: 800, color: '#1E293B', borderBottom: '2px solid #E2E8F0', paddingBottom: '8px', marginBottom: '24px', marginTop: '24px' }}>I. AI Analytics & Survey Insights</h3>
 
-                {/* Category 1: Curriculum & Delivery Insights */}
+                { }
                 <div className="category-section" style={{ background: '#FAF5FF50', border: '1px solid #7C3AED10', padding: '28px', borderRadius: '24px', boxShadow: '0 4px 20px rgba(124, 58, 237, 0.02)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <div style={{ backgroundColor: '#F3E8FF', color: '#7C3AED', padding: '10px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <div style={{ backgroundColor: '#F3E8FF', color: 'var(--primary-color)', padding: '10px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                 <BookOpen size={20} />
                             </div>
-                            <div className="category-title-text">
-                                <h3>Curriculum & Delivery Insights</h3>
-                                <p>Analysis of curriculum scope, subject coverage, delivery split, and curriculum anomalies</p>
+                            <div>
+                                <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#4C1D95', margin: 0 }}>Curriculum & Delivery Insights</h3>
+                                <p style={{ fontSize: '13px', color: '#6B21A8', margin: '2px 0 0 0', fontWeight: 500 }}>Analysis of curriculum scope, subject coverage, delivery split, and curriculum anomalies</p>
+
                                 {overview.kpis && (
-                                    <div className={`evidence-alert-badge ${overview.kpis.evidence_status === 'insufficient' ? 'insufficient' : 'sufficient'}`}>
+                                    <div style={{
+                                        backgroundColor: overview.kpis.evidence_status === 'insufficient' ? '#FEE2E2' : '#EFF6FF',
+                                        color: overview.kpis.evidence_status === 'insufficient' ? '#991B1B' : '#1E40AF',
+                                        border: overview.kpis.evidence_status === 'insufficient' ? '1px solid #FCA5A5' : '1px solid #BFDBFE',
+                                        padding: '8px 14px',
+                                        borderRadius: '12px',
+                                        fontSize: '12px',
+                                        fontWeight: 600,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '6px',
+                                        marginTop: '10px',
+                                        width: 'fit-content'
+                                    }}>
                                         <span>📢</span>
                                         <span>
                                             {overview.kpis.evidence_status === 'insufficient'
@@ -1325,9 +1339,9 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                             </div>
                         </div>
 
-                        {/* Score badge next to the title (right corner) */}
+                        { }
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', backgroundColor: '#F3E8FF70', padding: '10px 18px', borderRadius: '16px', border: '1px solid #7C3AED15' }}>
-                            <span style={{ fontSize: '24px', fontWeight: 800, color: '#7C3AED', lineHeight: 1.1 }}>{overview.coverage_percent !== null ? `${overview.coverage_percent}%` : 'N/A'}</span>
+                            <span style={{ fontSize: '24px', fontWeight: 800, color: 'var(--primary-color)', lineHeight: 1.1 }}>{overview.coverage_percent !== null ? `${overview.coverage_percent}%` : 'N/A'}</span>
                             <span style={{ fontSize: '12px', fontWeight: 500, color: '#6B21A8', marginTop: '4px' }}>Curriculum Coverage</span>
                         </div>
                     </div>
@@ -1394,11 +1408,11 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                     ) : (
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '24px' }}>
                             {/* Potential Curriculum Gaps */}
-                            <div className="ai-chart-card" style={{ borderLeft: '5px solid #7C3AED', margin: 0 }}>
-                                <h4 className="ai-card-title text-violet-700 font-bold">
+                            <div className="ai-chart-card" style={{ borderLeft: '5px solid var(--primary-color)', margin: 0 }}>
+                                <h4 className="flex items-center gap-2 text-violet-700 font-bold" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
                                     <ShieldAlert size={18} className="text-violet-500" /> Potential Curriculum Gaps
                                 </h4>
-                                <p className="ai-card-subtitle">Evidence-based analysis of curriculum gaps, enhancements and industry trends.</p>
+                                <p className="text-slate-400 text-xs mb-4" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Evidence-based analysis of curriculum gaps, enhancements and industry trends.</p>
                                 {overview.missing_subjects && overview.missing_subjects.length > 0 ? (
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                                         {overview.missing_subjects.map((sub: any, idx: number) => {
@@ -1416,8 +1430,8 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                                             } else if (sub.classification === 'Curriculum Enhancement') {
                                                 cardBg = '#F5F3FF';
                                                 cardBorder = '#C084FC';
-                                                textTheme = '#6D28D9';
-                                                badgeBg = '#EDE9FE';
+                                                textTheme = 'var(--primary-hover)';
+                                                badgeBg = 'var(--primary-light)';
                                             } else if (sub.classification === 'Emerging / Industry Technology Trend') {
                                                 cardBg = '#F0F9FF';
                                                 cardBorder = '#7DD3FC';
@@ -1451,7 +1465,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                                                         </div>
                                                         <span style={{
                                                             backgroundColor: '#7C3AED15',
-                                                            color: '#7C3AED',
+                                                            color: 'var(--primary-color)',
                                                             padding: '4px 10px',
                                                             borderRadius: '10px',
                                                             fontWeight: 800,
@@ -1464,19 +1478,22 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                                                     <p style={{ margin: '0 0 12px 0', color: '#334155', fontSize: '13px', lineHeight: '1.4' }}>
                                                         {sub.explanation}
                                                     </p>
-                                                    <div className="ai-metadata-grid">
-                                                        <span>🏢 Industry: <strong>{sub.relevant_industry_responses}/{sub.total_industry_responses} ({sub.industry_pct}%)</strong></span>
-                                                        <span>🎓 Student: <strong>{sub.relevant_student_responses}/{sub.total_student_responses} ({sub.student_pct}%)</strong></span>
-                                                        <span>📖 Curriculum: <strong style={{ color: sub.curriculum_coverage_status === 'Not Covered' ? '#EF4444' : '#10B981' }}>{sub.curriculum_coverage_status}</strong></span>
-                                                        <span>⚡ Confidence: <strong>{sub.evidence_confidence}</strong></span>
-                                                    </div>
-                                                    <div className="ai-metadata-extra">
-                                                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px solid rgba(0,0,0,0.04)', paddingTop: '10px', fontSize: '11.5px', color: '#64748B' }}>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+                                                            <span>🏢 Industry: <strong>{sub.relevant_industry_responses}/{sub.total_industry_responses} ({sub.industry_pct}%)</strong></span>
+                                                            <span>🎓 Student: <strong>{sub.relevant_student_responses}/{sub.total_student_responses} ({sub.student_pct}%)</strong></span>
+                                                        </div>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', color: '#475569' }}>
+                                                            <span>📖 Curriculum: <strong style={{ color: sub.curriculum_coverage_status === 'Not Covered' ? '#EF4444' : '#10B981' }}>{sub.curriculum_coverage_status}</strong></span>
+                                                            <span>⚡ Confidence: <strong>{sub.evidence_confidence}</strong></span>
+                                                        </div>
+                                                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '4px' }}>
                                                             {sub.evidence_sources && sub.evidence_sources.map((src: string, i: number) => (
                                                                 <span key={i} style={{ backgroundColor: '#F1F5F9', border: '1px solid #E2E8F0', color: '#475569', padding: '2px 8px', borderRadius: '6px', fontSize: '10px', fontWeight: 600 }}>{src}</span>
                                                             ))}
                                                         </div>
-                                                        <div>
+                                                        <div style={{ marginTop: '4px' }}>
                                                             🔑 Skills: <strong style={{ color: '#475569' }}>{sub.skills.join(', ')}</strong>
                                                         </div>
                                                     </div>
@@ -1494,10 +1511,10 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
 
                             {/* Curriculum Anomalies */}
                             <div className="ai-chart-card" style={{ borderLeft: '5px solid #F59E0B', margin: 0 }}>
-                                <h4 className="ai-card-title text-amber-700 font-bold">
+                                <h4 className="flex items-center gap-2 text-amber-700 font-bold" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
                                     <AlertTriangle size={18} className="text-amber-500" /> Curriculum Anomalies
                                 </h4>
-                                <p className="ai-card-subtitle">Low demand, legacy warning, or skill coverage gap indicators.</p>
+                                <p className="text-slate-400 text-xs mb-4" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Low demand, legacy warning, or skill coverage gap indicators.</p>
 
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                     {overview.outdated_subjects && overview.outdated_subjects.length > 0 ? (
@@ -1559,143 +1576,149 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                             </div>
 
                             {/* Theory vs Practical Split */}
-                            <div className="ai-chart-card" style={{ margin: 0, gridColumn: '1 / -1' }}>
-                                <h4 className="ai-card-title">Theory vs Practical Split</h4>
-                                <p className="ai-card-subtitle">Student preference ratio derived from survey responses.</p>
+                            <div className="ai-chart-card" style={{ margin: 0 }}>
+                                <h4>Theory vs Practical Split</h4>
+                                <p className="text-slate-400 text-xs mb-4" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Student preference ratio derived from survey responses.</p>
 
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '20px' }}>
-                                    {/* Horizontal Split Bar */}
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: 700, color: '#475569' }}>
-                                            <span>Theory ({overview.learning_preferences_data?.student_theory_percent || 0}%)</span>
-                                            <span>Practical ({overview.learning_preferences_data?.student_practical_percent || 0}%)</span>
-                                        </div>
-                                        <div style={{ width: '100%', height: '24px', borderRadius: '12px', display: 'flex', overflow: 'hidden', backgroundColor: '#F1F5F9', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.06)' }}>
-                                            {(overview.learning_preferences_data?.student_theory_percent || 0) > 0 && (
-                                                <div style={{ width: `${overview.learning_preferences_data?.student_theory_percent || 0}%`, backgroundColor: '#C084FC', height: '100%', transition: 'all 0.5s ease' }} />
-                                            )}
-                                            {(overview.learning_preferences_data?.student_practical_percent || 0) > 0 && (
-                                                <div style={{ width: `${overview.learning_preferences_data?.student_practical_percent || 0}%`, backgroundColor: '#7C3AED', height: '100%', transition: 'all 0.5s ease' }} />
-                                            )}
-                                        </div>
-                                    </div>
+                                {(() => {
+                                    const theory = overview.learning_preferences_data?.student_theory_percent || 0;
+                                    const practical = overview.learning_preferences_data?.student_practical_percent || 0;
 
-                                    <div style={{ display: 'flex', justifyContent: 'center', gap: '32px', width: '100%', marginTop: '10px' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
-                                            <span style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#C084FC', display: 'inline-block' }}></span>
-                                            <span style={{ color: '#475569', fontWeight: 600 }}>Theory:</span>
-                                            <span style={{ fontWeight: 800, color: '#1E293B' }}>{overview.learning_preferences_data?.student_theory_percent || 0}%</span>
-                                        </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
-                                            <span style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#7C3AED', display: 'inline-block' }}></span>
-                                            <span style={{ color: '#475569', fontWeight: 600 }}>Practical:</span>
-                                            <span style={{ fontWeight: 800, color: '#1E293B' }}>{overview.learning_preferences_data?.student_practical_percent || 0}%</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Preferred Learning & Training Methods */}
-                            <div className="ai-chart-card" style={{ marginTop: '20px' }}>
-                                <h4>Preferred Learning & Training Methods</h4>
-                                <p className="text-slate-400 text-xs mb-4" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Teaching and training modes preferred by applicants and employers ranked by weighted overall demand (70% Industry / 30% Student).</p>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '12px' }}>
-                                    {(() => {
-                                        const studentMethods = overview.learning_preferences_data?.student_methods || [];
-                                        const industryPractices = overview.learning_preferences_data?.industry_practices || [];
-
-                                        const methodMap: Record<string, { student: number; industry: number }> = {};
-
-                                        studentMethods.forEach((m: any) => {
-                                            const name = m.name;
-                                            if (!methodMap[name]) {
-                                                methodMap[name] = { student: 0, industry: 0 };
-                                            }
-                                            methodMap[name].student = m.value;
-                                        });
-
-                                        industryPractices.forEach((p: any) => {
-                                            const name = p.name;
-                                            if (!methodMap[name]) {
-                                                methodMap[name] = { student: 0, industry: 0 };
-                                            }
-                                            methodMap[name].industry = p.value;
-                                        });
-
-                                        const combinedMethods = Object.keys(methodMap).map(name => {
-                                            const { student, industry } = methodMap[name];
-                                            const overallVal = Math.round((industry * 0.70) + (student * 0.30));
-                                            const studentMatch = studentMethods.find((m: any) => m.name === name);
-                                            const alignmentLevel = studentMatch?.alignment_level || (overallVal >= 15 ? 'High' : (overallVal >= 8 ? 'Medium' : 'Low'));
-
-                                            return {
-                                                name,
-                                                studentVal: student,
-                                                industryVal: industry,
-                                                overallVal,
-                                                alignment_level: alignmentLevel
-                                            };
-                                        });
-
-                                        const topMethods = combinedMethods
-                                            .sort((a, b) => b.overallVal - a.overallVal)
-                                            .slice(0, 4);
-
-                                        if (topMethods.length === 0) {
-                                            return <div className="text-center text-slate-400 py-6 text-sm">Insufficient data points.</div>;
-                                        }
-
-                                        return topMethods.map((item: any, idx: number) => (
-                                            <div key={idx} style={{
-                                                borderBottom: '1px solid #F1F5F9',
-                                                paddingBottom: '12px',
-                                                fontSize: '13px'
-                                            }}>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                                                    <span style={{ fontWeight: 700, color: '#1E293B' }}>{item.name}</span>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                        <span style={{ fontWeight: 800, color: '#7C3AED' }}>{item.overallVal}% Overall Demand</span>
-                                                        <span style={{
-                                                            backgroundColor: item.alignment_level === 'High' ? '#DCFCE7' : (item.alignment_level === 'Medium' ? '#FEF3C7' : '#F1F5F9'),
-                                                            color: item.alignment_level === 'High' ? '#15803D' : (item.alignment_level === 'Medium' ? '#B45309' : '#475569'),
-                                                            padding: '2px 6px',
-                                                            borderRadius: '6px',
-                                                            fontSize: '10px',
-                                                            fontWeight: 700
-                                                        }}>
-                                                            {item.alignment_level} Alignment
-                                                        </span>
-                                                    </div>
+                                    return (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '20px' }}>
+                                            {/* Horizontal Split Bar */}
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: 700, color: '#475569' }}>
+                                                    <span>Theory ({theory}%)</span>
+                                                    <span>Practical ({practical}%)</span>
                                                 </div>
-                                                <div className="bar-bg" style={{ height: '8px', backgroundColor: '#F3F4F6', borderRadius: '4px', margin: '4px 0 0 0' }}>
-                                                    <div className="bar-fill purple" style={{ width: `${item.overallVal}%`, height: '100%', backgroundColor: '#8B5CF6', borderRadius: '4px' }}></div>
+                                                <div style={{ width: '100%', height: '24px', borderRadius: '12px', display: 'flex', overflow: 'hidden', backgroundColor: '#F1F5F9', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.06)' }}>
+                                                    {theory > 0 && (
+                                                        <div style={{ width: `${theory}%`, backgroundColor: '#C084FC', height: '100%', transition: 'all 0.5s ease' }} />
+                                                    )}
+                                                    {practical > 0 && (
+                                                        <div style={{ width: `${practical}%`, backgroundColor: 'var(--primary-color)', height: '100%', transition: 'all 0.5s ease' }} />
+                                                    )}
                                                 </div>
                                             </div>
-                                        ));
-                                    })()}
-                                </div>
-                            </div>
+
+                                            <div style={{ display: 'flex', justifyContent: 'center', gap: '32px', width: '100%', marginTop: '10px' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
+                                                    <span style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#C084FC', display: 'inline-block' }}></span>
+                                                    <span style={{ color: '#475569', fontWeight: 600 }}>Theory:</span>
+                                                    <span style={{ fontWeight: 800, color: '#1E293B' }}>{theory}%</span>
+                                                </div>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
+                                                    <span style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: 'var(--primary-color)', display: 'inline-block' }}></span>
+                                                    <span style={{ color: '#475569', fontWeight: 600 }}>Practical:</span>
+                                                    <span style={{ fontWeight: 800, color: '#1E293B' }}>{practical}%</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
+                                {/* Preferred Learning & Training Methods */}
+                                <div className="ai-chart-card" style={{ marginTop: '20px' }}>
+                                    <h4>Preferred Learning & Training Methods</h4>
+                                    <p className="text-slate-400 text-xs mb-4" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Teaching and training modes preferred by applicants and employers ranked by weighted overall demand (70% Industry / 30% Student).</p>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '12px' }}>
+                                        {(() => {
+                                            const studentMethods = overview.learning_preferences_data?.student_methods || [];
+                                            const industryPractices = overview.learning_preferences_data?.industry_practices || [];
+
+                                            const methodMap: Record<string, { student: number; industry: number }> = {};
+
+                                            studentMethods.forEach((m: any) => {
+                                                const name = m.name;
+                                                if (!methodMap[name]) {
+                                                    methodMap[name] = { student: 0, industry: 0 };
+                                                }
+                                                methodMap[name].student = m.value;
+                                            });
+
+                                            industryPractices.forEach((p: any) => {
+                                                const name = p.name;
+                                                if (!methodMap[name]) {
+                                                    methodMap[name] = { student: 0, industry: 0 };
+                                                }
+                                                methodMap[name].industry = p.value;
+                                            });
+
+                                            const combinedMethods = Object.keys(methodMap).map(name => {
+                                                const { student, industry } = methodMap[name];
+                                                const overallVal = Math.round((industry * 0.70) + (student * 0.30));
+                                                const studentMatch = studentMethods.find((m: any) => m.name === name);
+                                                const alignmentLevel = studentMatch?.alignment_level || (overallVal >= 15 ? 'High' : (overallVal >= 8 ? 'Medium' : 'Low'));
+
+                                                return {
+                                                    name,
+                                                    studentVal: student,
+                                                    industryVal: industry,
+                                                    overallVal,
+                                                    alignment_level: alignmentLevel
+                                                };
+                                            });
+
+                                            const topMethods = combinedMethods
+                                                .sort((a, b) => b.overallVal - a.overallVal)
+                                                .slice(0, 4);
+
+                                            if (topMethods.length === 0) {
+                                                return <div className="text-center text-slate-400 py-6 text-sm">Insufficient data points.</div>;
+                                            }
+
+                                            return topMethods.map((item: any, idx: number) => (
+                                                <div key={idx} style={{
+                                                    borderBottom: '1px solid #F1F5F9',
+                                                    paddingBottom: '12px',
+                                                    fontSize: '13px'
+                                                }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                                                        <span style={{ fontWeight: 700, color: '#1E293B' }}>{item.name}</span>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                            <span style={{ fontWeight: 800, color: 'var(--primary-color)' }}>{item.overallVal}% Overall Demand</span>
+                                                            <span style={{
+                                                                backgroundColor: item.alignment_level === 'High' ? '#DCFCE7' : (item.alignment_level === 'Medium' ? '#FEF3C7' : '#F1F5F9'),
+                                                                color: item.alignment_level === 'High' ? '#15803D' : (item.alignment_level === 'Medium' ? '#B45309' : '#475569'),
+                                                                padding: '2px 6px',
+                                                                borderRadius: '6px',
+                                                                fontSize: '10px',
+                                                                fontWeight: 700
+                                                            }}>
+                                                                {item.alignment_level} Alignment
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="bar-bg" style={{ height: '8px', backgroundColor: '#F3F4F6', borderRadius: '4px', margin: '4px 0 0 0' }}>
+                                                        <div className="bar-fill purple" style={{ width: `${item.overallVal}%`, height: '100%', backgroundColor: '#8B5CF6', borderRadius: '4px' }}></div>
+                                                    </div>
+                                                </div>
+                                            ));
+                                        })()}
+                                    </div>
+                                </div>                            </div>
                         </div>
                     )}
                 </div>
 
-                {/* Category 2: Combined Demand & Learning Preferences */}
-                <div className="category-section category-indigo">
-                    <div className="category-header">
-                        <div className="category-title-wrapper">
-                            <div className="category-icon-box indigo">
-                                <Layers size={20} />
+
+                {/* Category 3: Industry & Market Requirements */}
+                <div className="category-section" style={{ background: '#ECFDF550', border: '1px solid #05966910', padding: '28px', borderRadius: '24px', boxShadow: '0 4px 20px rgba(5, 150, 105, 0.02)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <div style={{ backgroundColor: '#D1FAE5', color: '#059669', padding: '10px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <Award size={20} />
                             </div>
-                            <div className="category-title-text">
-                                <h3>Combined Demand & Learning Preferences</h3>
-                                <p>Analysis of curriculum gaps and preferred academic training methods across student and industry databases</p>
+                            <div>
+                                <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#064E3B', margin: 0 }}>Industry & Market Requirements</h3>
+                                <p style={{ fontSize: '13px', color: '#047857', margin: '2px 0 0 0', fontWeight: 500 }}>Alignment of student curriculum skills against job market requirements and expected practices</p>
                             </div>
                         </div>
 
                         {/* Score badge next to the title (right corner) */}
-                        <div className="category-score-badge">
-                            <span className="score-val">{overview.kpis.alignment !== null ? `${overview.kpis.alignment}%` : 'N/A'}</span>
-                            <span className="score-label">Overall Curriculum Alignment</span>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', backgroundColor: '#D1FAE570', padding: '10px 18px', borderRadius: '16px', border: '1px solid #05966915' }}>
+                            <span style={{ fontSize: '24px', fontWeight: 800, color: '#059669', lineHeight: 1.1 }}>{overview.kpis.industryMatch !== null ? `${overview.kpis.industryMatch}%` : 'N/A'}</span>
+                            <span style={{ fontSize: '12px', fontWeight: 500, color: '#064E3B', marginTop: '4px' }}>Industry Requirement Match</span>
                         </div>
                     </div>
 
@@ -1796,7 +1819,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
 
                                     {academicEntry.cross_analysis && Object.keys(academicEntry.cross_analysis).length > 0 && (
                                         <div style={{ background: '#FFFFFF', borderRadius: '14px', padding: '16px 18px', border: '1px solid #E0F2FE' }}>
-                                            <div style={{ fontSize: '11px', fontWeight: 700, color: '#7C3AED', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '12px' }}>
+                                            <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--primary-color)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '12px' }}>
                                                 Qualification × Result Cross-Analysis
                                             </div>
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -1805,14 +1828,14 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                                                     .map(([eduLabel, results]) => (
                                                         <div key={eduLabel}>
                                                             <div style={{ fontSize: '12px', fontWeight: 700, color: '#374151', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                                <span style={{ display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', background: '#7C3AED', flexShrink: 0 }} />
+                                                                <span style={{ display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', background: 'var(--primary-color)', flexShrink: 0 }} />
                                                                 {eduLabel}
                                                             </div>
                                                             <div style={{ paddingLeft: '14px', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                                                                 {results.map((r) => (
                                                                     <span key={r.label} style={{
-                                                                        background: 'linear-gradient(135deg, #EDE9FE, #DDD6FE)',
-                                                                        color: '#6D28D9', fontSize: '11px', fontWeight: 600,
+                                                                        background: 'linear-gradient(135deg, var(--primary-light), #DDD6FE)',
+                                                                        color: 'var(--primary-hover)', fontSize: '11px', fontWeight: 600,
                                                                         padding: '3px 10px', borderRadius: '20px',
                                                                         border: '1px solid #C4B5FD'
                                                                     }}>
@@ -1969,7 +1992,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                                             </div>
                                             {sem.subjects.map((sub: any) => (
                                                 <div key={sub.id} style={{ display: 'grid', gridTemplateColumns: '120px 1fr 100px', fontSize: '14px', color: '#334155', padding: '6px 0' }}>
-                                                    <span style={{ fontWeight: 600, color: '#7C3AED' }}>{sub.code}</span>
+                                                    <span style={{ fontWeight: 600, color: 'var(--primary-color)' }}>{sub.code}</span>
                                                     <span style={{ fontWeight: 500 }}>{sub.name}</span>
                                                     <span style={{ textAlign: 'right', fontWeight: 600, color: '#475569' }}>{sub.credits} Credits</span>
                                                 </div>
@@ -2002,7 +2025,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                                 </div>
                                 {fullCourseData.subjects.map((sub: any) => (
                                     <div key={sub.id} style={{ display: 'grid', gridTemplateColumns: '120px 1fr 100px', fontSize: '14px', color: '#334155', padding: '6px 0' }}>
-                                        <span style={{ fontWeight: 600, color: '#7C3AED' }}>{sub.code}</span>
+                                        <span style={{ fontWeight: 600, color: 'var(--primary-color)' }}>{sub.code}</span>
                                         <span style={{ fontWeight: 500 }}>{sub.name}</span>
                                         <span style={{ textAlign: 'right', fontWeight: 600, color: '#475569' }}>{sub.credits} Credits</span>
                                     </div>
@@ -2026,10 +2049,10 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
 
 
 
-const MAP_CHART_COLORS = ['#7C3AED', '#3B82F6', '#10B981', '#EC4899', '#F59E0B', '#06B6D4', '#EF4444', '#8B5CF6'];
+const MAP_CHART_COLORS = ['var(--primary-color)', '#3B82F6', '#10B981', '#EC4899', '#F59E0B', '#06B6D4', '#EF4444', '#8B5CF6'];
 
 const CHART_GRADIENTS = [
-    { id: 'grad-violet', start: '#A78BFA', end: '#7C3AED' },
+    { id: 'grad-violet', start: '#A78BFA', end: 'var(--primary-color)' },
     { id: 'grad-blue', start: '#60A5FA', end: '#2563EB' },
     { id: 'grad-green', start: '#34D399', end: '#059669' },
     { id: 'grad-pink', start: '#F472B6', end: '#DB2777' },
@@ -2129,7 +2152,7 @@ const InteractiveSriLankaMap: React.FC = () => {
                     </div>
                     {loadingGeo ? (
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '340px' }}>
-                            <div style={{ width: '36px', height: '36px', borderRadius: '50%', border: '3px solid #E9D5FF', borderTopColor: '#7C3AED', animation: 'spin 0.9s linear infinite' }}></div>
+                            <div style={{ width: '36px', height: '36px', borderRadius: '50%', border: '3px solid #E9D5FF', borderTopColor: 'var(--primary-color)', animation: 'spin 0.9s linear infinite' }}></div>
                         </div>
                     ) : (geoData?.education_levels || []).length === 0 ? (
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '340px', color: '#94A3B8', fontSize: '13px' }}>No education data available.</div>
@@ -2190,7 +2213,7 @@ const InteractiveSriLankaMap: React.FC = () => {
                     </div>
                     {loadingGeo ? (
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '340px' }}>
-                            <div style={{ width: '36px', height: '36px', borderRadius: '50%', border: '3px solid #E9D5FF', borderTopColor: '#7C3AED', animation: 'spin 0.9s linear infinite' }}></div>
+                            <div style={{ width: '36px', height: '36px', borderRadius: '50%', border: '3px solid #E9D5FF', borderTopColor: 'var(--primary-color)', animation: 'spin 0.9s linear infinite' }}></div>
                         </div>
                     ) : (geoData?.industry_sectors || []).length === 0 ? (
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '340px', color: '#94A3B8', fontSize: '13px' }}>No industry sector data available.</div>
@@ -2251,7 +2274,7 @@ const InteractiveSriLankaMap: React.FC = () => {
                     </div>
                     {loadingGeo ? (
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '340px' }}>
-                            <div style={{ width: '36px', height: '36px', borderRadius: '50%', border: '3px solid #E9D5FF', borderTopColor: '#7C3AED', animation: 'spin 0.9s linear infinite' }}></div>
+                            <div style={{ width: '36px', height: '36px', borderRadius: '50%', border: '3px solid #E9D5FF', borderTopColor: 'var(--primary-color)', animation: 'spin 0.9s linear infinite' }}></div>
                         </div>
                     ) : (
                         <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: '340px' }}>
@@ -2261,7 +2284,7 @@ const InteractiveSriLankaMap: React.FC = () => {
                                         const isHovered = hoveredDistrict === loc.name;
                                         const count = districtCounts[loc.name.toLowerCase().trim()] || districtCounts[loc.name] || 0;
                                         const fillColor = getColorForDistrict(loc.name);
-                                        const strokeColor = count > 0 ? '#7C3AED' : '#CBD5E1';
+                                        const strokeColor = count > 0 ? 'var(--primary-color)' : '#CBD5E1';
 
                                         return (
                                             <path
@@ -2295,7 +2318,7 @@ const InteractiveSriLankaMap: React.FC = () => {
             <div style={{ background: '#FFFFFF', borderRadius: '20px', border: '1px solid #E2E8F0', boxShadow: '0 4px 24px rgba(0,0,0,0.06)', padding: '28px', display: 'flex', flexDirection: 'column' }}>
                 {loadingGeo ? (
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '360px' }}>
-                        <div style={{ width: '36px', height: '36px', borderRadius: '50%', border: '3px solid #E9D5FF', borderTopColor: '#7C3AED', animation: 'spin 0.9s linear infinite' }}></div>
+                        <div style={{ width: '36px', height: '36px', borderRadius: '50%', border: '3px solid #E9D5FF', borderTopColor: 'var(--primary-color)', animation: 'spin 0.9s linear infinite' }}></div>
                     </div>
                 ) : (
                     <div style={{ display: 'grid', gridTemplateColumns: allIslandSelectedField ? '1fr 1fr' : '1fr', gap: '32px', alignItems: 'flex-start' }}>
@@ -2341,14 +2364,14 @@ const InteractiveSriLankaMap: React.FC = () => {
                         </div>
                         {allIslandSelectedField && (
                             <div style={{ animation: 'fadeInRight 0.3s ease' }}>
-                                <h4 style={{ margin: '0 0 4px 0', fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>Top Skills for <span style={{ background: 'linear-gradient(135deg, #EDE9FE, #DDD6FE)', color: '#6D28D9', padding: '2px 10px', borderRadius: '6px', fontWeight: 800 }}>{allIslandSelectedField}</span></h4>
+                                <h4 style={{ margin: '0 0 4px 0', fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>Top Skills for <span style={{ background: 'linear-gradient(135deg, var(--primary-light), #DDD6FE)', color: 'var(--primary-hover)', padding: '2px 10px', borderRadius: '6px', fontWeight: 800 }}>{allIslandSelectedField}</span></h4>
                                 <p style={{ margin: '0 0 16px 0', fontSize: '12px', color: '#64748B', fontWeight: 500, lineHeight: '1.5' }}>
 
                                     Student preference trends in selected field.
                                 </p>
                                 {loadingAllIslandSkills ? (
                                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '300px' }}>
-                                        <div style={{ width: '28px', height: '28px', borderRadius: '50%', border: '3px solid #E9D5FF', borderTopColor: '#7C3AED', animation: 'spin 0.9s linear infinite' }}></div>
+                                        <div style={{ width: '28px', height: '28px', borderRadius: '50%', border: '3px solid #E9D5FF', borderTopColor: 'var(--primary-color)', animation: 'spin 0.9s linear infinite' }}></div>
                                     </div>
                                 ) : allIslandSkills.length === 0 ? (
                                     <div style={{ textAlign: 'center', padding: '40px 0', color: '#94A3B8', fontSize: '13px' }}>No skill data found.</div>
@@ -2391,7 +2414,7 @@ const InteractiveSriLankaMap: React.FC = () => {
             <div style={{ background: '#FFFFFF', borderRadius: '20px', border: '1px solid #E2E8F0', boxShadow: '0 4px 24px rgba(0,0,0,0.06)', padding: '28px', display: 'flex', flexDirection: 'column' }}>
                 {loadingGeo ? (
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '360px' }}>
-                        <div style={{ width: '36px', height: '36px', borderRadius: '50%', border: '3px solid #E9D5FF', borderTopColor: '#7C3AED', animation: 'spin 0.9s linear infinite' }}></div>
+                        <div style={{ width: '36px', height: '36px', borderRadius: '50%', border: '3px solid #E9D5FF', borderTopColor: 'var(--primary-color)', animation: 'spin 0.9s linear infinite' }}></div>
                     </div>
                 ) : (
                     <div style={{ display: 'grid', gridTemplateColumns: industrySelectedField ? '1fr 1fr' : '1fr', gap: '32px', alignItems: 'flex-start' }}>
@@ -2444,7 +2467,7 @@ const InteractiveSriLankaMap: React.FC = () => {
                                 </p>
                                 {loadingIndustrySkills ? (
                                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '300px' }}>
-                                        <div style={{ width: '28px', height: '28px', borderRadius: '50%', border: '3px solid #E9D5FF', borderTopColor: '#7C3AED', animation: 'spin 0.9s linear infinite' }}></div>
+                                        <div style={{ width: '28px', height: '28px', borderRadius: '50%', border: '3px solid #E9D5FF', borderTopColor: 'var(--primary-color)', animation: 'spin 0.9s linear infinite' }}></div>
                                     </div>
                                 ) : industrySkills.length === 0 ? (
                                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '300px', color: '#64748B', fontSize: '13px' }}>No skill data found.</div>
@@ -2493,7 +2516,7 @@ const InteractiveSriLankaMap: React.FC = () => {
    ========================================================= */
 
 const UNI_OPP_COLORS = [
-    '#7C3AED', '#3B82F6', '#10B981', '#EC4899',
+    'var(--primary-color)', '#3B82F6', '#10B981', '#EC4899',
     '#F59E0B', '#06B6D4', '#EF4444', '#8B5CF6',
     '#0EA5E9', '#84CC16', '#F97316', '#6366F1',
 ];
@@ -2582,7 +2605,7 @@ const UniversityOpportunitiesChart: React.FC = () => {
             {loading ? (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '280px' }}>
                     <div style={{ textAlign: 'center' }}>
-                        <div style={{ width: '36px', height: '36px', borderRadius: '50%', border: '3px solid #E9D5FF', borderTopColor: '#7C3AED', animation: 'spin 0.9s linear infinite', margin: '0 auto 12px auto' }}></div>
+                        <div style={{ width: '36px', height: '36px', borderRadius: '50%', border: '3px solid #E9D5FF', borderTopColor: 'var(--primary-color)', animation: 'spin 0.9s linear infinite', margin: '0 auto 12px auto' }}></div>
                         <span style={{ fontSize: '13px', color: '#94A3B8' }}>Loading opportunity data…</span>
                     </div>
                 </div>

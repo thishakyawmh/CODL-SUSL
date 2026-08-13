@@ -44,7 +44,7 @@ export const ActivityLogs: React.FC = () => {
     const getRoleColor = (role: string) => {
         switch (role.toLowerCase()) {
             case 'super_admin': return { bg: '#FEE2E2', text: '#DC2626', border: '#FCA5A5' };
-            case 'director': return { bg: '#EDE9FE', text: '#7C3AED', border: '#C084FC' };
+            case 'director': return { bg: 'var(--primary-light)', text: 'var(--primary-color)', border: '#C084FC' };
             case 'coordinator': return { bg: '#FEF3C7', text: '#D97706', border: '#FCD34D' };
             case 'secretary': return { bg: '#DBEAFE', text: '#2563EB', border: '#93C5FD' };
             case 'lecturer': return { bg: '#E0F2FE', text: '#0369A1', border: '#7DD3FC' };
@@ -70,7 +70,7 @@ export const ActivityLogs: React.FC = () => {
         return (
             <div className="rm-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '450px' }}>
                 <div style={{ textAlign: 'center', color: '#64748B' }}>
-                    <div style={{ width: '48px', height: '48px', border: '3px solid #E2E8F0', borderTopColor: '#7C3AED', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 16px' }} />
+                    <div style={{ width: '48px', height: '48px', border: '3px solid #E2E8F0', borderTopColor: 'var(--primary-color)', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 16px' }} />
                     <p style={{ fontWeight: 600 }}>Loading activity logs history...</p>
                 </div>
             </div>
@@ -83,7 +83,7 @@ export const ActivityLogs: React.FC = () => {
             <div className="admin-page-header" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
                 <button
                     className="cm-back-text-btn"
-                    style={{ marginBottom: '16px', marginLeft: '-16px', display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', color: '#7C3AED', fontWeight: 600, cursor: 'pointer' }}
+                    style={{ marginBottom: '16px', marginLeft: '-16px', display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', color: 'var(--primary-color)', fontWeight: 600, cursor: 'pointer' }}
                     onClick={() => navigate('/admin/dashboard')}
                 >
                     <ArrowLeft size={18} /> Back to Dashboard
@@ -91,7 +91,7 @@ export const ActivityLogs: React.FC = () => {
                 <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
                     <div>
                         <h1 className="admin-page-title" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <Activity size={28} style={{ color: '#7C3AED' }} /> Activity History
+                            <Activity size={28} style={{ color: 'var(--primary-color)' }} /> Activity History
                         </h1>
                         <p className="admin-page-subtitle">Track and monitor all administrative modifications and staff actions over the last 6 months.</p>
                     </div>
@@ -133,7 +133,7 @@ export const ActivityLogs: React.FC = () => {
                             transition: 'border-color 0.2s',
                             boxSizing: 'border-box'
                         }}
-                        onFocus={e => e.target.style.borderColor = '#7C3AED'}
+                        onFocus={e => e.target.style.borderColor = 'var(--primary-color)'}
                         onBlur={e => e.target.style.borderColor = '#E2E8F0'}
                     />
                 </div>
@@ -182,7 +182,7 @@ export const ActivityLogs: React.FC = () => {
             }}>
                 {filteredLogs.length === 0 ? (
                     <div style={{ textAlign: 'center', padding: '64px 20px', color: '#64748B' }}>
-                        <Activity size={48} style={{ margin: '0 auto 16px', opacity: 0.3, color: '#7C3AED' }} />
+                        <Activity size={48} style={{ margin: '0 auto 16px', opacity: 0.3, color: 'var(--primary-color)' }} />
                         <h3 style={{ margin: '0 0 6px 0', color: '#1E293B', fontSize: '16px', fontWeight: 600 }}>No logs found</h3>
                         <p style={{ margin: 0, fontSize: '14px' }}>Try adjusting your search criteria or role filters.</p>
                     </div>
@@ -239,7 +239,7 @@ export const ActivityLogs: React.FC = () => {
                                         <div style={{ fontSize: '14px', color: '#334155', lineHeight: 1.5 }}>
                                             {log.action}
                                         </div>
-                                        <div style={{ fontSize: '12px', color: '#7C3AED', fontWeight: 600, marginTop: '4px' }}>
+                                        <div style={{ fontSize: '12px', color: 'var(--primary-color)', fontWeight: 600, marginTop: '4px' }}>
                                             {log.target}
                                         </div>
                                     </div>

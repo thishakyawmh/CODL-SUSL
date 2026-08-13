@@ -44,7 +44,7 @@
 }
 
 /* Variant colors */
-.kpi-icon-wrapper.students { background: linear-gradient(135deg, #7C3AED, #5B21B6); }
+.kpi-icon-wrapper.students { background: linear-gradient(135deg, var(--primary-color), var(--primary-dark)); }
 .kpi-icon-wrapper.approvals { background: linear-gradient(135deg, #F59E0B, #D97706); }
 .kpi-icon-wrapper.courses { background: linear-gradient(135deg, #10B981, #059669); }
 .kpi-icon-wrapper.users { background: linear-gradient(135deg, #3B82F6, #2563EB); }
@@ -73,7 +73,7 @@
     border-radius: 10px;
 }
 
-.pa-icon.courses { background: rgba(124, 58, 237, 0.1); color: #7C3AED; }
+.pa-icon.courses { background: rgba(124, 58, 237, 0.1); color: var(--primary-color); }
 .pa-icon.letters { background: rgba(59, 130, 246, 0.1); color: #3B82F6; }
 .pa-icon.warning { background: rgba(245, 158, 11, 0.1); color: #F59E0B; }
 .pa-icon.success { background: rgba(16, 185, 129, 0.1); color: #10B981; }
@@ -91,7 +91,7 @@
     justify-content: center;
 }
 
-.pa-count.courses { background: rgba(124, 58, 237, 0.1); color: #7C3AED; }
+.pa-count.courses { background: rgba(124, 58, 237, 0.1); color: var(--primary-color); }
 .pa-count.letters { background: rgba(59, 130, 246, 0.1); color: #3B82F6; }
 .pa-count.warning { background: rgba(245, 158, 11, 0.1); color: #F59E0B; }
 .pa-count.success { background: rgba(16, 185, 129, 0.1); color: #10B981; }
@@ -104,7 +104,7 @@
 .activity-icon.course { background: var(--primary-light); color: var(--primary-color); }
 .activity-icon.grade { background: var(--warning-light); color: var(--warning); }
 .activity-icon.system { background: var(--surface-2); color: var(--text-secondary); }
-.activity-icon.letter { background: #EDE9FE; color: #7C3AED; }
+.activity-icon.letter { background: var(--primary-light); color: var(--primary-color); }
 
 /* Role Badges */
 .ru-role-badge {
@@ -153,7 +153,7 @@
     align-items: center;
     gap: 8px;
     padding: 10px 20px;
-    background: linear-gradient(135deg, #7C3AED, #5B21B6);
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
     color: #FFFFFF;
     border: none;
     border-radius: 12px;
@@ -232,7 +232,7 @@
 .admin-link-btn {
     font-size: 13px;
     font-weight: 600;
-    color: #7C3AED;
+    color: var(--primary-color);
     background: none;
     border: none;
     cursor: pointer;
@@ -241,7 +241,7 @@
     border-radius: 8px;
 }
 
-.admin-link-btn:hover { background: #EDE9FE; color: #5B21B6; }
+.admin-link-btn:hover { background: var(--primary-light); color: var(--primary-dark); }
 
 .pending-approvals-list {
     display: flex;
@@ -281,7 +281,7 @@
     width: 36px;
     height: 36px;
     border-radius: 10px;
-    background: linear-gradient(135deg, #7C3AED, #A78BFA);
+    background: linear-gradient(135deg, var(--primary-color), #A78BFA);
     color: white;
     display: flex;
     align-items: center;
@@ -316,7 +316,7 @@
 .activity-content { flex: 1; min-width: 0; }
 .activity-action { font-size: 13px; color: #334155; line-height: 1.4; margin-bottom: 3px; }
 .activity-action strong { color: #0F172A; font-weight: 600; }
-.activity-target { font-size: 12px; color: #7C3AED; font-weight: 500; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.activity-target { font-size: 12px; color: var(--primary-color); font-weight: 500; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .activity-time { display: flex; align-items: center; gap: 4px; font-size: 11px; color: #94A3B8; }
 
 .course-overview-list { display: flex; flex-direction: column; gap: 6px; }
@@ -326,14 +326,14 @@
 }
 
 .course-overview-item:hover {
-    border-color: #7C3AED;
+    border-color: var(--primary-color);
     background: #F5F3FF;
     transform: scale(1.01);
 }
 
 .co-info h4 { font-size: 14px; font-weight: 600; color: #1E293B; margin: 0 0 4px 0; }
 .co-meta { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #94A3B8; }
-.co-level { color: #7C3AED; font-weight: 600; }
+.co-level { color: var(--primary-color); font-weight: 600; }
 .co-stats { display: flex; align-items: center; gap: 16px; }
 .co-stat { display: flex; flex-direction: column; align-items: center; gap: 2px; }
 .co-stat-val { font-size: 16px; font-weight: 700; color: #1E293B; }
@@ -379,7 +379,7 @@
 .admin-count-badge {
     font-size: 11px;
     font-weight: 700;
-    color: #7C3AED;
+    color: var(--primary-color);
     background: #F5F3FF;
     padding: 4px 12px;
     border-radius: 20px;
@@ -436,7 +436,7 @@
 }
 
 .dashboard-stat-bar.fill-purple {
-    background: linear-gradient(90deg, #7C3AED, #A78BFA);
+    background: linear-gradient(90deg, var(--primary-color), #A78BFA);
 }
 
 .dashboard-stat-bar.fill-blue {
@@ -534,7 +534,7 @@
 
 /* Area Chart Styles */
 .area-chart-line {
-    stroke: #7C3AED;
+    stroke: var(--primary-color);
     stroke-width: 3;
     fill: none;
     stroke-linecap: round;
@@ -550,7 +550,7 @@
 
 .chart-dot {
     fill: #FFFFFF;
-    stroke: #7C3AED;
+    stroke: var(--primary-color);
     stroke-width: 3;
     cursor: pointer;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -558,7 +558,7 @@
 
 .chart-dot:hover {
     r: 7;
-    fill: #7C3AED;
+    fill: var(--primary-color);
     stroke: #FFFFFF;
     stroke-width: 2.5;
     filter: drop-shadow(0 4px 8px rgba(124, 58, 237, 0.4));

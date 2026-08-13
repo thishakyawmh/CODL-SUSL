@@ -71,6 +71,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Staff/Course Management routes
     Route::middleware('role:super_admin,director,coordinator,secretary')->group(function () {
         Route::get('/users', [UserController::class, 'index']);
+        Route::get('/users/{id}', [UserController::class, 'show']);
         Route::post('/admin/system-settings', [SystemSettingController::class, 'updateSettings']);
         Route::post('/admin/system-settings/logo', [SystemSettingController::class, 'uploadLogo']);
         Route::post('/admin/ai-analysis', [AIAnalysisController::class, 'analyze']);
@@ -157,6 +158,7 @@ Route::middleware('auth:sanctum')->group(function () {
     
     // Batches
     Route::get('/courses/{id}/batches', [BatchController::class, 'index']);
+    Route::get('/courses/{id}/batches/{batchId}/materials', [BatchController::class, 'getMaterials']);
     Route::post('/courses/{id}/batches', [BatchController::class, 'store']);
     Route::put('/courses/{id}/batches/{batchId}', [BatchController::class, 'update']);
     Route::delete('/courses/{id}/batches/{batchId}', [BatchController::class, 'destroy']);

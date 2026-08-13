@@ -14,7 +14,7 @@
 }
 
 .profile-header-card {
-    background: linear-gradient(135deg, #7C3AED 0%, #8B5CF6 100%);
+    background: linear-gradient(135deg, var(--primary-color) 0%, #8B5CF6 100%);
     border-radius: 16px;
     padding: 24px 32px;
     display: flex;
@@ -149,7 +149,7 @@
 
 .edit-profile-btn {
     background: white;
-    color: #7C3AED;
+    color: var(--primary-color);
     border: none;
     padding: 10px 20px;
     border-radius: 8px;
@@ -209,7 +209,7 @@
     align-items: center;
     justify-content: center;
     background: rgba(79, 70, 229, 0.1);
-    color: #7C3AED;
+    color: var(--primary-color);
 }
 
 .profile-section-title {
@@ -271,7 +271,7 @@
 
 .profile-info-input:focus {
     outline: none;
-    border-color: #7C3AED;
+    border-color: var(--primary-color);
     box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
 }
 
@@ -301,7 +301,7 @@ textarea.profile-info-input {
 
 .save-btn.top-action-btn {
     background: white;
-    color: #7C3AED;
+    color: var(--primary-color);
     border: none;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
@@ -335,7 +335,7 @@ textarea.profile-info-input {
     font-weight: 600;
     font-size: 15px;
     cursor: pointer;
-    background: #7C3AED;
+    background: var(--primary-color);
     border: none;
     color: white;
     display: flex;
@@ -484,7 +484,7 @@ textarea.profile-info-input {
 
 .qual-table input:focus,
 .qual-table select:focus {
-    border-color: #7C3AED;
+    border-color: var(--primary-color);
     outline: none;
     box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.1);
 }
@@ -511,8 +511,8 @@ textarea.profile-info-input {
 .btn-add-row {
     width: 100%;
     background: var(--card-bg);
-    border: 2px dashed #7C3AED;
-    color: #7C3AED;
+    border: 2px dashed var(--primary-color);
+    color: var(--primary-color);
     padding: 14px;
     border-radius: 12px;
     font-weight: 700;
