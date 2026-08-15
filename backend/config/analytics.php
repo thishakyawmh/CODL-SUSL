@@ -16,84 +16,120 @@ return [
     'synonyms' => [
         'DevOps' => [
             'docker', 'kubernetes', 'ci/cd', 'cicd', 'jenkins', 'devops', 'gitops', 
-            'ansible', 'terraform', 'containers', 'github actions', 'yaml'
+            'ansible', 'terraform', 'containers', 'github actions', 'yaml', 'chef', 
+            'puppet', 'helm', 'gitlab ci', 'vagarant', 'nagios', 'prometheus', 
+            'grafana', 'cloudformation', 'continuous integration', 'continuous deployment', 
+            'platform engineering', 'site reliability engineering', 'sre', 
+            'infrastructure as code', 'iac', 'argocd', 'circleci'
         ],
         
         'Artificial Intelligence' => [
             'ai', 'artificial intelligence', 'machine learning', 'ml', 'deep learning', 
             'neural networks', 'nlp', 'natural language', 'computer vision', 'pytorch', 
-            'tensorflow', 'keras'
+            'tensorflow', 'keras', 'scikit-learn', 'llm', 'large language models', 
+            'reinforcement learning', 'transformers', 'gpt', 'image processing', 
+            'object detection', 'supervised learning', 'unsupervised learning', 
+            'generative ai', 'hugging face', 'artificial neural network', 'ann', 'cnn', 'rnn'
         ],
         
         'Cloud Computing' => [
             'cloud', 'aws', 'amazon web services', 'azure', 'gcp', 'google cloud', 
-            'serverless', 'cloud infrastructure', 'cloud deployment'
+            'serverless', 'cloud infrastructure', 'cloud deployment', 'ec2', 's3', 
+            'lambda', 'virtual machines', 'virtualization', 'cloud security', 
+            'cloud architecture', 'hybrid cloud', 'multi-cloud', 'openstack', 
+            'cloud engineering', 'cloud storage'
         ],
         
         'Mobile Development' => [
             'android', 'ios', 'swift', 'kotlin', 'flutter', 'react native', 
-            'mobile development', 'mobile programming', 'mobile applications'
+            'mobile development', 'mobile programming', 'mobile applications', 
+            'objective-c', 'xcode', 'android studio', 'mobile app development', 
+            'ionic', 'cordova', 'nativescript'
         ],
         
         'Cyber Security' => [
             'security', 'cybersecurity', 'information security', 'network security', 
-            'cryptography', 'penetration testing', 'ethical hacking', 'firewall'
+            'cryptography', 'penetration testing', 'ethical hacking', 'firewall', 
+            'vulnerability assessment', 'owasp', 'siem', 'soc', 'incident response', 
+            'malware analysis', 'digital forensics', 'network monitoring', 
+            'identity management', 'zero trust', 'cissp', 'ceh', 'risk assessment', 
+            'secure coding'
         ],
         
         'Data Science' => [
             'data science', 'data analytics', 'data analysis', 'big data', 'pandas', 
-            'numpy', 'sql', 'r programming', 'data visualization', 'power bi'
+            'numpy', 'sql', 'r programming', 'data visualization', 'power bi', 
+            'tableau', 'data mining', 'spark', 'hadoop', 'statistical analysis', 
+            'jupyter', 'data warehousing', 'matplotlib', 'seaborn', 'data pipelines', 'etl'
         ],
         
         'Web Development' => [
             'web development', 'frontend', 'backend', 'full stack', 'react', 'angular', 
-            'vue', 'nodejs', 'php', 'laravel', 'html', 'css', 'javascript', 'typescript'
+            'vue', 'nodejs', 'php', 'laravel', 'html', 'css', 'javascript', 'typescript', 
+            'expressjs', 'django', 'spring boot', 'asp.net', 'jquery', 'web applications', 
+            'semantic html', 'css3', 'bootstrap', 'tailwind', 'web programming'
         ],
-
+ 
         'Business & Management' => [
             'business', 'management', 'mba', 'administration', 'hr', 'human resource', 
             'entrepreneurship', 'leadership', 'organizational behaviour', 'strategy',
-            'organizations and behaviour', 'business environment'
+            'organizations and behaviour', 'business environment', 'project management', 
+            'agile', 'scrum', 'operation management', 'product management', 
+            'strategic planning', 'human resources', 'organizational leadership', 
+            'business administration'
         ],
-
+ 
         'Accounting & Finance' => [
             'accounting', 'finance', 'audit', 'taxation', 'banking', 'bookkeeping', 
-            'financial resources', 'accounts', 'auditing'
+            'financial resources', 'accounts', 'auditing', 'financial accounting', 
+            'management accounting', 'corporate finance', 'financial analysis', 
+            'quickbooks', 'tax law', 'cost accounting', 'financial statements', 
+            'investment management'
         ],
-
+ 
         'Marketing' => [
             'marketing', 'digital marketing', 'advertising', 'sales', 'e-commerce', 
             'retail', 'consumer behavior', 'branding', 'social media marketing',
-            'marketing principles', 'e-commerce fundamentals'
+            'marketing principles', 'e-commerce fundamentals', 'seo', 
+            'search engine optimization', 'market research', 'brand management', 
+            'content marketing', 'google analytics', 'customer relationship management', 'crm'
         ],
-
+ 
         'Economics' => [
-            'economics', 'macroeconomics', 'microeconomics', 'econometrics', 'finance economics'
+            'economics', 'macroeconomics', 'microeconomics', 'econometrics', 
+            'finance economics', 'economic policy', 'game theory', 'development economics', 
+            'economic analysis', 'market dynamics'
         ],
-
+ 
         'Psychology' => [
-            'psychology', 'counseling', 'behavior', 'organizational behavior', 'mental health'
+            'psychology', 'counseling', 'behavior', 'organizational behavior', 
+            'mental health', 'cognitive psychology', 'social psychology', 
+            'clinical psychology', 'human behavior', 'developmental psychology'
         ],
-
+ 
         'Media & Communication' => [
-            'media', 'communication', 'journalism', 'public relations', 'digital communication',
-            'broadcasting', 'mass media', 'business communication'
+            'media', 'communication', 'journalism', 'public relations', 
+            'digital communication', 'broadcasting', 'mass media', 'business communication', 
+            'mass communication', 'social media', 'copywriting', 'media production', 'public speaking'
         ],
-
+ 
         'Mathematics & Statistics' => [
             'mathematics', 'statistics', 'math', 'actuarial', 'algebra', 'calculus', 
-            'applied mathematics', 'financial mathematics', 'pure mathematics', 'business mathematics',
-            'business statistics'
+            'applied mathematics', 'financial mathematics', 'pure mathematics', 
+            'business mathematics', 'business statistics', 'probability', 'linear algebra', 
+            'numerical analysis', 'statistical modeling'
         ],
-
+ 
         'Law' => [
             'law', 'legal', 'jurisprudence', 'cyber law', 'digital rights', 'court',
-            'ethics', 'human rights', 'e-business law'
+            'ethics', 'human rights', 'e-business law', 'corporate law', 'contract law', 
+            'commercial law', 'intellectual property', 'ip law'
         ],
-
+ 
         'Arts & Humanities' => [
             'arts', 'humanities', 'english', 'history', 'philosophy', 'language', 'literature',
-            'creative writing', 'digital arts', 'animation', 'fine arts'
+            'creative writing', 'digital arts', 'animation', 'fine arts', 'graphic design', 
+            'illustration', 'performing arts', 'sociology', 'anthropology'
         ]
     ],
 
