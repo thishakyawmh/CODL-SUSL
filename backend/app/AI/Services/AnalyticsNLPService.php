@@ -4,6 +4,7 @@ namespace App\AI\Services;
 
 use App\AI\Models\StudentInterest;
 use App\AI\Models\IndustryRequirement;
+use App\AI\Models\DomainClassification;
 use Illuminate\Support\Facades\Log;
 
 class AnalyticsNLPService
@@ -1111,8 +1112,30 @@ class AnalyticsNLPService
             return;
         }
 
+        // ── Level 1: Warm in-memory cache from DB so we never re-send already-known texts ──
+        $alreadyCachedHashes = DomainClassification::whereIn(
+            'text_hash',
+            array_map(fn($t) => md5(trim($t)), $uniqueTexts)
+        )->get(['text_hash', 'domains']);
+
+        foreach ($alreadyCachedHashes as $row) {
+            self::$geminiCache[$row->text_hash] = $row->domains ?? [];
+        }
+        Log::info("Loaded " . $alreadyCachedHashes->count() . " entries from persistent DB cache.");
+
+        // ── Only send texts NOT already in DB or memory cache to Gemini ──
+        $textsToClassify = array_values(array_filter($uniqueTexts, function ($t) {
+            return !isset(self::$geminiCache[md5(trim($t))]);
+        }));
+        Log::info(count($textsToClassify) . " texts need Gemini classification (" . (count($uniqueTexts) - count($textsToClassify)) . " served from cache).");
+
+        if (empty($textsToClassify)) {
+            Log::info("All texts already cached — no Gemini API calls needed.");
+            return;
+        }
+
         $domainsList = array_keys($this->synonyms);
-        $chunks = array_chunk($uniqueTexts, 30); 
+        $chunks = array_chunk($textsToClassify, 30);
 
         foreach ($chunks as $chunkIndex => $chunk) {
             Log::info("Sending batch " . ($chunkIndex + 1) . " of " . count($chunks) . " to Gemini...");
@@ -1147,11 +1170,33 @@ class AnalyticsNLPService
                     $responseText = $response->json('candidates.0.content.parts.0.text');
                     $results = json_decode(trim($responseText), true);
                     if (is_array($results)) {
+                        $dbRows = [];
                         foreach ($results as $res) {
                             if (isset($res['text']) && isset($res['domains'])) {
                                 $cacheKey = md5(trim($res['text']));
-                                self::$geminiCache[$cacheKey] = array_values(array_unique(array_filter($res['domains'])));
+                                $domains  = array_values(array_unique(array_filter($res['domains'])));
+
+                                // ── Store in memory cache (existing behaviour) ──
+                                self::$geminiCache[$cacheKey] = $domains;
+
+                                // ── Persist to DB (new: survives across requests) ──
+                                $dbRows[] = [
+                                    'text_hash'   => $cacheKey,
+                                    'text_sample' => mb_substr(trim($res['text']), 0, 500),
+                                    'domains'     => json_encode($domains),
+                                    'hit_count'   => 0,
+                                    'created_at'  => now(),
+                                    'updated_at'  => now(),
+                                ];
                             }
+                        }
+                        if (!empty($dbRows)) {
+                            // upsert so duplicate runs never error — just update domains
+                            DomainClassification::upsert(
+                                $dbRows,
+                                ['text_hash'],          // unique key
+                                ['domains', 'updated_at'] // columns to update on conflict
+                            );
                         }
                     }
                 } else {
@@ -1161,13 +1206,12 @@ class AnalyticsNLPService
                 Log::error("Error in Gemini batch pre-classification: " . $e->getMessage());
             }
 
-
             if (count($chunks) > 1 && $chunkIndex < count($chunks) - 1) {
                 sleep(4);
             }
         }
 
-        Log::info("Pre-classification completed. Cached " . count(self::$geminiCache) . " classifications.");
+        Log::info("Pre-classification completed. Memory cache: " . count(self::$geminiCache) . " entries.");
     }
 
     public function extractDomains(string $text): array
@@ -1176,19 +1220,39 @@ class AnalyticsNLPService
             return [];
         }
 
-        $domains = [];
-        $apiKey = config('services.gemini.key');
+        $cacheKey = md5(trim($text));
+        $domains  = [];
+        $apiKey   = config('services.gemini.key');
+
         if ($apiKey) {
-            $cacheKey = md5(trim($text));
+            // ── Layer 1: In-memory cache (fastest, per-request) ──
             if (isset(self::$geminiCache[$cacheKey])) {
                 $domains = self::$geminiCache[$cacheKey];
+
+            // ── Layer 2: Persistent DB cache (survives across requests) ──
             } else {
-                $domains = $this->extractDomainsLocalRegex($text);
+                try {
+                    $cached = DomainClassification::find($cacheKey);
+                    if ($cached) {
+                        $domains = $cached->domains ?? [];
+                        // Warm memory cache so subsequent calls in this request are instant
+                        self::$geminiCache[$cacheKey] = $domains;
+                        // Increment hit counter (fire-and-forget, non-blocking)
+                        $cached->increment('hit_count');
+                    } else {
+                        // ── Layer 3: Local regex fallback ──
+                        $domains = $this->extractDomainsLocalRegex($text);
+                    }
+                } catch (\Exception $e) {
+                    // DB unavailable — fall back gracefully, never crash
+                    Log::warning('DomainClassification DB lookup failed, using local regex: ' . $e->getMessage());
+                    $domains = $this->extractDomainsLocalRegex($text);
+                }
             }
         } else {
+            // No API key configured — always use local regex
             $domains = $this->extractDomainsLocalRegex($text);
         }
-
 
         $validatedDomains = [];
         foreach ($domains as $domain) {
