@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { LayoutDashboard, FilePlus, FileText, User, Settings, Power, Menu, X } from 'lucide-react';
 import { SignOutModal } from '../auth/SignOutModal';
@@ -14,12 +14,11 @@ export const Sidebar: React.FC = () => {
     const handleSignOutConfirm = () => {
         setIsSignOutOpen(false);
         
-
-        sessionStorage.clear();
-        
-
+        // Eagerly dispatch the logout request using the active session token
         authService.logout().catch(() => {});
         
+        // Clean session store locally and navigate back to login portal
+        sessionStorage.clear();
         navigate('/login', { replace: true });
     };
 
@@ -76,6 +75,22 @@ export const Sidebar: React.FC = () => {
         if (roleStr === 'student') return 'Student';
         if (roleStr === 'applicant') return 'Applicant';
         return roleStr.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+    };
+
+    const preloadTimeoutRef = useRef<any>(null);
+
+    const handlePreload = (route: string) => {
+        if (preloadTimeoutRef.current) clearTimeout(preloadTimeoutRef.current);
+        preloadTimeoutRef.current = setTimeout(() => {
+            if (route === '/new-course') import('./NewCourseApplication');
+        }, 80); // 80ms intent confirmation delay
+    };
+
+    const handleMouseLeave = () => {
+        if (preloadTimeoutRef.current) {
+            clearTimeout(preloadTimeoutRef.current);
+            preloadTimeoutRef.current = null;
+        }
     };
 
     return (
@@ -142,23 +157,23 @@ export const Sidebar: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="sidebar-nav-container">
+                 <div className="sidebar-nav-container">
                     <nav className="sidebar-nav">
                         <div className="nav-group">
-                            <a href="#" className={`nav-item ${location.pathname === '/dashboard' || location.pathname === '/' ? 'active' : ''}`} onClick={(e) => { e.preventDefault(); navigate('/dashboard'); }}>
+                            <a href="#" className={`nav-item ${location.pathname === '/dashboard' || location.pathname === '/' ? 'active' : ''}`} onClick={(e) => { e.preventDefault(); navigate('/dashboard'); }} onMouseEnter={() => handlePreload('/dashboard')} onMouseLeave={handleMouseLeave}>
                                 <span className="nav-item-icon"><LayoutDashboard size={18} /></span>
                                 <span className="nav-item-text">Dashboard</span>
                             </a>
-                            <a href="#" className={`nav-item ${location.pathname === '/letter-request' ? 'active' : ''}`} onClick={(e) => { e.preventDefault(); navigate('/letter-request'); }}>
+                            <a href="#" className={`nav-item ${location.pathname === '/letter-request' ? 'active' : ''}`} onClick={(e) => { e.preventDefault(); navigate('/letter-request'); }} onMouseEnter={() => handlePreload('/letter-request')} onMouseLeave={handleMouseLeave}>
                                 <span className="nav-item-icon"><FileText size={18} /></span>
                                 <span className="nav-item-text">Letter Requests</span>
                             </a>
 
-                            <a href="#" className={`nav-item ${location.pathname === '/profile' ? 'active' : ''}`} onClick={(e) => { e.preventDefault(); navigate('/profile'); }}>
+                            <a href="#" className={`nav-item ${location.pathname === '/profile' ? 'active' : ''}`} onClick={(e) => { e.preventDefault(); navigate('/profile'); }} onMouseEnter={() => handlePreload('/profile')} onMouseLeave={handleMouseLeave}>
                                 <span className="nav-item-icon"><User size={18} /></span>
                                 <span className="nav-item-text">Profile</span>
                             </a>
-                            <a href="#" className={`nav-item ${location.pathname === '/settings' ? 'active' : ''}`} onClick={(e) => { e.preventDefault(); navigate('/settings'); }}>
+                            <a href="#" className={`nav-item ${location.pathname === '/settings' ? 'active' : ''}`} onClick={(e) => { e.preventDefault(); navigate('/settings'); }} onMouseEnter={() => handlePreload('/settings')} onMouseLeave={handleMouseLeave}>
                                 <span className="nav-item-icon"><Settings size={18} /></span>
                                 <span className="nav-item-text">Settings</span>
                             </a>
@@ -168,6 +183,8 @@ export const Sidebar: React.FC = () => {
                             <button
                                 className="nav-item-highlight"
                                 onClick={(e) => { e.preventDefault(); navigate('/new-course'); }}
+                                onMouseEnter={() => handlePreload('/new-course')}
+                                onMouseLeave={handleMouseLeave}
                             >
                                 <span className="nav-item-icon-highlight"><FilePlus size={16} /></span>
                                 <span className="nav-item-text">Explore Courses</span>

@@ -49,7 +49,7 @@ export const AcademicProgressTab: React.FC<AcademicProgressTabProps> = ({
                                     textAlign: 'left'
                                 }}
                             >
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
                                     {isExpanded ? <ChevronDown size={20} color="#2563EB" /> : <ChevronRight size={20} color="#64748B" />}
                                     <div>
                                         <span style={{ fontSize: '12px', fontWeight: 700, color: '#2563EB', textTransform: 'uppercase' }}>

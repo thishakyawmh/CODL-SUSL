@@ -55,70 +55,8 @@ export const ForgotPassword: React.FC = () => {
     };
 
     return (
-        <div className="login-portal-wrapper">
-            { }
-            <div className="login-left-pane">
-                <div className="branding-container">
-                    <div className="branding-header-group">
-                        <img src={branding.logo} alt="Logo" className="branding-logo" />
-                        <div className="branding-title-group">
-                            <h1 style={{ textTransform: 'uppercase' }}>{branding.institution}</h1>
-                            <p className="university-name">{branding.university}</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="contact-info-container">
-                    <div className="contact-item">
-                        <div className="contact-icon-wrapper"><MapPin size={20} /></div>
-                        <div>
-                            <h3>Address</h3>
-                            <p style={{ whiteSpace: 'pre-line' }}>{branding.address}</p>
-                        </div>
-                    </div>
-                    <div className="contact-horizontal-group">
-                        <div className="contact-item">
-                            <div className="contact-icon-wrapper"><Phone size={20} /></div>
-                            <div>
-                                <h3>Phone Number</h3>
-                                <p>{branding.phone}</p>
-                            </div>
-                        </div>
-                        <div className="contact-item">
-                            <div className="contact-icon-wrapper"><Mail size={20} /></div>
-                            <div>
-                                <h3>E-mail</h3>
-                                <p>{branding.email}</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="pane-footer">
-                    <div className="pane-footer-content">
-                        <p style={{ margin: 0 }}>© {new Date().getFullYear()} CODL. All rights reserved.</p>
-                        <div className="pane-footer-links">
-                            <span onClick={() => navigate('/login')} className="pane-footer-link">Student Login</span>
-                            <span style={{ color: 'rgba(255, 255, 255, 0.2)' }}>|</span>
-                            <span onClick={() => navigate('/staff/login')} className="pane-footer-link">Staff Login</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            { }
-            <div className="login-right-pane">
-                <div className="mobile-header-banner">
-                    <div className="mobile-branding-header">
-                        <img src={branding.logo} alt="Logo" className="mobile-branding-logo" />
-                        <div className="mobile-branding-title-group">
-                            <h1 className="mobile-branding-institution">{branding.institution}</h1>
-                            <p className="mobile-branding-university">{branding.university}</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="login-form-container">
+        <>
+            <div className="login-form-container">
                     <div className="welcome-header">
                         <h2 className="welcome-title">Forgot Password</h2>
                         <p className="welcome-subtitle">Recover access to your CODL account</p>
@@ -173,7 +111,6 @@ export const ForgotPassword: React.FC = () => {
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
-    );
+            </>
+        );
 };

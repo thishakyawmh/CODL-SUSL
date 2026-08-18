@@ -7,12 +7,18 @@ use Illuminate\Http\Request;
 
 class ExamApplicationController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        return response()->json(ExamApplication::with([
+        $query = ExamApplication::with([
             'user:id,full_name,display_name,email,student_number',
             'course:id,title,code'
-        ])->get());
+        ])->latest();
+
+        if ($request->has('page')) {
+            return response()->json($query->paginate(15));
+        }
+
+        return response()->json($query->get());
     }
 
     public function store(Request $request)

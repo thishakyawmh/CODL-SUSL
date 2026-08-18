@@ -274,7 +274,6 @@ import { StudentProfileTab } from './track-student/StudentProfileTab';
 import { AcademicProgressTab } from './track-student/AcademicProgressTab';
 import { RequestsApprovalTab } from './track-student/RequestsApprovalTab';
 import { StudentTimelineTab } from './track-student/StudentTimelineTab';
-import { EditStudentModal } from './track-student/EditStudentModal';
 
 export const TrackStudent: React.FC = () => {
     const currentAdminUser = getCurrentAdminUser();
@@ -285,7 +284,7 @@ export const TrackStudent: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'profile' | 'academic' | 'requests' | 'timeline'>('profile');
     const [expandedCourses, setExpandedCourses] = useState<Record<string, boolean>>({});
 
-    const [showEditModal, setShowEditModal] = useState(false);
+    const [isEditingProfile, setIsEditingProfile] = useState(false);
     const [editForm, setEditForm] = useState({
         studentNumber: '',
         fullName: '',
@@ -332,7 +331,7 @@ export const TrackStudent: React.FC = () => {
             otherQualifications: profile.otherQualifications || '',
             displayName: student.displayName || ''
         });
-        setShowEditModal(true);
+        setIsEditingProfile(true);
     };
 
     const handleEditFormSubmit = async (e: React.FormEvent) => {
@@ -367,7 +366,7 @@ export const TrackStudent: React.FC = () => {
 
             setRealStudents(prev => prev.map(s => s.id === selectedStudent.id ? normalized : s));
             setSelectedStudent(normalized);
-            setShowEditModal(false);
+            setIsEditingProfile(false);
             toast.success('Student profile updated successfully.');
         } catch (err: any) {
             console.error('Failed to update student profile:', err);
@@ -757,7 +756,7 @@ export const TrackStudent: React.FC = () => {
                     <div className="ts-search-results">
                         {filteredStudents.map(s => (
                             <button key={s.id} className="ts-search-item" onClick={() => selectStudent(s)}>
-                                <img src={s.avatar} alt={s.fullName} className="ts-search-avatar" />
+                                <img src={s.avatar} alt={s.fullName} className="ts-search-avatar" loading="lazy" />
                                 <div className="ts-search-info">
                                     <span className="ts-search-name">{s.fullName}</span>
                                     <span className="ts-search-id">{s.studentNumber}</span>
@@ -878,7 +877,21 @@ export const TrackStudent: React.FC = () => {
 
                     { }
                     {activeTab === 'profile' && (
-                        <StudentProfileTab student={selectedStudent} profile={academicProfile} />
+                        <StudentProfileTab 
+                            student={selectedStudent} 
+                            profile={academicProfile}
+                            isEditing={isEditingProfile}
+                            editForm={editForm}
+                            setEditForm={setEditForm}
+                            onSave={handleEditFormSubmit}
+                            onCancel={() => setIsEditingProfile(false)}
+                            onAddOLSubject={handleAddOLSubject}
+                            onRemoveOLSubject={handleRemoveOLSubject}
+                            onOLSubjectChange={handleOLSubjectChange}
+                            onAddALSubject={handleAddALSubject}
+                            onRemoveALSubject={handleRemoveALSubject}
+                            onALSubjectChange={handleALSubjectChange}
+                        />
                     )}
 
                     {activeTab === 'academic' && (
@@ -1082,20 +1095,6 @@ export const TrackStudent: React.FC = () => {
                 </div>
             )}
 
-            { }
-            <EditStudentModal
-                show={showEditModal}
-                editForm={editForm}
-                setEditForm={setEditForm}
-                onClose={() => setShowEditModal(false)}
-                onSubmit={handleEditFormSubmit}
-                onAddOLSubject={handleAddOLSubject}
-                onRemoveOLSubject={handleRemoveOLSubject}
-                onOLSubjectChange={handleOLSubjectChange}
-                onAddALSubject={handleAddALSubject}
-                onRemoveALSubject={handleRemoveALSubject}
-                onALSubjectChange={handleALSubjectChange}
-            />
         </div>
     );
 };

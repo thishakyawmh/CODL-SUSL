@@ -17,6 +17,7 @@ import {
 import { toast } from '../../utils/toast';
 import { getCurrentAdminUser } from '../../data/mockAdminData';
 import { VerificationStages } from '../common/VerificationStages';
+import { ConfirmModal } from '../common/ConfirmModal';
 import './CourseManagement.css';
 import './ApplicationApprovals.css';
 
@@ -49,6 +50,8 @@ export const ManageExamStudents: React.FC = () => {
     const [showRejectModal, setShowRejectModal] = useState(false);
     const [rejectionReason, setRejectionReason] = useState('');
     const [pendingApp, setPendingApp] = useState<any | null>(null);
+    const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+    const [deleteAppId, setDeleteAppId] = useState<string | number | null>(null);
 
 
     const [showDetailsModal, setShowDetailsModal] = useState(false);
@@ -528,18 +531,24 @@ export const ManageExamStudents: React.FC = () => {
         }
     };
 
-    const handleDeleteApplication = async (appId: string | number) => {
-        if (!window.confirm("Are you sure you want to delete this application request completely? This action cannot be undone.")) {
-            return;
-        }
+    const handleDeleteApplication = (appId: string | number) => {
+        setDeleteAppId(appId);
+        setConfirmDeleteOpen(true);
+    };
+
+    const executeDeleteApplication = async () => {
+        if (!deleteAppId) return;
         try {
-            await examApplicationService.delete(appId);
+            await examApplicationService.delete(deleteAppId);
             toast.success("Application deleted successfully!");
             setShowDetailsModal(false);
             await fetchAll(true);
         } catch (err: any) {
             console.error("Failed to delete application:", err);
             toast.error(err.response?.data?.message || "Failed to delete application.");
+        } finally {
+            setConfirmDeleteOpen(false);
+            setDeleteAppId(null);
         }
     };
 
@@ -2030,6 +2039,20 @@ export const ManageExamStudents: React.FC = () => {
                     to { opacity: 1; transform: translateY(0); }
                 }
             `}</style>
+            <ConfirmModal
+                isOpen={confirmDeleteOpen}
+                title="Delete Application"
+                description="Are you sure you want to delete this application request completely? This action cannot be undone."
+                confirmText="Yes, Delete"
+                variant="danger"
+                onClose={() => {
+                    setConfirmDeleteOpen(false);
+                    setDeleteAppId(null);
+                }}
+                onConfirm={() => {
+                    executeDeleteApplication();
+                }}
+            />
         </>
     );
 };

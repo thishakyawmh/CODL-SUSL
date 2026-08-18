@@ -2531,7 +2531,7 @@ export const ManageCourse: React.FC = () => {
     return (
         <div className="cm-container">
             <div style={{
-                marginBottom: (activeSection === 'approvals_req' || activeSection === 'enrollment_req' || activeSection === 'waitlist') ? '8px' : '20px',
+                marginBottom: (activeSection === 'approvals_req' || activeSection === 'enrollment_req' || activeSection === 'waitlist') ? '16px' : '36px',
                 display: 'flex',
                 alignItems: 'stretch',
                 gap: '8px'

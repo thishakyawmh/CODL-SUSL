@@ -31,8 +31,9 @@ api.interceptors.response.use((response) => {
             sessionStorage.clear();
             window.location.reload();
         } else if (error.response.status === 401) {
-            const isLoginRequest = error.config && (error.config.url === '/login' || error.config.url.endsWith('/login'));
-            if (!isLoginRequest) {
+            const url = error.config?.url || '';
+            const isAuthAction = url === '/login' || url.endsWith('/login') || url === '/logout' || url.endsWith('/logout');
+            if (!isAuthAction) {
                 sessionStorage.clear();
                 const isStaff = window.location.pathname.startsWith('/admin') || window.location.pathname.startsWith('/staff');
                 window.location.href = isStaff ? '/staff/login' : '/login';
@@ -41,6 +42,51 @@ api.interceptors.response.use((response) => {
     }
     return Promise.reject(error);
 });
+
+interface CacheEntry {
+    data: any;
+    timestamp: number;
+}
+
+const apiCache = new Map<string, CacheEntry>();
+const DEFAULT_TTL = 30000; // 30 seconds default TTL
+const MAX_CACHE_SIZE = 50; // Keep memory footprint bounded
+
+export const cachedGet = async (url: string, options?: { ttl?: number; forceRefresh?: boolean }) => {
+    const ttl = options?.ttl ?? DEFAULT_TTL;
+    if (!options?.forceRefresh) {
+        const cached = apiCache.get(url);
+        const now = Date.now();
+        if (cached && (now - cached.timestamp < ttl)) {
+            return cached.data;
+        }
+    }
+    const response = await api.get(url);
+    
+    // FIFO Eviction Policy to limit memory growth
+    if (apiCache.size >= MAX_CACHE_SIZE) {
+        const oldestKey = apiCache.keys().next().value;
+        if (oldestKey !== undefined) {
+            apiCache.delete(oldestKey);
+        }
+    }
+
+    apiCache.set(url, { data: response.data, timestamp: Date.now() });
+    return response.data;
+};
+
+export const clearApiCache = (urlPattern?: string) => {
+    if (!urlPattern) {
+        apiCache.clear();
+    } else {
+        const keys = Array.from(apiCache.keys());
+        keys.forEach(key => {
+            if (key.includes(urlPattern)) {
+                apiCache.delete(key);
+            }
+        });
+    }
+};
 
 export const authService = {
     login: async (credentials: { login: string; password: string }) => {
@@ -143,9 +189,8 @@ export const courseService = {
         const response = await api.get('/public/courses');
         return response.data;
     },
-    getById: async (id: string) => {
-        const response = await api.get(`/courses/${id}`);
-        return response.data;
+    getById: async (id: string, options?: { refresh?: boolean }) => {
+        return cachedGet(`/courses/${id}`, { forceRefresh: options?.refresh });
     },
     create: async (data: any) => {
         const response = await api.post('/courses', data);
@@ -159,9 +204,8 @@ export const courseService = {
         const response = await api.delete(`/courses/${id}`);
         return response.data;
     },
-    getStudentCourses: async () => {
-        const response = await api.get('/student/courses');
-        return response.data;
+    getStudentCourses: async (options?: { refresh?: boolean }) => {
+        return cachedGet('/student/courses', { forceRefresh: options?.refresh });
     },
     getEnrolledStudents: async (courseId: string) => {
         const response = await api.get(`/courses/${courseId}/students`);
@@ -175,9 +219,8 @@ export const courseService = {
         const response = await api.delete(`/courses/${courseId}/students/${studentId}`);
         return response.data;
     },
-    getCourseMaterials: async (courseId: string) => {
-        const response = await api.get(`/student/courses/${courseId}/materials`);
-        return response.data;
+    getCourseMaterials: async (courseId: string, options?: { refresh?: boolean }) => {
+        return cachedGet(`/student/courses/${courseId}/materials`, { forceRefresh: options?.refresh });
     },
     getManageCourseData: async (courseId: string, options?: { signal?: AbortSignal; refresh?: boolean }) => {
         const response = await api.get(`/manage-course/${courseId}`, { 
@@ -186,13 +229,11 @@ export const courseService = {
         });
         return response.data;
     },
-    getStudentExaminationsData: async (courseId: string) => {
-        const response = await api.get(`/student/courses/${courseId}/examinations-data`);
-        return response.data;
+    getStudentExaminationsData: async (courseId: string, options?: { refresh?: boolean }) => {
+        return cachedGet(`/student/courses/${courseId}/examinations-data`, { forceRefresh: options?.refresh, ttl: 15000 });
     },
-    getDashboardOverview: async () => {
-        const response = await api.get('/student/dashboard-overview');
-        return response.data;
+    getDashboardOverview: async (options?: { refresh?: boolean }) => {
+        return cachedGet('/student/dashboard-overview', { forceRefresh: options?.refresh, ttl: 15000 });
     }
 };
 
@@ -223,6 +264,7 @@ export const batchService = {
         const response = await api.post(`/batches/${batchId}/upload-material`, formData, {
             headers: { 'Content-Type': 'multipart/form-data' }
         });
+        clearApiCache('materials');
         return response.data;
     }
 };
@@ -311,6 +353,7 @@ export const examApplicationService = {
     },
     create: async (data: any) => {
         const response = await api.post('/exam-applications', data);
+        clearApiCache('examinations-data');
         return response.data;
     },
     update: async (id: string | number, data: any) => {
@@ -323,6 +366,7 @@ export const examApplicationService = {
     },
     delete: async (id: string | number) => {
         const response = await api.delete(`/exam-applications/${id}`);
+        clearApiCache('examinations-data');
         return response.data;
     }
 };
@@ -361,6 +405,7 @@ export const postponementRequestService = {
     },
     create: async (data: any) => {
         const response = await api.post('/postponement-requests', data);
+        clearApiCache('examinations-data');
         return response.data;
     },
     update: async (id: string | number, data: any) => {
@@ -373,6 +418,7 @@ export const postponementRequestService = {
     },
     delete: async (id: string | number) => {
         const response = await api.delete(`/postponement-requests/${id}`);
+        clearApiCache('examinations-data');
         return response.data;
     }
 };
@@ -384,6 +430,7 @@ export const reattemptRequestService = {
     },
     create: async (data: any) => {
         const response = await api.post('/reattempt-requests', data);
+        clearApiCache('examinations-data');
         return response.data;
     },
     update: async (id: string | number, data: any) => {
@@ -396,6 +443,7 @@ export const reattemptRequestService = {
     },
     delete: async (id: string | number) => {
         const response = await api.delete(`/reattempt-requests/${id}`);
+        clearApiCache('examinations-data');
         return response.data;
     }
 };

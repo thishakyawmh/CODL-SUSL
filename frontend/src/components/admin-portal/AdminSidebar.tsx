@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
     LayoutDashboard, Users, BookOpen, ClipboardCheck,
@@ -33,13 +33,13 @@ export const AdminSidebar: React.FC = () => {
     const handleSignOutConfirm = () => {
         setIsSignOutOpen(false);
         
-
+        // Eagerly dispatch the logout request using the active session token
+        authService.logout().catch(() => {});
+        
+        // Clean session store locally and navigate back to staff login portal
         sessionStorage.removeItem('token');
         sessionStorage.removeItem('user');
         sessionStorage.removeItem('adminRole');
-        
-
-        authService.logout().catch(() => {});
         
         navigate('/staff/login', { replace: true });
     };
@@ -141,6 +141,23 @@ export const AdminSidebar: React.FC = () => {
         return true;
     });
 
+    const preloadTimeoutRef = useRef<any>(null);
+
+    const handlePreload = (path: string) => {
+        if (preloadTimeoutRef.current) clearTimeout(preloadTimeoutRef.current);
+        preloadTimeoutRef.current = setTimeout(() => {
+            if (path === '/admin/announcements') import('./AdminAnnouncements');
+            else if (path === '/admin/ai-analytics') import('./AIAnalytics');
+        }, 80); // 80ms intent confirmation delay
+    };
+
+    const handleMouseLeave = () => {
+        if (preloadTimeoutRef.current) {
+            clearTimeout(preloadTimeoutRef.current);
+            preloadTimeoutRef.current = null;
+        }
+    };
+
     return (
         <>
             { }
@@ -238,6 +255,8 @@ export const AdminSidebar: React.FC = () => {
                                                         href="#"
                                                         className={`admin-submenu-item ${isActive(child.path) ? 'active' : ''}`}
                                                         onClick={(e) => { e.preventDefault(); navigate(child.path); }}
+                                                        onMouseEnter={() => handlePreload(child.path)}
+                                                        onMouseLeave={handleMouseLeave}
                                                     >
                                                         <span className="admin-submenu-dot"></span>
                                                         {child.label}
@@ -254,6 +273,8 @@ export const AdminSidebar: React.FC = () => {
                                         href="#"
                                         className={`admin-nav-item ${isActive(item.path) ? 'active' : ''}`}
                                         onClick={(e) => { e.preventDefault(); navigate(item.path); }}
+                                        onMouseEnter={() => handlePreload(item.path)}
+                                        onMouseLeave={handleMouseLeave}
                                     >
                                         <span className={`admin-nav-icon ${isActive(item.path) ? 'icon-active' : ''}`}>{item.icon}</span>
                                         <span className="admin-nav-text">{item.label}</span>
