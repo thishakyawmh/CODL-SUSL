@@ -4,7 +4,8 @@ import {
     Eye, X, Download, Save,
     Shield, Key,
     Mail, Phone, Calendar, BookOpen, AlertCircle,
-    MoreVertical, Hash, Clock, CheckCircle2, XCircle, FileText, AlertTriangle
+    MoreVertical, Hash, Clock, CheckCircle2, XCircle, FileText, AlertTriangle,
+    User as UserIcon
 } from 'lucide-react';
 import { type User, getFullAvatarUrl } from '../../data/mockAdminData';
 import { userService, courseApplicationService } from '../../services/apiService';
@@ -15,6 +16,7 @@ import './UserManagement.css';
 const mapUser = (user: any): User => ({
     id: String(user.id),
     fullName: user.full_name,
+    displayName: user.display_name || '',
     email: user.email,
     nic: user.nic,
     phone: user.phone || '',
@@ -50,6 +52,7 @@ export const UserManagement: React.FC = () => {
 
     const [newUser, setNewUser] = useState({
         fullName: '',
+        displayName: '',
         email: '',
         nic: '',
         phone: '',
@@ -97,7 +100,8 @@ export const UserManagement: React.FC = () => {
     };
 
     const filteredUsers = users.filter(user => {
-        const nameMatch = user.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) || false;
+        const nameMatch = (user.fullName || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          (user.displayName || '').toLowerCase().includes(searchTerm.toLowerCase()) || false;
         const emailMatch = user.email?.toLowerCase().includes(searchTerm.toLowerCase()) || false;
         const idMatch = user.studentNumber?.toLowerCase().includes(searchTerm.toLowerCase()) || false;
 
@@ -143,6 +147,7 @@ export const UserManagement: React.FC = () => {
         try {
             const payload = {
                 full_name: newUser.fullName,
+                display_name: (newUser.role === 'student' || newUser.role === 'applicant') ? newUser.displayName : undefined,
                 email: newUser.email,
                 nic: newUser.nic,
                 phone: newUser.phone,
@@ -155,7 +160,7 @@ export const UserManagement: React.FC = () => {
             await userService.create(payload);
             toast.success(`User created in Cloud DB!\n\nRegistration Number: ${studentNumber}\nDefault Password: ${newUser.nic}`, { title: 'Account Created' });
             setShowCreateModal(false);
-            setNewUser({ fullName: '', email: '', nic: '', phone: '', role: 'student' });
+            setNewUser({ fullName: '', displayName: '', email: '', nic: '', phone: '', role: 'student' });
             fetchUsers(); 
         } catch (err: any) {
             toast.error(err.response?.data?.message || 'Failed to create user');
@@ -177,6 +182,7 @@ export const UserManagement: React.FC = () => {
         try {
             const payload = {
                 full_name: editFormData.fullName,
+                display_name: (editFormData.role === 'student' || editFormData.role === 'applicant') ? editFormData.displayName : undefined,
                 email: editFormData.email,
                 nic: editFormData.nic,
                 phone: editFormData.phone,
@@ -300,12 +306,13 @@ export const UserManagement: React.FC = () => {
         }
 
 
-        const headers = ['Registration Number', 'Full Name', 'Email', 'NIC', 'Phone', 'Role', 'Status', 'Joined Date'];
+        const headers = ['Registration Number', 'Full Name', 'Display Name', 'Email', 'NIC', 'Phone', 'Role', 'Status', 'Joined Date'];
 
 
         const csvRows = users.map(user => [
             `"${user.studentNumber || ''}"`,
             `"${user.fullName?.replace(/"/g, '""') || ''}"`,
+            `"${user.displayName?.replace(/"/g, '""') || ''}"`,
             `"${user.email || ''}"`,
             `"${user.nic || ''}"`,
             `"${user.phone || ''}"`,
@@ -434,9 +441,13 @@ export const UserManagement: React.FC = () => {
                                     <tr key={user.id}>
                                         <td>
                                             <div className="um-user-cell">
-                                                <img src={user.avatar} alt={user.fullName} className="um-user-avatar" />
+                                                <img src={user.avatar} alt={user.fullName} className="um-user-avatar" loading="lazy" />
                                                 <div>
-                                                    <span className="um-user-name">{user.fullName}</span>
+                                                    <span className="um-user-name">
+                                                        {(user.role === 'student' || user.role === 'applicant') 
+                                                            ? (user.displayName || user.fullName) 
+                                                            : user.fullName}
+                                                    </span>
                                                     <span className="um-user-email">{user.email}</span>
                                                 </div>
                                             </div>
@@ -570,6 +581,18 @@ export const UserManagement: React.FC = () => {
                                         />
                                     </div>
 
+                                    {(newUser.role === 'student' || newUser.role === 'applicant') && (
+                                        <div className="um-form-group full-width">
+                                            <label>Display Name</label>
+                                            <input
+                                                type="text"
+                                                placeholder="Enter display name (optional)"
+                                                value={newUser.displayName}
+                                                onChange={(e) => setNewUser({ ...newUser, displayName: e.target.value })}
+                                            />
+                                        </div>
+                                    )}
+
                                     <div className="um-form-group">
                                         <label>NIC Number</label>
                                         <input
@@ -674,6 +697,19 @@ export const UserManagement: React.FC = () => {
                                                     required
                                                 />
                                             </div>
+                                            {(editFormData.role === 'student' || editFormData.role === 'applicant') && (
+                                                <div className="cm-form-group" style={{ marginBottom: '12px', width: '100%' }}>
+                                                    <label>Display Name</label>
+                                                    <input
+                                                        type="text"
+                                                        name="displayName"
+                                                        value={editFormData.displayName || ''}
+                                                        onChange={handleEditChange}
+                                                        className="admin-input"
+                                                        placeholder="Enter display name"
+                                                    />
+                                                </div>
+                                            )}
                                             <div style={{ display: 'flex', gap: '12px' }}>
                                                 <div className="cm-form-group" style={{ flex: 1 }}>
                                                     <label>Role</label>
@@ -744,7 +780,11 @@ export const UserManagement: React.FC = () => {
                                     <div className="um-detail-profile">
                                         <img src={selectedUser.avatar} alt={selectedUser.fullName} className="um-detail-avatar" />
                                         <div className="um-detail-info">
-                                            <h3>{selectedUser.fullName}</h3>
+                                            <h3>
+                                                {(selectedUser.role === 'student' || selectedUser.role === 'applicant') 
+                                                    ? (selectedUser.displayName || selectedUser.fullName) 
+                                                    : selectedUser.fullName}
+                                            </h3>
                                             <span className="um-detail-id">{selectedUser.studentNumber}</span>
                                             <div className="um-detail-badges">
                                                 <span className="um-role-badge" style={{
@@ -762,6 +802,10 @@ export const UserManagement: React.FC = () => {
                                     </div>
 
                                     <div className="um-detail-grid">
+                                        <div className="um-detail-item">
+                                            <span className="um-dl"><UserIcon size={14} /> Full Name</span>
+                                            <span className="um-dv">{selectedUser.fullName}</span>
+                                        </div>
                                         <div className="um-detail-item">
                                             <span className="um-dl"><Mail size={14} /> Email</span>
                                             <span className="um-dv">{selectedUser.email}</span>
@@ -837,7 +881,7 @@ export const UserManagement: React.FC = () => {
                                     <span style={{ fontWeight: 600 }}>Account Details</span>
                                 </div>
                                 <div style={{ paddingLeft: '24px', fontSize: '13px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                    <span><strong>Name:</strong> {userToReset.fullName}</span>
+                                    <span><strong>Name:</strong> {userToReset.fullName} {((userToReset.role === 'student' || userToReset.role === 'applicant') && userToReset.displayName) ? `(${userToReset.displayName})` : ''}</span>
                                     <span><strong>Registration ID:</strong> {userToReset.studentNumber || 'N/A'}</span>
                                     <span><strong>Default Password (NIC):</strong> {userToReset.nic || <span style={{ fontStyle: 'italic', color: '#94A3B8' }}>Not Provided</span>}</span>
                                 </div>
@@ -879,7 +923,7 @@ export const UserManagement: React.FC = () => {
                                     <span style={{ fontWeight: 600 }}>Account Details</span>
                                 </div>
                                 <div style={{ paddingLeft: '24px', fontSize: '13px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                    <span><strong>Name:</strong> {userToDelete.fullName}</span>
+                                    <span><strong>Name:</strong> {userToDelete.fullName} {((userToDelete.role === 'student' || userToDelete.role === 'applicant') && userToDelete.displayName) ? `(${userToDelete.displayName})` : ''}</span>
                                     <span><strong>Registration ID:</strong> {userToDelete.studentNumber || 'N/A'}</span>
                                     <span><strong>Role:</strong> {userToDelete.role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
                                 </div>
@@ -921,7 +965,11 @@ export const UserManagement: React.FC = () => {
                                     <div className="um-applicant-card">
                                         <div className="um-applicant-card-col">
                                             <h4>Applicant Details</h4>
-                                            <span style={{ fontSize: '13px', color: '#1E293B', fontWeight: 600 }}>{applicantStagesUser.fullName}</span>
+                                            <span style={{ fontSize: '13px', color: '#1E293B', fontWeight: 600 }}>
+                                                {(applicantStagesUser.role === 'student' || applicantStagesUser.role === 'applicant') 
+                                                    ? (applicantStagesUser.displayName || applicantStagesUser.fullName) 
+                                                    : applicantStagesUser.fullName}
+                                            </span>
                                             <span style={{ fontSize: '12px', color: '#64748B' }}>{applicantStagesUser.email}</span>
                                             <span style={{ fontSize: '12px', color: '#64748B' }}>NIC: {applicantStagesUser.nic || 'N/A'}</span>
                                         </div>

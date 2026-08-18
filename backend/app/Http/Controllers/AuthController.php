@@ -90,6 +90,8 @@ class AuthController extends Controller
             ], 401);
         }
 
+        $user->last_login = now();
+        $user->save();
 
         $token = $user->createToken('auth_token', ['role:' . $user->role])->plainTextToken;
 
@@ -175,6 +177,8 @@ class AuthController extends Controller
             }
         }
 
+        $user->last_login = now();
+        $user->save();
 
         $token = $user->createToken('auth_token', ['role:' . $user->role])->plainTextToken;
 

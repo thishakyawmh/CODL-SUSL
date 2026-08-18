@@ -33,7 +33,8 @@ class UserController extends Controller
             'avatar',
             'nic',
             'created_at',
-            'updated_at'
+            'updated_at',
+            'last_login'
         ]);
 
         $query->orderBy('created_at', 'desc');
@@ -349,10 +350,7 @@ class UserController extends Controller
                       ->orWhere('email', 'like', "%{$q}%")
                       ->orWhere('nic', 'like', "%{$q}%");
             })
-            ->where(function($query) {
-                $query->where('role', 'student')
-                      ->orWhere('student_number', 'like', 'CODL/%');
-            })
+            ->where('role', 'student')
             ->with('courses')
             ->take(20)
             ->get();

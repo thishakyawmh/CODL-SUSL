@@ -6,6 +6,7 @@ export interface User {
     id: string;
     studentNumber: string;
     fullName: string;
+    displayName?: string;
     email: string;
     nic: string;
     role: 'super_admin' | 'admin' | 'director' | 'coordinator' | 'secretary' | 'lecturer' | 'student' | 'applicant';

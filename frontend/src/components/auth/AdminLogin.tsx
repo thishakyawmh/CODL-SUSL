@@ -69,10 +69,8 @@ export const AdminLogin: React.FC = () => {
         try {
             const data = await authService.login({ login: loginId, password });
 
-
             const studentRoles = ['student', 'applicant'];
             if (studentRoles.includes(data.user.role)) {
-
                 try { await authService.logout(); } catch (_) { }
                 setError('This portal is for staff only. Please use the Student Portal to sign in.');
                 setIsLoading(false);
@@ -94,94 +92,25 @@ export const AdminLogin: React.FC = () => {
         }
     };
 
-    if (isMobile) {
-        return (
-            <div className="admin-mobile-block">
-                <div className="admin-mobile-block-card">
-                    <div className="admin-mobile-block-icon">
-                        <Monitor size={48} />
-                    </div>
-                    <h2>Desktop Screen Required</h2>
-                    <p>
-                        The CODL SUSL Admin Portal is optimized for desktop computers and larger screens. Please log in to the staff workspace using a desktop screen.
-                    </p>
-                    <div className="admin-mobile-block-footer">
-                        Please open this page on a device with a screen width of at least 1024px.
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
     return (
-        <div className="login-portal-wrapper">
-            { }
-            <div className="login-left-pane">
-                <div className="branding-container">
-                    <div className="branding-header-group">
-                        <img src={branding.logo} alt="Logo" className="branding-logo" />
-                        <div className="branding-title-group">
-                            <h1 style={{ textTransform: 'uppercase' }}>{branding.institution}</h1>
-                            <p className="university-name">{branding.university}</p>
+        <>
+            {isMobile && (
+                <div className="admin-mobile-block">
+                    <div className="admin-mobile-block-card">
+                        <div className="admin-mobile-block-icon">
+                            <Monitor size={36} />
+                        </div>
+                        <h2>Desktop Screen Required</h2>
+                        <p>
+                            The CODL SUSL Admin Portal is optimized for desktop computers and larger screens. Please log in to the staff workspace using a desktop screen.
+                        </p>
+                        <div className="admin-mobile-block-footer">
+                            Please open this page on a device with a screen width of at least 1024px.
                         </div>
                     </div>
                 </div>
-
-                <div className="contact-info-container">
-                    <div className="contact-item">
-                        <div className="contact-icon-wrapper"><MapPin size={20} /></div>
-                        <div>
-                            <h3>Address</h3>
-                            <p style={{ whiteSpace: 'pre-line' }}>{branding.address}</p>
-                        </div>
-                    </div>
-                    <div className="contact-horizontal-group">
-                        <div className="contact-item">
-                            <div className="contact-icon-wrapper"><Phone size={20} /></div>
-                            <div>
-                                <h3>Phone Number</h3>
-                                <p>{branding.phone}</p>
-                            </div>
-                        </div>
-                        <div className="contact-item">
-                            <div className="contact-icon-wrapper"><Mail size={20} /></div>
-                            <div>
-                                <h3>E-mail</h3>
-                                <p>{branding.email}</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="pane-footer">
-                    <div className="pane-footer-content">
-                        <p style={{ margin: 0 }}>© {new Date().getFullYear()} CODL. All rights reserved.</p>
-                        <div className="pane-footer-links">
-                            <span onClick={() => navigate('/login')} className="pane-footer-link">Student Login</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            { }
-            <div className="login-right-pane">
-                { }
-                <div className="mobile-header-banner">
-                    <div className="mobile-branding-header">
-                        <img src={branding.logo} alt="Logo" className="mobile-branding-logo" />
-                        <div className="mobile-branding-title-group">
-                            <h1 className="mobile-branding-institution">{branding.institution}</h1>
-                            <p className="mobile-branding-university">{branding.university}</p>
-                        </div>
-                    </div>
-
-                    <div className="mobile-welcome-header">
-                        <h2 className="mobile-welcome-title">Welcome to CODL</h2>
-                        <p className="mobile-welcome-subtitle">Administrative & Staff Workspace Login</p>
-                    </div>
-                </div>
-
-                <div className="login-form-container">
+            )}
+            <div className="login-form-container">
                     <div className="welcome-header desktop-only">
                         <h2 className="welcome-title">Welcome to CODL</h2>
                         <p className="welcome-subtitle">Administrative & Staff Workspace Login</p>
@@ -255,14 +184,22 @@ export const AdminLogin: React.FC = () => {
                                 </div>
 
                                 <button type="submit" className="btn-primary auth-submit-btn" disabled={isLoading}>
-                                    {isLoading ? 'Authenticating...' : 'Sign In'} <ArrowRight size={18} />
+                                    {isLoading ? (
+                                        <>
+                                            <span className="btn-spinner"></span>
+                                            <span>Authenticating...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span>Sign In</span>
+                                            <ArrowRight size={18} />
+                                        </>
+                                    )}
                                 </button>
                             </form>
                         </div>
-
                     </div>
                 </div>
-            </div>
-        </div>
-    );
+            </>
+        );
 };
