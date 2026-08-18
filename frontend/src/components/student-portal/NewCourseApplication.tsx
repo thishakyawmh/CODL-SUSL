@@ -663,20 +663,24 @@ export const NewCourseApplication: React.FC = () => {
                                 <p className="detail-row">
                                     <span className="detail-label" style={{ textTransform: 'uppercase' }}>Duration:</span> {prog.duration}
                                 </p>
-                                <p className="detail-row">
-                                    <span className="detail-label" style={{ textTransform: 'uppercase' }}>Batch:</span> {
-                                        prog.batches && prog.batches.length > 0
-                                            ? prog.batches[0].name
-                                            : 'TBD'
-                                    }
-                                </p>
-                                <p className="detail-row">
-                                    <span className="detail-label" style={{ textTransform: 'uppercase' }}>Deadline:</span> {
-                                        prog.batches && prog.batches.length > 0 && prog.batches[0].registration_deadline
-                                            ? new Date(prog.batches[0].registration_deadline).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })
-                                            : 'TBD'
-                                    }
-                                </p>
+                                {(!prog.batches || prog.batches.length <= 1) && (
+                                    <>
+                                        <p className="detail-row">
+                                            <span className="detail-label" style={{ textTransform: 'uppercase' }}>Batch:</span> {
+                                                prog.batches && prog.batches.length > 0
+                                                    ? prog.batches[0].name
+                                                    : 'TBD'
+                                            }
+                                        </p>
+                                        <p className="detail-row">
+                                            <span className="detail-label" style={{ textTransform: 'uppercase' }}>Deadline:</span> {
+                                                prog.batches && prog.batches.length > 0 && prog.batches[0].registration_deadline
+                                                    ? new Date(prog.batches[0].registration_deadline).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })
+                                                    : 'TBD'
+                                            }
+                                        </p>
+                                    </>
+                                )}
                             </div>
 
                             <button
