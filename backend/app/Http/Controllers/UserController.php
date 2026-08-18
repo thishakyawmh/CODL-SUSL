@@ -105,7 +105,36 @@ class UserController extends Controller
     public function destroy($id)
     {
         $user = User::findOrFail($id);
-        $user->delete();
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($user) {
+            // Detach user courses
+            $user->courses()->detach();
+
+            // Delete associated application records
+            \App\Models\CourseApplication::where('user_id', $user->id)
+                ->orWhere('applicant_email', $user->email)
+                ->delete();
+
+            // Delete exam, letter, postponement, and reattempt requests
+            \App\Models\ExamApplication::where('user_id', $user->id)->delete();
+            \App\Models\LetterRequest::where('user_id', $user->id)->delete();
+            \App\Models\PostponementRequest::where('user_id', $user->id)->delete();
+            \App\Models\ReattemptRequest::where('user_id', $user->id)->delete();
+
+            // Delete student grades and activity logs
+            \App\Models\StudentGrade::where('user_id', $user->id)->delete();
+            \App\Models\ActivityLog::where('user_id', $user->id)->delete();
+
+            // Delete student interests and surveys
+            \App\Models\StudentInterest::where('email', $user->email)->delete();
+            \Illuminate\Support\Facades\DB::table('student_surveys')
+                ->where('email', $user->email)
+                ->delete();
+
+            // Delete the user record
+            $user->delete();
+        });
+
         return response()->json(['message' => 'User deleted successfully']);
     }
 
