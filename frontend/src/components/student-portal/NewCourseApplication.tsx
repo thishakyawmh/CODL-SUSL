@@ -9,7 +9,7 @@ import './NewCourseApplication.css';
 interface Course {
     id: string;
     title: string;
-    level: string; 
+    level: string;
     department: string;
     duration: string;
     intakeStatus: 'Open' | 'Closed';
@@ -589,7 +589,7 @@ export const NewCourseApplication: React.FC = () => {
 
     return (
         <div className="new-prog-container">
-            <button className="back-btn" onClick={() => navigate('/applicant-dashboard')} style={{ marginBottom: '24px' }}>
+            <button className="back-btn" onClick={() => navigate(isStudentLayout ? '/dashboard' : '/applicant-dashboard')} style={{ marginBottom: '24px' }}>
                 <ArrowLeft size={18} /> Back
             </button>
             <div style={{ marginBottom: '32px' }}>
