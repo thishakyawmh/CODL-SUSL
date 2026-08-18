@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
+import { ContentLoader } from '../common/ContentLoader';
 import { ArrowLeft, FileText, Download, Lock, Calendar, BookOpen, Video, FileArchive, ChevronRight, Play } from 'lucide-react';
 import { type Course } from './CourseDetails';
 import { courseService } from '../../services/apiService';
@@ -139,22 +140,10 @@ export const CourseMaterials: React.FC = () => {
         };
 
         fetchMaterials();
-    }, [course]);
+    }, [course.id]);
 
     if (isLoading) {
-        return (
-            <div className="course-materials-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '300px' }}>
-                <style>{`
-                    @keyframes spin {
-                        to { transform: rotate(360deg); }
-                    }
-                `}</style>
-                <div style={{ textAlign: 'center', color: '#64748B' }}>
-                    <div style={{ width: '40px', height: '40px', border: '3px solid #E2E8F0', borderTopColor: 'var(--primary-color)', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 16px' }} />
-                    <p style={{ fontWeight: 600 }}>Loading course materials...</p>
-                </div>
-            </div>
-        );
+        return <ContentLoader />;
     }
 
     const visibleSemesters = semesters.filter(s => s.visible !== false);

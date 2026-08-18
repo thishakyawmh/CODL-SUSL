@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Megaphone, Plus, Trash2, Calendar, Bell, MessageSquare, Info, Sparkles } from 'lucide-react';
 import { announcementService } from '../../services/apiService';
+import { ConfirmModal } from '../common/ConfirmModal';
 import './AdminAnnouncements.css';
 
 interface Announcement {
@@ -20,6 +21,8 @@ export const AdminAnnouncements: React.FC = () => {
     const [annType, setAnnType] = useState<'Important' | 'Update' | 'General'>('General');
     const [annDesc, setAnnDesc] = useState('');
     const [showSuccessToast, setShowSuccessToast] = useState(false);
+    const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+    const [selectedAnnId, setSelectedAnnId] = useState<string | null>(null);
 
 
     const loadAnnouncements = async () => {
@@ -211,9 +214,8 @@ export const AdminAnnouncements: React.FC = () => {
                                         <button
                                             className="delete-ann-btn"
                                             onClick={() => {
-                                                if (confirm('Are you sure you want to delete this announcement? This will remove it from all student portal dashboards.')) {
-                                                    handleDelete(ann.id);
-                                                }
+                                                setSelectedAnnId(ann.id);
+                                                setConfirmModalOpen(true);
                                             }}
                                             title="Delete Announcement"
                                         >
@@ -240,6 +242,22 @@ export const AdminAnnouncements: React.FC = () => {
                         <p>There are no global announcements currently active. Click "Publish Announcement" to send a broadcast.</p>
                     </div>
                 )}
+            <ConfirmModal
+                isOpen={confirmModalOpen}
+                title="Delete Announcement"
+                description="Are you sure you want to delete this announcement? This will remove it from all student portal dashboards."
+                confirmText="Yes, Delete"
+                variant="danger"
+                onClose={() => {
+                    setConfirmModalOpen(false);
+                    setSelectedAnnId(null);
+                }}
+                onConfirm={() => {
+                    if (selectedAnnId !== null) {
+                        handleDelete(selectedAnnId);
+                    }
+                }}
+            />
             </div>
         </div>
     );

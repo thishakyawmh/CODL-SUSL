@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate, useOutletContext, useLocation } from 'react-router-dom';
+import { ContentLoader } from '../common/ContentLoader';
 import { ArrowLeft, FileText, Calendar, Clock, Download, Plus, ChevronRight } from 'lucide-react';
 import { type Course } from './CourseDetails';
 import { toast } from '../../utils/toast';
@@ -281,14 +282,7 @@ export const CourseExaminations: React.FC = () => {
     }
 
     if (isLoading) {
-        return (
-            <div className="course-examinations-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '400px' }}>
-                <div style={{ textAlign: 'center', color: '#64748B' }}>
-                    <div style={{ width: '48px', height: '48px', border: '3px solid #E2E8F0', borderTopColor: 'var(--primary-color)', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 16px' }} />
-                    <p style={{ fontWeight: 600, color: '#64748B' }}>Loading examinations...</p>
-                </div>
-            </div>
-        );
+        return <ContentLoader />;
     }
 
     return (

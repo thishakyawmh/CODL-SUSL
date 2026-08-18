@@ -45,6 +45,7 @@ class User extends Authenticatable
         'whatsapp',
         'home_phone',
         'guardian_phone',
+        'last_login',
     ];
 
     /**
@@ -69,6 +70,7 @@ class User extends Authenticatable
             'ol_subjects' => 'array',
             'al_subjects' => 'array',
             'dob' => 'date',
+            'last_login' => 'datetime',
         ];
     }
 

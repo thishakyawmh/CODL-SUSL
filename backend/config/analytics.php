@@ -44,7 +44,7 @@ return [
             'android', 'ios', 'swift', 'kotlin', 'flutter', 'react native', 
             'mobile development', 'mobile programming', 'mobile applications', 
             'objective-c', 'xcode', 'android studio', 'mobile app development', 
-            'ionic', 'cordova', 'nativescript'
+            'ionic', 'cordova', 'nativescript', 'mobile', 'mobile application development', 'mobile app'
         ],
         
         'Cyber Security' => [
@@ -67,7 +67,7 @@ return [
             'web development', 'frontend', 'backend', 'full stack', 'react', 'angular', 
             'vue', 'nodejs', 'php', 'laravel', 'html', 'css', 'javascript', 'typescript', 
             'expressjs', 'django', 'spring boot', 'asp.net', 'jquery', 'web applications', 
-            'semantic html', 'css3', 'bootstrap', 'tailwind', 'web programming'
+            'semantic html', 'css3', 'bootstrap', 'tailwind', 'web programming', 'web', 'web technologies', 'web design'
         ],
  
         'Business & Management' => [

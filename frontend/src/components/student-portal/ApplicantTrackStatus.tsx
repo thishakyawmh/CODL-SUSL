@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { FileText, Clock, ShieldAlert, CheckCircle2, ArrowLeft, XCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { ContentLoader } from '../common/ContentLoader';
 import { courseApplicationService } from '../../services/apiService';
+import { toast } from '../../utils/toast';
 import './ApplicantDashboard.css';
 
 export const ApplicantTrackStatus: React.FC = () => {
@@ -317,7 +319,7 @@ export const ApplicantTrackStatus: React.FC = () => {
             pdf.save(`CODL_Application_${appId}.pdf`);
         } catch (error) {
             console.error('PDF generation failed:', error);
-            alert('Failed to generate PDF. Please try again.');
+            toast.error('Failed to generate PDF. Please try again.');
         } finally {
             document.body.removeChild(page1);
             document.body.removeChild(page2);
@@ -342,7 +344,7 @@ export const ApplicantTrackStatus: React.FC = () => {
     }, []);
 
     if (isLoading) {
-        return <div className="applicant-view-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>Loading status...</div>;
+        return <ContentLoader />;
     }
 
     if (!application) {

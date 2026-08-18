@@ -10,13 +10,15 @@ interface StudentHeroBannerProps {
 }
 
 const formatLastAccessed = (lastLoginVal: any) => {
-    if (!lastLoginVal) return 'N/A';
+    if (!lastLoginVal) return 'Never';
     try {
         const d = new Date(lastLoginVal);
-        if (isNaN(d.getTime())) return 'N/A';
-        return d.toISOString().split('T')[0];
+        if (isNaN(d.getTime())) return 'Never';
+        const date = d.toLocaleDateString('en-CA');
+        const time = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+        return `${date}  ${time}`;
     } catch {
-        return 'N/A';
+        return 'Never';
     }
 };
 

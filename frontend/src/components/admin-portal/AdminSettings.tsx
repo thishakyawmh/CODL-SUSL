@@ -13,6 +13,7 @@ import {
 import { databaseTableService, userService, systemSettingService, backupService, statsService } from '../../services/apiService';
 import { getCurrentAdminUser, getFullAvatarUrl } from '../../data/mockAdminData';
 import { toast } from '../../utils/toast';
+import { ConfirmModal } from '../common/ConfirmModal';
 import './AdminSettings.css';
 
 export const AdminSettings: React.FC = () => {
@@ -25,6 +26,17 @@ export const AdminSettings: React.FC = () => {
     const [saved, setSaved] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [avatarError, setAvatarError] = useState(false);
+    const [confirmModalConfig, setConfirmModalConfig] = useState<{
+        isOpen: boolean;
+        title: string;
+        description: string;
+        onConfirm: () => void;
+    }>({
+        isOpen: false,
+        title: '',
+        description: '',
+        onConfirm: () => {}
+    });
 
     const [profileData, setProfileData] = useState({
         fullName: user.fullName,
@@ -163,10 +175,16 @@ export const AdminSettings: React.FC = () => {
         }
     };
 
-    const handleDeleteBackup = async (filename: string) => {
-        if (!window.confirm(`Are you sure you want to delete the backup file "${filename}"? This action cannot be undone.`)) {
-            return;
-        }
+    const handleDeleteBackup = (filename: string) => {
+        setConfirmModalConfig({
+            isOpen: true,
+            title: 'Delete Backup File',
+            description: `Are you sure you want to delete the backup file "${filename}"? This action cannot be undone.`,
+            onConfirm: () => executeDeleteBackup(filename)
+        });
+    };
+
+    const executeDeleteBackup = async (filename: string) => {
         try {
             await backupService.deleteBackup(filename);
             toast.success("Backup file deleted successfully!");
@@ -174,6 +192,8 @@ export const AdminSettings: React.FC = () => {
         } catch (err: any) {
             console.error("Failed to delete backup:", err);
             toast.error(err.response?.data?.message || "Failed to delete backup file.");
+        } finally {
+            setConfirmModalConfig(prev => ({ ...prev, isOpen: false }));
         }
     };
 
@@ -276,11 +296,16 @@ export const AdminSettings: React.FC = () => {
         }
     };
 
-    const handleDeleteRecord = async (tableName: string, id: any) => {
-        if (!window.confirm(`Are you sure you want to delete record #${id} from ${tableName}? This action cannot be undone.`)) {
-            return;
-        }
+    const handleDeleteRecord = (tableName: string, id: any) => {
+        setConfirmModalConfig({
+            isOpen: true,
+            title: 'Delete Database Record',
+            description: `Are you sure you want to delete record #${id} from ${tableName}? This action cannot be undone.`,
+            onConfirm: () => executeDeleteRecord(tableName, id)
+        });
+    };
 
+    const executeDeleteRecord = async (tableName: string, id: any) => {
         try {
             await databaseTableService.deleteRecord(tableName, id);
             toast.success("Record deleted successfully!");
@@ -293,10 +318,11 @@ export const AdminSettings: React.FC = () => {
                     };
                 });
             }
-            fetchTables();
         } catch (err: any) {
             console.error("Failed to delete record:", err);
-            toast.error(err.response?.data?.message || "Failed to delete record.");
+            toast.error(err.response?.data?.message || "Failed to delete database record.");
+        } finally {
+            setConfirmModalConfig(prev => ({ ...prev, isOpen: false }));
         }
     };
 
@@ -1425,6 +1451,15 @@ export const AdminSettings: React.FC = () => {
                             </button>
                         </div>
                     )}
+            <ConfirmModal
+                isOpen={confirmModalConfig.isOpen}
+                title={confirmModalConfig.title}
+                description={confirmModalConfig.description}
+                confirmText="Yes, Delete"
+                variant="danger"
+                onClose={() => setConfirmModalConfig(prev => ({ ...prev, isOpen: false }))}
+                onConfirm={confirmModalConfig.onConfirm}
+            />
                 </div>
             </div>
         </div>

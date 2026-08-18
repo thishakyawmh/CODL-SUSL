@@ -102,6 +102,16 @@ class CourseController extends Controller
 
             \App\Models\ActivityLog::log($user->id, 'Created new Course', "Course: {$course->title} ({$course->code})", 'course');
 
+            // Re-run the AI analytics pipeline for this new course!
+            try {
+                \App\Jobs\ProcessAnalyticsPipelineJob::dispatchSync($course->id);
+                \Illuminate\Support\Facades\Cache::forget('ai_analytics_global_overview');
+                \Illuminate\Support\Facades\Cache::forget('ai_analytics_geography_data');
+                \Illuminate\Support\Facades\Cache::forget('ai_analytics_common_overview');
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('Failed to run ProcessAnalyticsPipelineJob on course create: ' . $e->getMessage());
+            }
+
             return response()->json($course->load(['semesters.subjects', 'subjects', 'secretary', 'coordinator']), 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
             \Illuminate\Support\Facades\Log::error('Validation Failed: ', $e->errors());
@@ -195,6 +205,16 @@ class CourseController extends Controller
 
             \App\Models\ActivityLog::log($user->id, 'Updated Course configuration', "Course: {$course->title} ({$course->code})", 'course');
 
+            // Re-run the AI analytics pipeline for this course because the subjects have changed!
+            try {
+                \App\Jobs\ProcessAnalyticsPipelineJob::dispatchSync($id);
+                \Illuminate\Support\Facades\Cache::forget('ai_analytics_global_overview');
+                \Illuminate\Support\Facades\Cache::forget('ai_analytics_geography_data');
+                \Illuminate\Support\Facades\Cache::forget('ai_analytics_common_overview');
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('Failed to run ProcessAnalyticsPipelineJob on course update: ' . $e->getMessage());
+            }
+
             return response()->json($course->load(['semesters.subjects', 'subjects', 'secretary', 'coordinator', 'category']));
         } catch (\Illuminate\Validation\ValidationException $e) {
             \Illuminate\Support\Facades\Log::error('Validation Failed: ', $e->errors());
@@ -218,6 +238,18 @@ class CourseController extends Controller
         $course->delete();
 
         \App\Models\ActivityLog::log($user->id, 'Deleted Course', "Course: {$courseTitle} ({$courseCode})", 'course');
+
+        // Delete cache entry for the course
+        try {
+            \App\AI\Models\AnalyticsCache::where('scope_type', 'program')
+                ->where('scope_id', $id)
+                ->delete();
+            \Illuminate\Support\Facades\Cache::forget('ai_analytics_global_overview');
+            \Illuminate\Support\Facades\Cache::forget('ai_analytics_geography_data');
+            \Illuminate\Support\Facades\Cache::forget('ai_analytics_common_overview');
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to clear AnalyticsCache on course delete: ' . $e->getMessage());
+        }
 
         return response()->json(['message' => 'Course deleted successfully']);
     }
@@ -344,6 +376,10 @@ class CourseController extends Controller
         $user = $request->user();
         $isLecturer = $user && $user->role === 'lecturer';
         $cacheSuffix = $isLecturer ? "lecturer_{$user->id}" : "admin";
+        
+        if ($request->query('refresh') === 'true' || $request->has('refresh')) {
+            self::clearManageCourseCache($courseId);
+        }
         
         $version = \Illuminate\Support\Facades\Cache::get("manage_course_version_{$courseId}", 1);
         $cacheKey = "manage_course_data_{$courseId}_{$cacheSuffix}_v{$version}";

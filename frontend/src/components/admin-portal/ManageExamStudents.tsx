@@ -17,6 +17,7 @@ import {
 import { toast } from '../../utils/toast';
 import { getCurrentAdminUser } from '../../data/mockAdminData';
 import { VerificationStages } from '../common/VerificationStages';
+import { ConfirmModal } from '../common/ConfirmModal';
 import './CourseManagement.css';
 import './ApplicationApprovals.css';
 
@@ -49,6 +50,8 @@ export const ManageExamStudents: React.FC = () => {
     const [showRejectModal, setShowRejectModal] = useState(false);
     const [rejectionReason, setRejectionReason] = useState('');
     const [pendingApp, setPendingApp] = useState<any | null>(null);
+    const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+    const [deleteAppId, setDeleteAppId] = useState<string | number | null>(null);
 
 
     const [showDetailsModal, setShowDetailsModal] = useState(false);
@@ -73,7 +76,7 @@ export const ManageExamStudents: React.FC = () => {
     };
 
     const fetchRegulars = React.useCallback(async (isSilent = false) => {
-        if (!id || !examId) return;
+        if (!id || !examId) return false;
         if (!isSilent) setIsLoading(true);
         try {
             const courseManageData = await courseService.getManageCourseData(courseId);
@@ -102,16 +105,18 @@ export const ManageExamStudents: React.FC = () => {
                 return titleMatch;
             });
             setExamApplications(examApps);
+            return true;
         } catch (err) {
             console.error('Failed to load regulars:', err);
             toast.error('Failed to load regular students.');
+            return false;
         } finally {
             if (!isSilent) setIsLoading(false);
         }
     }, [id, examId, courseId, batchFromUrl]);
 
     const fetchPostponements = React.useCallback(async (isSilent = false) => {
-        if (!id || !examId) return;
+        if (!id || !examId) return false;
         if (!isSilent) setIsLoading(true);
         try {
 
@@ -146,16 +151,18 @@ export const ManageExamStudents: React.FC = () => {
                 .filter((p: any) => p.assigned_exam_id === examId?.toString())
                 .map((p: any) => p.id);
             setSelectedPostponements(autoPost);
+            return true;
         } catch (err) {
             console.error('Failed to load postponements:', err);
             toast.error('Failed to load postponements.');
+            return false;
         } finally {
             if (!isSilent) setIsLoading(false);
         }
     }, [id, examId, courseId]);
 
     const fetchReattempts = React.useCallback(async (isSilent = false) => {
-        if (!id || !examId) return;
+        if (!id || !examId) return false;
         if (!isSilent) setIsLoading(true);
         try {
 
@@ -191,9 +198,11 @@ export const ManageExamStudents: React.FC = () => {
                 .filter((r: any) => r.assigned_exam_id === examId?.toString())
                 .map((r: any) => r.id);
             setSelectedReattempts(autoReat);
+            return true;
         } catch (err) {
             console.error('Failed to load reattempts:', err);
             toast.error('Failed to load reattempts.');
+            return false;
         } finally {
             if (!isSilent) setIsLoading(false);
         }
@@ -224,12 +233,16 @@ export const ManageExamStudents: React.FC = () => {
         if (isRefreshing) return;
         setIsRefreshing(true);
         try {
+            let success = false;
             if (activeTab === 'regular') {
-                await fetchRegulars(true);
+                success = await fetchRegulars(true);
             } else if (activeTab === 'postponements') {
-                await fetchPostponements(true);
+                success = await fetchPostponements(true);
             } else if (activeTab === 'reattempts') {
-                await fetchReattempts(true);
+                success = await fetchReattempts(true);
+            }
+            if (success) {
+                toast.success("List refreshed successfully!");
             }
         } finally {
             setIsRefreshing(false);
@@ -518,18 +531,24 @@ export const ManageExamStudents: React.FC = () => {
         }
     };
 
-    const handleDeleteApplication = async (appId: string | number) => {
-        if (!window.confirm("Are you sure you want to delete this application request completely? This action cannot be undone.")) {
-            return;
-        }
+    const handleDeleteApplication = (appId: string | number) => {
+        setDeleteAppId(appId);
+        setConfirmDeleteOpen(true);
+    };
+
+    const executeDeleteApplication = async () => {
+        if (!deleteAppId) return;
         try {
-            await examApplicationService.delete(appId);
+            await examApplicationService.delete(deleteAppId);
             toast.success("Application deleted successfully!");
             setShowDetailsModal(false);
             await fetchAll(true);
         } catch (err: any) {
             console.error("Failed to delete application:", err);
             toast.error(err.response?.data?.message || "Failed to delete application.");
+        } finally {
+            setConfirmDeleteOpen(false);
+            setDeleteAppId(null);
         }
     };
 
@@ -2020,6 +2039,20 @@ export const ManageExamStudents: React.FC = () => {
                     to { opacity: 1; transform: translateY(0); }
                 }
             `}</style>
+            <ConfirmModal
+                isOpen={confirmDeleteOpen}
+                title="Delete Application"
+                description="Are you sure you want to delete this application request completely? This action cannot be undone."
+                confirmText="Yes, Delete"
+                variant="danger"
+                onClose={() => {
+                    setConfirmDeleteOpen(false);
+                    setDeleteAppId(null);
+                }}
+                onConfirm={() => {
+                    executeDeleteApplication();
+                }}
+            />
         </>
     );
 };

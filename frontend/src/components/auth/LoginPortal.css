@@ -802,23 +802,23 @@
     }
 }
 
-/* Mobile Responsiveness for Loading Overlay */
-@media (max-width: 480px) {
-    .sync-overlay-content {
-        padding: 28px 20px;
-        border-radius: 20px;
-        width: 85%;
-    }
-    .sync-overlay-spinner {
-        width: 64px;
-        height: 64px;
-        margin-bottom: 16px;
-    }
-    .sync-overlay-title {
-        font-size: 18px;
-    }
-    .sync-overlay-desc {
-        font-size: 13px;
-        line-height: 1.5;
-    }
+/* Inline spinner styling for submit buttons */
+.auth-submit-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.btn-spinner {
+    width: 18px;
+    height: 18px;
+    border: 2.5px solid rgba(255, 255, 255, 0.35);
+    border-top-color: #ffffff;
+    border-radius: 50%;
+    animation: btn-spin 0.6s linear infinite;
+}
+
+@keyframes btn-spin {
+    to { transform: rotate(360deg); }
 }

@@ -113,8 +113,8 @@ export const ManageCourse: React.FC = () => {
     const [isLoadingData, setIsLoadingData] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
 
-    const loadAllCourseData = async (showLoading = true, signal?: AbortSignal) => {
-        if (!id) return;
+    const loadAllCourseData = async (showLoading = true, signal?: AbortSignal, refresh = false) => {
+        if (!id) return false;
         let isCancelled = false;
         if (showLoading) {
             setIsLoadingData(true);
@@ -123,7 +123,7 @@ export const ManageCourse: React.FC = () => {
             setCourse(null);
         }
         try {
-            const data = await courseService.getManageCourseData(id, { signal });
+            const data = await courseService.getManageCourseData(id, { signal, refresh });
 
 
             if (data.course) {
@@ -398,14 +398,15 @@ export const ManageCourse: React.FC = () => {
             setApprovalRequests(mappedApps);
             setWaitlistPostponements(mappedPostponements);
             setWaitlistReattempts(mappedReattempts);
-
+            return true;
         } catch (err: any) {
             if (axios.isCancel(err)) {
                 isCancelled = true;
-                return;
+                return false;
             }
             console.error("Failed to fetch consolidated course data:", err);
             toast.error("Failed to load course details from database.");
+            return false;
         } finally {
             if (!isCancelled) {
                 setIsLoadingData(false);
@@ -418,8 +419,10 @@ export const ManageCourse: React.FC = () => {
     const handleRefresh = async () => {
         setIsRefreshing(true);
         try {
-            await loadAllCourseData(false);
-            toast.success("List refreshed successfully!");
+            const success = await loadAllCourseData(false, undefined, true);
+            if (success) {
+                toast.success("List refreshed successfully!");
+            }
         } catch (error) {
             console.error("Refresh failed:", error);
             toast.error("Failed to refresh list.");
@@ -2528,7 +2531,7 @@ export const ManageCourse: React.FC = () => {
     return (
         <div className="cm-container">
             <div style={{
-                marginBottom: (activeSection === 'approvals_req' || activeSection === 'enrollment_req' || activeSection === 'waitlist') ? '8px' : '20px',
+                marginBottom: (activeSection === 'approvals_req' || activeSection === 'enrollment_req' || activeSection === 'waitlist') ? '16px' : '36px',
                 display: 'flex',
                 alignItems: 'stretch',
                 gap: '8px'

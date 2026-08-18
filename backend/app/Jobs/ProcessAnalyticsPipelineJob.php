@@ -32,19 +32,30 @@ class ProcessAnalyticsPipelineJob implements ShouldQueue
     public $timeout = 300;
 
      
-    public function __construct()
-    {
+    protected $courseId;
 
+    /**
+     * Create a new job instance.
+     */
+    public function __construct($courseId = null)
+    {
+        $this->courseId = $courseId;
     }
 
-     
+    /**
+     * Execute the job.
+     */
     public function handle(AnalyticsNLPService $nlpService, RecommendationEngineService $recommendationEngine): void
     {
-        Log::info('Background NLP Pipeline processing started.');
+        Log::info('Background NLP Pipeline processing started.' . ($this->courseId ? " (Course ID: {$this->courseId})" : ''));
         
         try {
             $nlpService->preClassifySurveys();
-            $courses = Course::all();
+            
+            $courses = $this->courseId 
+                ? Course::where('id', $this->courseId)->get()
+                : Course::all();
+
             foreach ($courses as $course) {
                 Log::info("Processing course alignment for: " . $course->title);
                 $analytics = $nlpService->processAll($course);
