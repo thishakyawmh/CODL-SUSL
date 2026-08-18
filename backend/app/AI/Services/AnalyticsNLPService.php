@@ -1767,14 +1767,22 @@ class AnalyticsNLPService
         foreach ($curriculumSubjects as $subject) {
             $subNameLower = strtolower($subject['name']);
             
+            // ── Layer 1: Smart Local/Gemini Domain Extraction on Subject Name ──
+            $subDomains = $this->extractDomains($subject['name']);
+            if (in_array($domain, $subDomains)) {
+                $directMatch = true;
+                $matchedSubject = $subject['code'] . ': ' . $subject['name'];
+                break;
+            }
 
+            // ── Layer 2: String boundary fallback ──
             if (str_contains($subNameLower, $domainLower)) {
                 $directMatch = true;
                 $matchedSubject = $subject['code'] . ': ' . $subject['name'];
                 break;
             }
 
-
+            // ── Layer 3: Synonym string fallback ──
             foreach ($synonyms as $syn) {
                 if (empty($syn) || strlen($syn) < 3) continue;
                 if (str_contains($subNameLower, strtolower($syn))) {
