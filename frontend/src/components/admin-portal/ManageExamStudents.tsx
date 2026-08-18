@@ -73,7 +73,7 @@ export const ManageExamStudents: React.FC = () => {
     };
 
     const fetchRegulars = React.useCallback(async (isSilent = false) => {
-        if (!id || !examId) return;
+        if (!id || !examId) return false;
         if (!isSilent) setIsLoading(true);
         try {
             const courseManageData = await courseService.getManageCourseData(courseId);
@@ -102,16 +102,18 @@ export const ManageExamStudents: React.FC = () => {
                 return titleMatch;
             });
             setExamApplications(examApps);
+            return true;
         } catch (err) {
             console.error('Failed to load regulars:', err);
             toast.error('Failed to load regular students.');
+            return false;
         } finally {
             if (!isSilent) setIsLoading(false);
         }
     }, [id, examId, courseId, batchFromUrl]);
 
     const fetchPostponements = React.useCallback(async (isSilent = false) => {
-        if (!id || !examId) return;
+        if (!id || !examId) return false;
         if (!isSilent) setIsLoading(true);
         try {
 
@@ -146,16 +148,18 @@ export const ManageExamStudents: React.FC = () => {
                 .filter((p: any) => p.assigned_exam_id === examId?.toString())
                 .map((p: any) => p.id);
             setSelectedPostponements(autoPost);
+            return true;
         } catch (err) {
             console.error('Failed to load postponements:', err);
             toast.error('Failed to load postponements.');
+            return false;
         } finally {
             if (!isSilent) setIsLoading(false);
         }
     }, [id, examId, courseId]);
 
     const fetchReattempts = React.useCallback(async (isSilent = false) => {
-        if (!id || !examId) return;
+        if (!id || !examId) return false;
         if (!isSilent) setIsLoading(true);
         try {
 
@@ -191,9 +195,11 @@ export const ManageExamStudents: React.FC = () => {
                 .filter((r: any) => r.assigned_exam_id === examId?.toString())
                 .map((r: any) => r.id);
             setSelectedReattempts(autoReat);
+            return true;
         } catch (err) {
             console.error('Failed to load reattempts:', err);
             toast.error('Failed to load reattempts.');
+            return false;
         } finally {
             if (!isSilent) setIsLoading(false);
         }
@@ -224,12 +230,16 @@ export const ManageExamStudents: React.FC = () => {
         if (isRefreshing) return;
         setIsRefreshing(true);
         try {
+            let success = false;
             if (activeTab === 'regular') {
-                await fetchRegulars(true);
+                success = await fetchRegulars(true);
             } else if (activeTab === 'postponements') {
-                await fetchPostponements(true);
+                success = await fetchPostponements(true);
             } else if (activeTab === 'reattempts') {
-                await fetchReattempts(true);
+                success = await fetchReattempts(true);
+            }
+            if (success) {
+                toast.success("List refreshed successfully!");
             }
         } finally {
             setIsRefreshing(false);
