@@ -179,8 +179,11 @@ export const courseService = {
         const response = await api.get(`/student/courses/${courseId}/materials`);
         return response.data;
     },
-    getManageCourseData: async (courseId: string, options?: { signal?: AbortSignal }) => {
-        const response = await api.get(`/manage-course/${courseId}`, { signal: options?.signal });
+    getManageCourseData: async (courseId: string, options?: { signal?: AbortSignal; refresh?: boolean }) => {
+        const response = await api.get(`/manage-course/${courseId}`, { 
+            signal: options?.signal,
+            params: options?.refresh ? { refresh: 'true' } : undefined
+        });
         return response.data;
     },
     getStudentExaminationsData: async (courseId: string) => {

@@ -345,6 +345,10 @@ class CourseController extends Controller
         $isLecturer = $user && $user->role === 'lecturer';
         $cacheSuffix = $isLecturer ? "lecturer_{$user->id}" : "admin";
         
+        if ($request->query('refresh') === 'true' || $request->has('refresh')) {
+            self::clearManageCourseCache($courseId);
+        }
+        
         $version = \Illuminate\Support\Facades\Cache::get("manage_course_version_{$courseId}", 1);
         $cacheKey = "manage_course_data_{$courseId}_{$cacheSuffix}_v{$version}";
         
