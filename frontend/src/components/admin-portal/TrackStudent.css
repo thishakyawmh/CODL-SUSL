@@ -303,9 +303,9 @@
     color: #94A3B8;
 }
 
-/* ══════════════════════════════════════════════
+/* 
    TAB NAVIGATION
-   ══════════════════════════════════════════════ */
+    */
 .ts-tab-nav {
     display: flex;
     gap: 4px;
@@ -375,8 +375,15 @@
 }
 
 @keyframes tabFadeIn {
-    from { opacity: 0; transform: translateY(8px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* ══════════════════════════════════════════════
@@ -417,10 +424,25 @@
     flex-shrink: 0;
 }
 
-.ts-kpi-card.purple .ts-kpi-icon { background: rgba(124, 58, 237, 0.1); color: var(--primary-color); }
-.ts-kpi-card.green .ts-kpi-icon { background: rgba(16, 185, 129, 0.1); color: #10B981; }
-.ts-kpi-card.blue .ts-kpi-icon { background: rgba(59, 130, 246, 0.1); color: #3B82F6; }
-.ts-kpi-card.amber .ts-kpi-icon { background: rgba(245, 158, 11, 0.1); color: #F59E0B; }
+.ts-kpi-card.purple .ts-kpi-icon {
+    background: rgba(124, 58, 237, 0.1);
+    color: var(--primary-color);
+}
+
+.ts-kpi-card.green .ts-kpi-icon {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10B981;
+}
+
+.ts-kpi-card.blue .ts-kpi-icon {
+    background: rgba(59, 130, 246, 0.1);
+    color: #3B82F6;
+}
+
+.ts-kpi-card.amber .ts-kpi-icon {
+    background: rgba(245, 158, 11, 0.1);
+    color: #F59E0B;
+}
 
 .ts-kpi-data {
     display: flex;
@@ -599,7 +621,7 @@
     flex-shrink: 0;
 }
 
-.ts-summary-card > div {
+.ts-summary-card>div {
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -1159,7 +1181,7 @@
     font-family: monospace;
 }
 
-.ts-exam-subject-chip > span:nth-child(2) {
+.ts-exam-subject-chip>span:nth-child(2) {
     flex: 1;
     font-size: 13px;
     font-weight: 600;
@@ -1503,7 +1525,7 @@
     color: #94A3B8;
 }
 
-.ts-request-detail > span:last-child {
+.ts-request-detail>span:last-child {
     font-size: 13px;
     font-weight: 500;
     color: #475569;
@@ -1525,12 +1547,12 @@
     border: 1px solid #F1F5F9;
 }
 
-.ts-postponement-exam-item > span:first-child {
+.ts-postponement-exam-item>span:first-child {
     flex: 1;
     font-size: 13px;
 }
 
-.ts-postponement-exam-item > span:last-child {
+.ts-postponement-exam-item>span:last-child {
     font-size: 12px;
     color: #94A3B8;
     font-weight: 500;
@@ -2038,7 +2060,7 @@
     font-size: 13px;
 }
 
-.ts-mini-table th, 
+.ts-mini-table th,
 .ts-mini-table td {
     padding: 8px 12px;
     text-align: left;
@@ -2395,9 +2417,20 @@
     height: 12px;
 }
 
-.ts-timeline-dot-new.approved { background: #D1FAE5; color: #10B981; }
-.ts-timeline-dot-new.pending { background: #FEF3C7; color: #D97706; }
-.ts-timeline-dot-new.rejected { background: #FEE2E2; color: #EF4444; }
+.ts-timeline-dot-new.approved {
+    background: #D1FAE5;
+    color: #10B981;
+}
+
+.ts-timeline-dot-new.pending {
+    background: #FEF3C7;
+    color: #D97706;
+}
+
+.ts-timeline-dot-new.rejected {
+    background: #FEE2E2;
+    color: #EF4444;
+}
 
 .ts-timeline-content-new {
     flex: 1;
@@ -2483,7 +2516,8 @@
 
 .ts-semester-block table {
     width: 100%;
-    min-width: 500px; /* Force minimum width to prevent squeezed columns */
+    min-width: 500px;
+    /* Force minimum width to prevent squeezed columns */
     border-collapse: collapse;
 }
 
@@ -2491,7 +2525,7 @@
     .ts-profile-grid {
         grid-template-columns: 1fr;
     }
-    
+
     .ts-course-content-grid {
         grid-template-columns: 1fr;
         gap: 24px;
@@ -2560,4 +2594,3 @@
         grid-template-columns: 1fr !important;
     }
 }
-
