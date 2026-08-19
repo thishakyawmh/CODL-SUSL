@@ -822,3 +822,131 @@
         line-height: 1.5;
     }
 }
+
+/* ============================================================
+   STUDENT-SPECIFIC LOGGED IN OVERLAY & MODAL (PREMIUM GLASSMORPHISM)
+   ============================================================ */
+
+/* 1. Backdrop Filter Overlay & Blur */
+.sync-overlay.student-sync-overlay {
+    background: rgba(15, 23, 42, 0.45); /* Dark semi-transparent background */
+    backdrop-filter: blur(16px);       /* Blur the entire background page */
+    -webkit-backdrop-filter: blur(16px);
+    transition: background 0.4s ease;
+    pointer-events: all;               /* Prevent interactions */
+}
+
+/* 2. Glassmorphic Modal Container */
+.sync-overlay.student-sync-overlay .sync-overlay-content {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.75) 0%, rgba(243, 232, 255, 0.55) 100%);
+    backdrop-filter: blur(20px);       /* Soft backdrop blur for the modal itself */
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.45); /* Subtle border for glassmorphism */
+    border-radius: 24px;               /* Rounded corners (16-24px) */
+    box-shadow: 
+        0 32px 64px -12px rgba(124, 58, 237, 0.18), /* Soft shadow using primary brand color */
+        0 16px 32px -8px rgba(15, 23, 42, 0.12),
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.6);   /* Internal edge highlight */
+    padding: 48px 40px;                /* Comfortable internal padding */
+    max-width: 440px;
+    width: 90%;
+    transform: scale(1);
+    animation: studentModalReveal 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Modal Entrance Animation */
+@keyframes studentModalReveal {
+    from {
+        opacity: 0;
+        transform: translateY(24px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* 3. Spinner & Circle Redesign */
+.sync-overlay.student-sync-overlay .sync-overlay-spinner {
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.12) 0%, rgba(139, 92, 246, 0.04) 100%);
+    border: 1px solid rgba(124, 58, 237, 0.18);
+    border-radius: 50%;
+    width: 96px;
+    height: 96px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 28px;
+    box-shadow: 
+        0 8px 24px rgba(124, 58, 237, 0.08),
+        inset 0 0 12px rgba(124, 58, 237, 0.05);
+}
+
+.sync-overlay.student-sync-overlay .sync-pulse-ring {
+    background-color: rgba(124, 58, 237, 0.16);
+}
+
+.sync-overlay.student-sync-overlay .sync-overlay-icon {
+    color: var(--primary-color) !important;
+    filter: drop-shadow(0 4px 12px rgba(124, 58, 237, 0.35));
+    animation: studentIconPulse 2s ease-in-out infinite;
+}
+
+@keyframes studentIconPulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.08);
+    }
+}
+
+/* 4. Elegant Text Typography */
+.sync-overlay.student-sync-overlay .sync-overlay-title {
+    font-size: 24px;
+    font-weight: 800;
+    margin: 0 0 12px 0;
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, #1E1B4B 0%, #4C1D95 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.sync-overlay.student-sync-overlay .sync-overlay-desc {
+    font-size: 14.5px;
+    color: #475569;
+    line-height: 1.6;
+    margin: 0;
+    font-weight: 500;
+}
+
+/* 5. Mobile & Tablet Responsiveness for Student Overlay */
+@media (max-width: 768px) {
+    .sync-overlay.student-sync-overlay .sync-overlay-content {
+        padding: 40px 32px;
+        border-radius: 20px;
+    }
+    .sync-overlay.student-sync-overlay .sync-overlay-title {
+        font-size: 22px;
+    }
+}
+
+@media (max-width: 480px) {
+    .sync-overlay.student-sync-overlay .sync-overlay-content {
+        padding: 32px 24px;
+        border-radius: 18px;
+        width: 88%;
+    }
+    .sync-overlay.student-sync-overlay .sync-overlay-spinner {
+        width: 80px;
+        height: 80px;
+        margin-bottom: 20px;
+    }
+    .sync-overlay.student-sync-overlay .sync-overlay-title {
+        font-size: 20px;
+    }
+    .sync-overlay.student-sync-overlay .sync-overlay-desc {
+        font-size: 13.5px;
+        line-height: 1.5;
+    }
+}

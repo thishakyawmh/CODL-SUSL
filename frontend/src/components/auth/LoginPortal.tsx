@@ -184,7 +184,7 @@ export const LoginPortal: React.FC = () => {
     return (
         <div className="login-portal-wrapper">
             {isLoading && (
-                <div className="sync-overlay">
+                <div className={`sync-overlay ${activeView === 'existing' ? 'student-sync-overlay' : ''}`}>
                     <div className="sync-overlay-content">
                         <div className="sync-overlay-spinner">
                             <div className="sync-pulse-ring"></div>
@@ -193,9 +193,11 @@ export const LoginPortal: React.FC = () => {
                             <GraduationCap size={36} className="sync-overlay-icon" style={{ color: 'var(--primary-color)' }} />
                         </div>
                         <h2 className="sync-overlay-title">Authenticating</h2>
-                        {activeView === 'new' && (
+                        {activeView === 'existing' ? (
+                            <p className="sync-overlay-desc">Securing your student portal connection and preparing your personal workspace. Please wait...</p>
+                        ) : activeView === 'new' ? (
                             <p className="sync-overlay-desc">Verifying your Google identity and loading your student workspace. Please wait...</p>
-                        )}
+                        ) : null}
                     </div>
                 </div>
             )}
