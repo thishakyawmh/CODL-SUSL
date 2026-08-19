@@ -205,14 +205,26 @@ class CourseController extends Controller
 
             \App\Models\ActivityLog::log($user->id, 'Updated Course configuration', "Course: {$course->title} ({$course->code})", 'course');
 
-            // Re-run the AI analytics pipeline for this course because the subjects have changed!
+            // Curriculum changed — immediately bust the stale cache entry for this course
+            // so the AI Analytics page does not serve old coverage % data.
+            // Then dispatch the NLP rebuild to the background queue (avoids HTTP timeout).
             try {
-                \App\Jobs\ProcessAnalyticsPipelineJob::dispatchSync($id);
+                // 1. Delete the specific stale program cache entry
+                \App\AI\Models\AnalyticsCache::where('scope_type', 'program')
+                    ->where('scope_id', $id)
+                    ->delete();
+
+                // 2. Clear global overview caches
                 \Illuminate\Support\Facades\Cache::forget('ai_analytics_global_overview');
                 \Illuminate\Support\Facades\Cache::forget('ai_analytics_geography_data');
                 \Illuminate\Support\Facades\Cache::forget('ai_analytics_common_overview');
+
+                // 3. Dispatch background rebuild for this course
+                \App\Jobs\ProcessAnalyticsPipelineJob::dispatch($id);
+
+                \Illuminate\Support\Facades\Log::info("Curriculum updated for course ID $id — cache invalidated and background rebuild dispatched.");
             } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error('Failed to run ProcessAnalyticsPipelineJob on course update: ' . $e->getMessage());
+                \Illuminate\Support\Facades\Log::error('Failed to invalidate cache on course update: ' . $e->getMessage());
             }
 
             return response()->json($course->load(['semesters.subjects', 'subjects', 'secretary', 'coordinator', 'category']));
