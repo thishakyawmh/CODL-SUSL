@@ -489,6 +489,7 @@ class AnalyticsNLPService
         $coveragePercent = 0;
         $missingSubjects = [];
         $curriculumAnomalies = [];
+        $curriculumEnhancements = [];
         $domainMatrix = [];
 
 
@@ -596,11 +597,8 @@ class AnalyticsNLPService
                 if ($raw_ind_pct > 0) $sources[] = 'Industry Survey';
                 if ($raw_stud_pct > 0) $sources[] = 'Student Interest Survey';
 
-                $suppSkills = array_merge(
-                    $industryDomainSkillLinks[$domain] ?? [],
-                    $studentDomainSkillLinks[$domain] ?? []
-                );
-                $suppSkills = array_slice(array_values(array_unique(array_filter($suppSkills))), 0, 5);
+                $suppSkills = $this->getSubSkillsForDomains([$domain]);
+                $suppSkills = array_slice($suppSkills, 0, 5);
 
 
                 $pctText = round($combined_score * 100) . '%';
@@ -694,7 +692,7 @@ class AnalyticsNLPService
                 $combined_score = ($raw_ind_pct * 0.70) + ($raw_stud_pct * 0.30);
 
                 if ($isLegacy) {
-                    $curriculumAnomalies[] = [
+                    $curriculumEnhancements[] = [
                         'anomaly_type' => 'Curriculum Modernization',
                         'affected_subject' => $subject['code'] . ': ' . $subject['name'],
                         'industry_evidence' => round($raw_ind_pct * 100),
@@ -721,22 +719,26 @@ class AnalyticsNLPService
                 }
 
 
-                if ($combined_score >= 0.15 && !empty($subDomains)) {
-                    $associatedSkills = [];
+                // Only flag as gap if this subject's domain has HIGH demand but the syllabus
+                // treatment may be narrow. Use clean domain names as evidence, not raw survey strings.
+                if ($combined_score >= 0.25 && !empty($subDomains)) {
+                    $demandedDomains = [];
                     foreach ($subDomains as $sd) {
-                        $associatedSkills = array_merge($associatedSkills, $industryDomainSkillLinks[$sd] ?? []);
+                        if (isset($industryDomainCounts[$sd]) && $industryDomainCounts[$sd] > 0) {
+                            $demandedDomains[] = $sd;
+                        }
                     }
-                    $associatedSkills = array_values(array_unique(array_filter($associatedSkills)));
-                    if (count($associatedSkills) > 2) {
-                        $curriculumAnomalies[] = [
-                            'anomaly_type' => 'Skill Coverage Gap',
-                            'affected_subject' => $subject['code'] . ': ' . $subject['name'],
-                            'industry_evidence' => round($raw_ind_pct * 100),
-                            'student_evidence' => round($raw_stud_pct * 100),
-                            'combined_evidence' => round($combined_score * 100),
-                            'supporting_evidence' => array_slice($associatedSkills, 0, 3),
-                            'confidence' => $confidence,
-                            'explanation' => "High industry demand for sub-skills (" . implode(', ', array_slice($associatedSkills, 0, 3)) . "), but coverage in current syllabus may be insufficient."
+                    if (count($demandedDomains) > 0) {
+                        $correctSubSkills = $this->getSubSkillsForDomains($demandedDomains);
+                        $curriculumEnhancements[] = [
+                            'anomaly_type'        => 'Skill Coverage Gap',
+                            'affected_subject'    => $subject['code'] . ': ' . $subject['name'],
+                            'industry_evidence'   => round($raw_ind_pct * 100),
+                            'student_evidence'    => round($raw_stud_pct * 100),
+                            'combined_evidence'   => round($combined_score * 100),
+                            'supporting_evidence' => array_slice($correctSubSkills, 0, 5),
+                            'confidence'          => $confidence,
+                            'explanation'         => "High industry demand for knowledge areas (" . implode(', ', array_slice($demandedDomains, 0, 3)) . "). Realign syllabus to ensure coverage of modern sub-skills such as " . implode(', ', array_slice($correctSubSkills, 0, 4)) . ".",
                         ];
                     }
                 }
@@ -771,6 +773,7 @@ class AnalyticsNLPService
             'coverage_percent' => $coveragePercent,
             'missing_subjects' => $missingSubjects,
             'outdated_subjects' => $curriculumAnomalies,
+            'curriculum_enhancements' => $curriculumEnhancements,
             'low_demand_subjects' => [],
             
 
@@ -2763,61 +2766,106 @@ class AnalyticsNLPService
 
     private function calculateEmergingTechAlerts(array $relevantIndustrySurveys, array $curriculumSubjects, array $curriculumDomains): array
     {
-        $skillMentions = [];
         $totalRelevantIndustry = count($relevantIndustrySurveys);
+        
+        $threatTemplates = [
+            'high_ai_dependency' => [
+                'title' => 'High Reliability on AI Tools',
+                'regex' => '/\b(ai|generative ai|copilot|chatgpt|artificial intelligence)\b/i',
+                'recommendation' => 'Enforce strict guidelines on AI tool usage in coding tasks, emphasizing paper-based exams and manual debugging.'
+            ],
+            'no_practical_knowledge' => [
+                'title' => 'Lack of Practical Hands-on Knowledge',
+                'regex' => '/\b(practical|hands-on|debugging|lab|experience|production-level|real-world)\b/i',
+                'recommendation' => 'Integrate production-grade coding assignments, mandatory debugging tasks, and industry training.'
+            ],
+            'no_fundamental_knowledge' => [
+                'title' => 'Weak Core & Fundamental Knowledge',
+                'regex' => '/\b(fundamental|architecture|basics|core|algorithm|data structure|math|theory)\b/i',
+                'recommendation' => 'Reinforce algorithms, computer networks, and system design fundamentals before introducing high-level frameworks.'
+            ],
+            'no_testing_discipline' => [
+                'title' => 'Inadequate Testing & CI/CD Discipline',
+                'regex' => '/\b(testing|qa|ci\/cd|cicd|deployment|automation testing|selenium)\b/i',
+                'recommendation' => 'Make unit testing and automated build pipelines (CI/CD) a mandatory part of subject project evaluations.'
+            ],
+            'weak_collaborative_skills' => [
+                'title' => 'Weak Collaborative Development Skills',
+                'regex' => '/\b(collaborative|git|teamwork|communication|collaboration|agile)\b/i',
+                'recommendation' => 'Implement group assignments using Git branches, pull request reviews, and agile sprints.'
+            ]
+        ];
+
+        $threatCounts = [];
+        foreach ($threatTemplates as $key => $t) {
+            $threatCounts[$key] = 0;
+        }
 
         foreach ($relevantIndustrySurveys as $ris) {
             $survey = $ris['survey'];
-            if (!empty($survey->required_skills)) {
-                $skills = array_map('trim', explode(',', $survey->required_skills));
-                foreach ($skills as $s) {
-                    if (empty($s) || strlen(trim($s)) < 2) continue;
-                    $normalized = trim($s);
-                    $skillMentions[$normalized] = ($skillMentions[$normalized] ?? 0) + 1;
+            $text = strtolower(
+                ($survey->required_skills ?? '') . ' ' . 
+                ($survey->academic_practices ?? '') . ' ' . 
+                ($survey->new_program_suggestion ?? '') . ' ' . 
+                ($survey->graduate_skill_gaps ?? '') . ' ' . 
+                ($survey->additional_recommendations ?? '')
+            );
+
+            foreach ($threatTemplates as $key => $t) {
+                if (preg_match($t['regex'], $text)) {
+                    $threatCounts[$key]++;
                 }
             }
         }
 
-        arsort($skillMentions);
         $alerts = [];
-
-        foreach ($skillMentions as $skill => $count) {
+        foreach ($threatTemplates as $key => $t) {
+            $count = $threatCounts[$key];
             $demandPct = $totalRelevantIndustry > 0 ? (int) round(($count / $totalRelevantIndustry) * 100) : 0;
             
-            if ($demandPct < 15) {
-                continue;
-            }
-
-            $isCovered = false;
-            foreach ($curriculumSubjects as $subject) {
-                $subNameLower = strtolower($subject['name']);
-                $skillLower = strtolower($skill);
-                if (str_contains($subNameLower, $skillLower)) {
-                    $isCovered = true;
-                    break;
-                }
-            }
-
-            if (!$isCovered) {
-                $skillDomains = $this->extractDomains($skill);
-                foreach ($skillDomains as $sd) {
-                    if (in_array($sd, $curriculumDomains)) {
-                        $isCovered = true;
-                        break;
-                    }
-                }
-            }
-
-            if (!$isCovered) {
+            // Only output threats that have at least 10% prevalence
+            if ($demandPct >= 10) {
                 $alerts[] = [
-                    'tech' => $skill,
+                    'tech' => $t['title'],
                     'demand_pct' => $demandPct,
-                    'severity' => $demandPct >= 40 ? 'Critical' : ($demandPct >= 25 ? 'High' : 'Medium'),
-                    'recommendation' => "Incorporate training or lab tasks for '{$skill}' to satisfy Sri Lankan industry requirements."
+                    'severity' => $demandPct >= 50 ? 'Critical' : ($demandPct >= 25 ? 'High' : 'Medium'),
+                    'recommendation' => $t['recommendation']
                 ];
             }
         }
 
+        // Sort by prevalence descending
+        usort($alerts, function ($a, $b) {
+            return $b['demand_pct'] <=> $a['demand_pct'];
+        });
+
         return array_slice($alerts, 0, 5);
+    }
+
+    private function getSubSkillsForDomains(array $domains): array
+    {
+        $subSkillsMap = [
+            'DevOps' => ['Docker', 'Kubernetes', 'CI/CD', 'Jenkins'],
+            'Artificial Intelligence' => ['Machine Learning', 'Deep Learning', 'TensorFlow', 'PyTorch'],
+            'Cloud Computing' => ['AWS', 'Azure', 'GCP', 'Serverless'],
+            'Mobile Development' => ['Android', 'iOS', 'Kotlin', 'Swift', 'Flutter'],
+            'Cyber Security' => ['Network Security', 'Cryptography', 'Firewalls', 'Penetration Testing'],
+            'Web Development' => ['React', 'JavaScript', 'HTML/CSS', 'Node.js'],
+            'Database Management' => ['SQL', 'MySQL', 'PostgreSQL', 'MongoDB'],
+            'UI/UX Design' => ['Figma', 'UI/UX Design', 'Prototyping', 'Wireframing'],
+            'Software Testing & QA' => ['Unit Testing', 'QA', 'Automation Testing', 'Selenium'],
+            'Computing & Information Technology' => ['Software Engineering', 'System Design', 'OOP', 'Programming Fundamentals'],
+            'Network Engineering' => ['Computer Networks', 'TCP/IP', 'Routing & Switching', 'Network Security'],
+            'System Administration' => ['Linux', 'Shell Scripting', 'Server Management'],
+            'Emerging Technologies' => ['IoT', 'Blockchain', 'Automation'],
+        ];
+
+        $skills = [];
+        foreach ($domains as $domain) {
+            if (isset($subSkillsMap[$domain])) {
+                $skills = array_merge($skills, $subSkillsMap[$domain]);
+            }
+        }
+        return array_values(array_unique($skills));
     }
 }
