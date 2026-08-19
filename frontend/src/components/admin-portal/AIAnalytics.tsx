@@ -697,6 +697,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                     if (style.color === 'purple') doc.setTextColor(124, 58, 237);
                     else if (style.color === 'red') doc.setTextColor(239, 68, 68);
                     else if (style.color === 'orange') doc.setTextColor(217, 119, 6);
+                    else if (style.color === 'green') doc.setTextColor(16, 185, 129);
                     else if (style.color === 'gray') doc.setTextColor(100, 116, 139);
                     else doc.setTextColor(15, 23, 42);
                 } else {
@@ -956,6 +957,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
             }
 
 
+            // Section IV: ACADEMIC ENTRY REQUIREMENTS EVIDENCE
             doc.addPage();
             y = margin;
 
@@ -1018,10 +1020,123 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
             y += 4;
 
 
+            // Section V: CAREER PATH READINESS PREDICTOR
             doc.addPage();
             y = margin;
 
-            addText('V. AI ACTIONABLE RECOMMENDATIONS', margin, { fontSize: 14, fontStyle: 'bold', color: 'purple' });
+            addText('V. CAREER PATH READINESS PREDICTOR', margin, { fontSize: 14, fontStyle: 'bold', color: 'purple' });
+            y += 10;
+
+            if (overview.career_readiness && overview.career_readiness.length > 0) {
+                overview.career_readiness.forEach((path: any) => {
+                    checkPageOverflow(40);
+                    addText(path.role, margin + 5, { fontSize: 10.5, fontStyle: 'bold' });
+                    
+                    const scoreColor = path.readiness >= 75 ? 'green' : (path.readiness >= 50 ? 'orange' : 'red');
+                    doc.setFont('helvetica', 'bold');
+                    doc.setFontSize(9.5);
+                    if (scoreColor === 'green') doc.setTextColor(16, 185, 129);
+                    else if (scoreColor === 'orange') doc.setTextColor(217, 119, 6);
+                    else doc.setTextColor(239, 68, 68);
+                    doc.text(`${path.readiness}% Taught`, pageWidth - margin - 5, y, { align: 'right' });
+                    y += 4;
+
+                    // Draw progress bar
+                    const totalBarWidth = 100;
+                    const barHeight = 4;
+                    doc.setFillColor(241, 245, 249);
+                    doc.rect(margin + 5, y, totalBarWidth, barHeight, 'F');
+                    
+                    if (scoreColor === 'green') doc.setFillColor(16, 185, 129);
+                    else if (scoreColor === 'orange') doc.setFillColor(245, 158, 11);
+                    else doc.setFillColor(239, 68, 68);
+                    doc.rect(margin + 5, y, (path.readiness / 100) * totalBarWidth, barHeight, 'F');
+                    y += barHeight + 5;
+
+                    // Matched domains list
+                    if (path.matched_domains && path.matched_domains.length > 0) {
+                        checkPageOverflow(15);
+                        const matchedText = `Matched Domains: ${path.matched_domains.join(', ')}`;
+                        const splitMatched = doc.splitTextToSize(matchedText, pageWidth - margin * 2 - 15);
+                        doc.setFont('helvetica', 'normal');
+                        doc.setFontSize(9);
+                        doc.setTextColor(100, 116, 139);
+                        doc.text(splitMatched, margin + 5, y);
+                        y += (splitMatched.length * 4.5) + 1;
+                    }
+
+                    // Missing domains list
+                    if (path.missing_domains && path.missing_domains.length > 0) {
+                        checkPageOverflow(15);
+                        const missingText = `Missing Domains: ${path.missing_domains.join(', ')}`;
+                        const splitMissing = doc.splitTextToSize(missingText, pageWidth - margin * 2 - 15);
+                        doc.setFont('helvetica', 'normal');
+                        doc.setFontSize(9);
+                        doc.setTextColor(239, 68, 68);
+                        doc.text(splitMissing, margin + 5, y);
+                        y += (splitMissing.length * 4.5) + 1;
+                    }
+                    y += 5;
+                });
+            } else {
+                addText('No career path readiness predictor data available.', margin + 5, { fontSize: 10, color: 'gray' });
+                y += 5;
+            }
+
+            // Section VI: GRADUATE THREAT ALERTS
+            doc.addPage();
+            y = margin;
+
+            addText('VI. GRADUATE THREAT ALERTS', margin, { fontSize: 14, fontStyle: 'bold', color: 'purple' });
+            y += 10;
+
+            if (overview.emerging_tech_alerts && overview.emerging_tech_alerts.length > 0) {
+                overview.emerging_tech_alerts.forEach((alert: any) => {
+                    checkPageOverflow(35);
+                    addText(alert.tech, margin + 5, { fontSize: 10.5, fontStyle: 'bold' });
+                    
+                    const severityColor = alert.severity === 'Critical' ? 'red' : 'orange';
+                    doc.setFont('helvetica', 'bold');
+                    doc.setFontSize(9.5);
+                    if (severityColor === 'red') doc.setTextColor(239, 68, 68);
+                    else doc.setTextColor(217, 119, 6);
+                    doc.text(`${alert.severity} Risk`, pageWidth - margin - 5, y, { align: 'right' });
+                    y += 5;
+
+                    // Prevalence
+                    checkPageOverflow(12);
+                    addText(`Prevalence in Industry Surveys: ${alert.demand_pct}%`, margin + 5, { fontSize: 9.5, fontStyle: 'normal', color: 'gray' });
+                    y += 5;
+
+                    // Recommendation (AI Action)
+                    if (alert.recommendation) {
+                        checkPageOverflow(20);
+                        const recText = `AI Action: ${alert.recommendation}`;
+                        const splitRec = doc.splitTextToSize(recText, pageWidth - margin * 2 - 15);
+                        doc.setFont('helvetica', 'normal');
+                        doc.setFontSize(9);
+                        doc.setTextColor(15, 23, 42);
+                        doc.setDrawColor(239, 68, 68);
+                        doc.setLineWidth(0.5);
+                        doc.line(margin + 5, y - 2, margin + 5, y + (splitRec.length * 4.5) - 2);
+                        doc.text(splitRec, margin + 8, y);
+                        doc.setLineWidth(0.2); // reset to default
+                        y += (splitRec.length * 4.5) + 6;
+                    }
+                    y += 4;
+                });
+            } else {
+                addText('No graduate threat alerts identified.', margin + 5, { fontSize: 10, color: 'gray' });
+                y += 5;
+            }
+
+            y += 4;
+
+
+            doc.addPage();
+            y = margin;
+
+            addText('VII. AI ACTIONABLE RECOMMENDATIONS', margin, { fontSize: 14, fontStyle: 'bold', color: 'purple' });
             y += 10;
 
             if (!recommendations || recommendations.length === 0) {
@@ -1071,7 +1186,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
             doc.addPage();
             y = margin;
 
-            addText('VI. EXISTING CURRICULUM STRUCTURE', margin, { fontSize: 14, fontStyle: 'bold', color: 'purple' });
+            addText('VIII. EXISTING CURRICULUM STRUCTURE', margin, { fontSize: 14, fontStyle: 'bold', color: 'purple' });
             y += 10;
 
             if (fullCourseData?.semesters && fullCourseData.semesters.length > 0) {
@@ -1402,7 +1517,6 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                                         marginTop: '10px',
                                         width: 'fit-content'
                                     }}>
-                                        <span>📢</span>
                                         <span>
                                             {overview.kpis.evidence_status === 'insufficient'
                                                 ? `Insufficient program-specific evidence. Only ${overview.kpis.student_count || 0} relevant student responses and ${overview.kpis.industry_count || 0} relevant industry responses were found.`
@@ -1555,12 +1669,12 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
 
                                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px solid rgba(0,0,0,0.04)', paddingTop: '10px', fontSize: '11.5px', color: '#64748B' }}>
                                                         <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
-                                                            <span>🏢 Industry: <strong>{sub.relevant_industry_responses}/{sub.total_industry_responses} ({sub.industry_pct}%)</strong></span>
-                                                            <span>🎓 Student: <strong>{sub.relevant_student_responses}/{sub.total_student_responses} ({sub.student_pct}%)</strong></span>
+                                                            <span>Industry: <strong>{sub.relevant_industry_responses}/{sub.total_industry_responses} ({sub.industry_pct}%)</strong></span>
+                                                            <span>Student: <strong>{sub.relevant_student_responses}/{sub.total_student_responses} ({sub.student_pct}%)</strong></span>
                                                         </div>
                                                         <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', color: '#475569' }}>
-                                                            <span>📖 Curriculum: <strong style={{ color: sub.curriculum_coverage_status === 'Not Covered' ? '#EF4444' : '#10B981' }}>{sub.curriculum_coverage_status}</strong></span>
-                                                            <span>⚡ Confidence: <strong>{sub.evidence_confidence}</strong></span>
+                                                            <span>Curriculum: <strong style={{ color: sub.curriculum_coverage_status === 'Not Covered' ? '#EF4444' : '#10B981' }}>{sub.curriculum_coverage_status}</strong></span>
+                                                            <span>Confidence: <strong>{sub.evidence_confidence}</strong></span>
                                                         </div>
                                                         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '4px' }}>
                                                             {sub.evidence_sources && sub.evidence_sources.map((src: string, i: number) => (
@@ -1568,7 +1682,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                                                             ))}
                                                         </div>
                                                         <div style={{ marginTop: '4px' }}>
-                                                            🔑 Skills: <strong style={{ color: '#475569' }}>{sub.skills.join(', ')}</strong>
+                                                            Skills: <strong style={{ color: '#475569' }}>{sub.skills.join(', ')}</strong>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -2062,13 +2176,15 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                                         {overview.emerging_tech_alerts.map((alert: any) => (
                                             <div key={alert.tech} style={{ background: '#FFFFFF', border: '1px solid #FEE2E2', borderRadius: '12px', padding: '14px 16px', boxShadow: '0 1px 3px rgba(220, 38, 38, 0.03)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                                                 <div>
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', marginBottom: '6px' }}>
                                                         <span style={{ fontSize: '14px', fontWeight: 800, color: '#991B1B' }}>{alert.tech}</span>
                                                         <span style={{
                                                             fontSize: '10.5px', fontWeight: 700, padding: '2px 8px', borderRadius: '20px',
                                                             background: alert.severity === 'Critical' ? '#FEE2E2' : '#FEF3C7',
                                                             color: alert.severity === 'Critical' ? '#991B1B' : '#D97706',
-                                                            border: `1px solid ${alert.severity === 'Critical' ? '#FCA5A5' : '#FCD34D'}`
+                                                            border: `1px solid ${alert.severity === 'Critical' ? '#FCA5A5' : '#FCD34D'}`,
+                                                            whiteSpace: 'nowrap',
+                                                            flexShrink: 0
                                                         }}>{alert.severity} Risk</span>
                                                     </div>
 
