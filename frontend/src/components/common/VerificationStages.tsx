@@ -35,25 +35,25 @@ export const VerificationStages: React.FC<VerificationStagesProps> = ({
     return (
         <div style={{ display: 'inline-flex', alignItems: 'center', position: 'relative' }}>
             <style>{`
-                .stepper-container {
+                .vs-stepper-container {
                     display: flex;
                     align-items: center;
                     gap: 0;
                     position: relative;
                 }
-                .step-wrapper {
+                .vs-step-wrapper {
                     display: flex;
                     align-items: center;
                     position: relative;
                 }
-                .step-circle-container {
+                .vs-step-circle-container {
                     position: relative;
                     display: flex;
                     flex-direction: column;
                     align-items: center;
                     cursor: pointer;
                 }
-                .step-circle {
+                .vs-step-circle {
                     width: 26px;
                     height: 26px;
                     border-radius: 50%;
@@ -66,11 +66,11 @@ export const VerificationStages: React.FC<VerificationStagesProps> = ({
                     position: relative;
                     z-index: 2;
                 }
-                .step-circle:hover {
+                .vs-step-circle:hover {
                     transform: scale(1.2);
                     box-shadow: 0 4px 12px rgba(124, 58, 237, 0.15);
                 }
-                .step-connector {
+                .vs-step-connector {
                     height: 2.5px;
                     width: 14px;
                     background: #E2E8F0;
@@ -79,13 +79,13 @@ export const VerificationStages: React.FC<VerificationStagesProps> = ({
                     z-index: 1;
                     transition: background 0.3s ease;
                 }
-                .step-connector.completed {
+                .vs-step-connector.completed {
                     background: #10B981;
                 }
-                .step-connector.failed {
+                .vs-step-connector.failed {
                     background: #EF4444;
                 }
-                .stepper-tooltip {
+                .vs-stepper-tooltip {
                     visibility: hidden;
                     opacity: 0;
                     position: absolute;
@@ -106,7 +106,7 @@ export const VerificationStages: React.FC<VerificationStagesProps> = ({
                     text-align: left;
                     line-height: 1.4;
                 }
-                .stepper-tooltip::after {
+                .vs-stepper-tooltip::after {
                     content: '';
                     position: absolute;
                     top: 100%;
@@ -116,15 +116,15 @@ export const VerificationStages: React.FC<VerificationStagesProps> = ({
                     border-style: solid;
                     border-color: #FFFFFF transparent transparent transparent;
                 }
-                .step-circle-container:hover .stepper-tooltip {
+                .vs-step-circle-container:hover .vs-stepper-tooltip {
                     visibility: visible;
                     opacity: 1;
                     transform: translateX(-50%) translateY(0);
                 }
-                .pulse-active {
-                    animation: pulse-ring 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+                .vs-pulse-active {
+                    animation: vs-pulse-ring 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
                 }
-                @keyframes pulse-ring {
+                @keyframes vs-pulse-ring {
                     0% {
                         box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.45);
                     }
@@ -137,7 +137,7 @@ export const VerificationStages: React.FC<VerificationStagesProps> = ({
                 }
             `}</style>
 
-            <div className="stepper-container">
+            <div className="vs-stepper-container">
                 {computedStages.map((st, idx) => {
                     const name = st.name || st.role || '';
                     const label = st.label || (name ? name.charAt(0).toUpperCase() : '');
@@ -177,10 +177,10 @@ export const VerificationStages: React.FC<VerificationStagesProps> = ({
                     }
 
                     return (
-                        <div key={idx} className="step-wrapper">
-                            <div className="step-circle-container">
+                        <div key={idx} className="vs-step-wrapper">
+                            <div className="vs-step-circle-container">
                                 <div
-                                    className={`step-circle ${isActivePending ? 'pulse-active' : ''}`}
+                                    className={`vs-step-circle ${isActivePending ? 'vs-pulse-active' : ''}`}
                                     style={{
                                         background: bg,
                                         border: border,
@@ -191,7 +191,7 @@ export const VerificationStages: React.FC<VerificationStagesProps> = ({
                                 </div>
 
                                 {/* Rich Hover Popover Card */}
-                                <div className="stepper-tooltip">
+                                <div className="vs-stepper-tooltip">
                                     <div style={{ fontWeight: 700, fontSize: '12px', color: '#1E293B', marginBottom: '4px' }}>
                                         {name} Verification
                                     </div>
@@ -238,7 +238,7 @@ export const VerificationStages: React.FC<VerificationStagesProps> = ({
                                 </div>
                             </div>
                             {showConnector && (
-                                <div className={`step-connector ${connectorClass}`} />
+                                <div className={`vs-step-connector ${connectorClass}`} />
                             )}
                         </div>
                     );

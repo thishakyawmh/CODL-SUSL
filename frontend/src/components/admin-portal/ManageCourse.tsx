@@ -220,22 +220,32 @@ export const ManageCourse: React.FC = () => {
 
 
             if (data.enrollment_requests) {
-                const formattedEnrollments = data.enrollment_requests.map((app: any) => ({
-                    id: `APP-${new Date(app.created_at).getFullYear()}-${app.id.toString().padStart(4, '0')}`,
-                    studentNumber: app.user?.student_number || app.generated_student_number || '',
-                    realId: app.id,
-                    name: app.display_name || app.applicant_name,
-                    email: app.applicant_email,
-                    type: app.is_new_applicant ? 'New' : 'Existing',
-                    status: app.status,
-                    receivedTime: new Date(app.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }),
-                    stages: {
-                        secretary: app.approval_level >= 1 || (app.status === 'rejected' && app.approval_level === 0) ? (app.status === 'rejected' && app.approval_level === 0 ? 'rejected' : 'approved') : 'pending',
-                        coordinator: app.approval_level >= 2 || (app.status === 'rejected' && app.approval_level === 1) ? (app.status === 'rejected' && app.approval_level === 1 ? 'rejected' : 'approved') : 'pending',
-                        director: app.approval_level >= 3 || (app.status === 'rejected' && app.approval_level === 2) ? (app.status === 'rejected' && app.approval_level === 2 ? 'rejected' : 'approved') : 'pending'
-                    },
-                    rawApp: app
-                }));
+                const formattedEnrollments = data.enrollment_requests.map((app: any) => {
+                    let batchName = null;
+                    if (app.batch_id && data.batches) {
+                        const match = data.batches.find((b: any) => b.id === app.batch_id);
+                        if (match) {
+                            batchName = match.name;
+                        }
+                    }
+                    return {
+                        id: `APP-${new Date(app.created_at).getFullYear()}-${app.id.toString().padStart(4, '0')}`,
+                        studentNumber: app.user?.student_number || app.generated_student_number || '',
+                        realId: app.id,
+                        name: app.display_name || app.applicant_name,
+                        email: app.applicant_email,
+                        type: app.is_new_applicant ? 'New' : 'Existing',
+                        status: app.status,
+                        batch: batchName,
+                        receivedTime: new Date(app.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }),
+                        stages: {
+                            secretary: app.approval_level >= 1 || (app.status === 'rejected' && app.approval_level === 0) ? (app.status === 'rejected' && app.approval_level === 0 ? 'rejected' : 'approved') : 'pending',
+                            coordinator: app.approval_level >= 2 || (app.status === 'rejected' && app.approval_level === 1) ? (app.status === 'rejected' && app.approval_level === 1 ? 'rejected' : 'approved') : 'pending',
+                            director: app.approval_level >= 3 || (app.status === 'rejected' && app.approval_level === 2) ? (app.status === 'rejected' && app.approval_level === 2 ? 'rejected' : 'approved') : 'pending'
+                        },
+                        rawApp: app
+                    };
+                });
                 setEnrollmentRequests(formattedEnrollments);
             }
 
@@ -533,7 +543,9 @@ export const ManageCourse: React.FC = () => {
 
     const getFilteredApprovalRequests = () => {
         return approvalRequests.filter(req => {
-            const matchesBatch = !selectedBatch || req.batch === selectedBatch || (req.examTitle && exams.find(e => e.title === req.examTitle)?.batch === selectedBatch);
+            const matchesBatch = !selectedBatch || 
+                (req.batch && req.batch.toString().trim().toLowerCase() === selectedBatch.toString().trim().toLowerCase()) || 
+                (req.examTitle && exams.find(e => e.title === req.examTitle)?.batch?.toString().trim().toLowerCase() === selectedBatch.toString().trim().toLowerCase());
             if (!matchesBatch) return false;
 
             if (userRole === 'coordinator') {
@@ -548,6 +560,9 @@ export const ManageCourse: React.FC = () => {
 
     const getFilteredEnrollmentRequests = () => {
         return enrollmentRequests.filter(req => {
+            const matchesBatch = !selectedBatch || 
+                (req.batch && req.batch.toString().trim().toLowerCase() === selectedBatch.toString().trim().toLowerCase());
+            if (!matchesBatch) return false;
 
             if (userRole === 'coordinator') {
                 if (req.rawApp && req.rawApp.approval_level < 1) return false;
@@ -3035,7 +3050,7 @@ export const ManageCourse: React.FC = () => {
                                     </div>
                                     <div style={{ padding: '20px 0' }}>
                                         {(() => {
-                                            const displayedAnnouncements = announcementsList.filter(ann => !selectedBatch || ann.batch === selectedBatch || !ann.batch);
+                                            const displayedAnnouncements = announcementsList.filter(ann => !selectedBatch || !ann.batch || ann.batch.toString().trim().toLowerCase() === selectedBatch.toString().trim().toLowerCase());
                                             return displayedAnnouncements.length === 0 ? (
                                                 <div style={{ textAlign: 'center', color: '#64748B' }}>
                                                     No recent announcements sent to this batch.
@@ -3343,7 +3358,9 @@ export const ManageCourse: React.FC = () => {
                                 <div style={{ background: 'transparent', border: 'none', boxShadow: 'none' }}>
                                     <div style={{ background: 'transparent', border: 'none', boxShadow: 'none', padding: 0 }}>
                                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '24px' }}>
-                                            {exams.filter(exam => !selectedBatch || exam.batch === selectedBatch || exam.batch_name === selectedBatch).map(exam => {
+                                            {exams.filter(exam => !selectedBatch || 
+                                                (exam.batch && exam.batch.toString().trim().toLowerCase() === selectedBatch.toString().trim().toLowerCase()) || 
+                                                (exam.batch_name && exam.batch_name.toString().trim().toLowerCase() === selectedBatch.toString().trim().toLowerCase())).map(exam => {
                                                 const getExamStatus = (s: string) => {
                                                     const statusMap: Record<string, { color: string, bg: string }> = {
                                                         'Registration Open': { color: '#10B981', bg: '#ECFDF5' },
@@ -3594,7 +3611,9 @@ export const ManageCourse: React.FC = () => {
                                 <div style={{ padding: '0 4px' }}>
                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '24px' }}>
                                         {exams.filter(e => {
-                                            const matchesBatch = !selectedBatch || e.batch === selectedBatch || e.batch_name === selectedBatch;
+                                            const matchesBatch = !selectedBatch || 
+                                                (e.batch && e.batch.toString().trim().toLowerCase() === selectedBatch.toString().trim().toLowerCase()) || 
+                                                (e.batch_name && e.batch_name.toString().trim().toLowerCase() === selectedBatch.toString().trim().toLowerCase());
                                             if (!matchesBatch) return false;
                                             let resolvedStatus = e.status;
                                             if (e.deadline) {
