@@ -59,6 +59,8 @@ class AIAnalyticsController extends Controller
             'outdated_subjects' => $cache->kpis['outdated_subjects'] ?? [],
             'low_demand_subjects' => $cache->kpis['low_demand_subjects'] ?? [],
             'learning_preferences_data' => $cache->kpis['learning_preferences_data'] ?? null,
+            'career_readiness' => $cache->kpis['career_readiness'] ?? [],
+            'emerging_tech_alerts' => $cache->kpis['emerging_tech_alerts'] ?? [],
         ]);
     }
 

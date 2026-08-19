@@ -20,7 +20,12 @@ return [
             'puppet', 'helm', 'gitlab ci', 'vagarant', 'nagios', 'prometheus', 
             'grafana', 'cloudformation', 'continuous integration', 'continuous deployment', 
             'platform engineering', 'site reliability engineering', 'sre', 
-            'infrastructure as code', 'iac', 'argocd', 'circleci'
+            'infrastructure as code', 'iac', 'argocd', 'circleci', 'kustomize', 
+            'docker swarm', 'podman', 'openshift', 'fluxcd', 'travis ci', 
+            'bitbucket pipelines', 'saltstack', 'packer', 'vagrant', 'datadog', 
+            'splunk', 'elk stack', 'logstash', 'kibana', 'opentelemetry', 
+            'jaeger', 'chaos engineering', 'gremlin', 'argo workflows', 'tekton', 
+            'sonarqube', 'trivy', 'snyk', 'hashicorp vault', 'artifactory', 'nexus'
         ],
         
         'Artificial Intelligence' => [
@@ -29,7 +34,14 @@ return [
             'tensorflow', 'keras', 'scikit-learn', 'llm', 'large language models', 
             'reinforcement learning', 'transformers', 'gpt', 'image processing', 
             'object detection', 'supervised learning', 'unsupervised learning', 
-            'generative ai', 'hugging face', 'artificial neural network', 'ann', 'cnn', 'rnn'
+            'generative ai', 'hugging face', 'artificial neural network', 'ann', 'cnn', 'rnn',
+            'langchain', 'llamaindex', 'vector databases', 'pinecone', 'milvus', 
+            'chromadb', 'retrieval-augmented generation', 'rag', 'prompt engineering', 
+            'stable diffusion', 'midjourney', 'speech recognition', 'whisper', 
+            'autoencoder', 'gan', 'generative adversarial network', 'transfer learning', 
+            'xgboost', 'lightgbm', 'random forest', 'support vector machine', 'mlops', 
+            'mlflow', 'kubeflow', 'dvc', 'optuna', 'hyperparameter tuning', 
+            'dimensionality reduction', 'pca', 'semantic search'
         ],
         
         'Cloud Computing' => [
@@ -37,14 +49,31 @@ return [
             'serverless', 'cloud infrastructure', 'cloud deployment', 'ec2', 's3', 
             'lambda', 'virtual machines', 'virtualization', 'cloud security', 
             'cloud architecture', 'hybrid cloud', 'multi-cloud', 'openstack', 
-            'cloud engineering', 'cloud storage'
+            'cloud engineering', 'cloud storage', 'fargate', 'dynamodb', 'rds', 
+            'azure functions', 'google cloud run', 'blob storage', 'iam', 'cloudtrail', 
+            'cloudwatch', 'azure active directory', 'gcp iam', 'vpc', 'virtual private cloud', 
+            'cloud networking', 'route 53', 'api gateway', 'cloudfront', 'azure cdn', 
+            'load balancer', 'auto-scaling', 'cloud migration', 'cloud cost management', 
+            'cloud native', 'cloud computing fundamentals', 'heroku', 'netlify', 
+            'vercel', 'digitalocean', 'firebase', 'cloud database', 'redshift', 
+            'bigquery', 'snowflake'
         ],
         
         'Mobile Development' => [
             'android', 'ios', 'swift', 'kotlin', 'flutter', 'react native', 
             'mobile development', 'mobile programming', 'mobile applications', 
             'objective-c', 'xcode', 'android studio', 'mobile app development', 
-            'ionic', 'cordova', 'nativescript', 'mobile', 'mobile application development', 'mobile app'
+            'ionic', 'cordova', 'nativescript', 'mobile', 'mobile application development', 'mobile app',
+            'swiftui', 'jetpack compose', 'cocoapods', 'gradle', 'flutter sdk', 
+            'dart', 'mobile ui design', 'mobile ux', 'push notifications', 
+            'firebase cloud messaging', 'core data', 'sqlite mobile', 'room database', 
+            'mobile security', 'app store deployment', 'google play deployment', 
+            'testflight', 'mobile analytics', 'expo cli', 'react navigation', 
+            'offline-first', 'state management mobile', 'bloc pattern', 
+            'mobile responsive design', 'mobile performance optimization', 
+            'location services mobile', 'maps api mobile', 'camera api mobile', 
+            'camera development mobile', 'bluetooth development mobile', 
+            'in-app purchases', 'mobile devops', 'fastlane'
         ],
         
         'Cyber Security' => [
@@ -53,21 +82,43 @@ return [
             'vulnerability assessment', 'owasp', 'siem', 'soc', 'incident response', 
             'malware analysis', 'digital forensics', 'network monitoring', 
             'identity management', 'zero trust', 'cissp', 'ceh', 'risk assessment', 
-            'secure coding'
+            'secure coding', 'threat intelligence', 'metasploit', 'nmap', 'wireshark', 
+            'burp suite', 'intrusion detection system', 'ids', 'intrusion prevention system', 
+            'ips', 'encryption', 'decryption', 'ssl/tls', 'public key infrastructure', 
+            'pki', 'multi-factor authentication', 'mfa', 'saml', 'oauth', 
+            'dynamic application security testing', 'dast', 'static application security testing', 
+            'sast', 'network scanning', 'log analysis', 'access control list', 
+            'acl', 'disaster recovery', 'computer forensic', 'buffer overflow', 
+            'cross-site scripting', 'sql injection', 'ransomware mitigation'
         ],
         
         'Data Science' => [
             'data science', 'data analytics', 'data analysis', 'big data', 'pandas', 
             'numpy', 'sql', 'r programming', 'data visualization', 'power bi', 
             'tableau', 'data mining', 'spark', 'hadoop', 'statistical analysis', 
-            'jupyter', 'data warehousing', 'matplotlib', 'seaborn', 'data pipelines', 'etl'
+            'jupyter', 'data warehousing', 'matplotlib', 'seaborn', 'data pipelines', 'etl',
+            'apache spark', 'apache hadoop', 'pyspark', 'sql server', 'postgresql', 
+            'mysql', 'oracle database', 'data quality', 'data cleaning', 'data wrangling', 
+            'predictive modeling', 'descriptive statistics', 'hypothesis testing', 
+            'time series analysis', 'regression analysis', 'classification analysis', 
+            'clustering analysis', 'nosql databases', 'mongodb', 'cassandra', 
+            'neo4j', 'graph databases', 'dbt', 'data mesh', 'data lake', 
+            'data lakehouse', 'data integration', 'business intelligence', 
+            'bi reporting', 'apache airflow', 'data architecture', 'data profiling'
         ],
         
         'Web Development' => [
             'web development', 'frontend', 'backend', 'full stack', 'react', 'angular', 
             'vue', 'nodejs', 'php', 'laravel', 'html', 'css', 'javascript', 'typescript', 
             'expressjs', 'django', 'spring boot', 'asp.net', 'jquery', 'web applications', 
-            'semantic html', 'css3', 'bootstrap', 'tailwind', 'web programming', 'web', 'web technologies', 'web design'
+            'semantic html', 'css3', 'bootstrap', 'tailwind', 'web programming', 'web', 'web technologies', 'web design',
+            'nextjs', 'svelte', 'solidjs', 'graphql', 'rest api', 'api design', 
+            'websocket', 'single page application', 'spa', 'server side rendering', 
+            'ssr', 'static site generation', 'ssg', 'progressive web application', 
+            'pwa', 'responsive web design', 'css grid', 'flexbox', 'web accessibility', 
+            'a11y', 'web performance', 'lighthouse audit', 'webpack', 'vite', 
+            'npm', 'yarn', 'pnpm', 'semantic web', 'web server', 'nginx', 
+            'apache web server', 'database integration'
         ],
  
         'Business & Management' => [
@@ -198,6 +249,36 @@ return [
         'Agriculture' => ['agriculture', 'farming', 'crop', 'horticulture'],
         'Science' => ['science', 'chemistry', 'physics', 'biology', 'zoology', 'botany'],
         'Education' => ['education', 'teaching', 'pedagogy']
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Career Path Role Mapping
+    |--------------------------------------------------------------------------
+    |
+    | Maps standard professional career titles to the required academic domains.
+    | Used to dynamically calculate student career path readiness scores.
+    |
+    */
+    'career_paths' => [
+        'Cloud Engineer' => ['Cloud Computing', 'DevOps'],
+        'Data Scientist' => ['Data Science', 'Artificial Intelligence', 'Mathematics & Statistics'],
+        'Software Developer' => ['Web Development', 'Computing & Information Technology'],
+        'Cybersecurity Specialist' => ['Cyber Security', 'Computing & Information Technology'],
+        'Mobile App Developer' => ['Mobile Development', 'Computing & Information Technology'],
+        'HR Manager' => ['Business & Management', 'Psychology'],
+        'Management Consultant' => ['Business & Management', 'Economics'],
+        'Project Manager' => ['Business & Management', 'Computing & Information Technology'],
+        'Marketing Specialist' => ['Marketing', 'Media & Communication'],
+        'Digital Marketer' => ['Marketing', 'Web Development'],
+        'Corporate Accountant' => ['Accounting & Finance'],
+        'Investment Banker' => ['Accounting & Finance', 'Economics'],
+        'Corporate Lawyer' => ['Law', 'Business & Management'],
+        'Agricultural Manager' => ['Agriculture', 'Business & Management'],
+        'Clinical Psychologist' => ['Psychology'],
+        'Public Relations Officer' => ['Media & Communication', 'Business & Management'],
+        'Statistician / Actuary' => ['Mathematics & Statistics', 'Data Science'],
+        'Language Instructor' => ['Arts & Humanities']
     ],
 
     /*

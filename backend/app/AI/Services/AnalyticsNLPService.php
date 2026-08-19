@@ -764,6 +764,9 @@ class AnalyticsNLPService
             'skill_gaps' => array_keys(array_slice($skillGapsCounts, 0, 5)),
             'jaccard_similarity_results' => $jaccardResults,
             
+            // --- NEW AI DRIVEN INSIGHTS WIDGETS ---
+            'career_readiness' => $this->calculateCareerReadiness($curriculumDomains, $course),
+            'emerging_tech_alerts' => $this->calculateEmergingTechAlerts($relevantIndustrySurveys, $curriculumSubjects, $curriculumDomains),
 
             'coverage_percent' => $coveragePercent,
             'missing_subjects' => $missingSubjects,
@@ -2628,5 +2631,179 @@ class AnalyticsNLPService
         }
 
         return 'Low';
+    }
+
+    private function calculateCareerReadiness(array $curriculumDomains, \App\Models\Course $course = null): array
+    {
+        $roles = config('analytics.career_paths', []);
+        $readinessList = [];
+
+        if ($course) {
+            $title = strtolower($course->title);
+            $dept = strtolower($course->department ?? '');
+            
+            $computingRoles = ['Cloud Engineer', 'Software Developer', 'Cybersecurity Specialist', 'Mobile App Developer', 'Project Manager'];
+            $dataScienceRoles = ['Data Scientist', 'Statistician / Actuary', 'Software Developer'];
+            $marketingRoles = ['Digital Marketer', 'Marketing Specialist', 'Project Manager'];
+            $accountingRoles = ['Corporate Accountant', 'Investment Banker'];
+            $hrRoles = ['HR Manager', 'Project Manager'];
+            $tourismRoles = ['Public Relations Officer', 'Management Consultant'];
+            $businessRoles = ['Management Consultant', 'Project Manager', 'HR Manager', 'Corporate Accountant', 'Corporate Lawyer'];
+            $languagesRoles = ['Language Instructor', 'Public Relations Officer'];
+            $designMediaRoles = ['Public Relations Officer', 'Marketing Specialist', 'Digital Marketer'];
+            $agriRoles = ['Agricultural Manager', 'Project Manager'];
+            
+            $allowedRoles = [];
+            
+            if (str_contains($title, 'data science') || str_contains($title, 'statistic')) {
+                $allowedRoles = array_merge($allowedRoles, $dataScienceRoles);
+            }
+            if (str_contains($title, 'software') || str_contains($title, 'web') || str_contains($title, 'programming') || str_contains($title, 'network') || str_contains($title, 'computing') || str_contains($title, 'information technology') || str_contains($title, 'python') || str_contains($title, 'computer')) {
+                $allowedRoles = array_merge($allowedRoles, $computingRoles);
+            }
+            if (str_contains($title, 'e-business') || str_contains($title, 'e-commerce') || str_contains($title, 'digital business')) {
+                $allowedRoles = array_merge($allowedRoles, ['Digital Marketer', 'Marketing Specialist', 'Project Manager', 'Management Consultant']);
+            }
+            if (str_contains($title, 'marketing')) {
+                $allowedRoles = array_merge($allowedRoles, $marketingRoles);
+            }
+            if (str_contains($title, 'accounting') || str_contains($title, 'finance')) {
+                $allowedRoles = array_merge($allowedRoles, $accountingRoles);
+            }
+            if (str_contains($title, 'human resource') || str_contains($title, 'hr')) {
+                $allowedRoles = array_merge($allowedRoles, $hrRoles);
+            }
+            if (str_contains($title, 'tourism') || str_contains($title, 'hospitality')) {
+                $allowedRoles = array_merge($allowedRoles, $tourismRoles);
+            }
+            if (str_contains($title, 'business') || str_contains($title, 'management') || str_contains($title, 'entrepreneurship')) {
+                $allowedRoles = array_merge($allowedRoles, $businessRoles);
+            }
+            if (str_contains($title, 'english') || str_contains($title, 'spoken') || str_contains($title, 'language')) {
+                $allowedRoles = array_merge($allowedRoles, $languagesRoles);
+            }
+            if (str_contains($title, 'graphic') || str_contains($title, 'design') || str_contains($title, 'media') || str_contains($title, 'communication')) {
+                $allowedRoles = array_merge($allowedRoles, $designMediaRoles);
+            }
+            if (str_contains($title, 'agri') || str_contains($title, 'farm')) {
+                $allowedRoles = array_merge($allowedRoles, $agriRoles);
+            }
+            
+            if (empty($allowedRoles)) {
+                if (str_contains($dept, 'computing')) {
+                    $allowedRoles = array_merge($computingRoles, $dataScienceRoles);
+                } elseif (str_contains($dept, 'management') || str_contains($dept, 'business')) {
+                    $allowedRoles = array_merge($businessRoles, $marketingRoles, $accountingRoles, $hrRoles);
+                } elseif (str_contains($dept, 'social') || str_contains($dept, 'language') || str_contains($dept, 'humanities') || str_contains($dept, 'art')) {
+                    $allowedRoles = array_merge($languagesRoles, $designMediaRoles);
+                } elseif (str_contains($dept, 'agri')) {
+                    $allowedRoles = $agriRoles;
+                }
+            }
+            
+            $allowedRoles = array_values(array_unique($allowedRoles));
+            
+            if (!empty($allowedRoles)) {
+                $roles = array_filter($roles, function ($role) use ($allowedRoles) {
+                    return in_array($role, $allowedRoles);
+                }, ARRAY_FILTER_USE_KEY);
+            }
+        }
+
+        foreach ($roles as $role => $requiredDomains) {
+            if (empty($requiredDomains)) {
+                continue;
+            }
+
+            $matchedCount = 0;
+            $matchedDetails = [];
+            $missingDetails = [];
+
+            foreach ($requiredDomains as $rd) {
+                if (in_array($rd, $curriculumDomains)) {
+                    $matchedCount++;
+                    $matchedDetails[] = $rd;
+                } else {
+                    $missingDetails[] = $rd;
+                }
+            }
+
+            $readinessScore = (int) round(($matchedCount / count($requiredDomains)) * 100);
+
+            if ($readinessScore > 0) {
+                $readinessList[] = [
+                    'role' => $role,
+                    'readiness' => $readinessScore,
+                    'matched_domains' => $matchedDetails,
+                    'missing_domains' => $missingDetails,
+                ];
+            }
+        }
+
+        usort($readinessList, function ($a, $b) {
+            return $b['readiness'] <=> $a['readiness'];
+        });
+
+        return $readinessList;
+    }
+
+    private function calculateEmergingTechAlerts(array $relevantIndustrySurveys, array $curriculumSubjects, array $curriculumDomains): array
+    {
+        $skillMentions = [];
+        $totalRelevantIndustry = count($relevantIndustrySurveys);
+
+        foreach ($relevantIndustrySurveys as $ris) {
+            $survey = $ris['survey'];
+            if (!empty($survey->required_skills)) {
+                $skills = array_map('trim', explode(',', $survey->required_skills));
+                foreach ($skills as $s) {
+                    if (empty($s) || strlen(trim($s)) < 2) continue;
+                    $normalized = trim($s);
+                    $skillMentions[$normalized] = ($skillMentions[$normalized] ?? 0) + 1;
+                }
+            }
+        }
+
+        arsort($skillMentions);
+        $alerts = [];
+
+        foreach ($skillMentions as $skill => $count) {
+            $demandPct = $totalRelevantIndustry > 0 ? (int) round(($count / $totalRelevantIndustry) * 100) : 0;
+            
+            if ($demandPct < 15) {
+                continue;
+            }
+
+            $isCovered = false;
+            foreach ($curriculumSubjects as $subject) {
+                $subNameLower = strtolower($subject['name']);
+                $skillLower = strtolower($skill);
+                if (str_contains($subNameLower, $skillLower)) {
+                    $isCovered = true;
+                    break;
+                }
+            }
+
+            if (!$isCovered) {
+                $skillDomains = $this->extractDomains($skill);
+                foreach ($skillDomains as $sd) {
+                    if (in_array($sd, $curriculumDomains)) {
+                        $isCovered = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!$isCovered) {
+                $alerts[] = [
+                    'tech' => $skill,
+                    'demand_pct' => $demandPct,
+                    'severity' => $demandPct >= 40 ? 'Critical' : ($demandPct >= 25 ? 'High' : 'Medium'),
+                    'recommendation' => "Incorporate training or lab tasks for '{$skill}' to satisfy Sri Lankan industry requirements."
+                ];
+            }
+        }
+
+        return array_slice($alerts, 0, 5);
     }
 }

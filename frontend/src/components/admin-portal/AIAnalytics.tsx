@@ -1617,8 +1617,10 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                                         </div>
                                     );
                                 })()}
-                                {/* Preferred Learning & Training Methods */}
-                                <div className="ai-chart-card" style={{ marginTop: '20px' }}>
+                            </div>
+                            
+                            {/* Preferred Learning & Training Methods */}
+                            <div className="ai-chart-card" style={{ marginTop: '20px' }}>
                                     <h4>Preferred Learning & Training Methods</h4>
                                     <p className="text-slate-400 text-xs mb-4" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Teaching and training modes preferred by applicants and employers ranked by weighted overall demand (70% Industry / 30% Student).</p>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '12px' }}>
@@ -1696,7 +1698,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                                             ));
                                         })()}
                                     </div>
-                                </div>                            </div>
+                                </div>
                         </div>
                     )}
                 </div>
@@ -1859,6 +1861,112 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                                 </div>
                             )}
                         </div>
+                    </div>
+                </div>
+
+                {/* AI Career Paths & Emerging Tech Alerts Section */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '24px', marginTop: '24px' }}>
+                    
+                    {/* Widget 1: Career Path Readiness Predictor */}
+                    <div className="ai-chart-card" style={{ margin: 0, border: '1px solid #E2E8F0', background: '#FFFFFF', display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                            <div style={{ backgroundColor: '#F3E8FF', color: 'var(--primary-color)', padding: '10px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <Award size={20} />
+                            </div>
+                            <div>
+                                <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#1E293B', margin: 0 }}>AI Career Path Readiness Predictor</h3>
+                                <p style={{ fontSize: '12px', color: '#64748B', margin: '2px 0 0 0', fontWeight: 500 }}>Predictive alignment of curriculum against professional job roles</p>
+                            </div>
+                        </div>
+
+                        {(!overview.career_readiness || overview.career_readiness.length === 0) ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '18px 20px', flex: 1, minHeight: '120px' }}>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
+                                <span style={{ fontSize: '13px', color: '#64748B', fontWeight: 500 }}>No career paths matched for this program.</span>
+                            </div>
+                        ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', flex: 1 }}>
+                                {overview.career_readiness.map((path: any) => (
+                                    <div key={path.role} style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '14px 16px' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                            <span style={{ fontSize: '13.5px', fontWeight: 700, color: '#1E293B' }}>{path.role}</span>
+                                            <span style={{ 
+                                                fontSize: '13px', fontWeight: 800, 
+                                                color: path.readiness >= 75 ? '#059669' : (path.readiness >= 50 ? '#D97706' : '#DC2626')
+                                            }}>{path.readiness}% Taught</span>
+                                        </div>
+                                        
+                                        {/* Progress bar */}
+                                        <div style={{ height: '7px', borderRadius: '999px', background: '#E2E8F0', overflow: 'hidden', marginBottom: '10px' }}>
+                                            <div style={{ 
+                                                height: '100%', borderRadius: '999px', 
+                                                background: path.readiness >= 75 ? 'linear-gradient(90deg, #10B981, #34D399)' : (path.readiness >= 50 ? 'linear-gradient(90deg, #F59E0B, #FBBF24)' : 'linear-gradient(90deg, #EF4444, #F87171)'),
+                                                width: `${path.readiness}%`, transition: 'width 0.6s ease' 
+                                            }} />
+                                        </div>
+
+                                        {/* Matched / Missing Domains details */}
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '6px' }}>
+                                            {path.matched_domains.map((d: string) => (
+                                                <span key={d} style={{ background: '#E0F2FE', color: '#0369A1', border: '1px solid #BAE6FD', fontSize: '10px', fontWeight: 600, padding: '2px 8px', borderRadius: '20px' }}>
+                                                    ✓ {d}
+                                                </span>
+                                            ))}
+                                            {path.missing_domains.map((d: string) => (
+                                                <span key={d} style={{ background: '#FEE2E2', color: '#991B1B', border: '1px solid #FCA5A5', fontSize: '10px', fontWeight: 600, padding: '2px 8px', borderRadius: '20px' }}>
+                                                    ✕ {d}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Widget 2: Emerging Tech Threat Alerts */}
+                    <div className="ai-chart-card" style={{ margin: 0, border: '1px solid #FEE2E2', background: 'linear-gradient(135deg, #FFF5F5 0%, #FFF 100%)', display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                            <div style={{ backgroundColor: '#FEE2E2', color: '#DC2626', padding: '10px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                            </div>
+                            <div>
+                                <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#991B1B', margin: 0 }}>AI Emerging Tech Threat Alerts</h3>
+                                <p style={{ fontSize: '12px', color: '#B91C1C', margin: '2px 0 0 0', fontWeight: 500 }}>High industry demand technologies missing in syllabus</p>
+                            </div>
+                        </div>
+
+                        {(!overview.emerging_tech_alerts || overview.emerging_tech_alerts.length === 0) ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '18px 20px', flex: 1, minHeight: '120px' }}>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
+                                <span style={{ fontSize: '13px', color: '#065F46', fontWeight: 500 }}>Syllabus is fully aligned with all active industry technology demands.</span>
+                            </div>
+                        ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', flex: 1 }}>
+                                {overview.emerging_tech_alerts.map((alert: any) => (
+                                    <div key={alert.tech} style={{ background: '#FFFFFF', border: '1px solid #FEE2E2', borderRadius: '12px', padding: '14px 16px', boxShadow: '0 1px 3px rgba(220, 38, 38, 0.03)' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                                            <span style={{ fontSize: '14px', fontWeight: 800, color: '#991B1B' }}>{alert.tech}</span>
+                                            <span style={{ 
+                                                fontSize: '10.5px', fontWeight: 700, padding: '2px 8px', borderRadius: '20px',
+                                                background: alert.severity === 'Critical' ? '#FEE2E2' : '#FEF3C7',
+                                                color: alert.severity === 'Critical' ? '#991B1B' : '#D97706',
+                                                border: `1px solid ${alert.severity === 'Critical' ? '#FCA5A5' : '#FCD34D'}`
+                                            }}>{alert.severity} Risk</span>
+                                        </div>
+                                        
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#7F1D1D', fontWeight: 600, margin: '4px 0 10px 0' }}>
+                                            <span>Sri Lankan Tech Market Demand:</span>
+                                            <span style={{ color: '#DC2626', fontWeight: 800 }}>{alert.demand_pct}%</span>
+                                        </div>
+                                        
+                                        <div style={{ fontSize: '12px', color: '#4B5563', lineHeight: 1.5, background: '#F9FAFB', padding: '8px 12px', borderRadius: '8px', borderLeft: '3px solid #DC2626' }}>
+                                            <strong>AI Action:</strong> {alert.recommendation}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
