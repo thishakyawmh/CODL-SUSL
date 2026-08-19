@@ -106,8 +106,8 @@ class RecommendationEngineService
         }
 
 
-        if (!empty($analyticsData['outdated_subjects'])) {
-            foreach ($analyticsData['outdated_subjects'] as $idx => $anomaly) {
+        if (!empty($analyticsData['curriculum_enhancements'])) {
+            foreach ($analyticsData['curriculum_enhancements'] as $idx => $anomaly) {
                 $affected = $anomaly['affected_subject'];
                 $parts = explode(':', $affected, 2);
                 $code = trim($parts[0]);

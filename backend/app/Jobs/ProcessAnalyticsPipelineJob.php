@@ -67,6 +67,8 @@ class ProcessAnalyticsPipelineJob implements ShouldQueue
                 $kpis['outdated_subjects'] = $analytics['outdated_subjects'] ?? [];
                 $kpis['low_demand_subjects'] = $analytics['low_demand_subjects'] ?? [];
                 $kpis['learning_preferences_data'] = $analytics['learning_preferences_data'] ?? null;
+                $kpis['career_readiness'] = $analytics['career_readiness'] ?? [];
+                $kpis['emerging_tech_alerts'] = $analytics['emerging_tech_alerts'] ?? [];
 
 
                 AnalyticsCache::where('scope_type', 'program')

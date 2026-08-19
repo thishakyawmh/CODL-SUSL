@@ -59,6 +59,8 @@ class AIAnalyticsController extends Controller
             'outdated_subjects' => $cache->kpis['outdated_subjects'] ?? [],
             'low_demand_subjects' => $cache->kpis['low_demand_subjects'] ?? [],
             'learning_preferences_data' => $cache->kpis['learning_preferences_data'] ?? null,
+            'career_readiness' => $cache->kpis['career_readiness'] ?? [],
+            'emerging_tech_alerts' => $cache->kpis['emerging_tech_alerts'] ?? [],
         ]);
     }
 
@@ -126,8 +128,11 @@ class AIAnalyticsController extends Controller
             return $nlpService->processAll(null);
         });
         
-        $lastSync = \App\AI\Models\AnalyticsCache::orderBy('generated_at', 'desc')->first();
-        $lastSyncTime = $lastSync ? $lastSync->generated_at->toIso8601String() : null;
+        $lastSyncTime = \Illuminate\Support\Facades\Cache::get('ai_analytics_last_sync_time');
+        if (!$lastSyncTime) {
+            $lastSync = \App\AI\Models\AnalyticsCache::orderBy('generated_at', 'desc')->first();
+            $lastSyncTime = $lastSync ? $lastSync->generated_at->toIso8601String() : null;
+        }
 
         return response()->json([
             'emerging_technologies' => $analytics['emerging_technologies'] ?? [],
@@ -523,7 +528,7 @@ class AIAnalyticsController extends Controller
 
 
             try {
-                \App\Jobs\ProcessAnalyticsPipelineJob::dispatchSync();
+                \App\Jobs\ProcessAnalyticsPipelineJob::dispatch();
             } catch (\Exception $e) {
                 \Log::error('Failed to dispatch ProcessAnalyticsPipelineJob: ' . $e->getMessage());
             }
@@ -531,6 +536,7 @@ class AIAnalyticsController extends Controller
             \Illuminate\Support\Facades\Cache::forget('ai_analytics_global_overview');
             \Illuminate\Support\Facades\Cache::forget('ai_analytics_geography_data');
             \Illuminate\Support\Facades\Cache::forget('ai_analytics_common_overview');
+            \Illuminate\Support\Facades\Cache::put('ai_analytics_last_sync_time', now()->toIso8601String(), 86400);
 
             return response()->json([
                 'message' => 'Sync completed successfully for both Student and Industry sheets.',
@@ -560,7 +566,7 @@ class AIAnalyticsController extends Controller
 
 
         try {
-            \App\Jobs\ProcessAnalyticsPipelineJob::dispatchSync();
+            \App\Jobs\ProcessAnalyticsPipelineJob::dispatch();
         } catch (\Exception $e) {
             \Log::error('Failed to dispatch ProcessAnalyticsPipelineJob: ' . $e->getMessage());
         }
@@ -568,6 +574,7 @@ class AIAnalyticsController extends Controller
         \Illuminate\Support\Facades\Cache::forget('ai_analytics_global_overview');
         \Illuminate\Support\Facades\Cache::forget('ai_analytics_geography_data');
         \Illuminate\Support\Facades\Cache::forget('ai_analytics_common_overview');
+        \Illuminate\Support\Facades\Cache::put('ai_analytics_last_sync_time', now()->toIso8601String(), 86400);
 
         return response()->json([
             'message' => ucfirst($request->type) . ' Survey Imported Successfully',
@@ -597,13 +604,9 @@ class AIAnalyticsController extends Controller
 
 
         try {
-            $response = Http::get($csvUrl);
-            if (!$response->successful()) {
-                return ['error' => 'Failed to download CSV from Google Sheets. Make sure the sheet is public.'];
-            }
-            $csvData = $response->body();
+            $csvData = $this->fetchCsvContent($csvUrl);
         } catch (\Exception $e) {
-            return ['error' => 'HTTP request failed: ' . $e->getMessage()];
+            return ['error' => $e->getMessage()];
         }
 
 
@@ -893,6 +896,72 @@ class AIAnalyticsController extends Controller
             'imported' => $rowsImported,
             'ignored' => $rowsIgnored
         ];
+    }
+
+    private function fetchCsvContent($url)
+    {
+        $url = html_entity_decode($url);
+
+        // Try Method 1: Http client with connection timeout and retries, without verifying SSL
+        try {
+            $response = \Illuminate\Support\Facades\Http::withoutVerifying()
+                ->timeout(4)
+                ->retry(1, 200)
+                ->get($url);
+            if ($response->successful()) {
+                $body = $response->body();
+                if (strlen(trim($body)) > 0) {
+                    return $body;
+                }
+            }
+        } catch (\Exception $e) {
+            \Log::warning("HTTP Client download failed: " . $e->getMessage());
+        }
+
+        // Try Method 2: file_get_contents with stream context as fallback
+        try {
+            $context = stream_context_create([
+                "http" => [
+                    "timeout" => 4,
+                    "follow_location" => true,
+                ],
+                "ssl" => [
+                    "verify_peer" => false,
+                    "verify_peer_name" => false,
+                ]
+            ]);
+            $data = file_get_contents($url, false, $context);
+            if ($data !== false && strlen(trim($data)) > 0) {
+                return $data;
+            }
+        } catch (\Exception $e) {
+            \Log::warning("file_get_contents download failed: " . $e->getMessage());
+        }
+
+        // Try Method 3: System curl.exe execution as final bulletproof fallback
+        try {
+            $escapedUrl = escapeshellarg($url);
+            $tempFile = tempnam(sys_get_temp_dir(), 'csv_sync');
+            $escapedTemp = escapeshellarg($tempFile);
+            
+            // Execute system curl
+            exec("curl.exe -L -k -s -o {$escapedTemp} {$escapedUrl}", $output, $returnVar);
+            
+            if ($returnVar === 0 && file_exists($tempFile)) {
+                $data = file_get_contents($tempFile);
+                @unlink($tempFile);
+                if (strlen(trim($data)) > 0) {
+                    return $data;
+                }
+            }
+            if (file_exists($tempFile)) {
+                @unlink($tempFile);
+            }
+        } catch (\Exception $e) {
+            \Log::error("System curl execution failed: " . $e->getMessage());
+        }
+
+        throw new \Exception("All download methods (HTTP client, file_get_contents, system curl) failed to fetch Google Sheet CSV.");
     }
 
     public function getCommonOverview(AnalyticsNLPService $nlpService)
