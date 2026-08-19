@@ -2638,23 +2638,36 @@ class AnalyticsNLPService
         $roles = config('analytics.career_paths', []);
         $readinessList = [];
 
+        // Build flat lowercase text from all curriculum subject names for keyword matching
+        $curriculumText = '';
+        if ($course) {
+            $course->loadMissing('semesters.subjects');
+            $subjectNames = [];
+            foreach ($course->semesters as $semester) {
+                foreach ($semester->subjects as $subject) {
+                    $subjectNames[] = strtolower($subject->name);
+                }
+            }
+            $curriculumText = implode(' | ', $subjectNames);
+        }
+
         if ($course) {
             $title = strtolower($course->title);
             $dept = strtolower($course->department ?? '');
-            
-            $computingRoles = ['Cloud Engineer', 'Software Developer', 'Cybersecurity Specialist', 'Mobile App Developer', 'Project Manager'];
-            $dataScienceRoles = ['Data Scientist', 'Statistician / Actuary', 'Software Developer'];
-            $marketingRoles = ['Digital Marketer', 'Marketing Specialist', 'Project Manager'];
-            $accountingRoles = ['Corporate Accountant', 'Investment Banker'];
-            $hrRoles = ['HR Manager', 'Project Manager'];
-            $tourismRoles = ['Public Relations Officer', 'Management Consultant'];
-            $businessRoles = ['Management Consultant', 'Project Manager', 'HR Manager', 'Corporate Accountant', 'Corporate Lawyer'];
-            $languagesRoles = ['Language Instructor', 'Public Relations Officer'];
+
+            $computingRoles   = ['Cloud Engineer', 'Software Developer', 'Cybersecurity Specialist', 'Mobile App Developer', 'Project Manager', 'DevOps Engineer', 'AI / ML Engineer'];
+            $dataScienceRoles = ['Data Scientist', 'Statistician / Actuary', 'AI / ML Engineer', 'Software Developer'];
+            $marketingRoles   = ['Digital Marketer', 'Marketing Specialist', 'Project Manager'];
+            $accountingRoles  = ['Corporate Accountant', 'Investment Banker'];
+            $hrRoles          = ['HR Manager', 'Project Manager'];
+            $tourismRoles     = ['Public Relations Officer', 'Management Consultant'];
+            $businessRoles    = ['Management Consultant', 'Project Manager', 'HR Manager', 'Corporate Accountant', 'Corporate Lawyer'];
+            $languagesRoles   = ['Language Instructor', 'Public Relations Officer'];
             $designMediaRoles = ['Public Relations Officer', 'Marketing Specialist', 'Digital Marketer'];
-            $agriRoles = ['Agricultural Manager', 'Project Manager'];
-            
+            $agriRoles        = ['Agricultural Manager', 'Project Manager'];
+
             $allowedRoles = [];
-            
+
             if (str_contains($title, 'data science') || str_contains($title, 'statistic')) {
                 $allowedRoles = array_merge($allowedRoles, $dataScienceRoles);
             }
@@ -2688,7 +2701,7 @@ class AnalyticsNLPService
             if (str_contains($title, 'agri') || str_contains($title, 'farm')) {
                 $allowedRoles = array_merge($allowedRoles, $agriRoles);
             }
-            
+
             if (empty($allowedRoles)) {
                 if (str_contains($dept, 'computing')) {
                     $allowedRoles = array_merge($computingRoles, $dataScienceRoles);
@@ -2700,9 +2713,9 @@ class AnalyticsNLPService
                     $allowedRoles = $agriRoles;
                 }
             }
-            
+
             $allowedRoles = array_values(array_unique($allowedRoles));
-            
+
             if (!empty($allowedRoles)) {
                 $roles = array_filter($roles, function ($role) use ($allowedRoles) {
                     return in_array($role, $allowedRoles);
@@ -2715,27 +2728,28 @@ class AnalyticsNLPService
                 continue;
             }
 
-            $matchedCount = 0;
-            $matchedDetails = [];
-            $missingDetails = [];
+            $matchedDomains = [];
+            $missingDomains = [];
 
-            foreach ($requiredDomains as $rd) {
-                if (in_array($rd, $curriculumDomains)) {
-                    $matchedCount++;
-                    $matchedDetails[] = $rd;
+            foreach ($requiredDomains as $domain) {
+                if (in_array($domain, $curriculumDomains)) {
+                    $matchedDomains[] = $domain;
                 } else {
-                    $missingDetails[] = $rd;
+                    $missingDomains[] = $domain;
                 }
             }
 
-            $readinessScore = (int) round(($matchedCount / count($requiredDomains)) * 100);
+            $total = count($requiredDomains);
+            $readinessScore = $total > 0 ? (int) round((count($matchedDomains) / $total) * 100) : 0;
 
             if ($readinessScore > 0) {
                 $readinessList[] = [
-                    'role' => $role,
-                    'readiness' => $readinessScore,
-                    'matched_domains' => $matchedDetails,
-                    'missing_domains' => $missingDetails,
+                    'role'            => $role,
+                    'readiness'       => $readinessScore,
+                    'matched_domains' => array_slice($matchedDomains, 0, 5),
+                    'missing_domains' => array_slice($missingDomains, 0, 5),
+                    'total_skills'    => $total,
+                    'matched_count'   => count($matchedDomains),
                 ];
             }
         }

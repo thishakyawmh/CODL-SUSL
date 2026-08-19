@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 return [
 
@@ -181,6 +181,58 @@ return [
             'arts', 'humanities', 'english', 'history', 'philosophy', 'language', 'literature',
             'creative writing', 'digital arts', 'animation', 'fine arts', 'graphic design', 
             'illustration', 'performing arts', 'sociology', 'anthropology'
+        ],
+
+        'Computing & Information Technology' => [
+            'computing', 'information technology', 'software', 'computer science', 'it',
+            'programming', 'coding', 'computer programming', 'software development',
+            'systems analysis', 'computer systems', 'information systems', 'ict',
+            'operating systems', 'computer organisation', 'computer architecture',
+            'object oriented', 'oop', 'software engineering', 'system design',
+            'computer fundamentals', 'introduction to computing', 'computing fundamentals'
+        ],
+
+        'Network Engineering' => [
+            'networking', 'network engineering', 'computer networks', 'network administration',
+            'tcp/ip', 'routing', 'switching', 'cisco', 'network protocols', 'wan', 'lan',
+            'network infrastructure', 'network design', 'network management', 'vpn',
+            'network security', 'wireless networking', 'network troubleshooting',
+            'network topology', 'data communications', 'telecommunications'
+        ],
+
+        'Database Management' => [
+            'database', 'database management', 'database design', 'sql', 'mysql',
+            'postgresql', 'oracle', 'mongodb', 'nosql', 'database administration',
+            'dba', 'data modeling', 'relational database', 'database systems',
+            'sql server', 'database engineering', 'data management', 'database programming'
+        ],
+
+        'System Administration' => [
+            'system administration', 'linux', 'unix', 'windows server', 'bash',
+            'shell scripting', 'active directory', 'server management', 'sysadmin',
+            'operating system administration', 'virtualisation', 'virtualization',
+            'server configuration', 'it infrastructure', 'system management'
+        ],
+
+        'UI/UX Design' => [
+            'ui/ux', 'user interface', 'user experience', 'ux design', 'ui design',
+            'figma', 'prototype', 'wireframe', 'usability', 'interaction design',
+            'human computer interaction', 'hci', 'web design', 'product design',
+            'design thinking', 'visual design', 'accessibility', 'interface design'
+        ],
+
+        'Software Testing & QA' => [
+            'software testing', 'quality assurance', 'qa', 'test automation', 'selenium',
+            'unit testing', 'integration testing', 'system testing', 'test driven development',
+            'tdd', 'bdd', 'performance testing', 'load testing', 'manual testing',
+            'bug tracking', 'software quality', 'test management', 'testing methodology'
+        ],
+
+        'Emerging Technologies' => [
+            'iot', 'internet of things', 'blockchain', 'cryptocurrency', 'smart contracts',
+            'augmented reality', 'ar', 'virtual reality', 'vr', 'mixed reality',
+            'robotics', 'automation', 'edge computing', 'quantum computing',
+            '5g', 'digital transformation', 'industry 4.0', 'embedded systems'
         ]
     ],
 
@@ -256,29 +308,207 @@ return [
     | Career Path Role Mapping
     |--------------------------------------------------------------------------
     |
-    | Maps standard professional career titles to the required academic domains.
-    | Used to dynamically calculate student career path readiness scores.
+    | Maps professional career titles to required knowledge domain AREAS.
+    | These domains are verified against curriculum subject names via the
+    | synonyms dictionary - only what can be confirmed from subject titles is used.
+    | Readiness % = matched domains / total required domains.
+    | Only the top 5 missing knowledge areas are shown in the UI.
     |
     */
     'career_paths' => [
-        'Cloud Engineer' => ['Cloud Computing', 'DevOps'],
-        'Data Scientist' => ['Data Science', 'Artificial Intelligence', 'Mathematics & Statistics'],
-        'Software Developer' => ['Web Development', 'Computing & Information Technology'],
-        'Cybersecurity Specialist' => ['Cyber Security', 'Computing & Information Technology'],
-        'Mobile App Developer' => ['Mobile Development', 'Computing & Information Technology'],
-        'HR Manager' => ['Business & Management', 'Psychology'],
-        'Management Consultant' => ['Business & Management', 'Economics'],
-        'Project Manager' => ['Business & Management', 'Computing & Information Technology'],
-        'Marketing Specialist' => ['Marketing', 'Media & Communication'],
-        'Digital Marketer' => ['Marketing', 'Web Development'],
-        'Corporate Accountant' => ['Accounting & Finance'],
-        'Investment Banker' => ['Accounting & Finance', 'Economics'],
-        'Corporate Lawyer' => ['Law', 'Business & Management'],
-        'Agricultural Manager' => ['Agriculture', 'Business & Management'],
-        'Clinical Psychologist' => ['Psychology'],
-        'Public Relations Officer' => ['Media & Communication', 'Business & Management'],
-        'Statistician / Actuary' => ['Mathematics & Statistics', 'Data Science'],
-        'Language Instructor' => ['Arts & Humanities']
+
+        // IT & Software Engineering
+        'Cloud Engineer' => [
+            'Cloud Computing',
+            'DevOps',
+            'Network Engineering',
+            'Cyber Security',
+            'Database Management',
+            'System Administration',
+            'Computing & Information Technology',
+            'Mathematics & Statistics',
+            'Emerging Technologies',
+        ],
+
+        'Software Developer' => [
+            'Web Development',
+            'Computing & Information Technology',
+            'Database Management',
+            'Software Testing & QA',
+            'Network Engineering',
+            'Cyber Security',
+            'UI/UX Design',
+            'Mobile Development',
+            'Mathematics & Statistics',
+        ],
+
+        'Cybersecurity Specialist' => [
+            'Cyber Security',
+            'Network Engineering',
+            'Computing & Information Technology',
+            'System Administration',
+            'Cloud Computing',
+            'Database Management',
+            'Mathematics & Statistics',
+            'Emerging Technologies',
+        ],
+
+        'Data Scientist' => [
+            'Data Science',
+            'Artificial Intelligence',
+            'Mathematics & Statistics',
+            'Database Management',
+            'Computing & Information Technology',
+            'Cloud Computing',
+            'Web Development',
+            'Software Testing & QA',
+        ],
+
+        'Mobile App Developer' => [
+            'Mobile Development',
+            'UI/UX Design',
+            'Web Development',
+            'Computing & Information Technology',
+            'Database Management',
+            'Cloud Computing',
+            'Cyber Security',
+            'Emerging Technologies',
+        ],
+
+        'AI / ML Engineer' => [
+            'Artificial Intelligence',
+            'Data Science',
+            'Mathematics & Statistics',
+            'Computing & Information Technology',
+            'Cloud Computing',
+            'Database Management',
+            'Software Testing & QA',
+            'Web Development',
+            'Emerging Technologies',
+        ],
+
+        'DevOps Engineer' => [
+            'DevOps',
+            'Cloud Computing',
+            'System Administration',
+            'Network Engineering',
+            'Cyber Security',
+            'Computing & Information Technology',
+            'Software Testing & QA',
+            'Database Management',
+            'Emerging Technologies',
+        ],
+
+        // Business & Management
+        'HR Manager' => [
+            'Business & Management',
+            'Psychology',
+            'Law',
+            'Economics',
+            'Mathematics & Statistics',
+            'Media & Communication',
+        ],
+
+        'Management Consultant' => [
+            'Business & Management',
+            'Economics',
+            'Mathematics & Statistics',
+            'Accounting & Finance',
+            'Media & Communication',
+            'Marketing',
+            'Data Science',
+        ],
+
+        'Project Manager' => [
+            'Business & Management',
+            'Computing & Information Technology',
+            'Mathematics & Statistics',
+            'Economics',
+            'Media & Communication',
+            'Software Testing & QA',
+        ],
+
+        // Marketing & Media
+        'Marketing Specialist' => [
+            'Marketing',
+            'Media & Communication',
+            'Business & Management',
+            'Economics',
+            'Data Science',
+            'UI/UX Design',
+        ],
+
+        'Digital Marketer' => [
+            'Marketing',
+            'Web Development',
+            'Media & Communication',
+            'Data Science',
+            'UI/UX Design',
+            'Business & Management',
+        ],
+
+        // Finance
+        'Corporate Accountant' => [
+            'Accounting & Finance',
+            'Economics',
+            'Business & Management',
+            'Mathematics & Statistics',
+            'Law',
+            'Data Science',
+        ],
+
+        'Investment Banker' => [
+            'Accounting & Finance',
+            'Economics',
+            'Mathematics & Statistics',
+            'Business & Management',
+            'Data Science',
+            'Law',
+        ],
+
+        // Law
+        'Corporate Lawyer' => [
+            'Law',
+            'Business & Management',
+            'Economics',
+            'Media & Communication',
+            'Psychology',
+        ],
+
+        // Agriculture
+        'Agricultural Manager' => [
+            'Agriculture',
+            'Business & Management',
+            'Economics',
+            'Mathematics & Statistics',
+            'Data Science',
+        ],
+
+        // Communication
+        'Public Relations Officer' => [
+            'Media & Communication',
+            'Business & Management',
+            'Marketing',
+            'Psychology',
+            'Arts & Humanities',
+        ],
+
+        // Mathematics
+        'Statistician / Actuary' => [
+            'Mathematics & Statistics',
+            'Data Science',
+            'Accounting & Finance',
+            'Economics',
+            'Artificial Intelligence',
+            'Computing & Information Technology',
+        ],
+
+        // Education
+        'Language Instructor' => [
+            'Arts & Humanities',
+            'Media & Communication',
+            'Psychology',
+        ],
     ],
 
     /*
