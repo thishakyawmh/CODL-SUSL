@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 return [
 
@@ -233,6 +233,12 @@ return [
             'augmented reality', 'ar', 'virtual reality', 'vr', 'mixed reality',
             'robotics', 'automation', 'edge computing', 'quantum computing',
             '5g', 'digital transformation', 'industry 4.0', 'embedded systems'
+        ],
+        'Agriculture' => [
+            'agriculture', 'farming', 'agronomy', 'crop science', 'soil science', 
+            'horticulture', 'livestock', 'animal husbandry', 'farm management', 
+            'agribusiness', 'pest management', 'post-harvest', 'irrigation',
+            'agricultural', 'crop', 'plant', 'animal', 'soil', 'forestry', 'farm'
         ]
     ],
 
@@ -482,6 +488,36 @@ return [
             'Economics',
             'Mathematics & Statistics',
             'Data Science',
+        ],
+        
+        'Agronomist / Agricultural Consultant' => [
+            'Agriculture',
+            'Business & Management',
+            'Economics',
+            'Media & Communication',
+        ],
+
+        'Agribusiness Manager' => [
+            'Agriculture',
+            'Business & Management',
+            'Accounting & Finance',
+            'Economics',
+            'Marketing',
+        ],
+
+        'Precision Agriculture Specialist' => [
+            'Agriculture',
+            'Computing & Information Technology',
+            'Emerging Technologies',
+            'Data Science',
+            'Mathematics & Statistics',
+        ],
+
+        'Food Security Analyst' => [
+            'Agriculture',
+            'Economics',
+            'Data Science',
+            'Mathematics & Statistics',
         ],
 
         // Communication

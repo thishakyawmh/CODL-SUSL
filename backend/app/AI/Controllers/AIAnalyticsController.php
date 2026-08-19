@@ -128,8 +128,11 @@ class AIAnalyticsController extends Controller
             return $nlpService->processAll(null);
         });
         
-        $lastSync = \App\AI\Models\AnalyticsCache::orderBy('generated_at', 'desc')->first();
-        $lastSyncTime = $lastSync ? $lastSync->generated_at->toIso8601String() : null;
+        $lastSyncTime = \Illuminate\Support\Facades\Cache::get('ai_analytics_last_sync_time');
+        if (!$lastSyncTime) {
+            $lastSync = \App\AI\Models\AnalyticsCache::orderBy('generated_at', 'desc')->first();
+            $lastSyncTime = $lastSync ? $lastSync->generated_at->toIso8601String() : null;
+        }
 
         return response()->json([
             'emerging_technologies' => $analytics['emerging_technologies'] ?? [],
@@ -525,7 +528,7 @@ class AIAnalyticsController extends Controller
 
 
             try {
-                \App\Jobs\ProcessAnalyticsPipelineJob::dispatchSync();
+                \App\Jobs\ProcessAnalyticsPipelineJob::dispatch();
             } catch (\Exception $e) {
                 \Log::error('Failed to dispatch ProcessAnalyticsPipelineJob: ' . $e->getMessage());
             }
@@ -533,6 +536,7 @@ class AIAnalyticsController extends Controller
             \Illuminate\Support\Facades\Cache::forget('ai_analytics_global_overview');
             \Illuminate\Support\Facades\Cache::forget('ai_analytics_geography_data');
             \Illuminate\Support\Facades\Cache::forget('ai_analytics_common_overview');
+            \Illuminate\Support\Facades\Cache::put('ai_analytics_last_sync_time', now()->toIso8601String(), 86400);
 
             return response()->json([
                 'message' => 'Sync completed successfully for both Student and Industry sheets.',
@@ -562,7 +566,7 @@ class AIAnalyticsController extends Controller
 
 
         try {
-            \App\Jobs\ProcessAnalyticsPipelineJob::dispatchSync();
+            \App\Jobs\ProcessAnalyticsPipelineJob::dispatch();
         } catch (\Exception $e) {
             \Log::error('Failed to dispatch ProcessAnalyticsPipelineJob: ' . $e->getMessage());
         }
@@ -570,6 +574,7 @@ class AIAnalyticsController extends Controller
         \Illuminate\Support\Facades\Cache::forget('ai_analytics_global_overview');
         \Illuminate\Support\Facades\Cache::forget('ai_analytics_geography_data');
         \Illuminate\Support\Facades\Cache::forget('ai_analytics_common_overview');
+        \Illuminate\Support\Facades\Cache::put('ai_analytics_last_sync_time', now()->toIso8601String(), 86400);
 
         return response()->json([
             'message' => ucfirst($request->type) . ' Survey Imported Successfully',
@@ -895,6 +900,8 @@ class AIAnalyticsController extends Controller
 
     private function fetchCsvContent($url)
     {
+        $url = html_entity_decode($url);
+
         // Try Method 1: Http client with connection timeout and retries, without verifying SSL
         try {
             $response = \Illuminate\Support\Facades\Http::withoutVerifying()

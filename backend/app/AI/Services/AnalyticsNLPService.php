@@ -2667,7 +2667,7 @@ class AnalyticsNLPService
             $businessRoles    = ['Management Consultant', 'Project Manager', 'HR Manager', 'Corporate Accountant', 'Corporate Lawyer'];
             $languagesRoles   = ['Language Instructor', 'Public Relations Officer'];
             $designMediaRoles = ['Public Relations Officer', 'Marketing Specialist', 'Digital Marketer'];
-            $agriRoles        = ['Agricultural Manager', 'Project Manager'];
+            $agriRoles        = ['Agricultural Manager', 'Agronomist / Agricultural Consultant', 'Agribusiness Manager', 'Precision Agriculture Specialist', 'Food Security Analyst', 'Project Manager'];
 
             $allowedRoles = [];
 
