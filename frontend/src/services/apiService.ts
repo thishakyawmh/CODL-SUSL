@@ -631,6 +631,10 @@ export const aiAnalyticsService = {
         });
         return response.data;
     },
+    getSyncStatus: async () => {
+        const response = await api.get('/admin/ai-analytics/sync-status');
+        return response.data;
+    },
     getGeographyData: async () => {
         const response = await api.get('/admin/ai-analytics/geography');
         return response.data;

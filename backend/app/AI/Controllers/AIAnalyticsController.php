@@ -502,91 +502,97 @@ class AIAnalyticsController extends Controller
     }
 
      
-    public function syncGoogleSheet(Request $request, AnalyticsNLPService $nlpService, RecommendationEngineService $recommendationEngine)
+    public function syncGoogleSheet(Request $request)
     {
-        set_time_limit(300); 
-        $startTime = microtime(true);
-        
+        // 1. Check if a sync is already running in Cache status
+        $status = \Illuminate\Support\Facades\Cache::get('ai_analytics_sync_status');
 
-        if (!$request->has('type') && !$request->has('sheet_url') && !$request->has('url')) {
+        if ($status && in_array($status['status'] ?? '', ['syncing', 'processing'])) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'A synchronization job is already running in the background. Please wait for it to complete.'
+            ], 422);
+        }
+
+        // 2. Validate request parameters if they exist
+        $type = null;
+        $sheetUrl = null;
+
+        if ($request->has('type') || $request->has('sheet_url') || $request->has('url')) {
+            if (!$request->has('sheet_url') && $request->has('url')) {
+                $request->merge(['sheet_url' => $request->input('url')]);
+            }
+
+            $request->validate([
+                'type' => 'required|in:student,industry',
+                'sheet_url' => 'required|url'
+            ]);
+
+            $type = $request->type;
+            $sheetUrl = $request->sheet_url;
+        } else {
+            // Check config URLs if syncing all
             $studentUrl = config('services.google_sheets.student_url');
             $industryUrl = config('services.google_sheets.industry_url');
 
             if (!$studentUrl || !$industryUrl) {
-                return response()->json(['error' => 'Google Sheets URLs are not fully configured in config/services.php. Please set GOOGLE_SHEET_STUDENT_URL and GOOGLE_SHEET_INDUSTRY_URL.'], 422);
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Google Sheets URLs are not fully configured in config/services.php. Please set GOOGLE_SHEET_STUDENT_URL and GOOGLE_SHEET_INDUSTRY_URL.'
+                ], 422);
             }
+        }
 
-            $studentResult = $this->executeSingleSync('student', $studentUrl);
-            if (isset($studentResult['error'])) {
-                return response()->json(['error' => 'Student Sync Failed: ' . $studentResult['error']], 500);
-            }
+        // 3. Initialize the cache status state to 'syncing'
+        \Illuminate\Support\Facades\Cache::put('ai_analytics_sync_status', [
+            'status' => 'syncing',
+            'message' => 'Queuing synchronization task...',
+            'error' => null,
+            'started_at' => now()->toIso8601String(),
+        ], 1200);
 
-            $industryResult = $this->executeSingleSync('industry', $industryUrl);
-            if (isset($industryResult['error'])) {
-                return response()->json(['error' => 'Industry Sync Failed: ' . $industryResult['error']], 500);
-            }
-
-
-            try {
-                \App\Jobs\ProcessAnalyticsPipelineJob::dispatch();
-            } catch (\Exception $e) {
-                \Log::error('Failed to dispatch ProcessAnalyticsPipelineJob: ' . $e->getMessage());
-            }
-
-            \Illuminate\Support\Facades\Cache::forget('ai_analytics_global_overview');
-            \Illuminate\Support\Facades\Cache::forget('ai_analytics_geography_data');
-            \Illuminate\Support\Facades\Cache::forget('ai_analytics_common_overview');
-            \Illuminate\Support\Facades\Cache::put('ai_analytics_last_sync_time', now()->toIso8601String(), 86400);
-
+        // 4. Dispatch the SyncGoogleSheetsJob background job
+        try {
+            \App\Jobs\SyncGoogleSheetsJob::dispatch($type, $sheetUrl);
+        } catch (\Exception $e) {
+            \Log::error('Failed to dispatch SyncGoogleSheetsJob: ' . $e->getMessage());
+            \Illuminate\Support\Facades\Cache::forget('ai_analytics_sync_status');
             return response()->json([
-                'message' => 'Sync completed successfully for both Student and Industry sheets.',
-                'student_imported' => $studentResult['imported'],
-                'student_ignored' => $studentResult['ignored'],
-                'industry_imported' => $industryResult['imported'],
-                'industry_ignored' => $industryResult['ignored'],
-                'execution_time_sec' => round(microtime(true) - $startTime, 2),
-                'status' => 'success'
+                'status' => 'error',
+                'message' => 'Failed to dispatch synchronization job: ' . $e->getMessage()
+            ], 500);
+        }
+
+        return response()->json([
+            'status' => 'queued',
+            'message' => 'Sync job has been successfully queued in the background.',
+        ], 202);
+    }
+
+    public function getSyncStatus()
+    {
+        $status = \Illuminate\Support\Facades\Cache::get('ai_analytics_sync_status');
+        $lastSyncTime = \Illuminate\Support\Facades\Cache::get('ai_analytics_last_sync_time');
+
+        if (!$lastSyncTime) {
+            $lastSync = \App\AI\Models\AnalyticsCache::orderBy('generated_at', 'desc')->first();
+            $lastSyncTime = $lastSync ? $lastSync->generated_at->toIso8601String() : null;
+        }
+
+        if (!$status) {
+            return response()->json([
+                'status' => 'idle',
+                'message' => 'No active synchronization running.',
+                'error' => null,
+                'last_sync_at' => $lastSyncTime,
             ]);
         }
 
-
-        if (!$request->has('sheet_url') && $request->has('url')) {
-            $request->merge(['sheet_url' => $request->input('url')]);
-        }
-
-        $request->validate([
-            'type' => 'required|in:student,industry',
-            'sheet_url' => 'required|url'
-        ]);
-
-        $singleResult = $this->executeSingleSync($request->type, $request->sheet_url);
-        if (isset($singleResult['error'])) {
-            return response()->json(['error' => $singleResult['error']], 500);
-        }
-
-
-        try {
-            \App\Jobs\ProcessAnalyticsPipelineJob::dispatch();
-        } catch (\Exception $e) {
-            \Log::error('Failed to dispatch ProcessAnalyticsPipelineJob: ' . $e->getMessage());
-        }
-
-        \Illuminate\Support\Facades\Cache::forget('ai_analytics_global_overview');
-        \Illuminate\Support\Facades\Cache::forget('ai_analytics_geography_data');
-        \Illuminate\Support\Facades\Cache::forget('ai_analytics_common_overview');
-        \Illuminate\Support\Facades\Cache::put('ai_analytics_last_sync_time', now()->toIso8601String(), 86400);
-
-        return response()->json([
-            'message' => ucfirst($request->type) . ' Survey Imported Successfully',
-            'type' => $request->type,
-            'rows_imported' => $singleResult['imported'],
-            'rows_ignored' => $singleResult['ignored'],
-            'execution_time_sec' => round(microtime(true) - $startTime, 2),
-            'status' => 'success'
-        ]);
+        $status['last_sync_at'] = $lastSyncTime;
+        return response()->json($status);
     }
 
-    private function executeSingleSync($type, $url)
+    public function executeSingleSync($type, $url)
     {
 
         if (str_contains($url, 'format=csv') || str_contains($url, 'output=csv')) {

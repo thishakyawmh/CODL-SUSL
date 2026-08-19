@@ -53,11 +53,12 @@ export const AIAnalytics: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
 
     const [syncing, setSyncing] = useState(false);
+    const [syncMessage, setSyncMessage] = useState('Initializing synchronization...');
     const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
     const [studentCount, setStudentCount] = useState<number>(0);
     const [industryCount, setIndustryCount] = useState<number>(0);
 
-
+    const pollingIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
 
     const [toasts, setToasts] = useState<{ id: number; message: string; type: 'success' | 'error' | 'info' }[]>([]);
     const toastIdRef = React.useRef(0);
@@ -79,7 +80,74 @@ export const AIAnalytics: React.FC = () => {
 
     useEffect(() => {
         fetchPrograms();
+        checkActiveSync();
+        return () => {
+            if (pollingIntervalRef.current) {
+                clearInterval(pollingIntervalRef.current);
+            }
+        };
     }, []);
+
+    const checkActiveSync = async () => {
+        try {
+            const res = await aiAnalyticsService.getSyncStatus();
+            if (res && (res.status === 'syncing' || res.status === 'processing')) {
+                setSyncing(true);
+                setSyncMessage(res.message || 'Synchronization is currently running...');
+                startPolling();
+            }
+        } catch (err) {
+            console.error('Failed to check active sync status', err);
+        }
+    };
+
+    const startPolling = () => {
+        if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current);
+        }
+
+        pollingIntervalRef.current = setInterval(async () => {
+            try {
+                const res = await aiAnalyticsService.getSyncStatus();
+                if (!res) return;
+
+                if (res.status === 'syncing' || res.status === 'processing') {
+                    setSyncing(true);
+                    setSyncMessage(res.message || 'Syncing data...');
+                } else if (res.status === 'completed') {
+                    setSyncing(false);
+                    setSyncMessage('');
+                    if (pollingIntervalRef.current) {
+                        clearInterval(pollingIntervalRef.current);
+                        pollingIntervalRef.current = null;
+                    }
+                    showToast(res.message || 'Google Sheets sync completed successfully!', 'success');
+                    if (res.last_sync_at) {
+                        setLastSyncedAt(res.last_sync_at);
+                    }
+                    fetchPrograms();
+                } else if (res.status === 'failed') {
+                    setSyncing(false);
+                    setSyncMessage('');
+                    if (pollingIntervalRef.current) {
+                        clearInterval(pollingIntervalRef.current);
+                        pollingIntervalRef.current = null;
+                    }
+                    showToast('Google Sheets Sync Failed: ' + (res.error || 'Unknown error'), 'error');
+                    fetchPrograms();
+                } else {
+                    setSyncing(false);
+                    setSyncMessage('');
+                    if (pollingIntervalRef.current) {
+                        clearInterval(pollingIntervalRef.current);
+                        pollingIntervalRef.current = null;
+                    }
+                }
+            } catch (err: any) {
+                console.error('Error polling sync status', err);
+            }
+        }, 3000);
+    };
 
     const fetchPrograms = async () => {
         setLoading(true);
@@ -121,14 +189,19 @@ export const AIAnalytics: React.FC = () => {
             onConfirm: async () => {
                 setConfirmModal({ open: false, onConfirm: () => { } });
                 setSyncing(true);
+                setSyncMessage('Starting background sync...');
                 try {
                     const res = await aiAnalyticsService.syncGoogleSheet();
-                    showToast(res.message || "Google Sheets sync completed successfully!", 'success');
-
-                    fetchPrograms();
+                    if (res && res.status === 'queued') {
+                        showToast(res.message || 'Google Sheets sync has been queued in the background.', 'info');
+                        startPolling();
+                    } else if (res && res.status === 'success') {
+                        showToast(res.message || "Google Sheets sync completed successfully!", 'success');
+                        setSyncing(false);
+                        fetchPrograms();
+                    }
                 } catch (err: any) {
                     showToast('Google Sheets Sync Failed: ' + (err.response?.data?.error || err.response?.data?.message || err.message), 'error');
-                } finally {
                     setSyncing(false);
                 }
             }
@@ -173,7 +246,7 @@ export const AIAnalytics: React.FC = () => {
                             <Cloud size={36} className="sync-overlay-icon" />
                         </div>
                         <h2 className="sync-overlay-title">Syncing Data</h2>
-                        <p className="sync-overlay-desc">Downloading surveys from Google Sheets and running the AI matching pipeline. This may take few minutes.</p>
+                        <p className="sync-overlay-desc">{syncMessage || 'Downloading surveys from Google Sheets and running the AI matching pipeline. This may take few minutes.'}</p>
                         <div className="sync-progress-bar">
                             <div className="sync-progress-bar-fill"></div>
                         </div>
