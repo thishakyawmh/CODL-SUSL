@@ -183,7 +183,25 @@ export const LoginPortal: React.FC = () => {
 
     return (
         <>
-
+            <div className="mobile-welcome-header">
+                <div className="mobile-branding-header-inline">
+                    <img 
+                        src={branding.logo} 
+                        alt="Logo" 
+                        className="mobile-branding-logo-inline"
+                    />
+                    <div className="mobile-branding-title-group-inline">
+                        <h1 className="mobile-branding-institution-inline">{branding.institution}</h1>
+                        <p className="mobile-branding-university-inline">{branding.university}</p>
+                    </div>
+                </div>
+                <h2 className="mobile-welcome-title">Welcome to CODL</h2>
+                <p className="mobile-welcome-subtitle">
+                    {activeView === 'selection' ? 'Please select your relevant portal to continue' :
+                        activeView === 'existing' ? 'Login to your official student workspace' :
+                            'Create your identity workspace to start enrolling'}
+                </p>
+            </div>
 
             <div className="login-form-container">
                     <div className="welcome-header desktop-only">
