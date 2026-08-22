@@ -287,20 +287,22 @@ const AuthLayout = () => {
       </div>
 
       <div className="login-right-pane">
-        <div className="mobile-header-banner">
-          <div className="mobile-branding-header">
-            <img 
-              src={branding.logo} 
-              alt="Logo" 
-              className="mobile-branding-logo" 
-              style={{ width: '48px', height: '48px', objectFit: 'contain' }}
-            />
-            <div className="mobile-branding-title-group">
-              <h1 className="mobile-branding-institution">{branding.institution}</h1>
-              <p className="mobile-branding-university">{branding.university}</p>
+        {location.pathname !== '/login' && (
+          <div className="mobile-header-banner">
+            <div className="mobile-branding-header">
+              <img 
+                src={branding.logo} 
+                alt="Logo" 
+                className="mobile-branding-logo" 
+                style={{ width: '48px', height: '48px', objectFit: 'contain' }}
+              />
+              <div className="mobile-branding-title-group">
+                <h1 className="mobile-branding-institution">{branding.institution}</h1>
+                <p className="mobile-branding-university">{branding.university}</p>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         <Suspense fallback={<ContentLoader />}>
           <Outlet context={{ branding }} />
