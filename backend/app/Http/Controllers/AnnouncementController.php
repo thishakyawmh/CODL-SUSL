@@ -38,7 +38,7 @@ class AnnouncementController extends Controller
             'title' => 'required|string',
             'desc' => 'required|string',
             'type' => 'nullable|string',
-            'file' => 'nullable|file|max:20480',
+            'file' => 'nullable|file|mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,png,jpg,jpeg,txt,csv,zip|max:20480',
             'attachment_url' => 'nullable|string',
             'attachment_name' => 'nullable|string',
             'attachment_size' => 'nullable|string',

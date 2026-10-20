@@ -10,6 +10,7 @@ const ExaminationResults: React.FC = () => {
     const { id, examId } = useParams<{ id: string, examId: string }>();
     
     const [loading, setLoading] = useState(true);
+    const [isDownloading, setIsDownloading] = useState(false);
     const [courseTitle, setCourseTitle] = useState('Course Details');
     const [exam, setExam] = useState<{ title: string }>({ title: 'Examination Results' });
     const [results, setResults] = useState<any[]>([]);
@@ -126,13 +127,19 @@ const ExaminationResults: React.FC = () => {
     };
 
     const handleDownload = async () => {
+        if (isDownloading) return;
+        setIsDownloading(true);
         try {
+            toast.info('Generating official transcript PDF...');
             const pdf = await generatePDF();
             const fileName = `Exam_Results_${studentRegNo.replace(/\//g, '_')}_${exam.title.replace(/\s+/g, '_')}.pdf`;
             pdf.save(fileName);
+            toast.success('Official transcript downloaded successfully!');
         } catch (error) {
             console.error('PDF download failed:', error);
-            toast.error('Failed to generate PDF. Please try again.');
+            toast.error('Failed to generate PDF. You can also use the Print button to save as PDF.');
+        } finally {
+            setIsDownloading(false);
         }
     };
 
@@ -319,8 +326,18 @@ const ExaminationResults: React.FC = () => {
                                 className="pro-action-btn primary small" 
                                 style={{ gap: '8px' }}
                                 onClick={handleDownload}
+                                disabled={isDownloading}
                             >
-                                <Download size={16} /> Download
+                                {isDownloading ? (
+                                    <>
+                                        <div style={{ width: '14px', height: '14px', border: '2px solid white', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                                        <span>Downloading...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Download size={16} /> Download
+                                    </>
+                                )}
                             </button>
                         </div>
                     </div>

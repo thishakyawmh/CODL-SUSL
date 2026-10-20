@@ -70,6 +70,11 @@ export const ResultSheet: React.FC<ResultSheetProps> = ({ isEmbedded, onViewGrad
         return <div className="grade-pill poor">{grade}</div>;
     };
 
+    const handleDownload = () => {
+        if (!allReleased) return;
+        window.print();
+    };
+
     return (
         <div className={`modern-result-wrapper ${isEmbedded ? 'embedded' : ''}`}>
             {!isEmbedded && (
@@ -78,8 +83,6 @@ export const ResultSheet: React.FC<ResultSheetProps> = ({ isEmbedded, onViewGrad
                 </button>
             )}
             
-
-
             {!isEmbedded && (
                 <div className="result-page-header">
                     <div className="header-content">
@@ -97,6 +100,7 @@ export const ResultSheet: React.FC<ResultSheetProps> = ({ isEmbedded, onViewGrad
                         <button
                             className={`btn-primary download-btn ${!allReleased ? 'disabled' : ''}`}
                             disabled={!allReleased}
+                            onClick={handleDownload}
                             title={!allReleased ? "Downloads are only available once all subject results are released." : "Download Result Sheet"}
                         >
                             <Download size={18} /> {allReleased ? 'Download Results' : 'Results Pending'}
@@ -142,6 +146,7 @@ export const ResultSheet: React.FC<ResultSheetProps> = ({ isEmbedded, onViewGrad
                                     className={`btn-primary download-btn ${!allReleased ? 'disabled' : ''}`}
                                     style={{ padding: '8px 16px', fontSize: '13px' }}
                                     disabled={!allReleased}
+                                    onClick={handleDownload}
                                 >
                                     <Download size={16} /> {allReleased ? 'Download' : 'Pending'}
                                 </button>
