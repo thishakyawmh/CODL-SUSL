@@ -166,11 +166,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/admin/ai-analysis', [AIAnalysisController::class, 'analyze']);
 
     // AI Analytics Dashboard
-    Route::get('/admin/ai-analytics/overview', [AIAnalyticsController::class, 'getOverview']);
-    Route::get('/admin/ai-analytics/student-interest', [AIAnalyticsController::class, 'getStudentInterest']);
-    Route::get('/admin/ai-analytics/industry-gap', [AIAnalyticsController::class, 'getIndustryGap']);
-    Route::get('/admin/ai-analytics/recommendations', [AIAnalyticsController::class, 'getRecommendations']);
+    Route::get('/admin/ai-analytics/programs', [AIAnalyticsController::class, 'getPrograms']);
+    Route::post('/admin/ai-analytics/sync-sheet', [AIAnalyticsController::class, 'syncGoogleSheet']);
+    Route::get('/admin/ai-analytics/{courseId}/overview', [AIAnalyticsController::class, 'getOverview']);
+    Route::get('/admin/ai-analytics/{courseId}/student-demand', [AIAnalyticsController::class, 'getStudentInterest']);
+    Route::get('/admin/ai-analytics/{courseId}/industry-demand', [AIAnalyticsController::class, 'getIndustryGap']);
+    Route::get('/admin/ai-analytics/{courseId}/recommendations', [AIAnalyticsController::class, 'getRecommendations']);
+    Route::get('/admin/ai-analytics/{courseId}/skill-gap', [AIAnalyticsController::class, 'getSkillGap']);
+    Route::get('/admin/ai-analytics/{courseId}/emerging-technologies', [AIAnalyticsController::class, 'getEmergingTechnologies']);
     Route::get('/admin/ai-analytics/surveys', [AIAnalyticsController::class, 'getSurveys']);
     Route::post('/admin/ai-analytics/surveys', [AIAnalyticsController::class, 'storeSurvey']);
-    Route::post('/admin/ai-analytics/sync-sheet', [AIAnalyticsController::class, 'syncGoogleSheet']);
 });
