@@ -16,6 +16,7 @@ class SystemSetting extends Model
         'contact_phone',
         'address',
         'logo',
+        'primary_color',
         'website_url',
         'academic_year',
         'session_timeout',

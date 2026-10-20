@@ -8,17 +8,15 @@ use App\Models\CourseApplication;
 use App\Models\Course;
 use App\Models\Batch;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 
 class CourseApplicationController extends Controller
 {
-    /**
-     * List all applications (admin).
-     * Optionally filter by course_id, batch_id, status.
-     */
+     
     public function index(Request $request)
     {
         $user = $request->user();
-        // Eager load with only the columns needed for display
+
         $query = CourseApplication::with([
             'course:id,title,code',
             'batch:id,name,course_id',
@@ -28,7 +26,7 @@ class CourseApplicationController extends Controller
             'directorApprover:id,full_name',
         ]);
 
-        // Use direct whereIn instead of slow whereHas (avoids correlated subqueries)
+
         if ($user && $user->role === 'secretary') {
             $courseIds = Course::where('secretary_id', $user->id)->pluck('id');
             $query->whereIn('course_id', $courseIds);
@@ -52,9 +50,7 @@ class CourseApplicationController extends Controller
         return response()->json($query->orderBy('created_at', 'desc')->get());
     }
 
-    /**
-     * Get applications for the authenticated applicant user.
-     */
+     
     public function myApplications(Request $request)
     {
         $user = $request->user();
@@ -69,9 +65,7 @@ class CourseApplicationController extends Controller
         return response()->json($apps);
     }
 
-    /**
-     * Show a single application.
-     */
+     
     public function show($id)
     {
         $application = CourseApplication::with(['course', 'batch', 'user',
@@ -81,10 +75,7 @@ class CourseApplicationController extends Controller
         return response()->json($application);
     }
 
-    /**
-     * Submit a new course application.
-     * Validates NIC uniqueness against both users and existing applications.
-     */
+     
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -116,7 +107,7 @@ class CourseApplicationController extends Controller
 
         $userId = $request->user() ? $request->user()->id : null;
 
-        // Check NIC uniqueness against existing student users (excluding current user)
+
         $existingUser = User::where('nic', $validated['applicant_nic'])
             ->where('role', 'student')
             ->when($userId, function ($q) use ($userId) {
@@ -131,7 +122,7 @@ class CourseApplicationController extends Controller
             ], 422);
         }
 
-        // Check NIC uniqueness against pending/approved applications (excluding current user's applications)
+
         $existingApp = CourseApplication::where('applicant_nic', $validated['applicant_nic'])
             ->whereIn('status', ['pending', 'approved'])
             ->when($userId, function ($q) use ($userId) {
@@ -146,7 +137,7 @@ class CourseApplicationController extends Controller
             ], 422);
         }
 
-        // Check if the user already has a pending application for this specific course
+
         if ($userId) {
             $existingUserApp = CourseApplication::where('user_id', $userId)
                 ->where('course_id', $validated['course_id'])
@@ -179,9 +170,7 @@ class CourseApplicationController extends Controller
         );
     }
 
-    /**
-     * Check if NIC already exists.
-     */
+     
     public function checkNic(Request $request)
     {
         $request->validate(['nic' => 'required|string']);
@@ -202,243 +191,272 @@ class CourseApplicationController extends Controller
         ]);
     }
 
-    /**
-     * Approve an application at the current approval level.
-     * Level 1: Course Secretary
-     * Level 2: Course Coordinator
-     * Level 3: Director (final — triggers account generation)
-     */
+     
     public function approve(Request $request, $id)
     {
-        $application = CourseApplication::with(['course', 'batch'])->findOrFail($id);
-        
-        if ($application->status !== 'pending') {
-            return response()->json(['message' => 'This application is already ' . $application->status . ' and cannot be modified.'], 422);
-        }
+        $result = DB::transaction(function () use ($request, $id) {
+            $application = CourseApplication::with(['course', 'batch'])
+                ->lockForUpdate()
+                ->findOrFail($id);
+            
+            if ($application->status !== 'pending') {
+                return response()->json(['message' => 'This application is already ' . $application->status . ' and cannot be modified.'], 422);
+            }
 
-        $user = $request->user();
-        $comment = $request->input('comment', '');
-        $documentsVerified = $request->input('documents_verified');
+            $user = $request->user();
+            $comment = $request->input('comment', '');
+            $documentsVerified = $request->input('documents_verified');
 
-        if ($user && $user->role === 'super_admin') {
-            return response()->json(['message' => 'Super Admin can only view applications and cannot perform approvals.'], 403);
-        }
+            if ($user && $user->role === 'super_admin') {
+                return response()->json(['message' => 'Super Admin can only view applications and cannot perform approvals.'], 403);
+            }
 
-        $currentLevel = $application->approval_level;
-        $nextLevel = $currentLevel + 1;
+            $currentLevel = $application->approval_level;
+            $nextLevel = $currentLevel + 1;
 
-        if ($nextLevel > 3) {
-            return response()->json(['message' => 'Application is already fully approved.'], 400);
-        }
+            if ($nextLevel > 3) {
+                return response()->json(['message' => 'Application is already fully approved.'], 400);
+            }
 
-        // Update documents verified if provided
-        if ($documentsVerified) {
-            $application->documents_verified = $documentsVerified;
-        }
 
-        // Update approval based on level
-        switch ($nextLevel) {
-            case 1:
-                if ($user->role !== 'secretary') {
-                    return response()->json(['message' => 'Only a Course Secretary can perform Stage 1 approval.'], 403);
-                }
-                $application->approved_by_secretary = $user->id;
-                $application->secretary_comment = $comment;
-                $application->secretary_approved_at = now();
-                $application->approval_level = 1;
-                $application->status = 'pending'; // Still pending higher approval
-                break;
-            case 2:
-                if ($user->role !== 'coordinator') {
-                    return response()->json(['message' => 'Only a Course Coordinator can perform Stage 2 approval.'], 403);
-                }
-                $application->approved_by_coordinator = $user->id;
-                $application->coordinator_comment = $comment;
-                $application->coordinator_approved_at = now();
-                $application->approval_level = 2;
-                $application->status = 'pending';
-                break;
-            case 3:
-                if ($user->role !== 'director') {
-                    return response()->json(['message' => 'Only the Director can perform Stage 3 approval.'], 403);
-                }
-                $application->approved_by_director = $user->id;
-                $application->director_comment = $comment;
-                $application->director_approved_at = now();
-                $application->approval_level = 3;
-                $application->status = 'approved';
+            if ($documentsVerified) {
+                $application->documents_verified = $documentsVerified;
+            }
 
-                $newUser = null;
-                if ($application->is_new_applicant) {
-                    // Generate student account
-                    $studentNumber = $this->generateStudentNumber($application);
-                    $application->generated_student_number = $studentNumber;
 
-                    // Check if user already exists as applicant/user
-                    $existingUser = User::where('email', $application->applicant_email)->first();
-                    if ($existingUser) {
-                        $existingUser->update([
-                            'student_number' => $studentNumber,
-                            'full_name' => $application->applicant_name,
-                            'display_name' => $application->display_name,
-                            // Set password to their NIC (auto-hashed by model casts/mutators) so they can log in
-                            'password' => $application->applicant_nic,
-                            'nic' => $application->applicant_nic,
-                            'role' => 'student',
-                            'status' => 'active',
-                            'phone' => $application->phone,
-                            'whatsapp' => $application->whatsapp,
-                            'home_phone' => $application->home_phone,
-                            'guardian_phone' => $application->guardian_phone,
-                            'dob' => $application->dob,
-                            'sex' => $application->sex,
-                            'civil_status' => $application->civil_status,
-                            'address' => $application->address,
-                            'district' => $application->district,
-                            'employment_title' => $application->employment_title,
-                            'official_address' => $application->official_address,
-                            'ol_subjects' => $application->ol_subjects,
-                            'ol_year' => $application->ol_year,
-                            'ol_index' => $application->ol_index,
-                            'al_subjects' => $application->al_subjects,
-                            'al_year' => $application->al_year,
-                            'al_index' => $application->al_index,
-                        ]);
-                        $newUser = $existingUser;
+            switch ($nextLevel) {
+                case 1:
+                    if ($user->role !== 'secretary') {
+                        return response()->json(['message' => 'Only a Course Secretary can perform Stage 1 approval.'], 403);
+                    }
+                    $application->approved_by_secretary = $user->id;
+                    $application->secretary_comment = $comment;
+                    $application->secretary_approved_at = now();
+                    $application->approval_level = 1;
+                    $application->status = 'pending'; 
+                    break;
+                case 2:
+                    if ($user->role !== 'coordinator') {
+                        return response()->json(['message' => 'Only a Course Coordinator can perform Stage 2 approval.'], 403);
+                    }
+                    $application->approved_by_coordinator = $user->id;
+                    $application->coordinator_comment = $comment;
+                    $application->coordinator_approved_at = now();
+                    $application->approval_level = 2;
+                    $application->status = 'pending';
+                    break;
+                case 3:
+                    if ($user->role !== 'director') {
+                        return response()->json(['message' => 'Only the Director can perform Stage 3 approval.'], 403);
+                    }
+                    $application->approved_by_director = $user->id;
+                    $application->director_comment = $comment;
+                    $application->director_approved_at = now();
+                    $application->approval_level = 3;
+                    $application->status = 'approved';
+
+                    $newUser = null;
+                    if ($application->is_new_applicant) {
+
+                        $studentNumber = $this->generateStudentNumber($application);
+                        $application->generated_student_number = $studentNumber;
+
+
+                        $existingUser = User::where('email', $application->applicant_email)->first();
+                        if ($existingUser) {
+                            $existingUser->update([
+                                'student_number' => $studentNumber,
+                                'full_name' => $application->applicant_name,
+                                'display_name' => $application->display_name,
+
+                                'password' => $application->applicant_nic,
+                                'nic' => $application->applicant_nic,
+                                'role' => 'student',
+                                'status' => 'active',
+                                'phone' => $application->phone,
+                                'whatsapp' => $application->whatsapp,
+                                'home_phone' => $application->home_phone,
+                                'guardian_phone' => $application->guardian_phone,
+                                'dob' => $application->dob,
+                                'sex' => $application->sex,
+                                'civil_status' => $application->civil_status,
+                                'address' => $application->address,
+                                'district' => $application->district,
+                                'employment_title' => $application->employment_title,
+                                'official_address' => $application->official_address,
+                                'ol_subjects' => $application->ol_subjects,
+                                'ol_year' => $application->ol_year,
+                                'ol_index' => $application->ol_index,
+                                'al_subjects' => $application->al_subjects,
+                                'al_year' => $application->al_year,
+                                'al_index' => $application->al_index,
+                            ]);
+                            $newUser = $existingUser;
+                        } else {
+
+                            $newUser = User::create([
+                                'student_number' => $studentNumber,
+                                'full_name' => $application->applicant_name,
+                                'display_name' => $application->display_name,
+                                'email' => $application->applicant_email,
+                                'password' => $application->applicant_nic, 
+                                'nic' => $application->applicant_nic,
+                                'role' => 'student',
+                                'status' => 'active',
+                                'phone' => $application->phone,
+                                'whatsapp' => $application->whatsapp,
+                                'home_phone' => $application->home_phone,
+                                'guardian_phone' => $application->guardian_phone,
+                                'dob' => $application->dob,
+                                'sex' => $application->sex,
+                                'civil_status' => $application->civil_status,
+                                'address' => $application->address,
+                                'district' => $application->district,
+                                'employment_title' => $application->employment_title,
+                                'official_address' => $application->official_address,
+                                'ol_subjects' => $application->ol_subjects,
+                                'ol_year' => $application->ol_year,
+                                'ol_index' => $application->ol_index,
+                                'al_subjects' => $application->al_subjects,
+                                'al_year' => $application->al_year,
+                                'al_index' => $application->al_index,
+                            ]);
+                        }
                     } else {
-                        // Create the student user account
-                        $newUser = User::create([
-                            'student_number' => $studentNumber,
-                            'full_name' => $application->applicant_name,
-                            'display_name' => $application->display_name,
-                            'email' => $application->applicant_email,
-                            'password' => $application->applicant_nic, // Will be auto-hashed by model cast
-                            'nic' => $application->applicant_nic,
-                            'role' => 'student',
-                            'status' => 'active',
-                            'phone' => $application->phone,
-                            'whatsapp' => $application->whatsapp,
-                            'home_phone' => $application->home_phone,
-                            'guardian_phone' => $application->guardian_phone,
-                            'dob' => $application->dob,
-                            'sex' => $application->sex,
-                            'civil_status' => $application->civil_status,
-                            'address' => $application->address,
-                            'district' => $application->district,
-                            'employment_title' => $application->employment_title,
-                            'official_address' => $application->official_address,
-                            'ol_subjects' => $application->ol_subjects,
-                            'ol_year' => $application->ol_year,
-                            'ol_index' => $application->ol_index,
-                            'al_subjects' => $application->al_subjects,
-                            'al_year' => $application->al_year,
-                            'al_index' => $application->al_index,
-                        ]);
-                    }
-                } else {
-                    // Existing student, no account generation
-                    $newUser = User::find($application->user_id);
-                    if (!$newUser) {
-                        $newUser = User::where('email', $application->applicant_email)->first();
-                    }
-                    if ($newUser) {
-                        $application->generated_student_number = $newUser->student_number;
-                    }
-                }
 
-                if ($newUser) {
-                    // Enroll student in the course with batch
-                    $batchName = $application->batch ? $application->batch->name : null;
-                    $newUser->courses()->syncWithoutDetaching([$application->course_id => ['batch' => $batchName]]);
-                    $application->user_id = $newUser->id;
-                }
-                break;
+                        $newUser = User::find($application->user_id);
+                        if (!$newUser) {
+                            $newUser = User::where('email', $application->applicant_email)->first();
+                        }
+                        if ($newUser) {
+                            $application->generated_student_number = $newUser->student_number;
+                        }
+                    }
+
+                    if ($newUser) {
+
+                        $batchName = $application->batch ? $application->batch->name : null;
+                        $newUser->courses()->syncWithoutDetaching([$application->course_id => ['batch' => $batchName]]);
+                        $application->user_id = $newUser->id;
+                    }
+                    break;
+            }
+
+            $application->save();
+
+            // Return data needed for post-transaction side-effects
+            return [
+                'response' => $application->load(['course', 'batch', 'user', 'secretaryApprover', 'coordinatorApprover', 'directorApprover']),
+                'course_id' => $application->course_id,
+                'user_id' => $user->id,
+                'next_level' => $nextLevel,
+                'applicant_name' => $application->applicant_name,
+                'app_id' => $application->id,
+                'course_code' => $application->course ? $application->course->code : 'N/A',
+            ];
+        });
+
+        // If the transaction returned a JSON response (error), return it directly
+        if ($result instanceof \Illuminate\Http\JsonResponse) {
+            return $result;
         }
 
-        $application->save();
-        \App\Http\Controllers\CourseController::clearManageCourseCache($application->course_id);
+        // ── Side-effects OUTSIDE the transaction (no lock held) ──
+        \App\Http\Controllers\CourseController::clearManageCourseCache($result['course_id']);
 
-        // Log admin activity
-        $targetDesc = "Application #{$application->id} ({$application->applicant_name}) for course " . ($application->course ? $application->course->code : 'N/A');
+        $targetDesc = "Application #{$result['app_id']} ({$result['applicant_name']}) for course {$result['course_code']}";
         \App\Models\ActivityLog::log(
-            $user->id,
-            "Approved Stage {$nextLevel} of Course Application",
+            $result['user_id'],
+            "Approved Stage {$result['next_level']} of Course Application",
             $targetDesc,
             'approval'
         );
 
-        return response()->json(
-            $application->load(['course', 'batch', 'user', 'secretaryApprover', 'coordinatorApprover', 'directorApprover'])
-        );
+        return response()->json($result['response']);
     }
 
-    /**
-     * Reject an application.
-     */
+     
     public function reject(Request $request, $id)
     {
-        $application = CourseApplication::findOrFail($id);
-        
-        if ($application->status !== 'pending') {
-            return response()->json(['message' => 'This application is already ' . $application->status . ' and cannot be modified.'], 422);
+        $result = DB::transaction(function () use ($request, $id) {
+            $application = CourseApplication::lockForUpdate()->findOrFail($id);
+            
+            if ($application->status !== 'pending') {
+                return response()->json(['message' => 'This application is already ' . $application->status . ' and cannot be modified.'], 422);
+            }
+
+            $user = $request->user();
+            $comment = $request->input('comment', '');
+
+            if ($user && $user->role === 'super_admin') {
+                return response()->json(['message' => 'Super Admin can only view applications and cannot perform rejections.'], 403);
+            }
+
+            $nextLevel = $application->approval_level + 1;
+            switch ($nextLevel) {
+                case 1:
+                    if ($user->role !== 'secretary') {
+                        return response()->json(['message' => 'Only a Course Secretary can perform Stage 1 rejection.'], 403);
+                    }
+                    $application->approved_by_secretary = $user->id;
+                    $application->secretary_comment = $comment;
+                    $application->secretary_approved_at = now();
+                    break;
+                case 2:
+                    if ($user->role !== 'coordinator') {
+                        return response()->json(['message' => 'Only a Course Coordinator can perform Stage 2 rejection.'], 403);
+                    }
+                    $application->approved_by_coordinator = $user->id;
+                    $application->coordinator_comment = $comment;
+                    $application->coordinator_approved_at = now();
+                    break;
+                case 3:
+                    if ($user->role !== 'director') {
+                        return response()->json(['message' => 'Only the Director can perform Stage 3 rejection.'], 403);
+                    }
+                    $application->approved_by_director = $user->id;
+                    $application->director_comment = $comment;
+                    $application->director_approved_at = now();
+                    break;
+            }
+
+            $application->status = 'rejected';
+            $application->save();
+
+            return [
+                'response' => $application,
+                'course_id' => $application->course_id,
+                'user_id' => $user->id,
+                'next_level' => $nextLevel,
+                'applicant_name' => $application->applicant_name,
+                'app_id' => $application->id,
+                'course_code' => optional($application->course)->code ?? 'N/A',
+            ];
+        });
+
+        if ($result instanceof \Illuminate\Http\JsonResponse) {
+            return $result;
         }
 
-        $user = $request->user();
-        $comment = $request->input('comment', '');
+        // ── Side-effects OUTSIDE the transaction (no lock held) ──
+        \App\Http\Controllers\CourseController::clearManageCourseCache($result['course_id']);
 
-        if ($user && $user->role === 'super_admin') {
-            return response()->json(['message' => 'Super Admin can only view applications and cannot perform rejections.'], 403);
-        }
-
-        $nextLevel = $application->approval_level + 1;
-        switch ($nextLevel) {
-            case 1:
-                if ($user->role !== 'secretary') {
-                    return response()->json(['message' => 'Only a Course Secretary can perform Stage 1 rejection.'], 403);
-                }
-                $application->approved_by_secretary = $user->id;
-                $application->secretary_comment = $comment;
-                $application->secretary_approved_at = now();
-                break;
-            case 2:
-                if ($user->role !== 'coordinator') {
-                    return response()->json(['message' => 'Only a Course Coordinator can perform Stage 2 rejection.'], 403);
-                }
-                $application->approved_by_coordinator = $user->id;
-                $application->coordinator_comment = $comment;
-                $application->coordinator_approved_at = now();
-                break;
-            case 3:
-                if ($user->role !== 'director') {
-                    return response()->json(['message' => 'Only the Director can perform Stage 3 rejection.'], 403);
-                }
-                $application->approved_by_director = $user->id;
-                $application->director_comment = $comment;
-                $application->director_approved_at = now();
-                break;
-        }
-
-        $application->status = 'rejected';
-        $application->save();
-        \App\Http\Controllers\CourseController::clearManageCourseCache($application->course_id);
-
-        // Log admin activity
-        $targetDesc = "Application #{$application->id} ({$application->applicant_name}) for course " . ($application->course ? $application->course->code : 'N/A');
+        $targetDesc = "Application #{$result['app_id']} ({$result['applicant_name']}) for course {$result['course_code']}";
         \App\Models\ActivityLog::log(
-            $user->id,
-            "Rejected Course Application (Stage {$nextLevel})",
+            $result['user_id'],
+            "Rejected Course Application (Stage {$result['next_level']})",
             $targetDesc,
             'approval'
         );
 
-        return response()->json($application);
+        return response()->json($result['response']);
     }
 
-    /**
-     * Update the documents verified status for an application.
-     */
+     
     public function updateDocumentsVerified(Request $request, $id)
     {
+
+
         $application = CourseApplication::with('course')->findOrFail($id);
         $documentsVerified = $request->input('documents_verified');
         $user = $request->user();
@@ -447,7 +465,7 @@ class CourseApplicationController extends Controller
             $application->documents_verified = $documentsVerified;
             $application->save();
 
-            // Log admin activity
+
             $targetDesc = "Application #{$application->id} ({$application->applicant_name}) for course " . ($application->course ? $application->course->code : 'N/A');
             \App\Models\ActivityLog::log(
                 $user->id,
@@ -460,34 +478,33 @@ class CourseApplicationController extends Controller
         return response()->json($application);
     }
 
-    /**
-     * Generate the next sequential student number for a course.
-     * Format: CODL/{COURSE_CODE}/{YEAR}/{SEQ}
-     */
+     
     private function generateStudentNumber(CourseApplication $application): string
     {
-        $year = date('y'); // Last 2 digits of year (e.g. "26")
+        $year = date('y'); 
         $prefix = "{$year}CODL";
 
-        // Find the highest existing student number for this format
-        $latestUser = User::where('student_number', 'like', $prefix . '%')
-            ->orderBy('student_number', 'desc')
-            ->first();
 
-        if ($latestUser) {
-            $suffix = substr($latestUser->student_number, -4);
-            $lastSeq = (int) $suffix;
-            $nextSeq = $lastSeq + 1;
-        } else {
-            $nextSeq = 1;
+        $users = User::where('student_number', 'like', $prefix . '%')
+            ->lockForUpdate()
+            ->get();
+
+        $maxSeq = 0;
+        foreach ($users as $u) {
+            $seqStr = substr($u->student_number, strlen($prefix));
+            if (is_numeric($seqStr)) {
+                $seq = (int)$seqStr;
+                if ($seq > $maxSeq) {
+                    $maxSeq = $seq;
+                }
+            }
         }
 
+        $nextSeq = $maxSeq + 1;
         return $prefix . str_pad($nextSeq, 4, '0', STR_PAD_LEFT);
     }
 
-    /**
-     * Delete an application completely (super admin only).
-     */
+     
     public function destroy(Request $request, $id)
     {
         $user = $request->user();

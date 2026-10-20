@@ -9,7 +9,7 @@ class RecommendationRule extends Model
 {
     use HasFactory;
 
-    // Point this to the analytics database connection we created
+
     protected $connection = 'analytics';
 
     protected $fillable = [

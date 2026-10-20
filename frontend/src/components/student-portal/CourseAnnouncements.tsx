@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
-import { ArrowLeft, Bell, MessageSquare, Info } from 'lucide-react';
+import { ArrowLeft, Bell, MessageSquare, Info, FileText, Download } from 'lucide-react';
 import { type Course } from './CourseDetails';
 import { courseService, announcementService } from '../../services/apiService';
 import './CourseAnnouncements.css';
@@ -42,7 +42,10 @@ export const CourseAnnouncements: React.FC = () => {
                         }),
                         icon: annType === 'Important' ? <Bell size={18} /> : (annType === 'Update' ? <MessageSquare size={18} /> : <Info size={18} />),
                         bgColor,
-                        iconColor
+                        iconColor,
+                        attachment_url: ann.attachment_url,
+                        attachment_name: ann.attachment_name,
+                        attachment_size: ann.attachment_size
                     };
                 });
                 setAnnouncements(processed);
@@ -87,6 +90,27 @@ export const CourseAnnouncements: React.FC = () => {
                                     </div>
                                     <h3 className="ann-card-title">{ann.title}</h3>
                                     <p className="ann-card-desc">{ann.desc}</p>
+
+                                    {ann.attachment_url && (
+                                        <div className="course-ann-attachment-box">
+                                            <div className="doc-left">
+                                                <FileText size={18} className="doc-file-icon" />
+                                                <div className="doc-details">
+                                                    <span className="doc-title">{ann.attachment_name || 'Download Notice Document'}</span>
+                                                    {ann.attachment_size && <span className="doc-size">{ann.attachment_size}</span>}
+                                                </div>
+                                            </div>
+                                            <a 
+                                                href={ann.attachment_url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="doc-open-btn"
+                                                onClick={(e) => e.stopPropagation()}
+                                            >
+                                                <Download size={14} /> Open
+                                            </a>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         ))}

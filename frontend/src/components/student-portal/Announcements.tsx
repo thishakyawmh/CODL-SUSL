@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, Info, ChevronLeft, ChevronRight, MessageSquare, Megaphone } from 'lucide-react';
+import { Bell, Info, ChevronLeft, ChevronRight, MessageSquare, Megaphone, FileText, Download } from 'lucide-react';
 import { announcementService } from '../../services/apiService';
 import './Announcements.css';
 
@@ -9,6 +9,9 @@ interface GlobalAnn {
     date: string;
     desc: string;
     type?: 'Important' | 'Update' | 'General' | 'Notice';
+    attachment_url?: string | null;
+    attachment_name?: string | null;
+    attachment_size?: string | null;
 }
 
 export const Announcements: React.FC = () => {
@@ -32,7 +35,10 @@ export const Announcements: React.FC = () => {
                                 month: 'short',
                                 day: 'numeric',
                                 year: 'numeric'
-                            })
+                            }),
+                            attachment_url: ann.attachment_url,
+                            attachment_name: ann.attachment_name,
+                            attachment_size: ann.attachment_size
                         }));
                         setAnnouncements(globalOnly);
                         return;
@@ -50,7 +56,10 @@ export const Announcements: React.FC = () => {
                         month: 'short',
                         day: 'numeric',
                         year: 'numeric'
-                    })
+                    }),
+                    attachment_url: ann.attachment_url,
+                    attachment_name: ann.attachment_name,
+                    attachment_size: ann.attachment_size
                 }));
                 setAnnouncements(globalOnly);
             } catch (err) {
@@ -129,6 +138,23 @@ export const Announcements: React.FC = () => {
                             <p className="announcement-desc">
                                 {activeAnn.desc}
                             </p>
+
+                            {activeAnn.attachment_url && (
+                                <div className="ann-student-attachment-row">
+                                    <a 
+                                        href={activeAnn.attachment_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="ann-student-attachment-chip"
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        <FileText size={15} className="chip-file-icon" />
+                                        <span className="chip-name">{activeAnn.attachment_name || 'Download Attached Document'}</span>
+                                        {activeAnn.attachment_size && <span className="chip-size">({activeAnn.attachment_size})</span>}
+                                        <Download size={14} className="chip-download-icon" />
+                                    </a>
+                                </div>
+                            )}
                         </div>
                     </div>
 

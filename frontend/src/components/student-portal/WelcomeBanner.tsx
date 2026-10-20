@@ -1,23 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import './WelcomeBanner.css';
 
 export const WelcomeBanner: React.FC = () => {
-    const [greeting, setGreeting] = useState('');
-    const [currentDate, setCurrentDate] = useState('');
-
-    useEffect(() => {
+    const [greeting] = useState(() => {
         const hour = new Date().getHours();
-        if (hour < 12) setGreeting('Good Morning');
-        else if (hour < 18) setGreeting('Good Afternoon');
-        else setGreeting('Good Evening');
+        if (hour < 12) return 'Good Morning';
+        if (hour < 18) return 'Good Afternoon';
+        return 'Good Evening';
+    });
 
+    const [currentDate] = useState(() => {
         const options: Intl.DateTimeFormatOptions = {
             year: 'numeric',
             month: 'long',
             day: 'numeric'
         };
-        setCurrentDate(new Date().toLocaleDateString('en-US', options));
-    }, []);
+        return new Date().toLocaleDateString('en-US', options);
+    });
 
     const getStudentName = () => {
         if (typeof window !== 'undefined') {

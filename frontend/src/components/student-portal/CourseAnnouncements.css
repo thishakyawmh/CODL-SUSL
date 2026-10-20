@@ -203,3 +203,72 @@
         border-radius: 20px;
     }
 }
+
+/* Course Announcement Attachment Box */
+.course-ann-attachment-box {
+    margin-top: 14px;
+    padding: 12px 18px;
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    max-width: 520px;
+}
+
+.doc-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+.doc-file-icon {
+    color: #4F46E5;
+    flex-shrink: 0;
+}
+
+.doc-details {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.doc-title {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #1E293B;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.doc-size {
+    font-size: 11.5px;
+    color: #94A3B8;
+}
+
+.doc-open-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    background: #FFFFFF;
+    color: #4F46E5;
+    border: 1.5px solid #C7D2FE;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.doc-open-btn:hover {
+    background: #4F46E5;
+    color: #FFFFFF;
+    border-color: #4F46E5;
+}
+

@@ -9,7 +9,7 @@ import './NewCourseApplication.css';
 interface Course {
     id: string;
     title: string;
-    level: string; // Degree, Diploma, Certificate
+    level: string; 
     department: string;
     duration: string;
     intakeStatus: 'Open' | 'Closed';
@@ -28,6 +28,11 @@ export const NewCourseApplication: React.FC = () => {
     const [realCourses, setRealCourses] = useState<Course[]>([]);
     const [selectedBatch, setSelectedBatch] = useState<any>(null);
     const [myApplications, setMyApplications] = useState<any[]>([]);
+    const [isAgreed, setIsAgreed] = useState(false);
+
+    React.useEffect(() => {
+        setIsAgreed(false);
+    }, [selectedCourse]);
 
     const isStudentLayout = !window.location.pathname.includes('/applicant-dashboard');
     const hasGlobalApplication = outletContext?.hasApplication !== undefined
@@ -41,7 +46,7 @@ export const NewCourseApplication: React.FC = () => {
         );
     };
 
-    // Form state
+
     const [formData, setFormData] = useState({
         fullName: '',
         displayName: '',
@@ -77,6 +82,7 @@ export const NewCourseApplication: React.FC = () => {
                 const user = JSON.parse(storedUser);
                 setFormData(prev => ({
                     ...prev,
+                    fullName: user.full_name || prev.fullName,
                     displayName: user.display_name || prev.displayName,
                     email: user.email || prev.email,
                     nic: user.nic || prev.nic,
@@ -175,12 +181,19 @@ export const NewCourseApplication: React.FC = () => {
         setSelectedCourse(prog);
         if (prog.batches && prog.batches.length > 0) {
             setSelectedBatch(prog.batches[0]);
+        } else {
+            setSelectedBatch(null);
         }
         setSubmitError(null);
     };
 
     const handleSubmitApplication = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (!isAgreed) {
+            setSubmitError("You must agree to the terms and conditions before submitting the application.");
+            return;
+        }
 
         const cannotApply = isStudentLayout
             ? hasAppliedForCourse(selectedCourse?.id || '')
@@ -225,12 +238,17 @@ export const NewCourseApplication: React.FC = () => {
             await courseApplicationService.create(payload);
             toast.success("Application submitted successfully!");
 
-            // Refresh parent state to indicate application exists
+
             if (outletContext && typeof outletContext.fetchApplications === 'function') {
                 await outletContext.fetchApplications();
             }
 
-            if (window.location.pathname.includes('/applicant-dashboard')) {
+            const storedUser = sessionStorage.getItem('user');
+            const userObj = storedUser ? JSON.parse(storedUser) : null;
+
+            if (userObj && userObj.role === 'applicant') {
+                navigate('/applicant-dashboard/track-status');
+            } else if (window.location.pathname.includes('/applicant-dashboard')) {
                 navigate('/applicant-dashboard/track-status');
             } else {
                 navigate('/dashboard');
@@ -250,6 +268,7 @@ export const NewCourseApplication: React.FC = () => {
             } else {
                 setSubmitError("An error occurred while submitting your application. Please try again.");
             }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         } finally {
             setIsSubmitting(false);
         }
@@ -323,14 +342,14 @@ export const NewCourseApplication: React.FC = () => {
                         <form onSubmit={handleSubmitApplication} className="attractive-registration-form">
 
                             <div className="form-section-panel">
-                                <h4 className="panel-heading"><BookOpen size={20} style={{ marginRight: '8px', color: '#7C3AED', verticalAlign: 'text-bottom' }} /> 1. Course Selection</h4>
+                                <h4 className="panel-heading"><BookOpen size={20} style={{ marginRight: '8px', color: 'var(--primary-color)', verticalAlign: 'text-bottom' }} /> 1. Course Selection</h4>
                                 <div className="form-grid" style={{ marginBottom: 0, marginTop: 0 }}>
                                     <div className="form-group full-width">
                                         <label>Course Type</label>
                                         <div className="radio-group form-radio-group">
-                                            <label><input type="radio" checked={selectedCourse.level === 'Degree'} readOnly disabled /> Degree</label>
-                                            <label><input type="radio" checked={selectedCourse.level === 'Diploma'} readOnly disabled /> Diploma</label>
-                                            <label><input type="radio" checked={selectedCourse.level === 'Certificate'} readOnly disabled /> Certificate</label>
+                                            <label><input type="radio" checked={selectedCourse.level?.toLowerCase().includes('degree') || false} readOnly disabled /> Degree</label>
+                                            <label><input type="radio" checked={selectedCourse.level?.toLowerCase().includes('diploma') || false} readOnly disabled /> Diploma</label>
+                                            <label><input type="radio" checked={selectedCourse.level?.toLowerCase().includes('certificate') || false} readOnly disabled /> Certificate</label>
                                         </div>
                                     </div>
 
@@ -546,12 +565,10 @@ export const NewCourseApplication: React.FC = () => {
 
                             <div className="certification-box form-section-panel" style={{ padding: '32px 40px' }}>
                                 <h4 className="panel-heading" style={{ color: 'var(--primary-dark)', borderBottomColor: 'var(--border-light)' }}><ShieldCheck size={20} style={{ marginRight: '12px', color: 'var(--primary-color)' }} /> 5. Certification & Agreement</h4>
-                                <p>I certify that the above particulars furnished by me are true and correct to the best of my knowledge. In case, if any of the particulars is found incorrect/false, I understand that the University has the sole authority to cancel my registration.</p>
-                                <p>I affirm that I will adhere to the both rules and regulations those currently effective and those amended from time to time with regard to students of the University.</p>
-                                <p>The Unit has decided that your course/registration/lecture fee is not re-fundable or not transferable to any other course or any another person. Further the course fee is only applicable for the batch to which it levied.</p>
+                                <p>I certify that the information provided in this application is accurate and complete. I understand that any false statements may lead to the cancellation of my admission. By submitting this form, I agree to comply with the institution's policies and consent to the processing of my personal data.</p>
 
                                 <label className="checkbox-label">
-                                    <input type="checkbox" required />
+                                    <input type="checkbox" checked={isAgreed} onChange={(e) => setIsAgreed(e.target.checked)} required />
                                     <span>I agree to the above terms and conditions</span>
                                 </label>
                             </div>

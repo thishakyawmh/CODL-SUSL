@@ -165,7 +165,7 @@
     height: 48px;
     border-radius: 12px;
     background: #F5F3FF;
-    color: #7C3AED;
+    color: var(--primary-color);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -174,7 +174,7 @@
 }
 
 .module-list-card:hover .module-list-icon {
-    background: #EDE9FE;
+    background: var(--primary-light);
     transform: scale(1.05);
 }
 
@@ -217,7 +217,7 @@
 .module-resource-count {
     font-size: 20px;
     font-weight: 800;
-    color: #7C3AED;
+    color: var(--primary-color);
     line-height: 1;
 }
 
@@ -236,7 +236,7 @@
 }
 
 .module-list-card:hover .module-list-arrow {
-    color: #7C3AED;
+    color: var(--primary-color);
     transform: translateX(4px);
 }
 
@@ -261,7 +261,7 @@
 
 .material-item:hover {
     background: #FAFBFC;
-    border-color: #7C3AED;
+    border-color: var(--primary-color);
     transform: translateX(4px);
     box-shadow: 0 4px 12px rgba(124, 58, 237, 0.06);
 }
@@ -324,7 +324,7 @@
 
 .download-btn:hover {
     background: #F5F3FF;
-    color: #7C3AED;
+    color: var(--primary-color);
 }
 
 .material-item.locked {

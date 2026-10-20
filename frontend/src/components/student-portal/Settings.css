@@ -69,7 +69,7 @@
 }
 
 .settings-tab.active {
-    background: #7c3aed;
+    background: var(--primary-color);
     color: #ffffff !important;
     box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
     border: none;
@@ -159,7 +159,7 @@
 
 .settings-input:focus {
     outline: none;
-    border-color: #7C3AED;
+    border-color: var(--primary-color);
     box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.08);
 }
 
@@ -233,7 +233,7 @@ select.settings-input {
 
 .info-alert {
     background: #F5F3FF;
-    color: #5B21B6;
+    color: var(--primary-dark);
     padding: 16px 20px;
     border-radius: 12px;
     font-size: 13.5px;
@@ -267,7 +267,7 @@ select.settings-input {
 }
 
 .btn-save {
-    background: linear-gradient(135deg, #7C3AED, #5B21B6);
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
     color: white;
     padding: 11px 28px;
     border-radius: 10px;

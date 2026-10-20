@@ -8,9 +8,7 @@ use Illuminate\Support\Facades\Schema;
 
 class DatabaseTableController extends Controller
 {
-    /**
-     * Get list of all database tables and their row counts.
-     */
+     
     public function getTables(Request $request)
     {
         if ($request->user()->role !== 'super_admin') {
@@ -20,7 +18,7 @@ class DatabaseTableController extends Controller
         $tables = Schema::getTables();
         $result = [];
         
-        // System tables to exclude/protect
+
         $excludeTables = [
             'migrations', 
             'failed_jobs', 
@@ -34,6 +32,22 @@ class DatabaseTableController extends Controller
             'password_reset_tokens',
             'password_resets',
         ];
+
+        // Retrieve row counts in a single query for MySQL
+        $countsMap = [];
+        try {
+            $dbName = DB::connection()->getDatabaseName();
+            $rows = DB::select("
+                SELECT table_name, table_rows 
+                FROM information_schema.tables 
+                WHERE table_schema = ?
+            ", [$dbName]);
+            foreach ($rows as $row) {
+                $countsMap[$row->table_name] = (int)$row->table_rows;
+            }
+        } catch (\Exception $e) {
+            // Fallback to sequential counting
+        }
 
         foreach ($tables as $table) {
             $name = '';
@@ -49,10 +63,14 @@ class DatabaseTableController extends Controller
                 continue;
             }
             
-            try {
-                $count = DB::table($name)->count();
-            } catch (\Exception $e) {
-                $count = 0;
+            if (isset($countsMap[$name])) {
+                $count = $countsMap[$name];
+            } else {
+                try {
+                    $count = DB::table($name)->count();
+                } catch (\Exception $e) {
+                    $count = 0;
+                }
             }
 
             $result[] = [
@@ -64,9 +82,7 @@ class DatabaseTableController extends Controller
         return response()->json($result);
     }
 
-    /**
-     * Get records of a specific table.
-     */
+     
     public function getTableData(Request $request, $tableName)
     {
         if ($request->user()->role !== 'super_admin') {
@@ -95,7 +111,7 @@ class DatabaseTableController extends Controller
             return response()->json(['message' => 'Table not found.'], 404);
         }
 
-        // Limit to 200 rows for view safety
+
         $data = DB::table($tableName)->orderBy('id', 'desc')->limit(200)->get();
         $columns = Schema::getColumnListing($tableName);
 
@@ -106,9 +122,7 @@ class DatabaseTableController extends Controller
         ]);
     }
 
-    /**
-     * Delete a record from a specific table.
-     */
+     
     public function deleteRecord(Request $request, $tableName, $id)
     {
         if ($request->user()->role !== 'super_admin') {

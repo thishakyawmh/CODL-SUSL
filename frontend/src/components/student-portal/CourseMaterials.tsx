@@ -150,7 +150,7 @@ export const CourseMaterials: React.FC = () => {
                     }
                 `}</style>
                 <div style={{ textAlign: 'center', color: '#64748B' }}>
-                    <div style={{ width: '40px', height: '40px', border: '3px solid #E2E8F0', borderTopColor: '#7C3AED', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 16px' }} />
+                    <div style={{ width: '40px', height: '40px', border: '3px solid #E2E8F0', borderTopColor: 'var(--primary-color)', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 16px' }} />
                     <p style={{ fontWeight: 600 }}>Loading course materials...</p>
                 </div>
             </div>
@@ -250,7 +250,7 @@ export const CourseMaterials: React.FC = () => {
                 </div>
             </div>
 
-            {/* VIEW 1: Semester Selection */}
+            { }
             {viewState === 'semesters' && (
                 <div className="semester-selection-view">
                     <span className="section-label">Available Semesters</span>
@@ -282,7 +282,7 @@ export const CourseMaterials: React.FC = () => {
                 </div>
             )}
 
-            {/* VIEW 2: Module List (name, code, resource count) */}
+            { }
             {viewState === 'modules' && (
                 <div className="modules-view">
                     <span className="section-label">{activeSemester.name} — Subjects</span>
@@ -311,7 +311,7 @@ export const CourseMaterials: React.FC = () => {
                 </div>
             )}
 
-            {/* VIEW 3: Resources for selected module */}
+            { }
             {viewState === 'resources' && activeModule && (
                 <div className="resources-view">
                     {activeModule.materials.length === 0 && (

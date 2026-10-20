@@ -54,8 +54,18 @@ export const ExamApplicationForm: React.FC<ExamApplicationFormProps> = ({ isEmbe
     const [calculatedAttempt, setCalculatedAttempt] = useState('1');
 
     const [salutation, setSalutation] = useState(profileData.sex === 'Male' ? 'Mr' : (profileData.sex === 'Female' ? 'Ms' : 'Mr'));
-    const [nameWithInitials, setNameWithInitials] = useState(profileData.fullName);
-    const [nameDenotedByInitials, setNameDenotedByInitials] = useState('');
+    const [nameWithInitials, setNameWithInitials] = useState(() => {
+        const name = profileData.fullName;
+        if (!name) return '';
+        const parts = name.trim().split(/\s+/);
+        if (parts.length <= 1) return name;
+        const initials = parts.slice(0, parts.length - 1)
+            .map(part => part[0].toUpperCase() + '.')
+            .join('');
+        const surname = parts[parts.length - 1];
+        return `${initials} ${surname}`;
+    });
+    const [nameDenotedByInitials, setNameDenotedByInitials] = useState(profileData.fullName);
     const [contactNumber, setContactNumber] = useState(profileData.mobilePhone);
     const [permanentAddress, setPermanentAddress] = useState(profileData.address);
     const [addressDuringExam, setAddressDuringExam] = useState('');
@@ -211,7 +221,7 @@ export const ExamApplicationForm: React.FC<ExamApplicationFormProps> = ({ isEmbe
 
             <form className="application-form" onSubmit={handleSubmit}>
 
-                {/* Applicant Information Card */}
+                { }
                 <div className="form-section-card modern-shadow">
                     <div className="section-card-header-with-icon">
                         <div className="section-icon-container purple-gradient"><User size={20} color="white" /></div>
@@ -245,7 +255,7 @@ export const ExamApplicationForm: React.FC<ExamApplicationFormProps> = ({ isEmbe
                     </div>
                 </div>
 
-                {/* Address Details Card */}
+                { }
                 <div className="form-section-card modern-shadow">
                     <div className="section-card-header-with-icon">
                         <div className="section-icon-container green-gradient"><MapPin size={20} color="white" /></div>
@@ -263,7 +273,7 @@ export const ExamApplicationForm: React.FC<ExamApplicationFormProps> = ({ isEmbe
                     </div>
                 </div>
 
-                {/* Examination & Fee Details Card */}
+                { }
                 <div className="form-section-card modern-shadow">
                     <div className="section-card-header-with-icon">
                         <div className="section-icon-container purple-gradient"><FileText size={20} color="white" /></div>
@@ -299,7 +309,7 @@ export const ExamApplicationForm: React.FC<ExamApplicationFormProps> = ({ isEmbe
                     </div>
                 </div>
 
-                {/* Subjects Selection Card */}
+                { }
                 {subjects.length > 0 && (
                     <div className="form-section-card modern-shadow">
                         <div className="section-card-header-with-icon">
@@ -369,7 +379,7 @@ export const ExamApplicationForm: React.FC<ExamApplicationFormProps> = ({ isEmbe
                     </div>
                 )}
 
-                {/* Declaration Card */}
+                { }
                 <div className="form-section-card declaration-card">
                     <label className="modern-declaration">
                         <input type="checkbox" className="dec-checkbox" />

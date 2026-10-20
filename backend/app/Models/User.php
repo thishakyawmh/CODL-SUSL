@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -78,9 +77,7 @@ class User extends Authenticatable
         return $this->belongsToMany(Course::class, 'user_courses')->withPivot('batch')->withTimestamps();
     }
 
-    /**
-     * Mutator to hash the password if not already hashed.
-     */
+     
     public function setPasswordAttribute($value)
     {
         if (is_null($value)) {
@@ -88,7 +85,7 @@ class User extends Authenticatable
             return;
         }
 
-        // If already hashed, don't hash again
+
         if (preg_match('/^\$(2[ayb]|argon2)/', $value)) {
             $this->attributes['password'] = $value;
         } else {

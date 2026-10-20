@@ -46,7 +46,7 @@ export const LoginPortal: React.FC = () => {
             } else if (user.role === 'applicant') {
                 navigate('/applicant-dashboard', { replace: true });
             } else {
-                // Staff/admin users shouldn't use the student portal — send them to admin
+
                 navigate('/admin/dashboard', { replace: true });
             }
         }
@@ -72,9 +72,9 @@ export const LoginPortal: React.FC = () => {
         try {
             const data = await authService.login({ login: regNumber, password });
 
-            // Only registered and existing students can log in from the existing portal
+
             if (data.user.role !== 'student') {
-                // Immediately revoke the session
+
                 try { await authService.logout(); } catch (_) { }
                 if (data.user.role === 'applicant') {
                     setError('Applicants cannot login through the existing student portal. Please sign in with Google in the New Applicants section.');
@@ -127,14 +127,14 @@ export const LoginPortal: React.FC = () => {
         }
     };
 
-    // Google Sign-In Integration
+
     const handleGoogleCredentialResponse = async (response: any) => {
         setIsLoading(true);
         setError('');
         try {
             const data = await authService.googleLogin(response.credential);
 
-            // Do not force role to 'applicant' if the user is already a student
+
             const role = data.user.role;
             const sessionUser = { ...data.user, role: role };
 
@@ -142,7 +142,7 @@ export const LoginPortal: React.FC = () => {
             sessionStorage.setItem('user', JSON.stringify(sessionUser));
             sessionStorage.setItem('adminRole', role);
 
-            // Redirect students to their dashboard, otherwise applicants to applicant dashboard
+
             if (role === 'student') {
                 navigate('/dashboard');
             } else {
@@ -183,8 +183,24 @@ export const LoginPortal: React.FC = () => {
 
     return (
         <div className="login-portal-wrapper">
+            {isLoading && (
+                <div className="sync-overlay">
+                    <div className="sync-overlay-content">
+                        <div className="sync-overlay-spinner">
+                            <div className="sync-pulse-ring"></div>
+                            <div className="sync-pulse-ring delay-1"></div>
+                            <div className="sync-pulse-ring delay-2"></div>
+                            <GraduationCap size={36} className="sync-overlay-icon" style={{ color: 'var(--primary-color)' }} />
+                        </div>
+                        <h2 className="sync-overlay-title">Authenticating</h2>
+                        {activeView === 'new' && (
+                            <p className="sync-overlay-desc">Verifying your Google identity and loading your student workspace. Please wait...</p>
+                        )}
+                    </div>
+                </div>
+            )}
 
-            {/* Left Side - Branding & Information */}
+            { }
             <div className="login-left-pane">
                 <div className="branding-container">
                     <div className="branding-header-group">
@@ -223,13 +239,18 @@ export const LoginPortal: React.FC = () => {
                 </div>
 
                 <div className="pane-footer">
-                    <p>© {new Date().getFullYear()} CODL. All rights reserved.</p>
+                    <div className="pane-footer-content">
+                        <p style={{ margin: 0 }}>© {new Date().getFullYear()} CODL. All rights reserved.</p>
+                        <div className="pane-footer-links">
+                            <span onClick={() => navigate('/staff/login')} className="pane-footer-link">Staff Login</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            {/* Right Side - Authentication Forms */}
+            { }
             <div className="login-right-pane">
-                {/* Mobile Branding & Welcome Header */}
+                { }
                 <div className="mobile-header-banner">
                     <div className="mobile-branding-header">
                         <img src={branding.logo} alt="Logo" className="mobile-branding-logo" />
@@ -262,7 +283,7 @@ export const LoginPortal: React.FC = () => {
 
                     {activeView === 'selection' && (
                         <div className="auth-cards-wrapper fade-in-up">
-                            {/* Existing Students Selection Card */}
+                            { }
                             <div className="auth-card selection-card" onClick={() => setActiveView('existing')}>
                                 <div className="card-top-indicator"></div>
                                 <div className="auth-card-header" style={{ marginBottom: 0 }}>
@@ -279,7 +300,7 @@ export const LoginPortal: React.FC = () => {
                                 </div>
                             </div>
 
-                            {/* New Applicants Selection Card */}
+                            { }
                             <div className="auth-card selection-card" onClick={() => setActiveView('new')}>
                                 <div className="auth-card-header" style={{ marginBottom: 0 }}>
                                     <div className="icon-wrapper green-icon">
@@ -357,7 +378,13 @@ export const LoginPortal: React.FC = () => {
                                             <input type="checkbox" />
                                             <span>Remember me</span>
                                         </label>
-                                        <a href="#" className="forgot-password">Forgot Password?</a>
+                                         <span 
+                                             className="forgot-password" 
+                                             onClick={() => navigate('/forgot-password')}
+                                             style={{ cursor: 'pointer' }}
+                                         >
+                                             Forgot Password?
+                                         </span>
                                     </div>
 
                                     <button type="submit" className="btn-primary auth-submit-btn" disabled={isLoading}>

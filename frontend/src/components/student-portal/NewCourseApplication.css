@@ -541,8 +541,14 @@
     border-radius: 24px;
 }
 
+.certification-box .panel-heading {
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+}
+
 .certification-box p {
-    font-size: var(--text-sm);
+    font-size: 15px;
+    line-height: 1.6;
     margin-bottom: 16px;
     color: var(--primary-dark);
 }
@@ -694,8 +700,13 @@
 
     .prog-meta-row {
         flex-direction: column;
+        align-items: flex-start !important;
         gap: 8px;
         font-size: 14px;
+    }
+
+    .prog-meta-row .dot-separator {
+        display: none !important;
     }
 
     .registration-form-card {
@@ -759,5 +770,15 @@
     .form-radio-group {
         flex-direction: column;
         gap: 12px;
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    .form-group input:not([type="radio"]):not([type="checkbox"]),
+    .form-group select,
+    .form-group textarea {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
     }
 }

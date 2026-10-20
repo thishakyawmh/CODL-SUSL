@@ -266,7 +266,7 @@
 
 .declaration-card {
     background-color: #FAFAFE;
-    border: 1px solid #EDE9FE;
+    border: 1px solid var(--primary-light);
     border-left: 4px solid var(--primary-color);
 }
 
@@ -322,13 +322,13 @@
 }
 
 .form-actions-bottom .btn-primary {
-    background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
+    background: linear-gradient(135deg, #8B5CF6 0%, var(--primary-color) 100%);
     color: #FFFFFF;
     box-shadow: 0 4px 12px rgba(124, 58, 237, 0.15);
 }
 
 .form-actions-bottom .btn-primary:hover {
-    background: linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%);
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
     transform: translateY(-1.5px);
     box-shadow: 0 6px 16px rgba(124, 58, 237, 0.25);
 }
@@ -382,7 +382,7 @@
 }
 
 .purple-gradient {
-    background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
+    background: linear-gradient(135deg, #8B5CF6 0%, var(--primary-color) 100%);
 }
 
 .green-gradient {

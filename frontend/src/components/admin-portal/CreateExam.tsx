@@ -14,7 +14,7 @@ export const CreateExam: React.FC = () => {
     const isEditing = !!examId;
     const navigate = useNavigate();
     
-    // Course info
+
     const courseId = id;
     const [course, setCourse] = useState<AdminCourse | null>(null);
     const [isLoadingCourse, setIsLoadingCourse] = useState(true);
@@ -75,23 +75,24 @@ export const CreateExam: React.FC = () => {
     const [examBatch, setExamBatch] = useState<string>(batchFromUrl || '');
     const [examStatus, setExamStatus] = useState<string>('Registrations are Open');
     const [timetablePath, setTimetablePath] = useState<string>('');
+    const [isUploading, setIsUploading] = useState<boolean>(false);
     
     const [subjects, setSubjects] = useState<Subject[]>([]);
     const shouldSkipSubjectsSync = React.useRef(false);
 
-    // Set default batch once course is loaded
+
     useEffect(() => {
         if (course && !examBatch) {
             setExamBatch(batchFromUrl || course.batches[0] || 'Batch 01');
         }
     }, [course, batchFromUrl, examBatch]);
 
-    // Student selection state (kept to preserve DB assignments when editing/updating)
+
     const [selectedRegulars, setSelectedRegulars] = useState<string[]>([]);
     const [selectedReattempts, setSelectedReattempts] = useState<string[]>([]);
     const [selectedPostponements, setSelectedPostponements] = useState<string[]>([]);
 
-    // Auto switch status based on deadline
+
     useEffect(() => {
         if (examDeadline) {
             const today = new Date().toISOString().split('T')[0];
@@ -103,7 +104,7 @@ export const CreateExam: React.FC = () => {
         }
     }, [examDeadline]);
 
-    // Load subjects when semester or type changes
+
     useEffect(() => {
         if (shouldSkipSubjectsSync.current) {
             shouldSkipSubjectsSync.current = false;
@@ -127,7 +128,7 @@ export const CreateExam: React.FC = () => {
         setSubjects(subjects.filter((_, i) => i !== idx));
     };
 
-    // Load existing exam data if editing
+
     useEffect(() => {
         if (isEditing && examId) {
             const fetchExam = async () => {
@@ -162,7 +163,7 @@ export const CreateExam: React.FC = () => {
                         else setSelectedRegulars([]);
                         if (exam.reattempts) setSelectedReattempts(exam.reattempts);
                         if (exam.postponements) setSelectedPostponements(exam.postponements);
-                        if (exam.timetablePath) setTimetablePath(exam.timetablePath);
+                        if (exam.timetable_path || exam.timetablePath) setTimetablePath(exam.timetable_path || exam.timetablePath);
                     }
                 } catch (err) {
                     console.error("Failed to load exam details for editing:", err);
@@ -193,7 +194,7 @@ export const CreateExam: React.FC = () => {
             reattempts: selectedReattempts,
             postponements: selectedPostponements,
             subjects,
-            timetablePath,
+            timetable_path: timetablePath,
             semester: selectedSemester + 1
         };
 
@@ -218,7 +219,7 @@ export const CreateExam: React.FC = () => {
         return (
             <div className="cm-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '400px' }}>
                 <div style={{ textAlign: 'center', color: '#64748B' }}>
-                    <div style={{ width: '48px', height: '48px', border: '3px solid #E2E8F0', borderTopColor: '#7C3AED', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 16px' }} />
+                    <div style={{ width: '48px', height: '48px', border: '3px solid #E2E8F0', borderTopColor: 'var(--primary-color)', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 16px' }} />
                     <p style={{ fontWeight: 600 }}>Loading course details...</p>
                 </div>
             </div>
@@ -366,26 +367,51 @@ export const CreateExam: React.FC = () => {
                                     textAlign: 'center',
                                     marginTop: '8px',
                                     transition: 'all 0.2s ease',
-                                    cursor: 'pointer'
+                                    cursor: isUploading ? 'not-allowed' : 'pointer',
+                                    opacity: isUploading ? 0.7 : 1
                                 }}
                                 onDragOver={(e) => e.preventDefault()}
                                 onClick={() => {
+                                    if (isUploading) return;
                                     const input = document.createElement('input');
                                     input.type = 'file';
                                     input.accept = '.pdf,.doc,.docx';
-                                    input.onchange = (e: any) => {
+                                    input.onchange = async (e: any) => {
                                         const file = e.target.files?.[0];
-                                        if (file) setTimetablePath(file.name);
+                                        if (file) {
+                                            setIsUploading(true);
+                                            toast.info(`Uploading "${file.name}"...`);
+                                            try {
+                                                const res = await examService.uploadTimetable(file);
+                                                setTimetablePath(res.url);
+                                                toast.success('Timetable uploaded successfully!');
+                                            } catch (err) {
+                                                console.error('Failed to upload timetable:', err);
+                                                toast.error('Failed to upload timetable.');
+                                            } finally {
+                                                setIsUploading(false);
+                                            }
+                                        }
                                     };
                                     input.click();
                                 }}
                             >
-                                <div style={{ color: '#7C3AED', marginBottom: '12px' }}>
-                                    <FileText size={40} style={{ opacity: 0.6 }} />
+                                <div style={{ color: 'var(--primary-color)', marginBottom: '12px' }}>
+                                    <div style={{ width: '40px', height: '40px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        {isUploading ? (
+                                            <div style={{ width: '28px', height: '28px', border: '3px solid #E2E8F0', borderTopColor: 'var(--primary-color)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                                        ) : (
+                                            <FileText size={40} style={{ opacity: 0.6 }} />
+                                        )}
+                                    </div>
                                 </div>
-                                {timetablePath ? (
+                                {isUploading ? (
+                                    <p style={{ margin: 0, fontWeight: 700, color: '#475569' }}>Uploading timetable, please wait...</p>
+                                ) : timetablePath ? (
                                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                                        <span style={{ fontWeight: 700, color: '#1E293B' }}>{timetablePath}</span>
+                                        <span style={{ fontWeight: 700, color: '#1E293B' }}>
+                                            {timetablePath.includes('/') ? timetablePath.split('/').pop() : timetablePath}
+                                        </span>
                                         <button 
                                             style={{ background: 'none', border: 'none', color: '#EF4444', padding: '4px', cursor: 'pointer' }}
                                             onClick={(e) => {
@@ -399,7 +425,7 @@ export const CreateExam: React.FC = () => {
                                 ) : (
                                     <>
                                         <p style={{ margin: 0, fontWeight: 700, color: '#475569' }}>Click to upload or drag & drop</p>
-                                        <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#94A3B8' }}>Supports .pdf, .doc or .docx (Max 10MB)</p>
+                                        <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#94A3B8' }}>Supports .pdf, .doc or .docx (Max 20MB)</p>
                                     </>
                                 )}
                             </div>

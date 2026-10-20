@@ -22,6 +22,18 @@ export const CourseExaminations: React.FC = () => {
     const location = useLocation();
     const { course } = useOutletContext<{ course: Course }>();
 
+    const handleDownloadTimetable = (path: string) => {
+        if (!path) {
+            toast.error("No timetable available for this exam.");
+            return;
+        }
+        if (path.startsWith('http://') || path.startsWith('https://')) {
+            window.open(path, '_blank');
+        } else {
+            toast.warning("This timetable was not uploaded. Please ask an administrator to re-upload it.");
+        }
+    };
+
     const courseSubjects = React.useMemo(() => {
         if (course.subjects && course.subjects.length > 0) {
             return course.subjects;
@@ -45,7 +57,7 @@ export const CourseExaminations: React.FC = () => {
     const [activeTab, setActiveTab] = React.useState<'regular' | 'postponements'>('regular');
     const [showToast, setShowToast] = React.useState(false);
 
-    // Postponements & Reattempts state
+
     const [showApplyDropdown, setShowApplyDropdown] = React.useState(false);
     const [selectedAppType, setSelectedAppType] = React.useState<'postponement' | 'reattempt' | null>(null);
     const [postponeForm, setPostponeForm] = React.useState({
@@ -133,13 +145,13 @@ export const CourseExaminations: React.FC = () => {
                 const isBatchMatch = exam.batch === activeBatch || exam.batch_name === activeBatch;
                 if (!isBatchMatch) return false;
 
-                // Check if student is assigned to this exam
+
                 let isAssigned = false;
                 if (exam.regulars && Array.isArray(exam.regulars)) {
                     isAssigned = exam.regulars.map((uid: any) => uid.toString()).includes(currentUserId);
                 }
 
-                // Check if student already has an application
+
                 const hasApp = apps.some((app: any) =>
                     app.exam_id?.toString() === exam.id?.toString() ||
                     (app.exam_title && exam.title && app.exam_title.trim().toLowerCase() === exam.title.trim().toLowerCase())
@@ -171,7 +183,7 @@ export const CourseExaminations: React.FC = () => {
                     rejectionReason: app.rejection_reason
                 };
 
-                // Map to matched exam ID, stringified exam_id, and raw title for maximum robustness
+
                 appsMapped[examId] = mappedObj;
                 if (matchingExam) {
                     appsMapped[matchingExam.id.toString()] = mappedObj;
@@ -238,7 +250,7 @@ export const CourseExaminations: React.FC = () => {
     }, [course.id]);
 
     React.useEffect(() => {
-        // Update last visited timestamp to clear notification badges
+
         localStorage.setItem(`exams_lastVisited_${course.id}`, Date.now().toString());
         fetchAllData();
     }, [course.id, fetchAllData]);
@@ -246,7 +258,7 @@ export const CourseExaminations: React.FC = () => {
     React.useEffect(() => {
         if (location.state?.toastSuccess) {
             setShowToast(true);
-            // Clear location state to prevent double trigger
+
             navigate(location.pathname, { replace: true });
 
             const timer = setTimeout(() => {
@@ -257,19 +269,7 @@ export const CourseExaminations: React.FC = () => {
     }, [location, navigate]);
 
 
-    // Available static exams for demo (could be replaced by DB)
-    /* const availableStaticExams = [
-        {
-            id: 1,
-            title: 'Semester 3 End Semester Examination',
-            deadline: 'Saturday, March 7, 2026'
-        },
-        {
-            id: 2,
-            title: 'Semester 4 Mid Semester Examination',
-            deadline: 'Saturday, March 7, 2026'
-        }
-    ]; */
+
 
     const userStr = sessionStorage.getItem('user');
     let studentRegNo = 'CODL/2404';
@@ -284,7 +284,7 @@ export const CourseExaminations: React.FC = () => {
         return (
             <div className="course-examinations-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '400px' }}>
                 <div style={{ textAlign: 'center', color: '#64748B' }}>
-                    <div style={{ width: '48px', height: '48px', border: '3px solid #E2E8F0', borderTopColor: '#7C3AED', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 16px' }} />
+                    <div style={{ width: '48px', height: '48px', border: '3px solid #E2E8F0', borderTopColor: 'var(--primary-color)', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 16px' }} />
                     <p style={{ fontWeight: 600, color: '#64748B' }}>Loading examinations...</p>
                 </div>
             </div>
@@ -346,7 +346,7 @@ export const CourseExaminations: React.FC = () => {
                                 alignItems: 'center',
                                 gap: '8px',
                                 padding: '8px 22px',
-                                background: 'linear-gradient(135deg, #4F46E5, #7C3AED)',
+                                background: 'linear-gradient(135deg, #4F46E5, var(--primary-color))',
                                 color: 'white',
                                 border: 'none',
                                 borderRadius: '50px',
@@ -431,7 +431,7 @@ export const CourseExaminations: React.FC = () => {
                                 const appStatus = application?.status || 'Not Applied';
                                 const appStatusLower = appStatus.toLowerCase();
 
-                                // Check if the application deadline has been reached/passed
+
                                 const isDeadlinePassed = (() => {
                                     if (!exam.deadline) return false;
                                     try {
@@ -443,13 +443,13 @@ export const CourseExaminations: React.FC = () => {
                                     }
                                 })();
 
-                                // If deadline has passed and exam status is open, automatically treat as closed
+
                                 const baseStatus = (isDeadlinePassed && (exam.status === 'Registration Open' || exam.status === 'Registrations are Open' || exam.status === 'Open'))
                                     ? 'Registrations are Closed'
                                     : exam.status;
 
-                                // Determine display status based on the specific 5 levels requested
-                                let effectiveStatus = 'Yet to release results'; // Default fallback
+
+                                let effectiveStatus = 'Yet to release results'; 
 
                                 if (baseStatus === 'Results Released') {
                                     effectiveStatus = 'Result Released';
@@ -590,9 +590,9 @@ export const CourseExaminations: React.FC = () => {
                     </div>
                 ) : (
                     <div className="animate-fade-in">
-                        {/* Apply FAB is rendered outside below */}
+                        { }
 
-                        {/* Postponement Instructions */}
+                        { }
                         {selectedAppType === 'postponement' && (
                             <div className="animate-fade-in" style={{ width: '100%', background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '24px', padding: '32px', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.02)', boxSizing: 'border-box' }}>
                                 <h3 style={{ margin: '0 0 24px 0', fontSize: '20px', fontWeight: 800, color: '#0F172A' }}>Postponement Application Instructions</h3>
@@ -640,7 +640,7 @@ export const CourseExaminations: React.FC = () => {
                             </div>
                         )}
 
-                        {/* Reattempt Instructions */}
+                        { }
                         {selectedAppType === 'reattempt' && (
                             <div className="animate-fade-in" style={{ width: '100%', background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '24px', padding: '32px', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.02)', boxSizing: 'border-box' }}>
                                 <h3 style={{ margin: '0 0 24px 0', fontSize: '20px', fontWeight: 800, color: '#0F172A' }}>Reattempt Application Instructions</h3>
@@ -688,7 +688,7 @@ export const CourseExaminations: React.FC = () => {
                             </div>
                         )}
 
-                        {/* Applications Cards */}
+                        { }
                         {selectedAppType === null && (
                             <div className="exam-strips-list">
                                 {postApplications.map(app => {
@@ -762,7 +762,7 @@ export const CourseExaminations: React.FC = () => {
                                                 </div>
                                             </div>
 
-                                            <div className="pro-card-actions" style={{ display: 'flex', gap: '8px', width: isResultsReleased ? 'auto' : '100%' }}>
+                                            <div className="pro-card-actions" style={{ display: 'flex', gap: '8px' }}>
                                                 {isResultsReleased ? (
                                                     <button
                                                         className="pro-action-btn secondary"
@@ -779,7 +779,6 @@ export const CourseExaminations: React.FC = () => {
                                                                 navigate(`/course/${course.id}/examinations/${app.assignedExam.id}/results`);
                                                             }
                                                         }}
-                                                        style={{ width: '100%' }}
                                                     >
                                                         View Results
                                                     </button>
@@ -787,7 +786,6 @@ export const CourseExaminations: React.FC = () => {
                                                     <button
                                                         className="pro-action-btn primary"
                                                         onClick={() => setShowDetailsModal(app)}
-                                                        style={{ width: '100%' }}
                                                     >
                                                         View Details
                                                     </button>
@@ -802,14 +800,14 @@ export const CourseExaminations: React.FC = () => {
                 )}
             </div>
 
-            {/* Application Status Modal */}
+            { }
             {showStatusModal && (
                 <div className="status-tracker-overlay" onClick={() => setShowStatusModal(null)}>
                     <div className="status-tracker-modal" onClick={e => e.stopPropagation()}>
                         <div className="tracker-modal-header">
                             <div className="header-text-group">
                                 <h3>Application Progress</h3>
-                                <p className="tracker-app-number">Application Reference: <strong>{showStatusModal.application?.appNumber || 'EXM-2026-0001'}</strong></p>
+                                <p className="tracker-app-number"><span className="desktop-only-text">Application </span>Reference: <strong>{showStatusModal.application?.appNumber || 'EXM-2026-0001'}</strong></p>
                             </div>
                             <button className="tracker-close-btn" onClick={() => setShowStatusModal(null)}>×</button>
                         </div>
@@ -879,7 +877,7 @@ export const CourseExaminations: React.FC = () => {
                 </div>
             )}
 
-            {/* Exam Details Modal */}
+            { }
             {showDetailsModal && (
                 <div className="status-tracker-overlay" onClick={() => setShowDetailsModal(null)}>
                     <div className="status-tracker-modal details" onClick={e => e.stopPropagation()}>
@@ -899,16 +897,14 @@ export const CourseExaminations: React.FC = () => {
                         <div className="tracker-content">
                             {showDetailsModal.type === 'postponement' || showDetailsModal.type === 'reattempt' ? (
                                 <div>
-                                    {/* Request Summary - compact header */}
-                                    <div style={{ display: 'flex', gap: '16px', alignItems: 'center', padding: '14px 18px', background: '#F8FAFC', borderRadius: '14px', border: '1px solid #E2E8F0', marginBottom: '10px' }}>
-                                        <div style={{ flex: 1 }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                <span style={{ fontSize: '11px', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase' as const }}>Application</span>
-                                                <span style={{ fontSize: '13px', fontWeight: 700, color: '#1E293B' }}>{showDetailsModal.appNumber}</span>
-                                                <span style={{ padding: '2px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 700, textTransform: 'capitalize' as const, background: showDetailsModal.type === 'postponement' ? '#DBEAFE' : '#FEF3C7', color: showDetailsModal.type === 'postponement' ? '#1E40AF' : '#D97706' }}>{showDetailsModal.type}</span>
-                                            </div>
+                                    { }
+                                    <div className="details-request-summary">
+                                        <div className="summary-left-group">
+                                            <span style={{ fontSize: '11px', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase' as const }}>Application</span>
+                                            <span style={{ fontSize: '13px', fontWeight: 700, color: '#1E293B' }}>{showDetailsModal.appNumber}</span>
                                         </div>
-                                        <div>
+                                        <div className="summary-badges-group">
+                                            <span style={{ padding: '2px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 700, textTransform: 'capitalize' as const, background: showDetailsModal.type === 'postponement' ? '#DBEAFE' : '#FEF3C7', color: showDetailsModal.type === 'postponement' ? '#1E40AF' : '#D97706' }}>{showDetailsModal.type}</span>
                                             <span style={{
                                                 display: 'inline-block', fontSize: '12px', fontWeight: 700, padding: '4px 12px', borderRadius: '8px',
                                                 background: showDetailsModal.status === 'Assigned' ? '#DCFCE7' : showDetailsModal.status === 'Approved' ? '#DCFCE7' : showDetailsModal.status === 'Rejected' ? '#FEE2E2' : '#FEF3C7',
@@ -920,7 +916,7 @@ export const CourseExaminations: React.FC = () => {
                                     </div>
 
                                     {showDetailsModal.status === 'Assigned' && showDetailsModal.assignedExam ? (
-                                        /* Full Assigned Exam Details — matches regular exam view */
+                                         
                                         <div>
                                             <div className="exam-details-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
                                                 <div className="detail-box" style={{ gridColumn: '1 / -1' }}>
@@ -933,8 +929,12 @@ export const CourseExaminations: React.FC = () => {
                                                 </div>
                                                 <div className="detail-box simple-download">
                                                     <span className="detail-label" style={{ display: 'block', fontSize: '11px', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', marginBottom: '4px' }}>Time Table</span>
-                                                    {showDetailsModal.assignedExam.timetable_path ? (
-                                                        <button className="simple-download-link" style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', color: '#3B82F6', cursor: 'pointer', fontWeight: 600, fontSize: '14px', padding: 0 }}>
+                                                    {showDetailsModal.assignedExam.timetable_path || showDetailsModal.assignedExam.timetablePath ? (
+                                                        <button 
+                                                            className="simple-download-link" 
+                                                            onClick={() => handleDownloadTimetable(showDetailsModal.assignedExam.timetable_path || showDetailsModal.assignedExam.timetablePath)}
+                                                            style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', color: '#3B82F6', cursor: 'pointer', fontWeight: 600, fontSize: '14px', padding: 0 }}
+                                                        >
                                                             <Download size={14} /> Download Time Table
                                                         </button>
                                                     ) : (
@@ -943,8 +943,8 @@ export const CourseExaminations: React.FC = () => {
                                                 </div>
                                             </div>
                                             {(showDetailsModal.assignedExam.status === 'Results Released' || showDetailsModal.assignedExam.status === 'Result Updated') && (
-                                                <div style={{ marginTop: '20px', background: '#F5F3FF', border: '1px solid #EDE9FE', padding: '16px 20px', borderRadius: '12px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
-                                                    <span style={{ fontSize: '14px', color: '#5B21B6', fontWeight: 700 }}>🎉 Results are released for this assigned exam! Your grade has been updated in your original results sheet.</span>
+                                                <div style={{ marginTop: '20px', background: '#F5F3FF', border: '1px solid var(--primary-light)', padding: '16px 20px', borderRadius: '12px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+                                                    <span style={{ fontSize: '14px', color: 'var(--primary-dark)', fontWeight: 700 }}>🎉 Results are released for this assigned exam! Your grade has been updated in your original results sheet.</span>
                                                     <button
                                                         className="pro-action-btn primary small"
                                                         style={{ width: 'auto', background: '#8B5CF6', color: '#FFFFFF', padding: '8px 24px', borderRadius: '8px' }}
@@ -968,7 +968,7 @@ export const CourseExaminations: React.FC = () => {
                                             )}
                                         </div>
                                     ) : (
-                                        /* Non-assigned request — show basic details */
+                                         
                                         <div>
                                             <div style={{ overflow: 'hidden', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
                                                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '14px' }}>
@@ -1049,7 +1049,7 @@ export const CourseExaminations: React.FC = () => {
                                         onClick={() => {
                                             setShowDetailsModal(null);
                                             setActiveTab('regular');
-                                            // Find the linked exam and navigate to its results
+
                                             const linkedExam = scheduledExams.find(e => e.id === showDetailsModal.linkedExamId);
                                             if (linkedExam) {
                                                 localStorage.setItem(`viewed_results_${studentRegNo}_${showDetailsModal.linkedExamId}`, 'true');
@@ -1112,9 +1112,16 @@ export const CourseExaminations: React.FC = () => {
                                         )}
                                         <div className="detail-box simple-download" style={{ gridColumn: hasSubjects ? 'span 2' : 'span 1' }}>
                                             <span className="detail-label">Time Table</span>
-                                            <button className="simple-download-link">
-                                                <Download size={14} /> Download Time Table
-                                            </button>
+                                            {showDetailsModal.exam.timetable_path || showDetailsModal.exam.timetablePath ? (
+                                                <button 
+                                                    className="simple-download-link"
+                                                    onClick={() => handleDownloadTimetable(showDetailsModal.exam.timetable_path || showDetailsModal.exam.timetablePath)}
+                                                >
+                                                    <Download size={14} /> Download Time Table
+                                                </button>
+                                            ) : (
+                                                <span className="detail-value" style={{ fontSize: '14px', fontWeight: 600, color: '#94A3B8' }}>Not yet uploaded</span>
+                                            )}
                                         </div>
                                     </div>
                                 );

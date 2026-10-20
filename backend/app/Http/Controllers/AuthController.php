@@ -29,7 +29,7 @@ class AuthController extends Controller
             'full_name' => $validated['full_name'],
             'email' => $validated['email'],
             'password' => $validated['password'],
-            'role' => 'applicant', // Default role for self-registered users
+            'role' => 'applicant', 
             'status' => 'active',
         ]);
 
@@ -46,7 +46,7 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $request->validate([
-            'login' => 'required', // Can be email or student_number
+            'login' => 'required', 
             'password' => 'required',
         ]);
 
@@ -90,12 +90,12 @@ class AuthController extends Controller
             ], 401);
         }
 
-        // Create token with role-based abilities
+
         $token = $user->createToken('auth_token', ['role:' . $user->role])->plainTextToken;
 
         \Log::info('Login successful', ['user_id' => $user->id, 'role' => $user->role]);
 
-        if (in_array($user->role, ['super_admin', 'director', 'coordinator', 'secretary', 'lecturer'])) {
+        if (in_array($user->role, ['super_admin', 'director', 'coordinator', 'secretary', 'lecturer', 'student', 'pro_student', 'applicant'])) {
             \App\Models\ActivityLog::log($user->id, 'Logged in to the system', 'Portal Dashboard', 'system');
         }
 
@@ -120,36 +120,32 @@ class AuthController extends Controller
 
         $credential = $request->credential;
 
-        // Parse JWT token from Google
-        $parts = explode('.', $credential);
-        if (count($parts) !== 3) {
-            return response()->json(['message' => 'Invalid Google credential token.'], 400);
-        }
 
-        $payload = json_decode(base64_decode(strtr($parts[1], '-_', '+/')), true);
+        try {
+            $googleResponse = \Illuminate\Support\Facades\Http::timeout(10)->get('https://oauth2.googleapis.com/tokeninfo', [
+                'id_token' => $credential,
+            ]);
 
-        if (!$payload) {
-            return response()->json(['message' => 'Failed to parse Google identity information.'], 400);
-        }
+            if (!$googleResponse->successful()) {
+                return response()->json(['message' => 'Invalid or expired Google authentication token.'], 401);
+            }
 
-        // Validate basic parameters (expiration, issuer)
-        if (isset($payload['exp']) && $payload['exp'] < time()) {
-            return response()->json(['message' => 'Google credential has expired.'], 400);
-        }
-
-        if (isset($payload['iss']) && !in_array($payload['iss'], ['accounts.google.com', 'https://accounts.google.com'])) {
-            return response()->json(['message' => 'Invalid Google credential issuer.'], 400);
+            $payload = $googleResponse->json();
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Google OAuth token verification failed: ' . $e->getMessage());
+            return response()->json(['message' => 'Failed to verify Google credential.'], 500);
         }
 
         $email = $payload['email'] ?? null;
         $name = $payload['name'] ?? 'Google User';
         $avatar = $payload['picture'] ?? null;
+        $emailVerified = $payload['email_verified'] ?? false;
 
-        if (!$email) {
-            return response()->json(['message' => 'Google credential does not contain email.'], 400);
+        if (!$email || ($emailVerified !== true && $emailVerified !== 'true')) {
+            return response()->json(['message' => 'Google identity does not contain a verified email address.'], 400);
         }
 
-        // Check if user exists by email
+
         $user = User::where('email', $email)->first();
 
         $settings = \App\Models\SystemSetting::first();
@@ -163,26 +159,26 @@ class AuthController extends Controller
         }
 
         if (!$user) {
-            // Create user
+
             $user = User::create([
                 'full_name' => $name,
                 'email' => $email,
-                'password' => bin2hex(random_bytes(16)), // random secure password, auto-hashed by cast
-                'role' => 'applicant', // Default role for self-registered users
+                'password' => bin2hex(random_bytes(16)), 
+                'role' => 'applicant', 
                 'status' => 'active',
                 'avatar' => $avatar,
             ]);
         } else {
-            // Update avatar if not set
+
             if ($avatar && !$user->avatar) {
                 $user->update(['avatar' => $avatar]);
             }
         }
 
-        // Create Sanctum Token
+
         $token = $user->createToken('auth_token', ['role:' . $user->role])->plainTextToken;
 
-        if (in_array($user->role, ['super_admin', 'director', 'coordinator', 'secretary', 'lecturer'])) {
+        if (in_array($user->role, ['super_admin', 'director', 'coordinator', 'secretary', 'lecturer', 'student', 'pro_student', 'applicant'])) {
             \App\Models\ActivityLog::log($user->id, 'Logged in via Google', 'Portal Dashboard', 'system');
         }
 
@@ -199,6 +195,97 @@ class AuthController extends Controller
         $request->user()->currentAccessToken()->delete();
         return response()->json([
             'message' => 'Successfully logged out'
+        ]);
+    }
+
+    public function forgotPassword(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email|string'
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user || !in_array($user->role, ['student', 'applicant'])) {
+            return response()->json([
+                'message' => "We couldn't find a user with that email address."
+            ], 422);
+        }
+
+
+        $token = \Illuminate\Support\Str::random(64);
+
+
+        \Illuminate\Support\Facades\DB::table('password_reset_tokens')->updateOrInsert(
+            ['email' => $request->email],
+            [
+                'token' => $token,
+                'created_at' => now()
+            ]
+        );
+
+
+        try {
+            \Illuminate\Support\Facades\Mail::to($user->email)->send(
+                new \App\Mail\ResetPasswordMail($user, $token)
+            );
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Password reset email failed to send: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Failed to send reset email. Please try again later.'
+            ], 500);
+        }
+
+        return response()->json([
+            'message' => 'Password reset link has been sent to your email.'
+        ]);
+    }
+
+    public function resetPassword(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email|string',
+            'token' => 'required|string',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+
+        $record = \Illuminate\Support\Facades\DB::table('password_reset_tokens')
+            ->where('email', $request->email)
+            ->where('token', $request->token)
+            ->first();
+
+        if (!$record) {
+            return response()->json([
+                'message' => 'Invalid reset token.'
+            ], 422);
+        }
+
+
+        if (now()->subMinutes(60)->gt($record->created_at)) {
+            return response()->json([
+                'message' => 'This password reset link has expired.'
+            ], 422);
+        }
+
+        $user = User::where('email', $request->email)->first();
+        if (!$user) {
+            return response()->json([
+                'message' => 'User not found.'
+            ], 404);
+        }
+
+
+        $user->password = $request->password;
+        $user->save();
+
+
+        \Illuminate\Support\Facades\DB::table('password_reset_tokens')
+            ->where('email', $request->email)
+            ->delete();
+
+        return response()->json([
+            'message' => 'Your password has been successfully reset.'
         ]);
     }
 }

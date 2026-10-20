@@ -4,14 +4,14 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
 
 const api = axios.create({
     baseURL: API_BASE_URL,
-    timeout: 60000, // 60 second timeout for remote Azure DB latency
+    timeout: 60000, 
     headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
     },
 });
 
-// Add a request interceptor to include the auth token
+
 api.interceptors.request.use((config) => {
     const token = sessionStorage.getItem('token');
     if (token) {
@@ -22,7 +22,7 @@ api.interceptors.request.use((config) => {
     return Promise.reject(error);
 });
 
-// Add a response interceptor to handle maintenance mode and unauthorized redirects
+
 api.interceptors.response.use((response) => {
     return response;
 }, (error) => {
@@ -65,12 +65,24 @@ export const authService = {
     googleLogin: async (credential: string) => {
         const response = await api.post('/auth/google', { credential });
         return response.data;
+    },
+    forgotPassword: async (email: string) => {
+        const response = await api.post('/forgot-password', { email });
+        return response.data;
+    },
+    resetPassword: async (data: any) => {
+        const response = await api.post('/reset-password', data);
+        return response.data;
     }
 };
 
 export const userService = {
     getAll: async () => {
         const response = await api.get('/users');
+        return response.data;
+    },
+    getById: async (id: string | number) => {
+        const response = await api.get(`/users/${id}`);
         return response.data;
     },
     create: async (data: any) => {
@@ -167,8 +179,8 @@ export const courseService = {
         const response = await api.get(`/student/courses/${courseId}/materials`);
         return response.data;
     },
-    getManageCourseData: async (courseId: string) => {
-        const response = await api.get(`/manage-course/${courseId}`);
+    getManageCourseData: async (courseId: string, options?: { signal?: AbortSignal }) => {
+        const response = await api.get(`/manage-course/${courseId}`, { signal: options?.signal });
         return response.data;
     },
     getStudentExaminationsData: async (courseId: string) => {
@@ -184,6 +196,10 @@ export const courseService = {
 export const batchService = {
     getByCourse: async (courseId: string) => {
         const response = await api.get(`/courses/${courseId}/batches`);
+        return response.data;
+    },
+    getMaterials: async (courseId: string | number, batchId: string | number) => {
+        const response = await api.get(`/courses/${courseId}/batches/${batchId}/materials`);
         return response.data;
     },
     create: async (courseId: string, data: any) => {
@@ -324,6 +340,14 @@ export const examService = {
     delete: async (id: string | number) => {
         const response = await api.delete(`/exams/${id}`);
         return response.data;
+    },
+    uploadTimetable: async (file: File) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        const response = await api.post('/exams/upload-timetable', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        return response.data;
     }
 };
 
@@ -401,18 +425,36 @@ export const examResultService = {
 };
 
 export const announcementService = {
-    getAll: async (params?: { course_id?: string | number; batch?: string }) => {
+    getAll: async (params?: any) => {
         const response = await api.get('/announcements', { params });
         return response.data;
     },
-    create: async (data: {
+    create: async (data: FormData | {
         course_id?: number | null;
         batch?: string | null;
         title: string;
         desc: string;
         type: string;
+        file?: File | null;
+        attachment_url?: string | null;
+        attachment_name?: string | null;
+        attachment_size?: string | null;
     }) => {
-        const response = await api.post('/announcements', data);
+        let payload: any = data;
+        let config: any = {};
+        if (!(data instanceof FormData) && (data as any).file) {
+            const formData = new FormData();
+            Object.entries(data).forEach(([key, value]) => {
+                if (value !== null && value !== undefined) {
+                    formData.append(key, value as any);
+                }
+            });
+            payload = formData;
+            config = { headers: { 'Content-Type': 'multipart/form-data' } };
+        } else if (data instanceof FormData) {
+            config = { headers: { 'Content-Type': 'multipart/form-data' } };
+        }
+        const response = await api.post('/announcements', payload, config);
         return response.data;
     },
     delete: async (id: string | number) => {
@@ -479,6 +521,14 @@ export const statsService = {
     getFullDashboardData: async () => {
         const response = await api.get('/admin/dashboard-full');
         return response.data;
+    },
+    getAdminStats: async () => {
+        const response = await api.get('/admin/stats');
+        return response.data;
+    },
+    getSystemHealthStats: async (timeframe: string) => {
+        const response = await api.get(`/admin/health-stats?timeframe=${timeframe}`);
+        return response.data;
     }
 };
 
@@ -492,6 +542,18 @@ export const aiAnalysisService = {
 export const aiAnalyticsService = {
     getPrograms: async () => {
         const response = await api.get('/admin/ai-analytics/programs');
+        return response.data;
+    },
+    getGlobalOverview: async () => {
+        const response = await api.get('/admin/ai-analytics/global-overview');
+        return response.data;
+    },
+    getCommonOverview: async () => {
+        const response = await api.get('/admin/ai-analytics/common/overview');
+        return response.data;
+    },
+    getCommonDrilldown: async (field: string) => {
+        const response = await api.get(`/admin/ai-analytics/common/drilldown?field=${encodeURIComponent(field)}`);
         return response.data;
     },
     getOverview: async (courseId: string) => {
@@ -518,6 +580,10 @@ export const aiAnalyticsService = {
         const response = await api.get(`/admin/ai-analytics/${courseId}/recommendations`);
         return response.data;
     },
+    getAcademicEntryRequirements: async (courseId: string) => {
+        const response = await api.get(`/admin/ai-analytics/${courseId}/academic-entry`);
+        return response.data;
+    },
     getSurveys: async () => {
         const response = await api.get('/admin/ai-analytics/surveys');
         return response.data;
@@ -526,10 +592,145 @@ export const aiAnalyticsService = {
         const response = await api.post('/admin/ai-analytics/surveys', data);
         return response.data;
     },
-    syncGoogleSheet: async (data: { type: 'student' | 'industry'; url: string }) => {
-        const response = await api.post('/admin/ai-analytics/sync-sheet', data);
+    syncGoogleSheet: async (data?: { type?: 'student' | 'industry'; url?: string }) => {
+        const response = await api.post('/admin/ai-analytics/sync-sheet', data || {}, {
+            timeout: 300000 
+        });
+        return response.data;
+    },
+    getGeographyData: async () => {
+        const response = await api.get('/admin/ai-analytics/geography');
+        return response.data;
+    },
+    getGeographySkills: async (field: string, province?: string, educationLevel?: string) => {
+        const params = new URLSearchParams({ field });
+        if (province) params.append('province', province);
+        if (educationLevel) params.append('education_level', educationLevel);
+        const response = await api.get(`/admin/ai-analytics/geography/skills?${params.toString()}`);
+        return response.data;
+    },
+    getIndustrySkills: async (field: string) => {
+        const response = await api.get(`/admin/ai-analytics/industry/skills?field=${encodeURIComponent(field)}`);
+        return response.data;
+    },
+    getUniversityOpportunities: async () => {
+        const response = await api.get('/admin/ai-analytics/university-opportunities');
+        return response.data;
+    },
+};
+
+export const curriculumAlignmentService = {
+    extractCourseSkills: async (courseId: string | number) => {
+        const response = await api.post('/admin/skills/extract', { course_id: courseId });
+        return response.data;
+    },
+    getSkills: async (params?: any) => {
+        const response = await api.get('/admin/skills', { params });
+        return response.data;
+    },
+    updateSkillCategory: async (id: string | number, category: string) => {
+        const response = await api.put(`/admin/skills/${id}/category`, { category });
+        return response.data;
+    },
+    submitIndustrySurvey: async (data: any) => {
+        const response = await api.post('/public/survey/industry', data);
+        return response.data;
+    },
+    getIndustrySurveyStats: async (isAdmin = false) => {
+        const response = await api.get(isAdmin ? '/admin/survey/industry-stats' : '/public/survey/industry-stats');
+        return response.data;
+    },
+    submitStudentSurvey: async (data: any) => {
+        const response = await api.post('/public/survey/student', data);
+        return response.data;
+    },
+    getStudentSurveyStats: async (isAdmin = false) => {
+        const response = await api.get(isAdmin ? '/admin/survey/student-stats' : '/public/survey/student-stats');
+        return response.data;
+    },
+    getAiInsights: async (courseId: string | number) => {
+        const response = await api.get(`/admin/courses/${courseId}/ai-insights`);
+        return response.data;
+    },
+    generateAiRecommendations: async (courseId: string | number) => {
+        const response = await api.post(`/admin/courses/${courseId}/ai-recommendations`);
+        return response.data;
+    }
+};
+
+export const studentInterestService = {
+    submit: async (data: any) => {
+        const response = await api.post('/student-interests', data);
+        return response.data;
+    },
+    getConfig: async () => {
+        const response = await api.get('/student-interests/config');
+        return response.data;
+    },
+    saveConfig: async (data: any) => {
+        const response = await api.post('/admin/student-interests/config', data);
+        return response.data;
+    },
+    deleteConfig: async (id: string | number) => {
+        const response = await api.delete(`/admin/student-interests/config/${id}`);
+        return response.data;
+    },
+    getTeachingMethods: async () => {
+        const response = await api.get('/student-interests/teaching-methods');
+        return response.data;
+    },
+    saveTeachingMethod: async (data: any) => {
+        const response = await api.post('/admin/student-interests/teaching-methods', data);
+        return response.data;
+    },
+    deleteTeachingMethod: async (id: string | number) => {
+        const response = await api.delete(`/admin/student-interests/teaching-methods/${id}`);
+        return response.data;
+    },
+    getUniversityOpportunities: async () => {
+        const response = await api.get('/student-interests/university-opportunities');
+        return response.data;
+    },
+    saveUniversityOpportunity: async (data: any) => {
+        const response = await api.post('/admin/student-interests/university-opportunities', data);
+        return response.data;
+    },
+    deleteUniversityOpportunity: async (id: string | number) => {
+        const response = await api.delete(`/admin/student-interests/university-opportunities/${id}`);
+        return response.data;
+    }
+};
+
+export const industryAnalysisService = {
+    submit: async (data: any) => {
+        const response = await api.post('/industry-analysis', data);
+        return response.data;
+    },
+    getSectors: async () => {
+        const response = await api.get('/industry-analysis/sectors');
+        return response.data;
+    },
+    saveSector: async (data: any) => {
+        const response = await api.post('/admin/industry-analysis/sectors', data);
+        return response.data;
+    },
+    deleteSector: async (id: string | number) => {
+        const response = await api.delete(`/admin/industry-analysis/sectors/${id}`);
+        return response.data;
+    },
+    getConfig: async () => {
+        const response = await api.get('/industry-analysis/config');
+        return response.data;
+    },
+    saveConfig: async (data: any) => {
+        const response = await api.post('/admin/industry-analysis/config', data);
+        return response.data;
+    },
+    deleteConfig: async (id: string | number) => {
+        const response = await api.delete(`/admin/industry-analysis/config/${id}`);
         return response.data;
     }
 };
 
 export default api;
+

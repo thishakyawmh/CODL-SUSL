@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     BookOpen, Search, Plus, Users as UsersIcon,
     X, Calendar, Award,
     ArrowUpRight, UserCheck, FileText, CheckCircle2, Layers,
     ArrowLeft, Eye, Check, XCircle, Edit3, Save, User, ShieldCheck, Clock, Trash2,
-    MapPin, CheckSquare
+    MapPin, CheckSquare, Info, Loader
 } from 'lucide-react';
 import { mockAdminCourses } from '../../data/mockAdminData';
 import type {
@@ -24,21 +24,25 @@ export const Applications: React.FC = () => {
     const [isEditMode, setIsEditMode] = useState(false);
     const currentAdminRole = sessionStorage.getItem('adminRole');
 
-    // Filter states
+
     const [typeFilter, setTypeFilter] = useState<'all' | 'new' | 'existing'>('all');
     const [applicantSearchTerm, setApplicantSearchTerm] = useState('');
 
-    // Form state for editing
+
     const [editForm, setEditForm] = useState<any>({});
 
     const [searchTerm, setSearchTerm] = useState('');
     const [levelFilter, setLevelFilter] = useState<string>('all');
     const [showCreateModal, setShowCreateModal] = useState(false);
 
-    // Local state for applications to allow functional updates
+
     const [enrollmentApps, setEnrollmentApps] = useState<CourseApplication[]>([]);
     const [realEnrollmentApps, setRealEnrollmentApps] = useState<any[]>([]);
     const [isLoadingApps, setIsLoadingApps] = useState(true);
+    // Track IDs currently being actioned (for disabling buttons / showing spinner)
+    const [actioningIds, setActioningIds] = useState<Set<string>>(new Set());
+    const addActioning = (id: string) => setActioningIds(prev => new Set(prev).add(id));
+    const removeActioning = (id: string) => setActioningIds(prev => { const s = new Set(prev); s.delete(id); return s; });
 
     const fetchRealExamApplications = async () => {
         try {
@@ -110,7 +114,12 @@ export const Applications: React.FC = () => {
     const fetchRealApplications = async () => {
         try {
             setIsLoadingApps(true);
-            const data = await courseApplicationService.getAll();
+            // Parallelize both fetches — no sequential waterfall
+            const [enrollData] = await Promise.all([
+                courseApplicationService.getAll(),
+                // exam fetch runs in parallel below
+            ]);
+            const data = enrollData;
             const mapped = data.map((app: any) => ({
                 id: app.id.toString(),
                 courseTitle: app.course?.title || 'Unknown Course',
@@ -142,6 +151,7 @@ export const Applications: React.FC = () => {
                 documents: app.documents || {},
                 documentsVerified: app.documents_verified || { personal: false, educational: false },
                 status: app.status,
+                approvalLevel: app.approval_level,
                 applicationDate: app.created_at ? app.created_at.split('T')[0] : '',
                 approvalStages: [
                     {
@@ -170,8 +180,10 @@ export const Applications: React.FC = () => {
                     }
                 ]
             }));
+            // Run exam applications fetch in parallel with mapping work
+            const examFetchPromise = fetchRealExamApplications();
             setRealEnrollmentApps(mapped);
-            await fetchRealExamApplications();
+            await examFetchPromise;
         } catch (err) {
             console.error('Failed to fetch real applications:', err);
         } finally {
@@ -189,28 +201,73 @@ export const Applications: React.FC = () => {
     const [postponementReqs, setPostponementReqs] = useState<PostponementRequestAdmin[]>([]);
     const [reattemptReqs, setReattemptReqs] = useState<ReattemptRequestAdmin[]>([]);
 
-    // Rejection Modal State
+
     const [showRejectModal, setShowRejectModal] = useState(false);
     const [rejectionReason, setRejectionReason] = useState('');
     const [pendingAction, setPendingAction] = useState<{ id: string, type: string } | null>(null);
 
     const handleAction = async (id: string, action: 'approved' | 'rejected', type: string, reason?: string) => {
-        // Check if it's a real application
-        const isReal = realEnrollmentApps.some(app => app.id === id);
+        if (actioningIds.has(id)) return; // Prevent double-click
+        addActioning(id);
+
+        const userStr = sessionStorage.getItem('user');
+        const loggedInUser = userStr ? JSON.parse(userStr) : null;
+        const approvedBy = loggedInUser?.full_name || loggedInUser?.displayName || 'Admin';
+        const approvedAt = new Date().toLocaleDateString();
+
+        // ── OPTIMISTIC UI: apply the change immediately before any API call ──
+        const applyOptimisticUpdate = (list: any[], isExam = false) =>
+            list.map(app => {
+                if (app.id !== id) return app;
+                if (isExam) {
+                    const currentStep = app.currentStep || 1;
+                    const stageIndex = currentStep - 1;
+                    const nextStep = action === 'approved' ? Math.min(currentStep + 1, 3) : currentStep;
+                    const newStatus = action === 'rejected' ? 'rejected' : (currentStep >= 3 && action === 'approved' ? 'approved' : 'pending');
+                    const newStages = app.approvalStages.map((s: any, i: number) =>
+                        i === stageIndex ? {
+                            ...s, status: action,
+                            approvedBy: action === 'approved' ? approvedBy : s.approvedBy,
+                            approvedAt: action === 'approved' ? approvedAt : s.approvedAt,
+                            comment: reason || (action === 'approved' ? 'Approved' : 'Rejected')
+                        } : s
+                    );
+                    return { ...app, status: newStatus, currentStep: nextStep, approvalStages: newStages, rejectionReason: action === 'rejected' ? (reason || 'Rejected') : app.rejectionReason };
+                }
+                // enrollment optimistic
+                const currentLevel = app.approvalLevel ?? 0;
+                const newLevel = action === 'approved' ? currentLevel + 1 : currentLevel;
+                const newStatus = action === 'rejected' ? 'rejected' : (newLevel >= 3 ? 'approved' : 'pending');
+                const newStages = (app.approvalStages || []).map((s: any, i: number) =>
+                    i === currentLevel ? {
+                        ...s, status: action,
+                        approvedBy: action === 'approved' ? approvedBy : s.approvedBy,
+                        approvedAt: action === 'approved' ? approvedAt : s.approvedAt,
+                        comment: reason || (action === 'approved' ? 'Approved' : 'Rejected')
+                    } : s
+                );
+                return { ...app, status: newStatus, approvalLevel: newLevel, approvalStages: newStages, rejectionReason: action === 'rejected' ? (reason || 'Rejected') : app.rejectionReason };
+            });
 
         if (type === 'exam') {
-            const app = examApps.find(a => a.id === id);
-            if (app && app.isReal) {
-                try {
-                    const userStr = sessionStorage.getItem('user');
-                    const loggedInUser = userStr ? JSON.parse(userStr) : null;
-                    const approvedBy = loggedInUser?.full_name || loggedInUser?.displayName || 'Admin';
-                    const approvedAt = new Date().toLocaleDateString();
+            setExamApps(prev => applyOptimisticUpdate(prev, true));
+        } else if (type === 'enrollment') {
+            setRealEnrollmentApps(prev => applyOptimisticUpdate(prev));
+            setEnrollmentApps(prev => applyOptimisticUpdate(prev));
+        }
 
+        // Update modal too if it's currently open for this item
+        if (selectedApplication && selectedApplication.id === id) {
+            setSelectedApplication((prev: any) => applyOptimisticUpdate([prev], type === 'exam')[0]);
+        }
+
+        try {
+            if (type === 'exam') {
+                const app = examApps.find(a => a.id === id);
+                if (app && app.isReal) {
                     const currentStep = app.currentStep || 1;
                     const stages = [...app.approvalStages];
                     const stageIndex = currentStep - 1;
-
                     if (stages[stageIndex]) {
                         stages[stageIndex] = {
                             ...stages[stageIndex],
@@ -220,114 +277,68 @@ export const Applications: React.FC = () => {
                             comment: reason || (action === 'approved' ? 'Approved' : 'Rejected')
                         };
                     }
-
-                    let nextStep = currentStep;
-                    let status = 'pending';
-
-                    if (action === 'approved') {
-                        nextStep = currentStep + 1;
-                        if (nextStep > 3) {
-                            status = 'approved';
-                        } else {
-                            status = 'pending';
-                        }
-                    } else {
-                        status = 'rejected';
-                    }
-
+                    const nextStep = action === 'approved' ? currentStep + 1 : currentStep;
+                    const newStatus = action === 'rejected' ? 'rejected' : (nextStep > 3 ? 'approved' : 'pending');
                     await examApplicationService.update(id, {
-                        status: status,
-                        stages: stages,
-                        current_step: nextStep,
+                        status: newStatus,
+                        stages,
+                        current_step: Math.min(nextStep, 3),
                         rejection_reason: action === 'rejected' ? (reason || 'Rejected') : null
                     });
-
                     toast.success(`Exam application ${action} successfully!`);
-                    await fetchRealApplications();
-                    setSelectedApplication(null);
-                    return;
-                } catch (err: any) {
-                    console.error('Failed to update exam application:', err);
-                    toast.error(err.response?.data?.message || 'Failed to update exam application.');
-                    return;
                 }
+                return;
             }
-        }
 
-        if (isReal && type === 'enrollment') {
-            try {
-                if (action === 'approved') {
-                    const app = realEnrollmentApps.find(a => a.id === id);
-                    const docsVerified = app?.documentsVerified || { personal: false, educational: false };
-
-                    if (!docsVerified.personal || !docsVerified.educational) {
-                        toast.error("Please verify all handed over documents by ticking them in the details modal before approving.");
-                        return;
+            if (type === 'enrollment') {
+                const isReal = realEnrollmentApps.some(app => app.id === id);
+                if (isReal) {
+                    if (action === 'approved') {
+                        const app = realEnrollmentApps.find(a => a.id === id);
+                        const docsVerified = app?.documentsVerified || { personal: false, educational: false };
+                        if (!docsVerified.personal || !docsVerified.educational) {
+                            // Rollback optimistic update
+                            setRealEnrollmentApps(prev => prev.map(a => a.id === id ? { ...a, status: 'pending' } : a));
+                            setEnrollmentApps(prev => prev.map(a => a.id === id ? { ...a, status: 'pending' } : a));
+                            if (selectedApplication?.id === id) setSelectedApplication((p: any) => ({ ...p, status: 'pending' }));
+                            toast.error('Please verify all handed over documents by ticking them in the details modal before approving.');
+                            return;
+                        }
+                        const response = await courseApplicationService.approve(id, {
+                            comment: reason || 'Approved',
+                            documents_verified: docsVerified
+                        });
+                        // Patch with actual server response (e.g. generated student number)
+                        if (response) {
+                            const serverPatch = {
+                                studentNumber: response.generated_student_number || response.user?.student_number || '',
+                                approvalLevel: response.approval_level ?? 3,
+                                status: response.status ?? 'approved',
+                            };
+                            setRealEnrollmentApps(prev => prev.map(a => a.id === id ? { ...a, ...serverPatch } : a));
+                            if (selectedApplication?.id === id) setSelectedApplication((p: any) => ({ ...p, ...serverPatch }));
+                        }
+                        toast.success('Application approved successfully!');
+                    } else {
+                        await courseApplicationService.reject(id, { comment: reason || 'Rejected' });
+                        toast.success('Application rejected successfully!');
                     }
-
-                    const response = await courseApplicationService.approve(id, {
-                        comment: reason || 'Approved',
-                        documents_verified: docsVerified
-                    });
-
-                    // If application fully approved, the backend automatically enrolls the student
-                    // No need to manually update localStorage
-
-                    toast.success('Application approved successfully!');
-                } else {
-                    await courseApplicationService.reject(id, {
-                        comment: reason || 'Rejected'
-                    });
-                    toast.success('Application rejected successfully!');
-                }
-                fetchRealApplications();
-                setSelectedApplication(null);
-                return;
-            } catch (err: any) {
-                console.error('Failed to update application:', err);
-                toast.error(err.response?.data?.message || 'Failed to update application.');
-                return;
-            }
-        }
-
-        const updateStatus = (list: any[]) => list.map(app => {
-            if (app.id === id) {
-                return {
-                    ...app,
-                    status: action,
-                    rejectionReason: reason || app.rejectionReason,
-                    approvalStages: app.approvalStages.map((stage: any, i: number) =>
-                        i === 0 ? { ...stage, status: action, approvedAt: new Date().toLocaleDateString(), comment: reason } : stage
-                    )
-                };
-            }
-            return app;
-        });
-
-        if (type === 'enrollment') {
-            if (action === 'approved') {
-                const app = enrollmentApps.find(a => a.id === id);
-                const docsVerified = app?.documentsVerified || { personal: false, educational: false };
-                if (!docsVerified.personal || !docsVerified.educational) {
-                    toast.error("Please verify all handed over documents by ticking them in the details modal before approving.");
                     return;
                 }
             }
-            setEnrollmentApps(updateStatus);
-        }
-        else if (type === 'exam') setExamApps(updateStatus);
-        else if (type === 'postponement') setPostponementReqs(updateStatus);
-        else if (type === 'reattempt') setReattemptReqs(updateStatus);
-
-        if (selectedApplication && selectedApplication.id === id) {
-            setSelectedApplication((prev: any) => ({
-                ...prev,
-                status: action,
-                rejectionReason: reason || prev.rejectionReason,
-                approvalStages: prev.approvalStages.map((stage: any, i: number) =>
-                    i === 0 ? { ...stage, status: action, approvedAt: new Date().toLocaleDateString(), comment: reason } : stage
-                )
-            }));
+        } catch (err: any) {
+            // ── ROLLBACK: revert optimistic update on error ──
+            console.error('Failed to update application:', err);
+            if (type === 'exam') {
+                setExamApps(prev => prev.map(a => a.id === id ? { ...a, status: 'pending' } : a));
+            } else {
+                setRealEnrollmentApps(prev => prev.map(a => a.id === id ? { ...a, status: 'pending' } : a));
+                setEnrollmentApps(prev => prev.map(a => a.id === id ? { ...a, status: 'pending' } : a));
+            }
+            if (selectedApplication?.id === id) setSelectedApplication((p: any) => ({ ...p, status: 'pending' }));
+            toast.error(err.response?.data?.message || 'Failed to update application.');
+        } finally {
+            removeActioning(id);
         }
     };
 
@@ -389,7 +400,7 @@ export const Applications: React.FC = () => {
 
     const getLevelColor = (level: string) => {
         switch (level) {
-            case 'Degree': return { bg: '#EDE9FE', text: '#7C3AED' };
+            case 'Degree': return { bg: 'var(--primary-light)', text: 'var(--primary-color)' };
             case 'Diploma': return { bg: '#DBEAFE', text: '#2563EB' };
             case 'Certificate': return { bg: '#CCFBF1', text: '#0D9488' };
             default: return { bg: '#F1F5F9', text: '#475569' };
@@ -437,7 +448,7 @@ export const Applications: React.FC = () => {
     const renderApplicationModal = () => {
         if (!selectedApplication) return null;
 
-        // Determine request type
+
         const isEnrollment = 'applicantName' in selectedApplication;
         const displayName = isEnrollment ? (selectedApplication.displayName || selectedApplication.applicantName) : selectedApplication.studentName;
         const displayId = isEnrollment ? selectedApplication.applicantNic : selectedApplication.studentNumber;
@@ -675,7 +686,7 @@ export const Applications: React.FC = () => {
                                 <div className="am-details-grid">
                                     <div className="am-detail-item">
                                         <span className="am-label">Exam Title</span>
-                                        <span className="am-value" style={{ color: '#7C3AED', fontWeight: 600 }}>{selectedApplication.examTitle}</span>
+                                        <span className="am-value" style={{ color: 'var(--primary-color)', fontWeight: 600 }}>{selectedApplication.examTitle}</span>
                                     </div>
                                     <div className="am-detail-item">
                                         <span className="am-label">Semester</span>
@@ -731,7 +742,7 @@ export const Applications: React.FC = () => {
                                                             <td style={{ fontWeight: 600, color: '#475569' }}>{sub.code}</td>
                                                             <td style={{ fontWeight: 600, color: '#1E293B' }}>{sub.name}</td>
                                                             <td style={{ textAlign: 'center' }}>
-                                                                <span className="am-grade-sm" style={{ background: '#EDE9FE', color: '#7C3AED', padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 600 }}>
+                                                                <span className="am-grade-sm" style={{ background: 'var(--primary-light)', color: 'var(--primary-color)', padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 600 }}>
                                                                     {sub.attempt === '1' ? '1st Attempt' :
                                                                         sub.attempt === '2' ? '2nd Attempt' :
                                                                             sub.attempt === '3' ? '3rd Attempt' :
@@ -781,7 +792,7 @@ export const Applications: React.FC = () => {
                                 <div className="am-details-grid">
                                     <div className="am-detail-item full-width">
                                         <span className="am-label">Request For</span>
-                                        <span className="am-value" style={{ color: '#7C3AED', fontWeight: 600 }}>
+                                        <span className="am-value" style={{ color: 'var(--primary-color)', fontWeight: 600 }}>
                                             {selectedApplication.examTitle || selectedApplication.subject || 'Administrative Request'}
                                         </span>
                                     </div>
@@ -1018,14 +1029,50 @@ export const Applications: React.FC = () => {
                         )}
                         {currentAdminRole !== 'super_admin' && selectedApplication.status === 'pending' && (
                             isEnrollment ? (
-                                <>
-                                    <button className="am-reject-btn" style={{ background: '#FEE2E2', color: '#DC2626', border: '1px solid #FEE2E2' }} onClick={() => handleRejectClick(selectedApplication.id, 'enrollment')}>
-                                        <XCircle size={18} /> Reject
-                                    </button>
-                                    <button className="am-approve-btn" onClick={() => handleAction(selectedApplication.id, 'approved', 'enrollment')}>
-                                        <Check size={18} /> Approve
-                                    </button>
-                                </>
+                                (
+                                    (selectedApplication.approvalLevel === 0 && currentAdminRole === 'secretary') ||
+                                    (selectedApplication.approvalLevel === 1 && currentAdminRole === 'coordinator') ||
+                                    (selectedApplication.approvalLevel === 2 && currentAdminRole === 'director')
+                                ) ? (
+                                    <>
+                                        <button
+                                            className="am-reject-btn"
+                                            style={{ background: '#FEE2E2', color: '#DC2626', border: '1px solid #FEE2E2', opacity: actioningIds.has(selectedApplication.id) ? 0.6 : 1 }}
+                                            onClick={() => handleRejectClick(selectedApplication.id, 'enrollment')}
+                                            disabled={actioningIds.has(selectedApplication.id)}
+                                        >
+                                            <XCircle size={18} /> Reject
+                                        </button>
+                                        <button
+                                            className="am-approve-btn"
+                                            onClick={() => handleAction(selectedApplication.id, 'approved', 'enrollment')}
+                                            disabled={actioningIds.has(selectedApplication.id)}
+                                            style={{ opacity: actioningIds.has(selectedApplication.id) ? 0.7 : 1, display: 'flex', alignItems: 'center', gap: '8px' }}
+                                        >
+                                            {actioningIds.has(selectedApplication.id)
+                                                ? <Loader size={16} style={{ animation: 'spin 0.7s linear infinite' }} />
+                                                : <Check size={18} />}
+                                            {actioningIds.has(selectedApplication.id) ? 'Processing...' : 'Approve'}
+                                        </button>
+                                    </>
+                                ) : (
+                                    <div className="am-waiting-badge" style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '8px',
+                                        background: '#FEF3C7',
+                                        color: '#D97706',
+                                        padding: '10px 20px',
+                                        borderRadius: '8px',
+                                        border: '1px solid #FDE68A',
+                                        fontWeight: 700,
+                                        fontSize: '13px',
+                                        width: '100%',
+                                        justifyContent: 'center'
+                                    }}>
+                                        <Info size={16} /> Waiting for {selectedApplication.approvalLevel === 1 ? 'Coordinator' : 'Director'} Approval
+                                    </div>
+                                )
                             ) : (
                                 (
                                     (selectedApplication.currentStep === 1 && currentAdminRole === 'secretary') ||
@@ -1033,11 +1080,24 @@ export const Applications: React.FC = () => {
                                     (selectedApplication.currentStep === 3 && currentAdminRole === 'director')
                                 ) ? (
                                     <>
-                                        <button className="am-reject-btn" style={{ background: '#FEE2E2', color: '#DC2626', border: '1px solid #FEE2E2' }} onClick={() => handleRejectClick(selectedApplication.id, 'exam')}>
+                                        <button
+                                            className="am-reject-btn"
+                                            style={{ background: '#FEE2E2', color: '#DC2626', border: '1px solid #FEE2E2', opacity: actioningIds.has(selectedApplication.id) ? 0.6 : 1 }}
+                                            onClick={() => handleRejectClick(selectedApplication.id, 'exam')}
+                                            disabled={actioningIds.has(selectedApplication.id)}
+                                        >
                                             <XCircle size={18} /> Reject
                                         </button>
-                                        <button className="am-approve-btn" onClick={() => handleAction(selectedApplication.id, 'approved', 'exam')}>
-                                            <Check size={18} /> Approve
+                                        <button
+                                            className="am-approve-btn"
+                                            onClick={() => handleAction(selectedApplication.id, 'approved', 'exam')}
+                                            disabled={actioningIds.has(selectedApplication.id)}
+                                            style={{ opacity: actioningIds.has(selectedApplication.id) ? 0.7 : 1, display: 'flex', alignItems: 'center', gap: '8px' }}
+                                        >
+                                            {actioningIds.has(selectedApplication.id)
+                                                ? <Loader size={16} style={{ animation: 'spin 0.7s linear infinite' }} />
+                                                : <Check size={18} />}
+                                            {actioningIds.has(selectedApplication.id) ? 'Processing...' : 'Approve'}
                                         </button>
                                     </>
                                 ) : (
@@ -1076,7 +1136,7 @@ export const Applications: React.FC = () => {
                 (typeFilter === 'new' && app.isNewApplicant) ||
                 (typeFilter === 'existing' && !app.isNewApplicant);
 
-            // Search query (name or ID / reg no)
+
             let matchesSearch = true;
             if (applicantSearchTerm.trim()) {
                 const query = applicantSearchTerm.toLowerCase();
@@ -1085,7 +1145,8 @@ export const Applications: React.FC = () => {
                 const regNo = app.isNewApplicant ? '' : `CODL/ST/2024/${app.id.split('-')[1]}`;
                 const regMatch = regNo.toLowerCase().includes(query);
                 const idMatch = String(app.id || '').toLowerCase().includes(query);
-                matchesSearch = nameMatch || emailMatch || regMatch || idMatch;
+                const studentNumberMatch = (app.studentNumber || '').toLowerCase().includes(query);
+                matchesSearch = nameMatch || emailMatch || regMatch || idMatch || studentNumberMatch;
             }
 
             return matchesCourse && matchesType && matchesSearch;
@@ -1130,7 +1191,7 @@ export const Applications: React.FC = () => {
                                 />
                             </div>
 
-                            {/* Type Filter Pills */}
+                            { }
                             <div className="cm-filter-pills" style={{ margin: 0 }}>
                                 {[
                                     { id: 'all', label: 'All' },
@@ -1182,7 +1243,7 @@ export const Applications: React.FC = () => {
                                             </div>
                                         </td>
                                         <td>
-                                            <div style={{ fontSize: '13px', fontWeight: 500, color: app.isNewApplicant ? '#94A3B8' : '#7C3AED' }}>
+                                            <div style={{ fontSize: '13px', fontWeight: 500, color: app.isNewApplicant ? '#94A3B8' : 'var(--primary-color)' }}>
                                                 {app.studentNumber || '-'}
                                             </div>
                                         </td>
@@ -1212,8 +1273,14 @@ export const Applications: React.FC = () => {
                                                     <Eye size={16} />
                                                 </button>
                                                 {app.status === 'pending' && (currentAdminRole === 'coordinator' || currentAdminRole === 'director') && (
-                                                    <button className="at-action-btn approve" title="Approve" onClick={() => handleAction(app.id, 'approved', 'enrollment')}>
-                                                        <Check size={16} />
+                                                    <button
+                                                        className="at-action-btn approve"
+                                                        title="Approve"
+                                                        onClick={() => handleAction(app.id, 'approved', 'enrollment')}
+                                                        disabled={actioningIds.has(app.id)}
+                                                        style={{ opacity: actioningIds.has(app.id) ? 0.6 : 1 }}
+                                                    >
+                                                        {actioningIds.has(app.id) ? <Loader size={14} style={{ animation: 'spin 0.7s linear infinite' }} /> : <Check size={16} />}
                                                     </button>
                                                 )}
                                             </div>
@@ -1304,8 +1371,15 @@ export const Applications: React.FC = () => {
                                                         (app.currentStep === 2 && currentAdminRole === 'coordinator') ||
                                                         (app.currentStep === 3 && currentAdminRole === 'director')
                                                     ) && (
-                                                            <button className="at-action-btn approve" onClick={() => handleAction(app.id, 'approved', 'exam')}><Check size={16} /></button>
-                                                        )}
+                                                        <button
+                                                            className="at-action-btn approve"
+                                                            onClick={() => handleAction(app.id, 'approved', 'exam')}
+                                                            disabled={actioningIds.has(app.id)}
+                                                            style={{ opacity: actioningIds.has(app.id) ? 0.6 : 1 }}
+                                                        >
+                                                            {actioningIds.has(app.id) ? <Loader size={14} style={{ animation: 'spin 0.7s linear infinite' }} /> : <Check size={16} />}
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>
@@ -1349,11 +1423,11 @@ export const Applications: React.FC = () => {
                 </div>
             )}
 
-            {/* Stats (Shown when no search/filter) */}
+            { }
             {levelFilter === 'all' && !searchTerm && (
                 <div className="cm-stats-row">
                     <div className="cm-stat-card">
-                        <div className="cm-stat-icon" style={{ background: 'linear-gradient(135deg, #7C3AED, #5B21B6)' }}><BookOpen size={20} /></div>
+                        <div className="cm-stat-icon" style={{ background: 'linear-gradient(135deg, var(--primary-color), var(--primary-dark))' }}><BookOpen size={20} /></div>
                         <div className="cm-stat-info">
                             <span className="cm-stat-val">{mockAdminCourses.length}</span>
                             <span className="cm-stat-label">Total Items</span>
@@ -1383,7 +1457,7 @@ export const Applications: React.FC = () => {
                 </div>
             )}
 
-            {/* Search Filters */}
+            { }
             {levelFilter === 'all' && !searchTerm && (
                 <div className="cm-filters" style={{ marginBottom: '24px', marginTop: '8px' }}>
                     <div className="cm-search" style={{ maxWidth: '100%' }}>
@@ -1398,11 +1472,11 @@ export const Applications: React.FC = () => {
                 </div>
             )}
 
-            {/* Categories (Shown when no search/filter) */}
+            { }
             {levelFilter === 'all' && !searchTerm && (
                 <div className="cm-categories-grid">
                     {[
-                        { name: 'Degree', desc: '4-Year Academic Programs', icon: BookOpen, color: '#7C3AED', count: mockAdminCourses.filter(c => c.level === 'Degree').length },
+                        { name: 'Degree', desc: '4-Year Academic Programs', icon: BookOpen, color: 'var(--primary-color)', count: mockAdminCourses.filter(c => c.level === 'Degree').length },
                         { name: 'Higher National Diploma', desc: 'Advanced Professional Diplomas', icon: Layers, color: '#F59E0B', count: mockAdminCourses.filter(c => c.level === 'Higher National Diploma').length },
                         { name: 'Diploma', desc: '1-2 Year Specialized Courses', icon: BookOpen, color: '#3B82F6', count: mockAdminCourses.filter(c => c.level === 'Diploma').length },
                         { name: 'Advanced Certificate', desc: 'Intermediate Level Certifications', icon: Award, color: '#EC4899', count: mockAdminCourses.filter(c => c.level === 'Advanced Certificate').length },
@@ -1423,7 +1497,7 @@ export const Applications: React.FC = () => {
                 </div>
             )}
 
-            {/* Course Content Grid */}
+            { }
             {(levelFilter !== 'all' || searchTerm !== '') && (
                 <>
                     <div className="admin-page-header" style={{ marginBottom: '16px' }}>
@@ -1518,7 +1592,7 @@ export const Applications: React.FC = () => {
                 </>
             )}
 
-            {/* Create Item Modal */}
+            { }
             {showCreateModal && (
                 <div className="cm-modal-overlay" onClick={() => setShowCreateModal(false)}>
                     <div className="cm-modal" onClick={(e) => e.stopPropagation()}>
@@ -1558,7 +1632,7 @@ export const Applications: React.FC = () => {
 
             {renderApplicationModal()}
 
-            {/* Rejection Modal */}
+            { }
             <RejectionModal
                 isOpen={showRejectModal}
                 onClose={() => setShowRejectModal(false)}
@@ -1570,7 +1644,7 @@ export const Applications: React.FC = () => {
     );
 };
 
-// Rejection Modal Helper Component
+
 const RejectionModal: React.FC<{ isOpen: boolean, onClose: () => void, onConfirm: () => void, reason: string, setReason: (v: string) => void }> = ({ isOpen, onClose, onConfirm, reason, setReason }) => {
     if (!isOpen) return null;
     return (

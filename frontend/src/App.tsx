@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Outlet, Navigate, useLocation } from 'react-router-dom';
+import { Monitor } from 'lucide-react';
 
-// --- Student Portal Imports ---
+
 import { Sidebar } from './components/student-portal/Sidebar';
 import { Dashboard } from './components/student-portal/Dashboard';
 import { CourseDetailsWrapper } from './components/student-portal/CourseDetailsWrapper';
@@ -14,6 +15,8 @@ import { ExamApplicationForm } from './components/student-portal/ExamApplication
 import { ExamApplicationSuccess } from './components/student-portal/ExamApplicationSuccess';
 import { CourseAnnouncements } from './components/student-portal/CourseAnnouncements';
 import { LoginPortal } from './components/auth/LoginPortal';
+import { ForgotPassword } from './components/auth/ForgotPassword';
+import { ResetPassword } from './components/auth/ResetPassword';
 import { Profile } from './components/student-portal/Profile';
 import { LetterRequest } from './components/student-portal/LetterRequest';
 import { Settings } from './components/student-portal/Settings';
@@ -23,8 +26,11 @@ import { ApplicantDashboard } from './components/student-portal/ApplicantDashboa
 import { ApplicantTrackStatus } from './components/student-portal/ApplicantTrackStatus';
 import { NewCourseApplication } from './components/student-portal/NewCourseApplication';
 import ExaminationResults from './components/student-portal/ExaminationResults';
+import { StudentInterestForm } from './components/public/StudentInterestForm';
+import { IndustryAnalysisForm } from './components/public/IndustryAnalysisForm';
 
-// --- Admin Portal Imports ---
+
+
 import { AdminSidebar } from './components/admin-portal/AdminSidebar';
 import { AdminDashboard } from './components/admin-portal/AdminDashboard';
 import { AdminLogin } from './components/auth/AdminLogin';
@@ -38,16 +44,19 @@ import { AdminSettings } from './components/admin-portal/AdminSettings';
 import { CreateExam } from './components/admin-portal/CreateExam';
 import { ManageExamStudents } from './components/admin-portal/ManageExamStudents';
 import { AIAnalytics } from './components/admin-portal/AIAnalytics';
+import { ManageForms } from './components/admin-portal/ManageForms';
 import { AdminAnnouncements } from './components/admin-portal/AdminAnnouncements';
 import { ActivityLogs } from './components/admin-portal/ActivityLogs';
 import { TrackStudent } from './components/admin-portal/TrackStudent';
+import { HelpCenter } from './components/public/HelpCenter';
 
-// --- Common/Services Imports ---
+
+
 import { systemSettingService } from './services/apiService';
 import { MaintenancePage } from './components/common/MaintenancePage';
 import './App.css';
 
-// --- Helper Components ---
+
 const LayoutWithSidebar = () => {
   const location = useLocation();
   const isDashboard =
@@ -81,9 +90,37 @@ const AdminLayout = () => {
   const location = useLocation();
   const token = sessionStorage.getItem('token');
   const adminRole = sessionStorage.getItem('adminRole');
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   if (!token || !adminRole) {
     return <Navigate to="/staff/login" replace state={{ from: location }} />;
+  }
+
+  if (isMobile) {
+    return (
+      <div className="admin-mobile-block">
+        <div className="admin-mobile-block-card">
+          <div className="admin-mobile-block-icon">
+            <Monitor size={48} />
+          </div>
+          <h2>Desktop Screen Required</h2>
+          <p>
+            The CODL SUSL Admin Portal is optimized for desktop computers and larger screens to manage courses, applications, and analytics securely.
+          </p>
+          <div className="admin-mobile-block-footer">
+            Please open this portal on a device with a screen width of at least 1024px.
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -105,6 +142,10 @@ const TitleUpdater = () => {
       location.pathname.startsWith('/staff')
     ) {
       document.title = 'CODL | SUSL - Staff';
+    } else if (location.pathname.startsWith('/student-interests')) {
+      document.title = 'Student Academic Interest';
+    } else if (location.pathname.startsWith('/industry-analysis')) {
+      document.title = 'Industry Requirements Survey';
     } else {
       document.title = 'CODL | SUSL - Student';
     }
@@ -113,12 +154,26 @@ const TitleUpdater = () => {
   return null;
 };
 
-// --- Main App Component ---
+
 function App() {
   const [settings, setSettings] = useState(() => {
     const cached = localStorage.getItem('systemSettings');
     return cached ? JSON.parse(cached) : null;
   });
+
+  useEffect(() => {
+    if (settings && settings.primary_color) {
+      document.documentElement.style.setProperty('--primary-color', settings.primary_color);
+      document.documentElement.style.setProperty('--primary-hover', settings.primary_color + 'e0');
+      document.documentElement.style.setProperty('--border-focus', settings.primary_color);
+      document.documentElement.style.setProperty('--sidebar-bg', settings.primary_color);
+    } else {
+      document.documentElement.style.setProperty('--primary-color', '#7C3AED');
+      document.documentElement.style.setProperty('--primary-hover', '#6D28D9');
+      document.documentElement.style.setProperty('--border-focus', '#7C3AED');
+      document.documentElement.style.setProperty('--sidebar-bg', '#7C3AED');
+    }
+  }, [settings]);
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -159,9 +214,16 @@ function App() {
         <Route path="/" element={<Navigate to="/login" replace />} />
 
         <Route path="/login" element={<LoginPortal />} />
+        <Route path="/student-interests" element={<StudentInterestForm />} />
+        <Route path="/industry-analysis" element={<IndustryAnalysisForm />} />
         <Route path="/staff/login" element={<AdminLogin />} />
+        <Route path="/help-center" element={<HelpCenter />} />
+        <Route path="/help-center/:guideId" element={<HelpCenter />} />
 
-        {/* Applicant Dashboard Routes */}
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+
+        { }
         <Route
           path="/applicant-dashboard"
           element={<ApplicantDashboard />}
@@ -181,7 +243,7 @@ function App() {
           />
         </Route>
 
-        {/* Super Admin Dashboard Routes */}
+        { }
         <Route path="/admin" element={<AdminLayout />}>
           <Route
             index
@@ -253,6 +315,7 @@ function App() {
 
           <Route path="activity-logs" element={<ActivityLogs />} />
           <Route path="ai-analytics" element={<AIAnalytics />} />
+          <Route path="ai-analytics/manage-forms" element={<ManageForms />} />
 
           <Route
             path="settings"
@@ -260,7 +323,7 @@ function App() {
           />
         </Route>
 
-        {/* Registered Student Dashboard Routes */}
+        { }
         <Route element={<LayoutWithSidebar />}>
           <Route
             path="/dashboard"

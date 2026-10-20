@@ -4,14 +4,14 @@ import {
     Eye, X, Download, Save,
     Shield, Key,
     Mail, Phone, Calendar, BookOpen, AlertCircle,
-    MoreVertical, Hash
+    MoreVertical, Hash, Clock, CheckCircle2, XCircle, FileText, AlertTriangle
 } from 'lucide-react';
 import { type User, getFullAvatarUrl } from '../../data/mockAdminData';
-import { userService } from '../../services/apiService';
+import { userService, courseApplicationService } from '../../services/apiService';
 import { toast } from '../../utils/toast';
 import './UserManagement.css';
 
-// Map backend user to frontend User interface
+
 const mapUser = (user: any): User => ({
     id: String(user.id),
     fullName: user.full_name,
@@ -24,7 +24,7 @@ const mapUser = (user: any): User => ({
     avatar: user.avatar ? getFullAvatarUrl(user.avatar) : `https://ui-avatars.com/api/?name=${encodeURIComponent(user.full_name)}&background=random`,
     joinDate: user.created_at ? user.created_at.split('T')[0] : 'N/A',
     lastLogin: user.updated_at || new Date().toISOString(),
-    courses: []
+    courses: user.courses ? user.courses.map((c: any) => c.title || c.code) : []
 });
 
 export const UserManagement: React.FC = () => {
@@ -38,6 +38,15 @@ export const UserManagement: React.FC = () => {
     const [isEditMode, setIsEditMode] = useState(false);
     const [editFormData, setEditFormData] = useState<User | null>(null);
     const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+    const [showResetConfirmModal, setShowResetConfirmModal] = useState(false);
+    const [userToReset, setUserToReset] = useState<User | null>(null);
+    const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+    const [userToDelete, setUserToDelete] = useState<User | null>(null);
+
+    const [showApprovalStagesModal, setShowApprovalStagesModal] = useState(false);
+    const [applicantStagesUser, setApplicantStagesUser] = useState<User | null>(null);
+    const [stagesLoading, setStagesLoading] = useState(false);
+    const [applicantApplication, setApplicantApplication] = useState<any | null>(null);
 
     const [newUser, setNewUser] = useState({
         fullName: '',
@@ -56,6 +65,7 @@ export const UserManagement: React.FC = () => {
         { key: 'secretary', label: 'Course Secretary', plural: 'Course Secretaries', color: '#0891B2' },
         { key: 'lecturer', label: 'Lecturer', plural: 'Lecturers', color: '#4F46E5' },
         { key: 'student', label: 'Student', plural: 'Students', color: '#059669' },
+        { key: 'applicant', label: 'Applicant', plural: 'Applicants', color: '#EA580C' },
     ];
 
     useEffect(() => {
@@ -100,8 +110,8 @@ export const UserManagement: React.FC = () => {
     const generateStudentNumber = (role: string) => {
         const yearDigits = new Date().getFullYear().toString().slice(-2);
 
-        // Count users of this specific role to determine the next number
-        // In a real production app, this would be handled by the backend
+
+
         const roleUsers = users.filter(u => u.role === role);
         const nextNum = String(roleUsers.length + 1).padStart(4, '0');
 
@@ -118,8 +128,10 @@ export const UserManagement: React.FC = () => {
                 return `CODL/LC${nextNum}`;
             case 'student':
                 return `${yearDigits}CODL${nextNum}`;
+            case 'applicant':
+                return `CODL/AP${nextNum}`;
             default:
-                return `CODL/UN${nextNum}`; // Unknown
+                return `CODL/UN${nextNum}`; 
         }
     };
 
@@ -137,14 +149,14 @@ export const UserManagement: React.FC = () => {
                 role: newUser.role,
                 status: 'active',
                 student_number: studentNumber,
-                password: newUser.nic // Default password is NIC
+                password: newUser.nic 
             };
 
             await userService.create(payload);
             toast.success(`User created in Cloud DB!\n\nRegistration Number: ${studentNumber}\nDefault Password: ${newUser.nic}`, { title: 'Account Created' });
             setShowCreateModal(false);
             setNewUser({ fullName: '', email: '', nic: '', phone: '', role: 'student' });
-            fetchUsers(); // Refresh list
+            fetchUsers(); 
         } catch (err: any) {
             toast.error(err.response?.data?.message || 'Failed to create user');
         } finally {
@@ -177,7 +189,7 @@ export const UserManagement: React.FC = () => {
             toast.success('User updated successfully!');
             setIsEditMode(false);
             setShowDetailModal(false);
-            fetchUsers(); // Refresh list
+            fetchUsers(); 
         } catch (err: any) {
             toast.error(err.response?.data?.message || 'Failed to update user');
         } finally {
@@ -185,51 +197,100 @@ export const UserManagement: React.FC = () => {
         }
     };
 
-    const handleResetPassword = async (user: User) => {
+    const triggerResetPassword = (user: User) => {
         if (user.role === 'super_admin') {
             toast.error('Super Administrators cannot be modified.');
             return;
         }
-        if (window.confirm(`Reset password for ${user.fullName} to default (NIC: ${user.nic})?`)) {
-            try {
-                await userService.resetPassword(user.id);
-                toast.success('Password reset successfully!');
-            } catch (err: any) {
-                toast.error(err.response?.data?.message || 'Failed to reset password');
-            }
-        }
+        setUserToReset(user);
+        setShowResetConfirmModal(true);
         setOpenMenuId(null);
     };
 
-    const handleDeleteUser = async (user: User) => {
+    const handleConfirmResetPassword = async () => {
+        if (!userToReset) return;
+        setIsLoading(true);
+        try {
+            await userService.resetPassword(userToReset.id);
+            toast.success('Password reset successfully!');
+            setShowResetConfirmModal(false);
+            setUserToReset(null);
+        } catch (err: any) {
+            toast.error(err.response?.data?.message || 'Failed to reset password');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const triggerDeleteUser = (user: User) => {
         if (user.role === 'super_admin') {
             toast.error('Super Administrators cannot be deleted.');
             return;
         }
-        if (window.confirm(`Are you sure you want to delete account for ${user.fullName}? This action cannot be undone.`)) {
-            try {
-                await userService.delete(user.id);
-                // Update local state immediately for instant feedback
-                setUsers(prev => prev.filter(u => u.id !== user.id));
-                toast.success('User deleted successfully');
-            } catch (err) {
-                console.error('Delete failed:', err);
-                toast.error('Failed to delete user. Please try again.');
-            }
-            setOpenMenuId(null);
+        setUserToDelete(user);
+        setShowDeleteConfirmModal(true);
+        setOpenMenuId(null);
+    };
+
+    const handleConfirmDeleteUser = async () => {
+        if (!userToDelete) return;
+        setIsLoading(true);
+        try {
+            await userService.delete(userToDelete.id);
+            setUsers(prev => prev.filter(u => u.id !== userToDelete.id));
+            toast.success('User deleted successfully');
+            setShowDeleteConfirmModal(false);
+            setUserToDelete(null);
+        } catch (err: any) {
+            console.error('Delete failed:', err);
+            toast.error(err.response?.data?.message || 'Failed to delete user. Please try again.');
+        } finally {
+            setIsLoading(false);
         }
     };
 
-    const handleChangeRoleAction = (user: User) => {
+    const handleViewApprovalStages = async (user: User) => {
+        setApplicantStagesUser(user);
+        setShowApprovalStagesModal(true);
+        setStagesLoading(true);
+        setOpenMenuId(null);
+        setApplicantApplication(null);
+        try {
+            const apps = await courseApplicationService.getAll();
+            const app = apps.find((a: any) =>
+                String(a.user_id) === String(user.id) ||
+                a.applicant_email?.toLowerCase() === user.email?.toLowerCase() ||
+                a.applicant_nic === user.nic
+            );
+            setApplicantApplication(app || null);
+        } catch (err) {
+            console.error('Failed to fetch applicant application stages:', err);
+            toast.error('Failed to load approval stages.');
+        } finally {
+            setStagesLoading(false);
+        }
+    };
+
+    const handleChangeRoleAction = async (user: User) => {
         if (user.role === 'super_admin') {
             toast.error('Super Administrators cannot be modified.');
             return;
         }
-        setSelectedUser(user);
-        setEditFormData({ ...user });
-        setIsEditMode(true);
-        setShowDetailModal(true);
-        setOpenMenuId(null);
+        try {
+            setIsLoading(true);
+            const fullUser = await userService.getById(user.id);
+            const mapped = mapUser(fullUser);
+            setSelectedUser(mapped);
+            setEditFormData({ ...mapped });
+            setIsEditMode(true);
+            setShowDetailModal(true);
+            setOpenMenuId(null);
+        } catch (err) {
+            console.error("Failed to fetch user details for editing:", err);
+            toast.error("Failed to load user details");
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleExportUsers = () => {
@@ -238,10 +299,10 @@ export const UserManagement: React.FC = () => {
             return;
         }
 
-        // CSV Headers
+
         const headers = ['Registration Number', 'Full Name', 'Email', 'NIC', 'Phone', 'Role', 'Status', 'Joined Date'];
 
-        // Convert user objects to CSV rows
+
         const csvRows = users.map(user => [
             `"${user.studentNumber || ''}"`,
             `"${user.fullName?.replace(/"/g, '""') || ''}"`,
@@ -253,10 +314,10 @@ export const UserManagement: React.FC = () => {
             `"${user.joinDate || ''}"`
         ]);
 
-        // Combine headers and rows
+
         const csvContent = [headers.join(','), ...csvRows.map(row => row.join(','))].join('\n');
 
-        // Create Blob and trigger download
+
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
@@ -272,7 +333,7 @@ export const UserManagement: React.FC = () => {
 
     return (
         <div className="um-container">
-            {/* Page Header */}
+            { }
             <div className="admin-page-header">
                 <div>
                     <h1 className="admin-page-title">User Management</h1>
@@ -288,7 +349,7 @@ export const UserManagement: React.FC = () => {
                 </div>
             </div>
 
-            {/* Stats Cards */}
+            { }
             <div className="um-stats-row">
                 {roles.filter(r => r.key !== 'all').map(role => {
                     const count = users.filter(u => u.role === role.key).length;
@@ -309,7 +370,7 @@ export const UserManagement: React.FC = () => {
                 })}
             </div>
 
-            {/* Filters */}
+            { }
             <div className="um-filters">
                 <div className="um-search">
                     <Search size={18} className="um-search-icon" />
@@ -348,7 +409,7 @@ export const UserManagement: React.FC = () => {
                 </div>
             </div>
 
-            {/* Users Table */}
+            { }
             <div className="um-table-card">
                 <div className="um-table-header">
                     <h3><Users size={18} /> All Users ({filteredUsers.length})</h3>
@@ -395,9 +456,25 @@ export const UserManagement: React.FC = () => {
                                         <td className="um-last-login">
                                             {new Date(user.lastLogin).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                                         </td>
-                                        <td style={{ position: 'relative' }}>
+                                        <td style={{ position: 'relative', zIndex: openMenuId === user.id ? 50 : undefined }}>
                                             <div className="um-actions">
-                                                <button className="um-action-btn" title="View Details" onClick={() => { setSelectedUser(user); setShowDetailModal(true); }}>
+                                                <button
+                                                    className="um-action-btn"
+                                                    title="View Details"
+                                                    onClick={async () => {
+                                                        try {
+                                                            setIsLoading(true);
+                                                            const fullUser = await userService.getById(user.id);
+                                                            setSelectedUser(mapUser(fullUser));
+                                                            setShowDetailModal(true);
+                                                        } catch (err) {
+                                                            console.error("Failed to fetch user details:", err);
+                                                            toast.error("Failed to load user details");
+                                                        } finally {
+                                                            setIsLoading(false);
+                                                        }
+                                                    }}
+                                                >
                                                     <Eye size={15} />
                                                 </button>
                                                 {user.role !== 'super_admin' && (
@@ -414,14 +491,26 @@ export const UserManagement: React.FC = () => {
                                                 <>
                                                     <div className="um-menu-overlay" onClick={() => setOpenMenuId(null)} />
                                                     <div className="um-dropdown-menu">
-                                                        <button onClick={() => handleResetPassword(user)}>
-                                                            <Key size={14} /> Reset Password
-                                                        </button>
-                                                        <button onClick={() => handleChangeRoleAction(user)}>
-                                                            <Edit3 size={14} /> Change Role
-                                                        </button>
-                                                        <div className="um-menu-divider" />
-                                                        <button className="delete" onClick={() => handleDeleteUser(user)}>
+                                                        {user.role !== 'applicant' && (
+                                                            <>
+                                                                <button onClick={() => triggerResetPassword(user)}>
+                                                                    <Key size={14} /> Reset Password
+                                                                </button>
+                                                                <button onClick={() => handleChangeRoleAction(user)}>
+                                                                    <Edit3 size={14} /> Change Role
+                                                                </button>
+                                                                <div className="um-menu-divider" />
+                                                            </>
+                                                        )}
+                                                        {user.role === 'applicant' && (
+                                                            <>
+                                                                <button onClick={() => handleViewApprovalStages(user)}>
+                                                                    <Clock size={14} /> View Progress
+                                                                </button>
+                                                                <div className="um-menu-divider" />
+                                                            </>
+                                                        )}
+                                                        <button className="delete" onClick={() => triggerDeleteUser(user)}>
                                                             <Trash2 size={14} /> Delete Account
                                                         </button>
                                                     </div>
@@ -448,7 +537,7 @@ export const UserManagement: React.FC = () => {
                 </div>
             </div>
 
-            {/* Create User Modal */}
+            { }
             {showCreateModal && (
                 <div className="um-modal-overlay" onClick={() => setShowCreateModal(false)}>
                     <div className="um-modal" onClick={(e) => e.stopPropagation()}>
@@ -554,7 +643,7 @@ export const UserManagement: React.FC = () => {
                 </div>
             )}
 
-            {/* User Detail Modal */}
+            { }
             {showDetailModal && selectedUser && (
                 <div className="um-modal-overlay" onClick={() => setShowDetailModal(false)}>
                     <div className="um-modal detail-modal" onClick={(e) => e.stopPropagation()}>
@@ -636,7 +725,6 @@ export const UserManagement: React.FC = () => {
                                                 value={editFormData.phone}
                                                 onChange={handleEditChange}
                                                 className="admin-input"
-                                                required
                                             />
                                         </div>
                                         <div className="um-detail-item edit-field">
@@ -647,7 +735,6 @@ export const UserManagement: React.FC = () => {
                                                 value={editFormData.nic}
                                                 onChange={handleEditChange}
                                                 className="admin-input"
-                                                required
                                             />
                                         </div>
                                     </div>
@@ -681,11 +768,11 @@ export const UserManagement: React.FC = () => {
                                         </div>
                                         <div className="um-detail-item">
                                             <span className="um-dl"><Phone size={14} /> Phone</span>
-                                            <span className="um-dv">{selectedUser.phone}</span>
+                                            <span className="um-dv">{selectedUser.phone || <span className="um-not-provided">Not Provided</span>}</span>
                                         </div>
                                         <div className="um-detail-item">
                                             <span className="um-dl"><Shield size={14} /> NIC</span>
-                                            <span className="um-dv">{selectedUser.nic}</span>
+                                            <span className="um-dv">{selectedUser.nic || <span className="um-not-provided">Not Provided</span>}</span>
                                         </div>
                                         <div className="um-detail-item">
                                             <span className="um-dl"><Calendar size={14} /> Joined</span>
@@ -710,30 +797,6 @@ export const UserManagement: React.FC = () => {
                                             </div>
                                         </div>
                                     )}
-
-                                    {selectedUser.role === 'student' && (
-                                        <div className="um-performance-summary">
-                                            <h4>Performance Summary</h4>
-                                            <div className="um-perf-grid">
-                                                <div className="um-perf-card">
-                                                    <span className="um-perf-val">3.42</span>
-                                                    <span className="um-perf-label">Current GPA</span>
-                                                </div>
-                                                <div className="um-perf-card">
-                                                    <span className="um-perf-val">28</span>
-                                                    <span className="um-perf-label">Credits Earned</span>
-                                                </div>
-                                                <div className="um-perf-card">
-                                                    <span className="um-perf-val">92%</span>
-                                                    <span className="um-perf-label">Attendance</span>
-                                                </div>
-                                                <div className="um-perf-card">
-                                                    <span className="um-perf-val">0</span>
-                                                    <span className="um-perf-label">Warnings</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
                                 </>
                             )}
                         </div>
@@ -746,6 +809,231 @@ export const UserManagement: React.FC = () => {
                                 </button>
                             </div>
                         )}
+                    </div>
+                </div>
+            )}
+
+            { }
+            {showResetConfirmModal && userToReset && (
+                <div className="um-modal-overlay" onClick={() => { setShowResetConfirmModal(false); setUserToReset(null); }}>
+                    <div className="um-modal" style={{ maxWidth: '480px' }} onClick={(e) => e.stopPropagation()}>
+                        <div className="um-modal-header" style={{ padding: '20px 24px' }}>
+                            <div>
+                                <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#1E293B', fontSize: '18px', fontWeight: 700 }}>
+                                    <Key size={20} style={{ color: 'var(--primary-color)' }} /> Confirm Reset Password
+                                </h2>
+                                <p style={{ fontSize: '13px', color: '#64748B', marginTop: '4px', margin: 0 }}>
+                                    Are you sure you want to reset this user's password?
+                                </p>
+                            </div>
+                            <button className="um-modal-close" onClick={() => { setShowResetConfirmModal(false); setUserToReset(null); }}>
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="um-modal-body" style={{ padding: '20px 24px' }}>
+                            <div className="um-info-banner" style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', color: '#475569', display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-start', margin: 0 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <AlertCircle size={16} style={{ color: '#F59E0B' }} />
+                                    <span style={{ fontWeight: 600 }}>Account Details</span>
+                                </div>
+                                <div style={{ paddingLeft: '24px', fontSize: '13px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                    <span><strong>Name:</strong> {userToReset.fullName}</span>
+                                    <span><strong>Registration ID:</strong> {userToReset.studentNumber || 'N/A'}</span>
+                                    <span><strong>Default Password (NIC):</strong> {userToReset.nic || <span style={{ fontStyle: 'italic', color: '#94A3B8' }}>Not Provided</span>}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="um-modal-footer-integrated" style={{ padding: '16px 24px' }}>
+                            <button type="button" className="um-btn-cancel" style={{ height: '40px', minWidth: '100px', padding: '0 20px' }} onClick={() => { setShowResetConfirmModal(false); setUserToReset(null); }} disabled={isLoading}>
+                                Cancel
+                            </button>
+                            <button type="button" className="um-btn-create" style={{ height: '40px', minWidth: '160px', padding: '0 20px', background: 'linear-gradient(135deg, var(--primary-color), var(--primary-hover))' }} onClick={handleConfirmResetPassword} disabled={isLoading}>
+                                {isLoading ? 'Resetting...' : 'Reset Password'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Account Confirmation Modal */}
+            {showDeleteConfirmModal && userToDelete && (
+                <div className="um-modal-overlay" onClick={() => { setShowDeleteConfirmModal(false); setUserToDelete(null); }}>
+                    <div className="um-modal" style={{ maxWidth: '480px' }} onClick={(e) => e.stopPropagation()}>
+                        <div className="um-modal-header" style={{ padding: '20px 24px' }}>
+                            <div>
+                                <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#1E293B', fontSize: '18px', fontWeight: 700 }}>
+                                    <Trash2 size={20} style={{ color: '#EF4444' }} /> Confirm Delete Account
+                                </h2>
+                                <p style={{ fontSize: '13px', color: '#64748B', marginTop: '4px', margin: 0 }}>
+                                    Are you sure you want to delete this account? <strong>This action cannot be undone.</strong>
+                                </p>
+                            </div>
+                            <button className="um-modal-close" onClick={() => { setShowDeleteConfirmModal(false); setUserToDelete(null); }}>
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="um-modal-body" style={{ padding: '20px 24px' }}>
+                            <div className="um-info-banner" style={{ background: '#FEF2F2', border: '1px solid #FEE2E2', color: '#991B1B', display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-start', margin: 0 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <AlertCircle size={16} style={{ color: '#EF4444' }} />
+                                    <span style={{ fontWeight: 600 }}>Account Details</span>
+                                </div>
+                                <div style={{ paddingLeft: '24px', fontSize: '13px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                    <span><strong>Name:</strong> {userToDelete.fullName}</span>
+                                    <span><strong>Registration ID:</strong> {userToDelete.studentNumber || 'N/A'}</span>
+                                    <span><strong>Role:</strong> {userToDelete.role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="um-modal-footer-integrated" style={{ padding: '16px 24px' }}>
+                            <button type="button" className="um-btn-cancel" style={{ height: '40px', minWidth: '100px', padding: '0 20px' }} onClick={() => { setShowDeleteConfirmModal(false); setUserToDelete(null); }} disabled={isLoading}>
+                                Cancel
+                            </button>
+                            <button type="button" className="um-btn-create" style={{ height: '40px', minWidth: '160px', padding: '0 20px', background: 'linear-gradient(135deg, #EF4444, #DC2626)', boxShadow: '0 6px 16px rgba(239, 68, 68, 0.25)' }} onClick={handleConfirmDeleteUser} disabled={isLoading}>
+                                {isLoading ? 'Deleting...' : 'Delete Account'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Applicant Approval Stages Modal */}
+            {showApprovalStagesModal && applicantStagesUser && (
+                <div className="um-modal-overlay" onClick={() => { setShowApprovalStagesModal(false); setApplicantStagesUser(null); }}>
+                    <div className="um-modal" style={{ maxWidth: '560px' }} onClick={(e) => e.stopPropagation()}>
+                        <div className="um-modal-header">
+                            <div>
+                                <h2>Application Approval Progress</h2>
+                                <p>Track the verification and approval stages completed for this applicant.</p>
+                            </div>
+                            <button className="um-modal-close" onClick={() => { setShowApprovalStagesModal(false); setApplicantStagesUser(null); }}>
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="um-modal-body">
+                            {stagesLoading ? (
+                                <div className="um-loading" style={{ padding: '40px 0' }}>
+                                    <div className="um-spinner"></div>
+                                    <p>Loading approval stages...</p>
+                                </div>
+                            ) : (
+                                <>
+                                    <div className="um-applicant-card">
+                                        <div className="um-applicant-card-col">
+                                            <h4>Applicant Details</h4>
+                                            <span style={{ fontSize: '13px', color: '#1E293B', fontWeight: 600 }}>{applicantStagesUser.fullName}</span>
+                                            <span style={{ fontSize: '12px', color: '#64748B' }}>{applicantStagesUser.email}</span>
+                                            <span style={{ fontSize: '12px', color: '#64748B' }}>NIC: {applicantStagesUser.nic || 'N/A'}</span>
+                                        </div>
+                                        <div className="um-applicant-card-col">
+                                            <h4>Application Details</h4>
+                                            {applicantApplication ? (
+                                                <>
+                                                    <span style={{ fontSize: '13px', color: '#1E293B', fontWeight: 600 }}>{applicantApplication.course?.title || 'Unknown Course'}</span>
+                                                    <span style={{ fontSize: '12px', color: '#64748B' }}>Batch: {applicantApplication.batch?.name || 'N/A'}</span>
+                                                    <span style={{ fontSize: '12px', color: '#64748B' }}>
+                                                        Current Status: <strong style={{ color: applicantApplication.status === 'rejected' ? '#EF4444' : (applicantApplication.status === 'approved' || (applicantApplication.approval_level || 0) === 3 ? '#10B981' : '#F59E0B') }}>
+                                                            {applicantApplication.status === 'rejected' ? 'Rejected' : (applicantApplication.status === 'approved' || (applicantApplication.approval_level || 0) === 3 ? 'Approved' : 'In Review')}
+                                                        </strong>
+                                                    </span>
+                                                </>
+                                            ) : (
+                                                <span style={{ fontSize: '12px', color: '#94A3B8', fontStyle: 'italic' }}>No application data</span>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {!applicantApplication ? (
+                                        <div className="um-info-banner" style={{ background: '#FFFBEB', border: '1px solid #FDE68A', color: '#B45309', margin: 0 }}>
+                                            <AlertTriangle size={16} />
+                                            <span>No active application record was found for this applicant user.</span>
+                                        </div>
+                                    ) : (
+                                        <div className="um-stages-timeline">
+                                            {(() => {
+                                                const approvalLevel = applicantApplication.approval_level || 0;
+                                                const isRejected = applicantApplication.status === 'rejected';
+
+                                                const steps = [
+                                                    {
+                                                        id: 1,
+                                                        title: 'Application Submitted',
+                                                        description: 'The course application has been successfully submitted online.',
+                                                        date: applicantApplication.created_at ? new Date(applicantApplication.created_at).toLocaleDateString() : 'N/A',
+                                                        status: 'completed',
+                                                        icon: <FileText size={16} />
+                                                    },
+                                                    {
+                                                        id: 2,
+                                                        title: 'Document Verification (Secretary)',
+                                                        description: 'Initial review of documents and academic requirements.',
+                                                        date: approvalLevel >= 1 ? new Date(applicantApplication.secretary_approved_at || Date.now()).toLocaleDateString() : 'Pending',
+                                                        status: isRejected && approvalLevel === 0 ? 'rejected' : (approvalLevel >= 1 ? 'completed' : 'pending'),
+                                                        icon: <Clock size={16} />,
+                                                        approver: applicantApplication.secretary_approver?.full_name,
+                                                        comment: isRejected && approvalLevel === 0 ? applicantApplication.secretary_comment : null
+                                                    },
+                                                    {
+                                                        id: 3,
+                                                        title: 'Coordinator Approval',
+                                                        description: 'Academic qualification and intake review by the Course Coordinator.',
+                                                        date: approvalLevel >= 2 ? new Date(applicantApplication.coordinator_approved_at || Date.now()).toLocaleDateString() : 'Pending',
+                                                        status: isRejected && approvalLevel === 1 ? 'rejected' : (approvalLevel >= 2 ? 'completed' : 'pending'),
+                                                        icon: <Clock size={16} />,
+                                                        approver: applicantApplication.coordinator_approver?.full_name,
+                                                        comment: isRejected && approvalLevel === 1 ? applicantApplication.coordinator_comment : null
+                                                    },
+                                                    {
+                                                        id: 4,
+                                                        title: 'Final Director Approval & Account Generation',
+                                                        description: 'Final sign-off by Director and automatic user account generation.',
+                                                        date: approvalLevel >= 3 ? new Date(applicantApplication.director_approved_at || Date.now()).toLocaleDateString() : 'Pending',
+                                                        status: isRejected && approvalLevel === 2 ? 'rejected' : (approvalLevel >= 3 ? 'completed' : 'pending'),
+                                                        icon: <Shield size={16} />,
+                                                        approver: applicantApplication.director_approver?.full_name,
+                                                        comment: isRejected && approvalLevel === 2 ? applicantApplication.director_comment : null
+                                                    }
+                                                ];
+
+                                                return steps.map((step) => (
+                                                    <div className="um-timeline-item" key={step.id}>
+                                                        <div className="um-timeline-indicator">
+                                                            <div className={`um-timeline-circle ${step.status}`}>
+                                                                {step.status === 'completed' ? <CheckCircle2 size={16} /> : (step.status === 'rejected' ? <XCircle size={16} /> : step.icon)}
+                                                            </div>
+                                                            <div className="um-timeline-line"></div>
+                                                        </div>
+                                                        <div className="um-timeline-content">
+                                                            <div className="um-timeline-header">
+                                                                <span className="um-timeline-title">{step.title}</span>
+                                                                <span className={`um-timeline-status-badge ${step.status}`}>{step.status}</span>
+                                                            </div>
+                                                            <p className="um-timeline-desc">{step.description}</p>
+                                                            <div className="um-timeline-meta">
+                                                                <span>Date: <strong>{step.date}</strong></span>
+                                                                {step.approver && (
+                                                                    <span>Reviewed By: <strong>{step.approver}</strong></span>
+                                                                )}
+                                                            </div>
+                                                            {step.comment && (
+                                                                <div className="um-timeline-comment-box rejected">
+                                                                    <strong>Rejection Reason:</strong> {step.comment}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                ));
+                                            })()}
+                                        </div>
+                                    )}
+                                </>
+                            )}
+                        </div>
+                        <div className="um-modal-footer-integrated" style={{ padding: '16px 28px' }}>
+                            <button type="button" className="um-btn-cancel" style={{ height: '40px', minWidth: '100px', padding: '0 20px', marginLeft: 'auto' }} onClick={() => { setShowApprovalStagesModal(false); setApplicantStagesUser(null); }}>
+                                Close
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

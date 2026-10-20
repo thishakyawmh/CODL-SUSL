@@ -12,7 +12,7 @@ export const ApplicantTrackStatus: React.FC = () => {
     const handleDownloadApplication = async (app: any) => {
         if (!app) return;
 
-        // Dynamically import jsPDF and html2canvas
+
         const { default: jsPDF } = await import('jspdf');
         const { default: html2canvas } = await import('html2canvas');
 
@@ -37,7 +37,7 @@ export const ApplicantTrackStatus: React.FC = () => {
         const appId = `APP-${new Date(app.created_at).getFullYear()}-${app.id.toString().padStart(4, '0')}`;
         const submissionDate = new Date(app.created_at).toLocaleDateString();
 
-        // Shared styles for both pages
+
         const sharedStyles = `
         .section-title {
             font-size: 12px;
@@ -89,7 +89,7 @@ export const ApplicantTrackStatus: React.FC = () => {
         .office-use h4 { margin: 0 0 12px 0; text-transform: uppercase; font-size: 11px; font-weight: 700; color: #1e293b; text-align: center; }
         `;
 
-        // Helper to create a page container
+
         const createPageContainer = (htmlContent: string) => {
             const el = document.createElement('div');
             el.style.position = 'fixed';
@@ -106,7 +106,7 @@ export const ApplicantTrackStatus: React.FC = () => {
             return el;
         };
 
-        // ── PAGE 1: Header, Course Details, Personal Info, Employment ──
+
         const page1 = createPageContainer(`
     <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 15px; margin-bottom: 25px;">
         <h1 style="font-size: 18px; font-weight: 800; margin: 0; text-transform: uppercase; letter-spacing: 0.5px;">Centre for Open and Distance Learning</h1>
@@ -204,7 +204,7 @@ export const ApplicantTrackStatus: React.FC = () => {
     </div>
         `);
 
-        // ── PAGE 2: Academic Qualifications, Declaration, Office Use ──
+
         const page2 = createPageContainer(`
     <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 15px; margin-bottom: 25px;">
         <h1 style="font-size: 18px; font-weight: 800; margin: 0; text-transform: uppercase; letter-spacing: 0.5px;">Centre for Open and Distance Learning</h1>
@@ -290,7 +290,7 @@ export const ApplicantTrackStatus: React.FC = () => {
         document.body.appendChild(page1);
         document.body.appendChild(page2);
 
-        // Wait for fonts/styles to render
+
         await new Promise(resolve => setTimeout(resolve, 500));
 
         try {
@@ -303,12 +303,12 @@ export const ApplicantTrackStatus: React.FC = () => {
             const pdfWidth = pdf.internal.pageSize.getWidth();
             const pdfHeight = pdf.internal.pageSize.getHeight();
 
-            // Page 1
+
             const img1 = canvas1.toDataURL('image/png');
             const img1Height = (canvas1.height * pdfWidth) / canvas1.width;
             pdf.addImage(img1, 'PNG', 0, 0, pdfWidth, Math.min(img1Height, pdfHeight));
 
-            // Page 2
+
             pdf.addPage();
             const img2 = canvas2.toDataURL('image/png');
             const img2Height = (canvas2.height * pdfWidth) / canvas2.width;
@@ -329,7 +329,7 @@ export const ApplicantTrackStatus: React.FC = () => {
             try {
                 const apps = await courseApplicationService.getMyApplications();
                 if (apps && apps.length > 0) {
-                    // Usually there's only one pending application, or we track the latest
+
                     setApplication(apps[0]);
                 }
             } catch (error) {
@@ -427,7 +427,7 @@ export const ApplicantTrackStatus: React.FC = () => {
             </div>
 
             <div className="content-grid">
-                {/* Left Column - Tracking */}
+                { }
                 <div className="tracking-section card-box">
                     <div className="section-header">
                         <h3 className="section-title">Application Status</h3>
@@ -486,7 +486,7 @@ export const ApplicantTrackStatus: React.FC = () => {
                                             <button
                                                 className="btn-primary"
                                                 onClick={() => {
-                                                    // Clear temporary applicant tokens before redirecting
+
                                                     sessionStorage.removeItem('token');
                                                     sessionStorage.removeItem('user');
                                                     sessionStorage.removeItem('adminRole');
@@ -506,7 +506,7 @@ export const ApplicantTrackStatus: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Right Column - Next Steps */}
+                { }
                 <div className="side-actions-section">
                     <div className="card-box info-card">
                         <h3>Next Steps</h3>

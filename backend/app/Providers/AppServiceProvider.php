@@ -10,17 +10,13 @@ use Illuminate\Http\Request;
 
 class AppServiceProvider extends ServiceProvider
 {
-    /**
-     * Register any application services.
-     */
+     
     public function register(): void
     {
-        //
+
     }
 
-    /**
-     * Bootstrap any application services.
-     */
+     
     public function boot(): void
     {
         RateLimiter::for('api', function (Request $request) {
@@ -29,6 +25,14 @@ class AppServiceProvider extends ServiceProvider
 
         RateLimiter::for('login', function (Request $request) {
             return Limit::perMinute(5)->by($request->ip());
+        });
+
+        RateLimiter::for('submissions', function (Request $request) {
+            return Limit::perMinute(5)->by($request->ip());
+        });
+
+        RateLimiter::for('survey-configs', function (Request $request) {
+            return Limit::perMinute(30)->by($request->ip());
         });
     }
 }

@@ -104,7 +104,7 @@
 
 .profile-icon.user-icon {
     background-color: #E0E7FF;
-    color: #7C3AED;
+    color: var(--primary-color);
 }
 
 .profile-icon.hash-icon {
@@ -258,7 +258,7 @@
     height: 32px;
     border-radius: 8px;
     background-color: #EEF2FF;
-    color: #7C3AED;
+    color: var(--primary-color);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -373,8 +373,8 @@
 }
 
 .grade-pill.good {
-    background-color: #EDE9FE;
-    color: #5B21B6;
+    background-color: var(--primary-light);
+    color: var(--primary-dark);
 }
 
 .grade-pill.average {

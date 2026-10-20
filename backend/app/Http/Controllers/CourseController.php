@@ -11,15 +11,20 @@ class CourseController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        // Only load lightweight relationships for listing — semesters.subjects loaded on show()
-        $query = Course::with(['category', 'secretary', 'coordinator', 'batches'])->withCount(['batches', 'students']);
+
+        $query = Course::with([
+            'category',
+            'secretary',
+            'coordinator',
+            'batches:id,course_id,name,start_date,registration_deadline,max_enrollments,subtitle,status'
+        ])->withCount(['batches', 'students']);
         
         if ($user && $user->role === 'secretary') {
             $query->where('secretary_id', $user->id);
         } elseif ($user && $user->role === 'coordinator') {
             $query->where('coordinator_id', $user->id);
         } elseif ($user && $user->role === 'lecturer') {
-            // Filter courses where the lecturer has subject assignments in any batch OR is the batch instructor directly
+
             $assignedSubjectCourseIds = DB::table('batch_subject_instructor')
                 ->join('batches', 'batches.id', '=', 'batch_subject_instructor.batch_id')
                 ->where('batch_subject_instructor.instructor_id', $user->id)
@@ -67,7 +72,7 @@ class CourseController extends Controller
             $courseData = \Illuminate\Support\Arr::except($validated, ['semesters', 'subjects']);
             $course = Course::create($courseData);
 
-            // Handle Semesters (for Degree/Diploma/HND)
+
             if ($request->has('semesters')) {
                 foreach ($request->semesters as $semData) {
                     $semester = $course->semesters()->create(['name' => $semData['name']]);
@@ -84,7 +89,7 @@ class CourseController extends Controller
                 }
             }
 
-            // Handle flat subjects (for Certificates)
+
             if ($request->has('subjects')) {
                 foreach ($request->subjects as $subData) {
                     $course->subjects()->create([
@@ -96,6 +101,16 @@ class CourseController extends Controller
             }
 
             \App\Models\ActivityLog::log($user->id, 'Created new Course', "Course: {$course->title} ({$course->code})", 'course');
+
+            // Re-run the AI analytics pipeline for this new course!
+            try {
+                \App\Jobs\ProcessAnalyticsPipelineJob::dispatchSync($course->id);
+                \Illuminate\Support\Facades\Cache::forget('ai_analytics_global_overview');
+                \Illuminate\Support\Facades\Cache::forget('ai_analytics_geography_data');
+                \Illuminate\Support\Facades\Cache::forget('ai_analytics_common_overview');
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('Failed to run ProcessAnalyticsPipelineJob on course create: ' . $e->getMessage());
+            }
 
             return response()->json($course->load(['semesters.subjects', 'subjects', 'secretary', 'coordinator']), 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -150,7 +165,7 @@ class CourseController extends Controller
                 $courseData = \Illuminate\Support\Arr::except($validated, ['semesters', 'subjects']);
                 $course->update($courseData);
 
-                // Handle Semesters update (for Degree/Diploma/HND)
+
                 if ($request->has('semesters')) {
                     foreach ($course->semesters as $oldSem) {
                         $oldSem->subjects()->delete();
@@ -172,7 +187,7 @@ class CourseController extends Controller
                     }
                 }
 
-                // Handle flat subjects (for Certificates)
+
                 if ($request->has('subjects')) {
                     $course->subjects()->delete();
 
@@ -189,6 +204,28 @@ class CourseController extends Controller
             self::clearManageCourseCache($id);
 
             \App\Models\ActivityLog::log($user->id, 'Updated Course configuration', "Course: {$course->title} ({$course->code})", 'course');
+
+            // Curriculum changed — immediately bust the stale cache entry for this course
+            // so the AI Analytics page does not serve old coverage % data.
+            // Then dispatch the NLP rebuild to the background queue (avoids HTTP timeout).
+            try {
+                // 1. Delete the specific stale program cache entry
+                \App\AI\Models\AnalyticsCache::where('scope_type', 'program')
+                    ->where('scope_id', $id)
+                    ->delete();
+
+                // 2. Clear global overview caches
+                \Illuminate\Support\Facades\Cache::forget('ai_analytics_global_overview');
+                \Illuminate\Support\Facades\Cache::forget('ai_analytics_geography_data');
+                \Illuminate\Support\Facades\Cache::forget('ai_analytics_common_overview');
+
+                // 3. Dispatch background rebuild for this course
+                \App\Jobs\ProcessAnalyticsPipelineJob::dispatch($id);
+
+                \Illuminate\Support\Facades\Log::info("Curriculum updated for course ID $id — cache invalidated and background rebuild dispatched.");
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('Failed to invalidate cache on course update: ' . $e->getMessage());
+            }
 
             return response()->json($course->load(['semesters.subjects', 'subjects', 'secretary', 'coordinator', 'category']));
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -214,15 +251,25 @@ class CourseController extends Controller
 
         \App\Models\ActivityLog::log($user->id, 'Deleted Course', "Course: {$courseTitle} ({$courseCode})", 'course');
 
+        // Delete cache entry for the course
+        try {
+            \App\AI\Models\AnalyticsCache::where('scope_type', 'program')
+                ->where('scope_id', $id)
+                ->delete();
+            \Illuminate\Support\Facades\Cache::forget('ai_analytics_global_overview');
+            \Illuminate\Support\Facades\Cache::forget('ai_analytics_geography_data');
+            \Illuminate\Support\Facades\Cache::forget('ai_analytics_common_overview');
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to clear AnalyticsCache on course delete: ' . $e->getMessage());
+        }
+
         return response()->json(['message' => 'Course deleted successfully']);
     }
 
-    /**
-     * Public endpoint for applicants — returns courses with open intake + their batches.
-     */
+     
     public function publicIndex()
     {
-        // Auto-update expired upcoming batches to Active
+
         \App\Models\Batch::where('status', 'Upcoming')
             ->whereNotNull('registration_deadline')
             ->where('registration_deadline', '<', now()->toDateString())
@@ -256,113 +303,112 @@ class CourseController extends Controller
 
     public function enrollStudent(Request $request, $id)
     {
-        $validated = $request->validate([
-            'student_id' => 'required|string',
-            'batch' => 'nullable|string',
-        ]);
-        
-        $course = Course::findOrFail($id);
-        
-        $user = \App\Models\User::where('student_number', $validated['student_id'])
-            ->orWhere('id', $validated['student_id'])
-            ->orWhere('email', $validated['student_id'])
-            ->firstOrFail();
+        return DB::transaction(function () use ($request, $id) {
+            $validated = $request->validate([
+                'student_id' => 'required|string',
+                'batch' => 'nullable|string',
+            ]);
             
-        $course->students()->syncWithoutDetaching([$user->id => ['batch' => $validated['batch']]]);
-        self::clearManageCourseCache($id);
+            $course = Course::findOrFail($id);
+            
+            $user = \App\Models\User::where('student_number', $validated['student_id'])
+                ->orWhere('id', $validated['student_id'])
+                ->orWhere('email', $validated['student_id'])
+                ->firstOrFail();
+                
+            $course->students()->syncWithoutDetaching([$user->id => ['batch' => $validated['batch']]]);
+            self::clearManageCourseCache($id);
 
-        // Log admin activity
-        $admin = $request->user();
-        if ($admin) {
-            \App\Models\ActivityLog::log(
-                $admin->id,
-                "Enrolled student {$user->full_name}",
-                "Student: " . ($user->student_number ?: $user->id) . " in course {$course->code} (" . ($validated['batch'] ?: 'No Batch') . ")",
-                'user'
-            );
-        }
-        
-        return response()->json([
-            'message' => 'Student enrolled successfully',
-            'student' => [
-                'id' => $user->student_number ?? (string)$user->id,
-                'name' => $user->full_name,
-                'displayName' => $user->display_name,
-                'email' => $user->email,
-                'phone' => $user->phone ?? '077 123 4567',
-                'enrollmentDate' => now()->toDateString(),
-                'status' => ucfirst($user->status) ?: 'Active',
-                'payment' => 'Verified',
-                'batch' => $validated['batch'],
-            ]
-        ]);
+
+            $admin = $request->user();
+            if ($admin) {
+                \App\Models\ActivityLog::log(
+                    $admin->id,
+                    "Enrolled student {$user->full_name}",
+                    "Student: " . ($user->student_number ?: $user->id) . " in course {$course->code} (" . ($validated['batch'] ?: 'No Batch') . ")",
+                    'user'
+                );
+            }
+            
+            return response()->json([
+                'message' => 'Student enrolled successfully',
+                'student' => [
+                    'id' => $user->student_number ?? (string)$user->id,
+                    'name' => $user->full_name,
+                    'displayName' => $user->display_name,
+                    'email' => $user->email,
+                    'phone' => $user->phone ?? '077 123 4567',
+                    'enrollmentDate' => now()->toDateString(),
+                    'status' => ucfirst($user->status) ?: 'Active',
+                    'payment' => 'Verified',
+                    'batch' => $validated['batch'],
+                ]
+            ]);
+        });
     }
 
     public function unenrollStudent(Request $request, $id, $studentId)
     {
-        $course = Course::findOrFail($id);
-        $user = \App\Models\User::where('student_number', $studentId)
-            ->orWhere('id', $studentId)
-            ->firstOrFail();
-            
-        $course->students()->detach($user->id);
-        self::clearManageCourseCache($id);
+        return DB::transaction(function () use ($request, $id, $studentId) {
+            $course = Course::findOrFail($id);
+            $user = \App\Models\User::where('student_number', $studentId)
+                ->orWhere('id', $studentId)
+                ->firstOrFail();
+                
+            $course->students()->detach($user->id);
+            self::clearManageCourseCache($id);
 
-        // Log admin activity
-        $admin = $request->user();
-        if ($admin) {
-            \App\Models\ActivityLog::log(
-                $admin->id,
-                "Unenrolled student {$user->full_name}",
-                "Student: " . ($user->student_number ?: $user->id) . " from course {$course->code}",
-                'user'
-            );
-        }
-        
-        return response()->json(['message' => 'Student suspended/unenrolled successfully']);
+
+            $admin = $request->user();
+            if ($admin) {
+                \App\Models\ActivityLog::log(
+                    $admin->id,
+                    "Unenrolled student {$user->full_name}",
+                    "Student: " . ($user->student_number ?: $user->id) . " from course {$course->code}",
+                    'user'
+                );
+            }
+            
+            return response()->json(['message' => 'Student suspended/unenrolled successfully']);
+        });
     }
 
     public static function clearManageCourseCache($courseId)
     {
         try {
-            $version = \Illuminate\Support\Facades\Cache::get("manage_course_version_{$courseId}");
-            if ($version === null || $version === false) {
-                \Illuminate\Support\Facades\Cache::put("manage_course_version_{$courseId}", time(), 120);
-            } else {
-                \Illuminate\Support\Facades\Cache::put("manage_course_version_{$courseId}", (int)$version + 1, 120);
-            }
+            $version = (int) \Illuminate\Support\Facades\Cache::get("manage_course_version_{$courseId}", 1);
+            \Illuminate\Support\Facades\Cache::put("manage_course_version_{$courseId}", $version + 1, 3600);
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Cache::put("manage_course_version_{$courseId}", time(), 120);
+            \Illuminate\Support\Facades\Cache::put("manage_course_version_{$courseId}", time(), 3600);
         }
     }
 
     public function manageCourseData(Request $request, $courseId)
     {
         $user = $request->user();
-        $userId = $user ? $user->id : 'guest';
+        $isLecturer = $user && $user->role === 'lecturer';
+        $cacheSuffix = $isLecturer ? "lecturer_{$user->id}" : "admin";
         
         $version = \Illuminate\Support\Facades\Cache::get("manage_course_version_{$courseId}", 1);
-        $cacheKey = "manage_course_data_{$courseId}_{$userId}_v{$version}";
+        $cacheKey = "manage_course_data_{$courseId}_{$cacheSuffix}_v{$version}";
         
-        $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, 120, function () use ($courseId, $user) {
+        $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, 600, function () use ($courseId, $user) {
             return $this->getManageCourseDataRaw($courseId, $user);
         });
         
         return response()->json($data);
     }
 
-    /**
-     * Helper to retrieve raw manage course data to resolve IDE lambda complexity limits.
-     */
+     
     private function getManageCourseDataRaw($courseId, $user): array
     {
         $course = Course::with(['category', 'secretary', 'coordinator', 'semesters.subjects', 'subjects'])->findOrFail($courseId);
         
         $enrolledStudents = $this->mapEnrolledStudents($course);
         
-        $studentUsers = \App\Models\User::whereIn('role', ['student', 'applicant'])
-            ->select('id', 'student_number', 'full_name', 'display_name', 'email', 'phone', 'nic', 'address')
-            ->get();
+
+
+        $studentUsers = [];
             
         $lecturers = \App\Models\User::where('role', 'lecturer')
             ->select('id', 'full_name', 'email')
@@ -408,14 +454,27 @@ class CourseController extends Controller
 
     private function getBatchesForManageCourse($courseId, $user)
     {
-        // Auto-update expired upcoming batches to Active
+
         \App\Models\Batch::where('course_id', $courseId)
             ->where('status', 'Upcoming')
             ->whereNotNull('registration_deadline')
             ->where('registration_deadline', '<', now()->toDateString())
             ->update(['status' => 'Active']);
 
-        $batchQuery = \App\Models\Batch::where('course_id', $courseId);
+        $batchQuery = \App\Models\Batch::where('course_id', $courseId)
+            ->select([
+                'id',
+                'course_id',
+                'instructor_id',
+                'name',
+                'start_date',
+                'registration_deadline',
+                'max_enrollments',
+                'subtitle',
+                'status',
+                'created_at',
+                'updated_at'
+            ]);
         if ($user && $user->role === 'lecturer') {
             $batchQuery->where(function ($q) use ($user) {
                 $q->whereHas('subjects', function ($subQ) use ($user) {
@@ -432,17 +491,34 @@ class CourseController extends Controller
             ->latest()
             ->get();
 
-        $batches->each(function ($batch) {
-            $batch->subjects->each(function ($subject) {
-                $instructorId = $subject->pivot->instructor_id;
-                if ($instructorId) {
-                    $instructor = \App\Models\User::select('id', 'full_name')->find($instructorId);
-                    $subject->pivot->instructor_name = $instructor ? $instructor->full_name : null;
+
+        $instructorIds = [];
+        foreach ($batches as $batch) {
+            foreach ($batch->subjects as $subject) {
+                if ($subject->pivot->instructor_id) {
+                    $instructorIds[] = $subject->pivot->instructor_id;
+                }
+            }
+        }
+
+        $instructors = [];
+        if (!empty($instructorIds)) {
+            $instructors = \App\Models\User::whereIn('id', array_unique($instructorIds))
+                ->select('id', 'full_name')
+                ->get()
+                ->keyBy('id');
+        }
+
+        foreach ($batches as $batch) {
+            foreach ($batch->subjects as $subject) {
+                $instId = $subject->pivot->instructor_id;
+                if ($instId && isset($instructors[$instId])) {
+                    $subject->pivot->instructor_name = $instructors[$instId]->full_name;
                 } else {
                     $subject->pivot->instructor_name = null;
                 }
-            });
-        });
+            }
+        }
 
         return $batches;
     }
@@ -450,10 +526,10 @@ class CourseController extends Controller
     private function getCourseRequests($courseId): array
     {
         return [
-            'enrollment_requests' => \App\Models\CourseApplication::where('course_id', $courseId)->with('user')->get(),
-            'exam_applications' => \App\Models\ExamApplication::where('course_id', $courseId)->with('user')->get(),
-            'postponement_requests' => \App\Models\PostponementRequest::where('course_id', $courseId)->with('user')->get(),
-            'reattempt_requests' => \App\Models\ReattemptRequest::where('course_id', $courseId)->with(['user', 'subject'])->get(),
+            'enrollment_requests' => \App\Models\CourseApplication::where('course_id', $courseId)->with('user:id,full_name,display_name,email,student_number')->get(),
+            'exam_applications' => \App\Models\ExamApplication::where('course_id', $courseId)->with('user:id,full_name,display_name,email,student_number')->get(),
+            'postponement_requests' => \App\Models\PostponementRequest::where('course_id', $courseId)->with('user:id,full_name,display_name,email,student_number')->get(),
+            'reattempt_requests' => \App\Models\ReattemptRequest::where('course_id', $courseId)->with(['user:id,full_name,display_name,email,student_number', 'subject'])->get(),
         ];
     }
 }

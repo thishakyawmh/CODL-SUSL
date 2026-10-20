@@ -15,6 +15,9 @@ class Announcement extends Model
         'title',
         'desc',
         'type',
+        'attachment_url',
+        'attachment_name',
+        'attachment_size',
     ];
 
     public function course()

@@ -8,7 +8,7 @@ export const ExamApplicationSuccess: React.FC = () => {
     const navigate = useNavigate();
     const { id } = useParams();
 
-    // Using placeholder data for consistency
+
     const examName = 'Semester 3 End Semester Examination';
     const refNumber = 'REQ-EX-2026-0428';
 
@@ -23,7 +23,7 @@ export const ExamApplicationSuccess: React.FC = () => {
             </button>
 
             <div className="success-alerts-container">
-                {/* Main Success Banner */}
+                { }
                 <div className="success-alert-banner primary">
                     <div className="alert-icon-wrapper">
                         <CheckCircle2 size={32} strokeWidth={2.5} />
@@ -32,7 +32,7 @@ export const ExamApplicationSuccess: React.FC = () => {
                 </div>
             </div>
 
-            {/* Simplified Status Card */}
+            { }
             <div className="success-status-card">
                 <div className="status-visual">
                     <div className="pulse-ring"></div>

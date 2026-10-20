@@ -1,9 +1,9 @@
 import React from 'react';
 
 interface Stage {
-    label?: string; // 'S', 'C', 'D'
-    name?: string;  // 'Secretary', 'Coordinator', 'Director'
-    role?: string;  // Alternative to name (e.g. from Applications.tsx)
+    label?: string; 
+    name?: string;  
+    role?: string;  
     status: 'approved' | 'rejected' | 'pending' | string;
 }
 

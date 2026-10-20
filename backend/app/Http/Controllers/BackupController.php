@@ -5,14 +5,26 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\SystemSetting;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 
 class BackupController extends Controller
 {
-    public function index()
+     
+    private function checkAuthorization(Request $request)
     {
+        $user = $request->user();
+        if (!$user || $user->role !== 'super_admin') {
+            abort(response()->json(['message' => 'Unauthorized. Super Admin permissions required.'], 403));
+        }
+    }
+
+    public function index(Request $request)
+    {
+        $this->checkAuthorization($request);
+
         $settings = SystemSetting::first();
 
-        // Seed default settings if none exist
+
         if (!$settings) {
             $settings = SystemSetting::create([
                 'institution_name' => 'Centre for Open & Distance Learning',
@@ -46,7 +58,7 @@ class BackupController extends Controller
             }
         }
 
-        // Sort files by creation date descending
+
         usort($files, function($a, $b) {
             return strcmp($b['created_at'], $a['created_at']);
         });
@@ -59,28 +71,29 @@ class BackupController extends Controller
 
     public function run(Request $request)
     {
+        $this->checkAuthorization($request);
+
         $settings = SystemSetting::first();
         if (!$settings) {
             return response()->json(['message' => 'System settings not found.'], 404);
         }
 
         try {
-            // Ensure backups directory exists
+
             if (!Storage::disk('local')->exists('backups')) {
                 Storage::disk('local')->makeDirectory('backups');
             }
 
-            // Perform backup
-            $driver = \DB::connection()->getDriverName();
+            $driver = DB::connection()->getDriverName();
             $tables = [];
 
             if ($driver === 'sqlite') {
-                $result = \DB::select("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'");
+                $result = DB::select("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'");
                 foreach ($result as $row) {
                     $tables[] = $row->name;
                 }
             } else {
-                $result = \DB::select("SHOW TABLES");
+                $result = DB::select("SHOW TABLES");
                 $dbName = config('database.connections.mysql.database');
                 $keyName = 'Tables_in_' . $dbName;
                 foreach ($result as $row) {
@@ -88,51 +101,67 @@ class BackupController extends Controller
                 }
             }
 
-            $sqlContent = "-- CODL Database Backup\n";
-            $sqlContent .= "-- Generated on " . now()->toDateTimeString() . "\n\n";
+            $filename = 'backup_' . now()->format('Y_m_d_His') . '.sql';
+            $relativeFilePath = 'backups/' . $filename;
+            $fullPath = Storage::disk('local')->path($relativeFilePath);
+
+
+            $handle = fopen($fullPath, 'w');
+            if (!$handle) {
+                throw new \Exception("Unable to open backup file stream for writing.");
+            }
+
+            fwrite($handle, "-- CODL Database Backup\n");
+            fwrite($handle, "-- Generated on " . now()->toDateTimeString() . "\n\n");
 
             if ($driver !== 'sqlite') {
-                $sqlContent .= "SET FOREIGN_KEY_CHECKS=0;\n\n";
+                fwrite($handle, "SET FOREIGN_KEY_CHECKS=0;\n\n");
             }
 
             foreach ($tables as $table) {
-                // Get Table Schema
+
+                if (!preg_match('/^[a-zA-Z0-9_]+$/', $table)) {
+                    continue;
+                }
+
+
                 if ($driver === 'sqlite') {
-                    $createTableResult = \DB::select("SELECT sql FROM sqlite_master WHERE type='table' AND name='{$table}'");
-                    $createTableSql = $createTableResult[0]->sql;
+                    $createTableResult = DB::select("SELECT sql FROM sqlite_master WHERE type='table' AND name=?", [$table]);
+                    $createTableSql = $createTableResult[0]->sql ?? '';
                 } else {
-                    $createTableResult = \DB::select("SHOW CREATE TABLE `{$table}`");
-                    $createTableSql = $createTableResult[0]->{'Create Table'};
+                    $createTableResult = DB::select("SHOW CREATE TABLE `" . str_replace('`', '', $table) . "`");
+                    $createTableSql = $createTableResult[0]->{'Create Table'} ?? '';
                 }
                 
-                $sqlContent .= "DROP TABLE IF EXISTS `{$table}`;\n";
-                $sqlContent .= $createTableSql . ";\n\n";
+                fwrite($handle, "DROP TABLE IF EXISTS `{$table}`;\n");
+                fwrite($handle, $createTableSql . ";\n\n");
 
-                // Get Table Data
-                $rows = \DB::table($table)->get();
-                foreach ($rows as $row) {
-                    $rowArray = (array)$row;
-                    $fields = array_keys($rowArray);
-                    $escapedValues = array_map(function($value) {
-                        if (is_null($value)) {
-                            return 'NULL';
-                        }
-                        return \DB::getPdo()->quote($value);
-                    }, $rowArray);
 
-                    $sqlContent .= "INSERT INTO `{$table}` (`" . implode("`, `", $fields) . "`) VALUES (" . implode(", ", $escapedValues) . ");\n";
-                }
-                $sqlContent .= "\n";
+                DB::table($table)->orderBy(DB::raw('1'))->chunk(500, function ($rows) use ($handle, $table) {
+                    foreach ($rows as $row) {
+                        $rowArray = (array)$row;
+                        $fields = array_keys($rowArray);
+                        $escapedValues = array_map(function($value) {
+                            if (is_null($value)) {
+                                return 'NULL';
+                            }
+                            return DB::getPdo()->quote($value);
+                        }, $rowArray);
+
+                        $insertLine = "INSERT INTO `{$table}` (`" . implode("`, `", $fields) . "`) VALUES (" . implode(", ", $escapedValues) . ");\n";
+                        fwrite($handle, $insertLine);
+                    }
+                });
+                fwrite($handle, "\n");
             }
 
             if ($driver !== 'sqlite') {
-                $sqlContent .= "SET FOREIGN_KEY_CHECKS=1;\n";
+                fwrite($handle, "SET FOREIGN_KEY_CHECKS=1;\n");
             }
 
-            $filename = 'backup_' . now()->format('Y_m_d_His') . '.sql';
-            Storage::disk('local')->put('backups/' . $filename, $sqlContent);
+            fclose($handle);
 
-            // Compute next backup time
+
             $now = now();
             $nextBackup = now();
             if ($settings->backup_frequency === 'weekly') {
@@ -143,14 +172,14 @@ class BackupController extends Controller
                 $nextBackup = $now->addDay();
             }
 
-            // Update settings record
+
             $settings->update([
                 'last_backup_at' => $now,
                 'last_backup_status' => 'successful',
                 'next_backup_at' => $nextBackup,
             ]);
 
-            // Enforce retention period (delete files older than backup_retention days)
+
             $retentionDays = $settings->backup_retention ?: 30;
             $allFiles = Storage::disk('local')->files('backups');
             foreach ($allFiles as $file) {
@@ -162,7 +191,7 @@ class BackupController extends Controller
                 }
             }
 
-            // Log administrative action
+
             $user = $request->user();
             if ($user) {
                 \App\Models\ActivityLog::log($user->id, 'Ran database backup manually', 'Database Backup', 'system');
@@ -187,9 +216,11 @@ class BackupController extends Controller
         }
     }
 
-    public function download($filename)
+    public function download(Request $request, $filename)
     {
-        // Prevent path traversal
+        $this->checkAuthorization($request);
+
+
         $filename = basename($filename);
         $path = 'backups/' . $filename;
 
@@ -200,8 +231,10 @@ class BackupController extends Controller
         return Storage::disk('local')->download($path);
     }
 
-    public function destroy($filename)
+    public function destroy(Request $request, $filename)
     {
+        $this->checkAuthorization($request);
+
         $filename = basename($filename);
         $path = 'backups/' . $filename;
 

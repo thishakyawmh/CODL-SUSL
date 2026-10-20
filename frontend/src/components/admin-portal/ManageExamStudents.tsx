@@ -5,7 +5,7 @@ import {
     History, Clock, UserPlus, X, Users,
     Search, Plus, Trash2, Loader, Check, XCircle,
     ClipboardList, User, FileText, Eye, RefreshCw,
-    CreditCard, MapPin
+    CreditCard, MapPin, ShieldCheck
 } from 'lucide-react';
 import {
     courseService,
@@ -18,6 +18,7 @@ import { toast } from '../../utils/toast';
 import { getCurrentAdminUser } from '../../data/mockAdminData';
 import { VerificationStages } from '../common/VerificationStages';
 import './CourseManagement.css';
+import './ApplicationApprovals.css';
 
 export const ManageExamStudents: React.FC = () => {
     const { id, examId } = useParams<{ id: string; examId: string }>();
@@ -26,14 +27,14 @@ export const ManageExamStudents: React.FC = () => {
     const [searchParams] = useSearchParams();
     const batchFromUrl = searchParams.get('batch') || '';
 
-    // ─── Loading state ─────────────────────────
+
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [examName, setExamName] = useState('');
     const [examBatch, setExamBatch] = useState(batchFromUrl);
     const [courseTitle, setCourseTitle] = useState('');
 
-    // ─── Student selection state ───────────────
+
     const [selectedRegulars, setSelectedRegulars] = useState<string[]>([]);
     const [tempSelectedRegulars, setTempSelectedRegulars] = useState<string[]>([]);
     const [selectedReattempts, setSelectedReattempts] = useState<string[]>([]);
@@ -44,12 +45,12 @@ export const ManageExamStudents: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'regular' | 'postponements' | 'reattempts'>('regular');
     const [isRefreshing, setIsRefreshing] = useState(false);
 
-    // Rejection state
+
     const [showRejectModal, setShowRejectModal] = useState(false);
     const [rejectionReason, setRejectionReason] = useState('');
     const [pendingApp, setPendingApp] = useState<any | null>(null);
 
-    // Details Modal state
+
     const [showDetailsModal, setShowDetailsModal] = useState(false);
     const [selectedAppDetails, setSelectedAppDetails] = useState<any | null>(null);
 
@@ -61,16 +62,26 @@ export const ManageExamStudents: React.FC = () => {
     const [studentRequests, setStudentRequests] = useState<any[]>([]);
     const [examApplications, setExamApplications] = useState<any[]>([]);
 
+    // Track which app IDs are currently being actioned (for spinner / disabled state)
+    const [actioningIds, setActioningIds] = useState<Set<string | number>>(new Set());
+    const addActioning = (id: string | number) => setActioningIds(prev => new Set(prev).add(id));
+    const removeActioning = (id: string | number) => setActioningIds(prev => { const s = new Set(prev); s.delete(id); return s; });
+
+    // Helper: patch a single exam application in state without full refetch
+    const patchExamApp = (id: string | number, patch: Partial<any>) => {
+        setExamApplications(prev => prev.map(a => a.id?.toString() === id?.toString() ? { ...a, ...patch } : a));
+    };
+
     const fetchRegulars = React.useCallback(async (isSilent = false) => {
         if (!id || !examId) return;
         if (!isSilent) setIsLoading(true);
         try {
-            // Fetch course info
-            const courseData = await courseService.getById(courseId);
+            const courseManageData = await courseService.getManageCourseData(courseId);
+            
+            const courseData = courseManageData.course || {};
             setCourseTitle(courseData.title || '');
 
-            // Fetch exam info
-            const exams = await examService.getByCourse(courseId);
+            const exams = courseManageData.exams || [];
             const exam = exams.find((e: any) => e.id.toString() === examId.toString());
             if (exam) {
                 setExamName(exam.title || '');
@@ -82,12 +93,9 @@ export const ManageExamStudents: React.FC = () => {
                 }
             }
 
-            // Fetch enrolled students
-            const students = await courseService.getEnrolledStudents(courseId);
+            const students = courseManageData.enrolled_students || [];
             setEnrolledStudents(students);
 
-            // Fetch exam applications
-            const courseManageData = await courseService.getManageCourseData(courseId);
             const examApps = (courseManageData.exam_applications || []).filter((app: any) => {
                 const titleMatch = app.exam_title?.toLowerCase().trim() === exam?.title?.toLowerCase().trim() ||
                     (app.exam_id && app.exam_id.toString() === examId?.toString());
@@ -106,7 +114,7 @@ export const ManageExamStudents: React.FC = () => {
         if (!id || !examId) return;
         if (!isSilent) setIsLoading(true);
         try {
-            // Postponements
+
             const postponements = await postponementRequestService.getAll();
             const filteredPost = (postponements || []).filter((p: any) => {
                 if (!p) return false;
@@ -128,7 +136,7 @@ export const ManageExamStudents: React.FC = () => {
                 assigned_exam_id: p.assigned_exam_id?.toString() || null
             }));
 
-            // Merge with existing reattempts
+
             setStudentRequests(prev => [
                 ...mappedPost,
                 ...prev.filter(r => r.type !== 'postponement')
@@ -150,7 +158,7 @@ export const ManageExamStudents: React.FC = () => {
         if (!id || !examId) return;
         if (!isSilent) setIsLoading(true);
         try {
-            // Reattempts
+
             const reattempts = await reattemptRequestService.getAll();
             const filteredReat = (reattempts || []).filter((r: any) => {
                 if (!r) return false;
@@ -173,7 +181,7 @@ export const ManageExamStudents: React.FC = () => {
                 attempt: r.attempt || 2
             }));
 
-            // Merge with existing postponements
+
             setStudentRequests(prev => [
                 ...prev.filter(r => r.type !== 'reattempt'),
                 ...mappedReat
@@ -191,8 +199,11 @@ export const ManageExamStudents: React.FC = () => {
         }
     }, [id, examId, courseId]);
 
+    const isFetchingRef = React.useRef(false);
     const fetchAll = React.useCallback(async (isSilent = false) => {
         if (!id || !examId) return;
+        if (isFetchingRef.current) return;
+        isFetchingRef.current = true;
         if (!isSilent) setIsLoading(true);
         try {
             await Promise.all([
@@ -205,6 +216,7 @@ export const ManageExamStudents: React.FC = () => {
             toast.error('Failed to load student data.');
         } finally {
             if (!isSilent) setIsLoading(false);
+            isFetchingRef.current = false;
         }
     }, [fetchRegulars, fetchPostponements, fetchReattempts, id, examId]);
 
@@ -267,6 +279,9 @@ export const ManageExamStudents: React.FC = () => {
     };
 
     const handleApprove = async (app: any) => {
+        if (actioningIds.has(app.id)) return;
+        addActioning(app.id);
+
         const user = getCurrentAdminUser();
         const userRole = user?.role || 'super_admin';
 
@@ -292,6 +307,7 @@ export const ManageExamStudents: React.FC = () => {
         } else if (userRole === 'coordinator') {
             if (nextStages.secretary !== 'approved') {
                 toast.error('Secretary must approve first before Coordinator can act.');
+                removeActioning(app.id);
                 return;
             }
             nextStages.coordinator = 'approved';
@@ -300,6 +316,7 @@ export const ManageExamStudents: React.FC = () => {
         } else if (userRole === 'director') {
             if (nextStages.coordinator !== 'approved') {
                 toast.error('Coordinator must approve first before Director can act.');
+                removeActioning(app.id);
                 return;
             }
             nextStages.director = 'approved';
@@ -313,6 +330,10 @@ export const ManageExamStudents: React.FC = () => {
             currentStep = 3;
         }
 
+        // Optimistic update
+        patchExamApp(app.id, { status: nextStatus, stages: nextStages, current_step: currentStep });
+        setSelectedAppDetails((prev: any) => prev?.id === app.id ? { ...prev, status: nextStatus, stages: nextStages, current_step: currentStep } : prev);
+
         try {
             await examApplicationService.update(app.id, {
                 status: nextStatus,
@@ -321,14 +342,21 @@ export const ManageExamStudents: React.FC = () => {
                 rejection_reason: null
             });
             toast.success(nextStatus === 'approved' ? 'Application fully approved!' : 'Application level approved successfully!');
-            await fetchAll(true);
         } catch (err: any) {
+            // Rollback
+            patchExamApp(app.id, { status: app.status, stages: app.stages, current_step: app.current_step });
+            setSelectedAppDetails((prev: any) => prev?.id === app.id ? { ...prev, status: app.status, stages: app.stages, current_step: app.current_step } : prev);
             console.error('Failed to approve application:', err);
             toast.error(err.response?.data?.message || 'Failed to approve application.');
+        } finally {
+            removeActioning(app.id);
         }
     };
 
     const handleReject = async (app: any, reason: string) => {
+        if (actioningIds.has(app.id)) return;
+        addActioning(app.id);
+
         const user = getCurrentAdminUser();
         const userRole = user?.role || 'super_admin';
 
@@ -356,6 +384,10 @@ export const ManageExamStudents: React.FC = () => {
             nextStages.director = 'rejected';
         }
 
+        // Optimistic update
+        patchExamApp(app.id, { status: 'rejected', stages: nextStages, rejection_reason: reason });
+        setSelectedAppDetails((prev: any) => prev?.id === app.id ? { ...prev, status: 'rejected', stages: nextStages, rejection_reason: reason } : prev);
+
         try {
             await examApplicationService.update(app.id, {
                 status: 'rejected',
@@ -364,10 +396,125 @@ export const ManageExamStudents: React.FC = () => {
                 rejection_reason: reason || 'Rejected'
             });
             toast.success('Application rejected successfully.');
-            await fetchAll(true);
         } catch (err: any) {
+            // Rollback
+            patchExamApp(app.id, { status: app.status, stages: app.stages, rejection_reason: app.rejection_reason });
+            setSelectedAppDetails((prev: any) => prev?.id === app.id ? { ...prev, status: app.status, stages: app.stages, rejection_reason: app.rejection_reason } : prev);
             console.error('Failed to reject application:', err);
             toast.error(err.response?.data?.message || 'Failed to reject application.');
+        } finally {
+            removeActioning(app.id);
+        }
+    };
+
+    const handleApproveStage = async (app: any, stageName: 'secretary' | 'coordinator' | 'director') => {
+        if (actioningIds.has(app.id)) return;
+        addActioning(app.id);
+
+        const user = getCurrentAdminUser();
+        const approvedBy = user?.fullName || 'Admin';
+        const approvedAt = new Date().toLocaleDateString('en-US');
+
+        let nextStages = app.stages && typeof app.stages === 'object' && !Array.isArray(app.stages)
+            ? { ...app.stages }
+            : { secretary: 'pending', coordinator: 'pending', director: 'pending' };
+
+        if (Array.isArray(app.stages)) {
+            nextStages = {
+                secretary: app.stages[0]?.status || 'pending',
+                coordinator: app.stages[1]?.status || 'pending',
+                director: app.stages[2]?.status || 'pending'
+            };
+        }
+
+        nextStages[stageName] = 'approved';
+        nextStages[`${stageName}_approved_by`] = approvedBy;
+        nextStages[`${stageName}_approved_at`] = approvedAt;
+
+        let currentStep = app.current_step || 1;
+        let nextStatus = 'pending';
+
+        if (nextStages.secretary === 'approved' && nextStages.coordinator === 'approved' && nextStages.director === 'approved') {
+            nextStatus = 'approved';
+            currentStep = 3;
+        } else if (nextStages.secretary === 'approved' && nextStages.coordinator === 'approved') {
+            currentStep = 3;
+            nextStatus = 'pending';
+        } else if (nextStages.secretary === 'approved') {
+            currentStep = 2;
+            nextStatus = 'pending';
+        } else {
+            currentStep = 1;
+            nextStatus = 'pending';
+        }
+
+        // Optimistic update
+        patchExamApp(app.id, { status: nextStatus, stages: nextStages, current_step: currentStep, rejection_reason: null });
+        setSelectedAppDetails((prev: any) => {
+            if (prev && prev.id === app.id) return { ...prev, status: nextStatus, stages: nextStages, current_step: currentStep, rejection_reason: null };
+            return prev;
+        });
+
+        try {
+            await examApplicationService.update(app.id, {
+                status: nextStatus,
+                stages: nextStages,
+                current_step: currentStep,
+                rejection_reason: null
+            });
+            toast.success(`Stage ${stageName.charAt(0).toUpperCase() + stageName.slice(1)} approved successfully!`);
+        } catch (err: any) {
+            // Rollback
+            patchExamApp(app.id, { status: app.status, stages: app.stages, current_step: app.current_step });
+            setSelectedAppDetails((prev: any) => prev?.id === app.id ? { ...prev, status: app.status, stages: app.stages, current_step: app.current_step } : prev);
+            console.error('Failed to approve stage:', err);
+            toast.error(err.response?.data?.message || 'Failed to approve stage.');
+        } finally {
+            removeActioning(app.id);
+        }
+    };
+
+    const handleRejectStage = async (app: any, stageName: 'secretary' | 'coordinator' | 'director', reason: string) => {
+        if (actioningIds.has(app.id)) return;
+        addActioning(app.id);
+
+        let nextStages = app.stages && typeof app.stages === 'object' && !Array.isArray(app.stages)
+            ? { ...app.stages }
+            : { secretary: 'pending', coordinator: 'pending', director: 'pending' };
+
+        if (Array.isArray(app.stages)) {
+            nextStages = {
+                secretary: app.stages[0]?.status || 'pending',
+                coordinator: app.stages[1]?.status || 'pending',
+                director: app.stages[2]?.status || 'pending'
+            };
+        }
+
+        nextStages[stageName] = 'rejected';
+
+        // Optimistic update
+        patchExamApp(app.id, { status: 'rejected', stages: nextStages, rejection_reason: reason });
+        setSelectedAppDetails((prev: any) => {
+            if (prev && prev.id === app.id) return { ...prev, status: 'rejected', stages: nextStages, rejection_reason: reason };
+            return prev;
+        });
+
+        try {
+            await examApplicationService.update(app.id, {
+                status: 'rejected',
+                stages: nextStages,
+                current_step: app.current_step || 1,
+                rejection_reason: reason || 'Rejected'
+            });
+            toast.success(`Stage ${stageName.charAt(0).toUpperCase() + stageName.slice(1)} rejected.`);
+        } catch (err: any) {
+            // Rollback
+            patchExamApp(app.id, { status: app.status, stages: app.stages, rejection_reason: app.rejection_reason });
+            setSelectedAppDetails((prev: any) => prev?.id === app.id ? { ...prev, status: app.status, stages: app.stages, rejection_reason: app.rejection_reason } : prev);
+            console.error('Failed to reject stage:', err);
+            toast.error(err.response?.data?.message || 'Failed to reject stage.');
+        } finally {
+            removeActioning(app.id);
         }
     };
 
@@ -386,7 +533,7 @@ export const ManageExamStudents: React.FC = () => {
         }
     };
 
-    // ─── Derived lists ─────────────────────────
+
     const regularEnrolled = useMemo(() => {
         return enrolledStudents
             .filter((s: any) => {
@@ -459,7 +606,7 @@ export const ManageExamStudents: React.FC = () => {
                 reattempts: selectedReattempts,
                 postponements: selectedPostponements,
                 subjects: exam.subjects || [],
-                timetablePath: exam.timetablePath || '',
+                timetable_path: exam.timetable_path || exam.timetablePath || '',
                 semester: exam.semester || 1
             });
             setSelectedRegulars(newRegulars);
@@ -473,7 +620,7 @@ export const ManageExamStudents: React.FC = () => {
         }
     };
 
-    // ─── Save ──────────────────────────────────
+
     const handleSave = async () => {
         if (isSaving) return;
         setIsSaving(true);
@@ -494,7 +641,7 @@ export const ManageExamStudents: React.FC = () => {
                 reattempts: selectedReattempts,
                 postponements: selectedPostponements,
                 subjects: exam.subjects || [],
-                timetablePath: exam.timetablePath || '',
+                timetable_path: exam.timetable_path || exam.timetablePath || '',
                 semester: exam.semester || 1
             });
             toast.success('Student assignments saved successfully!');
@@ -507,12 +654,12 @@ export const ManageExamStudents: React.FC = () => {
         }
     };
 
-    // ─── Loading spinner ───────────────────────
+
     if (isLoading) {
         return (
             <div className="cm-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
                 <div style={{ textAlign: 'center', color: '#64748B' }}>
-                    <div style={{ width: '48px', height: '48px', border: '3px solid #E2E8F0', borderTopColor: '#7C3AED', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 16px' }} />
+                    <div style={{ width: '48px', height: '48px', border: '3px solid #E2E8F0', borderTopColor: 'var(--primary-color)', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 16px' }} />
                     <p style={{ fontWeight: 600, margin: 0 }}>Loading students...</p>
                 </div>
             </div>
@@ -524,7 +671,7 @@ export const ManageExamStudents: React.FC = () => {
     return (
         <>
             <div className="cm-container">
-                {/* ─── Page Header ─── */}
+                { }
                 <div className="admin-page-header" style={{ display: 'flex', flexDirection: 'column', gap: '20px', alignItems: 'flex-start' }}>
                     <button
                         className="cm-back-btn"
@@ -537,7 +684,7 @@ export const ManageExamStudents: React.FC = () => {
                         <div>
                             <h1 style={{ fontSize: '28px', fontWeight: 800, color: '#0F172A', margin: 0 }}>Manage Students</h1>
                             <p style={{ color: '#64748B', margin: '6px 0 0 0', fontSize: '15px' }}>
-                                {courseTitle} {examBatch && `• ${examBatch}`} • <span style={{ fontWeight: 700, color: '#7C3AED' }}>{examName}</span>
+                                {courseTitle} {examBatch && `• ${examBatch}`} • <span style={{ fontWeight: 700, color: 'var(--primary-color)' }}>{examName}</span>
                             </p>
                         </div>
                         <div style={{ display: 'flex', gap: '12px' }}>
@@ -564,9 +711,9 @@ export const ManageExamStudents: React.FC = () => {
                 </div>
 
                 <div className="create-course-form" style={{ marginTop: '24px' }}>
-                    {/* ─── Total Banner ─── */}
+                    { }
                     <div style={{
-                        background: 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)',
+                        background: 'linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%)',
                         borderRadius: '20px',
                         padding: '24px 32px',
                         marginBottom: '28px',
@@ -589,7 +736,7 @@ export const ManageExamStudents: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* ─── Tabs Selection ─── */}
+                    { }
                     <div style={{
                         display: 'flex',
                         gap: '12px',
@@ -610,7 +757,7 @@ export const ManageExamStudents: React.FC = () => {
                                     padding: '10px 20px',
                                     borderRadius: '12px',
                                     border: 'none',
-                                    background: activeTab === tab.key ? '#7C3AED' : 'transparent',
+                                    background: activeTab === tab.key ? 'var(--primary-color)' : 'transparent',
                                     color: activeTab === tab.key ? '#FFFFFF' : '#64748B',
                                     fontWeight: 700,
                                     fontSize: '14px',
@@ -651,7 +798,7 @@ export const ManageExamStudents: React.FC = () => {
                         ))}
                     </div>
 
-                    {/* ─── SECTION 1: Regular Students ─── */}
+                    { }
                     {activeTab === 'regular' && (
                         <div className="form-section-card" style={{ marginTop: '0' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #F1F5F9', paddingBottom: '16px', marginBottom: '16px' }}>
@@ -683,7 +830,7 @@ export const ManageExamStudents: React.FC = () => {
                                             cursor: isRefreshing ? 'not-allowed' : 'pointer',
                                             transition: 'all 0.2s ease'
                                         }}
-                                        onMouseEnter={(e) => { if (!isRefreshing) { e.currentTarget.style.background = '#F8FAFC'; e.currentTarget.style.color = '#7C3AED'; } }}
+                                        onMouseEnter={(e) => { if (!isRefreshing) { e.currentTarget.style.background = '#F8FAFC'; e.currentTarget.style.color = 'var(--primary-color)'; } }}
                                         onMouseLeave={(e) => { if (!isRefreshing) { e.currentTarget.style.background = '#FFFFFF'; e.currentTarget.style.color = '#64748B'; } }}
                                     >
                                         <RefreshCw 
@@ -713,7 +860,7 @@ export const ManageExamStudents: React.FC = () => {
                                 </div>
                             </div>
 
-                            {/* Search Input for Regulars */}
+                            { }
                             <div style={{ position: 'relative', marginBottom: '16px' }}>
                                 <input
                                     type="text"
@@ -726,7 +873,7 @@ export const ManageExamStudents: React.FC = () => {
                                 <Search size={16} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }} />
                             </div>
 
-                            {/* Regular Students Table */}
+                            { }
                             {displayedRegulars.length > 0 ? (
                                 <div style={{ overflowX: 'auto', maxHeight: '350px' }}>
                                     <table className="admin-table">
@@ -742,7 +889,7 @@ export const ManageExamStudents: React.FC = () => {
                                         <tbody>
                                             {displayedRegulars.map(student => {
                                                 const isSelected = selectedRegulars.includes(student.id);
-                                                // Find student's exam application status
+
                                                 const app = examApplications.find((a: any) =>
                                                     (a.user_id?.toString() === student.id || a.user?.id?.toString() === student.id)
                                                 );
@@ -766,7 +913,7 @@ export const ManageExamStudents: React.FC = () => {
                                                     (userRole === 'secretary' && getStageStatus(app, 'secretary') === 'pending') ||
                                                     (userRole === 'coordinator' && getStageStatus(app, 'secretary') === 'approved' && getStageStatus(app, 'coordinator') === 'pending') ||
                                                     (userRole === 'director' && getStageStatus(app, 'coordinator') === 'approved' && getStageStatus(app, 'director') === 'pending') ||
-                                                    (userRole === 'super_admin')
+                                                    (userRole === 'super_admin' || userRole === 'admin')
                                                 );
 
                                                 return (
@@ -833,9 +980,9 @@ export const ManageExamStudents: React.FC = () => {
                                                                             height: '32px',
                                                                             borderRadius: '8px',
                                                                             cursor: 'pointer',
-                                                                            border: '1.5px solid #7C3AED',
+                                                                            border: '1.5px solid var(--primary-color)',
                                                                             background: '#FFFFFF',
-                                                                            color: '#7C3AED',
+                                                                            color: 'var(--primary-color)',
                                                                             display: 'flex',
                                                                             alignItems: 'center',
                                                                             justifyContent: 'center',
@@ -883,7 +1030,7 @@ export const ManageExamStudents: React.FC = () => {
                         </div>
                     )}
 
-                    {/* ─── SECTION 2: Postponements ─── */}
+                    { }
                     {activeTab === 'postponements' && (
                         <div className="form-section-card" style={{ marginTop: '0' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #F1F5F9', paddingBottom: '16px', marginBottom: '16px' }}>
@@ -915,7 +1062,7 @@ export const ManageExamStudents: React.FC = () => {
                                             cursor: isRefreshing ? 'not-allowed' : 'pointer',
                                             transition: 'all 0.2s ease'
                                         }}
-                                        onMouseEnter={(e) => { if (!isRefreshing) { e.currentTarget.style.background = '#F8FAFC'; e.currentTarget.style.color = '#7C3AED'; } }}
+                                        onMouseEnter={(e) => { if (!isRefreshing) { e.currentTarget.style.background = '#F8FAFC'; e.currentTarget.style.color = 'var(--primary-color)'; } }}
                                         onMouseLeave={(e) => { if (!isRefreshing) { e.currentTarget.style.background = '#FFFFFF'; e.currentTarget.style.color = '#64748B'; } }}
                                     >
                                         <RefreshCw 
@@ -941,7 +1088,7 @@ export const ManageExamStudents: React.FC = () => {
                                 </div>
                             </div>
 
-                            {/* Postponements Table */}
+                            { }
                             {registeredPostponements.length > 0 ? (
                                 <div style={{ overflowX: 'auto', maxHeight: '300px' }}>
                                     <table className="admin-table">
@@ -976,7 +1123,7 @@ export const ManageExamStudents: React.FC = () => {
                                                             <span style={{
                                                                 padding: '4px 8px',
                                                                 background: '#F5F3FF',
-                                                                color: '#6D28D9',
+                                                                color: 'var(--primary-hover)',
                                                                 borderRadius: '6px',
                                                                 fontSize: '11px',
                                                                 fontWeight: 700
@@ -1030,7 +1177,7 @@ export const ManageExamStudents: React.FC = () => {
                         </div>
                     )}
 
-                    {/* ─── SECTION 3: Reattempts ─── */}
+                    { }
                     {activeTab === 'reattempts' && (
                         <div className="form-section-card" style={{ marginTop: '0' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #F1F5F9', paddingBottom: '16px', marginBottom: '16px' }}>
@@ -1062,7 +1209,7 @@ export const ManageExamStudents: React.FC = () => {
                                             cursor: isRefreshing ? 'not-allowed' : 'pointer',
                                             transition: 'all 0.2s ease'
                                         }}
-                                        onMouseEnter={(e) => { if (!isRefreshing) { e.currentTarget.style.background = '#F8FAFC'; e.currentTarget.style.color = '#7C3AED'; } }}
+                                        onMouseEnter={(e) => { if (!isRefreshing) { e.currentTarget.style.background = '#F8FAFC'; e.currentTarget.style.color = 'var(--primary-color)'; } }}
                                         onMouseLeave={(e) => { if (!isRefreshing) { e.currentTarget.style.background = '#FFFFFF'; e.currentTarget.style.color = '#64748B'; } }}
                                     >
                                         <RefreshCw 
@@ -1088,7 +1235,7 @@ export const ManageExamStudents: React.FC = () => {
                                 </div>
                             </div>
 
-                            {/* Reattempts Table */}
+                            { }
                             {registeredReattempts.length > 0 ? (
                                 <div style={{ overflowX: 'auto', maxHeight: '300px' }}>
                                     <table className="admin-table">
@@ -1181,7 +1328,7 @@ export const ManageExamStudents: React.FC = () => {
                 </div>
             </div>
 
-            {/* ─── Postponement Modal ─── */}
+            { }
             {activeModal === 'postponements' && (
                 <div className="student-list-overlay" onClick={() => setActiveModal(null)}>
                     <div className="student-list-modal" onClick={e => e.stopPropagation()}>
@@ -1223,13 +1370,13 @@ export const ManageExamStudents: React.FC = () => {
                                                 <div style={{ flex: 1 }}>
                                                     <div style={{ fontWeight: 600, color: '#1E293B', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                                                         <span>{pp.studentNumber}{pp.batch ? ` , ${pp.batch}` : ''}</span>
-                                                        {pp.application_id && <span style={{ padding: '2px 6px', background: '#F5F3FF', color: '#6D28D9', borderRadius: '4px', fontSize: '9px', fontWeight: 700 }}>{pp.application_id}</span>}
+                                                        {pp.application_id && <span style={{ padding: '2px 6px', background: '#F5F3FF', color: 'var(--primary-hover)', borderRadius: '4px', fontSize: '9px', fontWeight: 700 }}>{pp.application_id}</span>}
                                                     </div>
                                                     <div style={{ fontSize: '12px', color: '#64748B', marginTop: '4px' }}>{pp.studentName}</div>
                                                 </div>
                                                 <input
                                                     type="checkbox"
-                                                    style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#7C3AED' }}
+                                                    style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--primary-color)' }}
                                                     checked={isChecked}
                                                     onChange={(e) => {
                                                         if (e.target.checked) {
@@ -1254,7 +1401,7 @@ export const ManageExamStudents: React.FC = () => {
                 </div>
             )}
 
-            {/* ─── Reattempt Modal ─── */}
+            { }
             {activeModal === 'reattempts' && (
                 <div className="student-list-overlay" onClick={() => setActiveModal(null)}>
                     <div className="student-list-modal" onClick={e => e.stopPropagation()}>
@@ -1327,7 +1474,7 @@ export const ManageExamStudents: React.FC = () => {
                 </div>
             )}
 
-            {/* ─── Regular Student Assignment Modal ─── */}
+            { }
             {activeModal === 'regular' && (
                 <div className="student-list-overlay" onClick={() => {
                     setModalSearchQuery('');
@@ -1354,7 +1501,7 @@ export const ManageExamStudents: React.FC = () => {
                         </div>
 
                         <div className="modal-body" style={{ maxHeight: '60vh', overflowY: 'auto', padding: '20px 24px' }}>
-                            {/* Search bar inside modal */}
+                            { }
                             <div style={{ position: 'relative', marginBottom: '16px' }}>
                                 <input
                                     type="text"
@@ -1402,7 +1549,7 @@ export const ManageExamStudents: React.FC = () => {
                                     style={{
                                         background: 'none',
                                         border: 'none',
-                                        color: '#7C3AED',
+                                        color: 'var(--primary-color)',
                                         fontSize: '13px',
                                         fontWeight: 700,
                                         cursor: 'pointer'
@@ -1442,7 +1589,7 @@ export const ManageExamStudents: React.FC = () => {
                                                 </div>
                                                 <input
                                                     type="checkbox"
-                                                    style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#7C3AED' }}
+                                                    style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--primary-color)' }}
                                                     checked={isChecked}
                                                     onChange={(e) => {
                                                         if (e.target.checked) {
@@ -1485,7 +1632,11 @@ export const ManageExamStudents: React.FC = () => {
                 }}
                 onConfirm={() => {
                     if (pendingApp) {
-                        handleReject(pendingApp, rejectionReason);
+                        if (pendingApp.stageToReject) {
+                            handleRejectStage(pendingApp, pendingApp.stageToReject, rejectionReason);
+                        } else {
+                            handleReject(pendingApp, rejectionReason);
+                        }
                         setShowRejectModal(false);
                         setPendingApp(null);
                     }
@@ -1494,7 +1645,7 @@ export const ManageExamStudents: React.FC = () => {
                 setReason={setRejectionReason}
             />
 
-            {/* ─── Application Details Modal ─── */}
+            { }
             {showDetailsModal && selectedAppDetails && (() => {
                 const app = selectedAppDetails;
                 const secStatus = getStageStatus(app, 'secretary');
@@ -1506,7 +1657,7 @@ export const ManageExamStudents: React.FC = () => {
                     (userRole === 'secretary' && secStatus === 'pending') ||
                     (userRole === 'coordinator' && secStatus === 'approved' && coorStatus === 'pending') ||
                     (userRole === 'director' && coorStatus === 'approved' && dirStatus === 'pending') ||
-                    (userRole === 'super_admin')
+                    (userRole === 'super_admin' || userRole === 'admin')
                 );
 
                 return (
@@ -1530,7 +1681,7 @@ export const ManageExamStudents: React.FC = () => {
                             <div className="modal-body" style={{ padding: '24px', overflowY: 'auto', maxHeight: '60vh' }}>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid #F1F5F9', paddingBottom: '8px' }}>
-                                        <User size={16} style={{ color: '#7C3AED' }} />
+                                        <User size={16} style={{ color: 'var(--primary-color)' }} />
                                         <span style={{ fontWeight: 700, color: '#1E293B', fontSize: '14px' }}>Personal Information</span>
                                     </div>
 
@@ -1562,7 +1713,7 @@ export const ManageExamStudents: React.FC = () => {
                                     </div>
 
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid #F1F5F9', paddingBottom: '8px', marginTop: '16px' }}>
-                                        <MapPin size={16} style={{ color: '#7C3AED' }} />
+                                        <MapPin size={16} style={{ color: 'var(--primary-color)' }} />
                                         <span style={{ fontWeight: 700, color: '#1E293B', fontSize: '14px' }}>Address Details</span>
                                     </div>
 
@@ -1578,7 +1729,7 @@ export const ManageExamStudents: React.FC = () => {
                                     </div>
 
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid #F1F5F9', paddingBottom: '8px', marginTop: '16px' }}>
-                                        <FileText size={16} style={{ color: '#7C3AED' }} />
+                                        <FileText size={16} style={{ color: 'var(--primary-color)' }} />
                                         <span style={{ fontWeight: 700, color: '#1E293B', fontSize: '14px' }}>Application Details</span>
                                     </div>
 
@@ -1622,7 +1773,7 @@ export const ManageExamStudents: React.FC = () => {
                                     </div>
 
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid #F1F5F9', paddingBottom: '8px', marginTop: '16px' }}>
-                                        <CreditCard size={16} style={{ color: '#7C3AED' }} />
+                                        <CreditCard size={16} style={{ color: 'var(--primary-color)' }} />
                                         <span style={{ fontWeight: 700, color: '#1E293B', fontSize: '14px' }}>Payment Details</span>
                                     </div>
 
@@ -1643,6 +1794,136 @@ export const ManageExamStudents: React.FC = () => {
                                             <div style={{ color: '#9F1239', fontSize: '14px', lineHeight: 1.5 }}>{app.rejection_reason}</div>
                                         </div>
                                     )}
+
+                                    <div className="am-section-divider">
+                                        <h4><ShieldCheck size={16} /> Approval Stages</h4>
+                                    </div>
+
+                                    {(() => {
+                                        const approvalStages = [
+                                            {
+                                                role: 'Secretary',
+                                                status: secStatus,
+                                                approvedBy: app.stages?.secretary_approved_by || (secStatus === 'approved' ? 'Course Secretary 1' : null),
+                                                approvedAt: app.stages?.secretary_approved_at || null,
+                                                comment: app.stages?.secretary_comment || null
+                                            },
+                                            {
+                                                role: 'Coordinator',
+                                                status: coorStatus,
+                                                approvedBy: app.stages?.coordinator_approved_by || (coorStatus === 'approved' ? 'Course Coordinator 1' : null),
+                                                approvedAt: app.stages?.coordinator_approved_at || null,
+                                                comment: app.stages?.coordinator_comment || null
+                                            },
+                                            {
+                                                role: 'Director',
+                                                status: dirStatus,
+                                                approvedBy: app.stages?.director_approved_by || (dirStatus === 'approved' ? 'Director 1' : null),
+                                                approvedAt: app.stages?.director_approved_at || null,
+                                                comment: app.stages?.director_comment || null
+                                            }
+                                        ];
+
+                                        return (
+                                            <div className="am-approval-flow" style={{ marginTop: '12px' }}>
+                                                <div className="am-flow-steps">
+                                                    {approvalStages.map((stage: any, idx: number) => {
+                                                        const isStepActive = (idx === 0 && stage.status === 'pending') ||
+                                                            (idx === 1 && approvalStages[0].status === 'approved' && stage.status === 'pending') ||
+                                                            (idx === 2 && approvalStages[1].status === 'approved' && stage.status === 'pending');
+
+                                                        const canApproveThisStage = isStepActive && (
+                                                            (stage.role.toLowerCase() === 'secretary' && userRole === 'secretary') ||
+                                                            (stage.role.toLowerCase() === 'coordinator' && userRole === 'coordinator') ||
+                                                            (stage.role.toLowerCase() === 'director' && userRole === 'director') ||
+                                                            userRole === 'super_admin' || userRole === 'admin'
+                                                        );
+
+                                                        return (
+                                                            <div key={idx} className={`am-flow-step ${stage.status}`} style={{ display: 'flex', gap: '20px', paddingBottom: idx < 2 ? '24px' : '0', position: 'relative' }}>
+                                                                <div className="am-step-marker" style={{
+                                                                    width: '20px',
+                                                                    height: '20px',
+                                                                    borderRadius: '50%',
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    justifyContent: 'center',
+                                                                    color: '#FFFFFF',
+                                                                    background: stage.status === 'approved' ? '#10B981' : (stage.status === 'rejected' ? '#EF4444' : '#F1F5F9'),
+                                                                    border: `2px solid ${stage.status === 'approved' ? '#10B981' : (stage.status === 'rejected' ? '#EF4444' : '#94A3B8')}`,
+                                                                    zIndex: 3
+                                                                }}>
+                                                                    {stage.status === 'approved' ? <Check size={12} /> :
+                                                                     stage.status === 'rejected' ? <XCircle size={12} /> : <Clock size={12} style={{ color: '#94A3B8' }} />}
+                                                                </div>
+                                                                <div className="am-step-content" style={{ flex: 1 }}>
+                                                                    <div className="am-step-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                                        <span className="am-step-role" style={{ fontWeight: 700, color: '#1E293B' }}>{stage.role}</span>
+                                                                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                                                            <span className={`at-status-badge ${stage.status}`} style={{
+                                                                                background: stage.status === 'approved' ? '#D1FAE5' : (stage.status === 'rejected' ? '#FEE2E2' : '#FEF3C7'),
+                                                                                color: stage.status === 'approved' ? '#059669' : (stage.status === 'rejected' ? '#DC2626' : '#D97706'),
+                                                                                fontSize: '11px', padding: '3px 10px', borderRadius: '12px', fontWeight: 700, textTransform: 'capitalize'
+                                                                            }}>
+                                                                                {stage.status}
+                                                                            </span>
+                                                                            {canApproveThisStage && (
+                                                                                <div style={{ display: 'flex', gap: '6px' }}>
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        onClick={() => {
+                                                                                            setPendingApp({ ...app, stageToReject: stage.role.toLowerCase() });
+                                                                                            setRejectionReason('');
+                                                                                            setShowRejectModal(true);
+                                                                                            setShowDetailsModal(false);
+                                                                                        }}
+                                                                                        style={{
+                                                                                            background: '#FEE2E2',
+                                                                                            color: '#DC2626',
+                                                                                            border: 'none',
+                                                                                            padding: '4px 10px',
+                                                                                            borderRadius: '6px',
+                                                                                            fontSize: '11px',
+                                                                                            fontWeight: 700,
+                                                                                            cursor: 'pointer'
+                                                                                        }}
+                                                                                    >
+                                                                                        Reject
+                                                                                    </button>
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        onClick={() => handleApproveStage(app, stage.role.toLowerCase())}
+                                                                                        style={{
+                                                                                            background: '#D1FAE5',
+                                                                                            color: '#059669',
+                                                                                            border: 'none',
+                                                                                            padding: '4px 10px',
+                                                                                            borderRadius: '6px',
+                                                                                            fontSize: '11px',
+                                                                                            fontWeight: 700,
+                                                                                            cursor: 'pointer'
+                                                                                        }}
+                                                                                    >
+                                                                                        Approve
+                                                                                    </button>
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                    {stage.approvedBy && (
+                                                                        <div className="am-step-info" style={{ fontSize: '12px', color: '#64748B', marginTop: '4px' }}>
+                                                                            <span>Approved by {stage.approvedBy}</span>
+                                                                            {stage.approvedAt && <span> on {stage.approvedAt}</span>}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        );
+                                    })()}
                                 </div>
                             </div>
 
@@ -1654,6 +1935,25 @@ export const ManageExamStudents: React.FC = () => {
                                 >
                                     <Trash2 size={16} /> Delete Application
                                 </button>
+
+                                {!canAct && appStatusLower === 'pending' && (
+                                    <div className="am-waiting-badge" style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '8px',
+                                        background: '#FEF3C7',
+                                        color: '#D97706',
+                                        padding: '10px 20px',
+                                        borderRadius: '8px',
+                                        border: '1px solid #FDE68A',
+                                        fontWeight: 700,
+                                        fontSize: '13px',
+                                        justifyContent: 'center'
+                                    }}>
+                                        <Clock size={16} />
+                                        Waiting for {app.current_step === 1 ? 'Secretary' : app.current_step === 2 ? 'Coordinator' : 'Director'} approval
+                                    </div>
+                                )}
 
                                 {canAct && (
                                     <>

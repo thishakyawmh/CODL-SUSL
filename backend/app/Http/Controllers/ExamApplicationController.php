@@ -9,7 +9,10 @@ class ExamApplicationController extends Controller
 {
     public function index()
     {
-        return response()->json(ExamApplication::with(['user', 'course'])->get());
+        return response()->json(ExamApplication::with([
+            'user:id,full_name,display_name,email,student_number',
+            'course:id,title,code'
+        ])->get());
     }
 
     public function store(Request $request)
@@ -34,7 +37,7 @@ class ExamApplicationController extends Controller
             'postponement_details' => 'nullable|string',
         ]);
 
-        $validated['user_id'] = auth()->id() ?? 1; // Fallback in case of non-interactive testing
+        $validated['user_id'] = auth()->id() ?? 1; 
         $examApplication = ExamApplication::create($validated);
         \App\Http\Controllers\CourseController::clearManageCourseCache($examApplication->course_id);
 
@@ -46,7 +49,7 @@ class ExamApplicationController extends Controller
         $user = $request->user();
         return response()->json(
             ExamApplication::where('user_id', $user->id)
-                ->with(['course'])
+                ->with(['course:id,title,code'])
                 ->latest()
                 ->get()
         );

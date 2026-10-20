@@ -17,7 +17,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ title = "Dashb
                 <h2 className="header-title">{title}</h2>
             )}
 
-            {/* Profile section has been moved to Sidebar */}
+            { }
         </div>
     );
 };

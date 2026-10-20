@@ -46,12 +46,12 @@ export const ApplicantDashboard: React.FC = () => {
     const handleSignOutConfirm = () => {
         setIsSignOutOpen(false);
 
-        // Clear local storage first
+
         sessionStorage.removeItem('token');
         sessionStorage.removeItem('user');
         sessionStorage.removeItem('adminRole');
 
-        // Call API in background
+
         authService.logout().catch(() => { });
 
         navigate('/login', { replace: true });
@@ -63,7 +63,7 @@ export const ApplicantDashboard: React.FC = () => {
 
     return (
         <div className="applicant-workspace-container">
-            {/* Header */}
+            { }
             <header className="workspace-header">
                 <div className="header-brand">
                     <div className="brand-icon">
@@ -77,6 +77,10 @@ export const ApplicantDashboard: React.FC = () => {
                             src={user.avatar ? getFullAvatarUrl(user.avatar) : `https://ui-avatars.com/api/?name=${encodeURIComponent(user.display_name || user.displayName || user.full_name)}&background=7C3AED&color=fff`}
                             alt="Profile"
                             className="avatar"
+                            onError={(e) => {
+                                e.currentTarget.onerror = null;
+                                e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.display_name || user.displayName || user.full_name)}&background=7C3AED&color=fff`;
+                            }}
                         />
                         <span className="user-name">{user.display_name || user.displayName || user.full_name}</span>
                     </div>
@@ -86,7 +90,7 @@ export const ApplicantDashboard: React.FC = () => {
                 </div>
             </header>
 
-            {/* Main Content */}
+            { }
             <main className="workspace-main">
                 {isNestedRoute ? (
                     <Outlet context={{ hasApplication, fetchApplications }} />

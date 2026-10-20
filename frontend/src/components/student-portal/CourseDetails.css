@@ -56,8 +56,8 @@
 }
 
 .course-type-label.degree {
-    background-color: #EDE9FE;
-    color: #7C3AED;
+    background-color: var(--primary-light);
+    color: var(--primary-color);
 }
 
 .course-type-label.diploma {

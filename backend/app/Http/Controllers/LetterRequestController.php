@@ -30,7 +30,13 @@ class LetterRequestController extends Controller
             $query->where('approval_level', '>=', 2);
         }
 
-        return response()->json($query->orderBy('created_at', 'desc')->get());
+        $query->orderBy('created_at', 'desc');
+
+        if ($request->has('page')) {
+            return response()->json($query->paginate(15));
+        }
+
+        return response()->json($query->get());
     }
 
     public function store(Request $request)
@@ -115,7 +121,7 @@ class LetterRequestController extends Controller
 
         $letterRequest->save();
 
-        // Log admin activity
+
         $targetDesc = "Letter Request #{$letterRequest->id} for " . ($letterRequest->user ? $letterRequest->user->full_name : 'Student') . " in " . ($letterRequest->course ? $letterRequest->course->code : 'N/A');
         \App\Models\ActivityLog::log(
             $user->id,

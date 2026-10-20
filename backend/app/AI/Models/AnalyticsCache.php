@@ -23,6 +23,7 @@ class AnalyticsCache extends Model
         'skill_gaps',
         'generated_recommendations',
         'kpis',
+        'academic_entry_requirements',
         'generated_at',
     ];
 
@@ -35,6 +36,7 @@ class AnalyticsCache extends Model
         'skill_gaps' => 'array',
         'generated_recommendations' => 'array',
         'kpis' => 'array',
+        'academic_entry_requirements' => 'array',
         'generated_at' => 'datetime',
     ];
 }

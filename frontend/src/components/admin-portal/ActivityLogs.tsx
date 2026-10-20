@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Activity, Clock, Search, ArrowLeft, Shield, Calendar, Filter } from 'lucide-react';
 import { activityLogService } from '../../services/apiService';
 import { getCurrentAdminUser } from '../../data/mockAdminData';
-import './RoleManagement.css'; // Reuses the container layout styling
+import './RoleManagement.css'; 
+import './AdminDashboard.css'; 
 
 export const ActivityLogs: React.FC = () => {
     const navigate = useNavigate();
@@ -43,20 +44,23 @@ export const ActivityLogs: React.FC = () => {
     const getRoleColor = (role: string) => {
         switch (role.toLowerCase()) {
             case 'super_admin': return { bg: '#FEE2E2', text: '#DC2626', border: '#FCA5A5' };
-            case 'director': return { bg: '#EDE9FE', text: '#7C3AED', border: '#C084FC' };
+            case 'director': return { bg: 'var(--primary-light)', text: 'var(--primary-color)', border: '#C084FC' };
             case 'coordinator': return { bg: '#FEF3C7', text: '#D97706', border: '#FCD34D' };
             case 'secretary': return { bg: '#DBEAFE', text: '#2563EB', border: '#93C5FD' };
             case 'lecturer': return { bg: '#E0F2FE', text: '#0369A1', border: '#7DD3FC' };
+            case 'student': return { bg: '#D1FAE5', text: '#059669', border: '#10B981' };
+            case 'pro_student': return { bg: '#FEF3C7', text: '#D97706', border: '#FCD34D' };
+            case 'applicant': return { bg: '#FFE4E6', text: '#E11D48', border: '#FDA4AF' };
             default: return { bg: '#F1F5F9', text: '#475569', border: '#CBD5E1' };
         }
     };
 
     const filteredLogs = logs.filter(log => {
-        const matchesSearch = 
+        const matchesSearch =
             log.user.toLowerCase().includes(searchTerm.toLowerCase()) ||
             log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
             log.target.toLowerCase().includes(searchTerm.toLowerCase());
-        
+
         const matchesRole = roleFilter === 'all' || log.role === roleFilter;
 
         return matchesSearch && matchesRole;
@@ -66,7 +70,7 @@ export const ActivityLogs: React.FC = () => {
         return (
             <div className="rm-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '450px' }}>
                 <div style={{ textAlign: 'center', color: '#64748B' }}>
-                    <div style={{ width: '48px', height: '48px', border: '3px solid #E2E8F0', borderTopColor: '#7C3AED', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 16px' }} />
+                    <div style={{ width: '48px', height: '48px', border: '3px solid #E2E8F0', borderTopColor: 'var(--primary-color)', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 16px' }} />
                     <p style={{ fontWeight: 600 }}>Loading activity logs history...</p>
                 </div>
             </div>
@@ -75,11 +79,11 @@ export const ActivityLogs: React.FC = () => {
 
     return (
         <div className="rm-container">
-            {/* Header */}
+            { }
             <div className="admin-page-header" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                <button 
-                    className="cm-back-text-btn" 
-                    style={{ marginBottom: '16px', marginLeft: '-16px', display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', color: '#7C3AED', fontWeight: 600, cursor: 'pointer' }}
+                <button
+                    className="cm-back-text-btn"
+                    style={{ marginBottom: '16px', marginLeft: '-16px', display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', color: 'var(--primary-color)', fontWeight: 600, cursor: 'pointer' }}
                     onClick={() => navigate('/admin/dashboard')}
                 >
                     <ArrowLeft size={18} /> Back to Dashboard
@@ -87,7 +91,7 @@ export const ActivityLogs: React.FC = () => {
                 <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
                     <div>
                         <h1 className="admin-page-title" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <Activity size={28} style={{ color: '#7C3AED' }} /> Activity History
+                            <Activity size={28} style={{ color: 'var(--primary-color)' }} /> Activity History
                         </h1>
                         <p className="admin-page-subtitle">Track and monitor all administrative modifications and staff actions over the last 6 months.</p>
                     </div>
@@ -97,7 +101,7 @@ export const ActivityLogs: React.FC = () => {
                 </div>
             </div>
 
-            {/* Filters Section */}
+            { }
             <div style={{
                 background: '#FFFFFF',
                 borderRadius: '16px',
@@ -109,11 +113,11 @@ export const ActivityLogs: React.FC = () => {
                 gap: '16px',
                 flexWrap: 'wrap'
             }}>
-                {/* Search */}
+                { }
                 <div style={{ flex: 1, minWidth: '260px', position: 'relative' }}>
                     <Search size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }} />
-                    <input 
-                        type="text" 
+                    <input
+                        type="text"
                         placeholder="Search logs by staff name, action, or target details..."
                         value={searchTerm}
                         onChange={e => setSearchTerm(e.target.value)}
@@ -129,12 +133,12 @@ export const ActivityLogs: React.FC = () => {
                             transition: 'border-color 0.2s',
                             boxSizing: 'border-box'
                         }}
-                        onFocus={e => e.target.style.borderColor = '#7C3AED'}
+                        onFocus={e => e.target.style.borderColor = 'var(--primary-color)'}
                         onBlur={e => e.target.style.borderColor = '#E2E8F0'}
                     />
                 </div>
 
-                {/* Filter by Role */}
+                { }
                 <div style={{ minWidth: '200px', position: 'relative', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Filter size={16} style={{ color: '#64748B' }} />
                     <select
@@ -161,11 +165,14 @@ export const ActivityLogs: React.FC = () => {
                         <option value="coordinator">Course Coordinator</option>
                         <option value="secretary">Course Secretary</option>
                         <option value="lecturer">Lecturer</option>
+                        <option value="student">Student</option>
+                        <option value="pro_student">Pro Student</option>
+                        <option value="applicant">Applicant</option>
                     </select>
                 </div>
             </div>
 
-            {/* Logs List Card */}
+            { }
             <div style={{
                 background: '#FFFFFF',
                 borderRadius: '18px',
@@ -175,7 +182,7 @@ export const ActivityLogs: React.FC = () => {
             }}>
                 {filteredLogs.length === 0 ? (
                     <div style={{ textAlign: 'center', padding: '64px 20px', color: '#64748B' }}>
-                        <Activity size={48} style={{ margin: '0 auto 16px', opacity: 0.3, color: '#7C3AED' }} />
+                        <Activity size={48} style={{ margin: '0 auto 16px', opacity: 0.3, color: 'var(--primary-color)' }} />
                         <h3 style={{ margin: '0 0 6px 0', color: '#1E293B', fontSize: '16px', fontWeight: 600 }}>No logs found</h3>
                         <p style={{ margin: 0, fontSize: '14px' }}>Try adjusting your search criteria or role filters.</p>
                     </div>
@@ -184,7 +191,7 @@ export const ActivityLogs: React.FC = () => {
                         {filteredLogs.map((log, index) => {
                             const badge = getRoleColor(log.role);
                             return (
-                                <div 
+                                <div
                                     key={log.id}
                                     style={{
                                         display: 'flex',
@@ -198,7 +205,7 @@ export const ActivityLogs: React.FC = () => {
                                     onMouseEnter={e => e.currentTarget.style.backgroundColor = '#F8FAFC'}
                                     onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
                                 >
-                                    {/* Icon */}
+                                    { }
                                     <div className={`activity-icon ${log.type}`} style={{
                                         display: 'flex',
                                         alignItems: 'center',
@@ -211,7 +218,7 @@ export const ActivityLogs: React.FC = () => {
                                         <Activity size={18} />
                                     </div>
 
-                                    {/* Main info */}
+                                    { }
                                     <div style={{ flex: 1, minWidth: 0 }}>
                                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', marginBottom: '4px' }}>
                                             <span style={{ fontWeight: 700, fontSize: '14px', color: '#0F172A' }}>{log.user}</span>
@@ -232,12 +239,12 @@ export const ActivityLogs: React.FC = () => {
                                         <div style={{ fontSize: '14px', color: '#334155', lineHeight: 1.5 }}>
                                             {log.action}
                                         </div>
-                                        <div style={{ fontSize: '12px', color: '#7C3AED', fontWeight: 600, marginTop: '4px' }}>
+                                        <div style={{ fontSize: '12px', color: 'var(--primary-color)', fontWeight: 600, marginTop: '4px' }}>
                                             {log.target}
                                         </div>
                                     </div>
 
-                                    {/* Date & Time */}
+                                    { }
                                     <div style={{
                                         display: 'flex',
                                         flexDirection: 'column',

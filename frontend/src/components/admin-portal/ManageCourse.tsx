@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
+import axios from 'axios';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
     ArrowLeft, Save, Plus, Trash2, Edit2, Check,
     BookOpen, Calendar, Layers, FileSpreadsheet,
     AlertCircle, CheckCircle, Download, Upload,
     X, Users, Search, Mail,
-    Send, ClipboardList, Eye, XCircle, Clock, MoreVertical,
+    Send, ClipboardList, Eye, XCircle, Clock, MoreVertical, Loader,
     ChevronRight, Play, FileArchive, FileText, Video, EyeOff, List,
     Award, ShieldCheck, UserCheck, User, Edit3, RefreshCw, UserPlus, History
 } from 'lucide-react';
@@ -64,6 +65,8 @@ interface Exam {
 
 interface EnrolledStudent {
     id: string;
+    real_id?: number;
+    student_number?: string;
     name: string;
     displayName?: string;
     email: string;
@@ -79,12 +82,12 @@ export const ManageCourse: React.FC = () => {
     const location = useLocation();
     const navigate = useNavigate();
 
-    // Parse URL query parameters
+
     const queryParams = new URLSearchParams(location.search);
     const urlBatch = queryParams.get('batch') || null;
     const urlSection = queryParams.get('section') || null;
 
-    // Helper to push state to URL
+
     const updateNavigation = (batch: string | null, section: string | null) => {
         let url = `/admin/courses/manage/${id}`;
         const params: string[] = [];
@@ -100,7 +103,7 @@ export const ManageCourse: React.FC = () => {
         navigate(url);
     };
 
-    // Find the course
+
     const [course, setCourse] = useState<AdminCourse | null>(null);
     const [isLoadingCourse, setIsLoadingCourse] = useState(true);
     const [realStudents, setRealStudents] = useState<any[]>([]);
@@ -110,13 +113,19 @@ export const ManageCourse: React.FC = () => {
     const [isLoadingData, setIsLoadingData] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
 
-    const loadAllCourseData = async (showLoading = true) => {
+    const loadAllCourseData = async (showLoading = true, signal?: AbortSignal) => {
         if (!id) return;
-        if (showLoading) setIsLoadingData(true);
+        let isCancelled = false;
+        if (showLoading) {
+            setIsLoadingData(true);
+            setIsLoadingCourse(true);
+            setIsLoadingStudents(true);
+            setCourse(null);
+        }
         try {
-            const data = await courseService.getManageCourseData(id);
+            const data = await courseService.getManageCourseData(id, { signal });
 
-            // 1. Course details
+
             if (data.course) {
                 const mapped: AdminCourse = {
                     id: data.course.id.toString(),
@@ -150,22 +159,22 @@ export const ManageCourse: React.FC = () => {
                 setCourse(mapped);
             }
 
-            // 2. Real students
+
             if (data.student_users) {
                 setRealStudents(data.student_users);
             }
 
-            // 3. Enrolled students
+
             if (data.enrolled_students) {
                 setEnrolledStudents(data.enrolled_students);
             }
 
-            // 4. Real lecturers
+
             if (data.lecturers) {
                 setRealLecturers(data.lecturers);
             }
 
-            // 5. Batches
+
             if (data.batches) {
                 const mappedBatches = data.batches.map((b: any) => ({
                     id: b.id,
@@ -175,7 +184,7 @@ export const ManageCourse: React.FC = () => {
                     maxEnrollments: b.max_enrollments.toString(),
                     subtitle: b.subtitle || 'Academic Intake Phase',
                     status: b.status,
-                    materials: b.materials || [],
+                    materials: b.materials,
                     lecturerId: b.instructor_id || undefined,
                     lecturerName: b.instructor?.full_name || '',
                     subjects: (b.subjects || []).map((s: any) => ({
@@ -189,12 +198,12 @@ export const ManageCourse: React.FC = () => {
                 setBatches(mappedBatches);
             }
 
-            // 6. Exams
+
             if (data.exams) {
                 setExams(data.exams);
             }
 
-            // 7. Announcements
+
             if (data.announcements) {
                 const courseAnns = data.announcements.map((ann: any) => ({
                     id: ann.id,
@@ -204,12 +213,15 @@ export const ManageCourse: React.FC = () => {
                     type: ann.type || 'Notice',
                     bgColor: ann.type === 'Important' ? '#FEF2F2' : (ann.type === 'Update' ? '#F0FDF4' : '#EFF6FF'),
                     iconColor: ann.type === 'Important' ? '#EF4444' : (ann.type === 'Update' ? '#22C55E' : '#3B82F6'),
-                    batch: ann.batch || undefined
+                    batch: ann.batch || undefined,
+                    attachment_url: ann.attachment_url,
+                    attachment_name: ann.attachment_name,
+                    attachment_size: ann.attachment_size
                 }));
                 setAnnouncementsList(courseAnns);
             }
 
-            // 8. Enrollment Requests
+
             if (data.enrollment_requests) {
                 const formattedEnrollments = data.enrollment_requests.map((app: any) => ({
                     id: `APP-${new Date(app.created_at).getFullYear()}-${app.id.toString().padStart(4, '0')}`,
@@ -230,7 +242,7 @@ export const ManageCourse: React.FC = () => {
                 setEnrollmentRequests(formattedEnrollments);
             }
 
-            // 9. Approval Requests
+
             const mappedApps = (data.exam_applications || []).map((app: any) => {
                 const name = app.user?.full_name || app.user?.name || 'Student';
                 const studentNumber = app.user?.student_number || 'CODL/2404';
@@ -390,13 +402,19 @@ export const ManageCourse: React.FC = () => {
             setWaitlistPostponements(mappedPostponements);
             setWaitlistReattempts(mappedReattempts);
 
-        } catch (err) {
+        } catch (err: any) {
+            if (axios.isCancel(err)) {
+                isCancelled = true;
+                return;
+            }
             console.error("Failed to fetch consolidated course data:", err);
             toast.error("Failed to load course details from database.");
         } finally {
-            setIsLoadingData(false);
-            setIsLoadingCourse(false);
-            setIsLoadingStudents(false);
+            if (!isCancelled) {
+                setIsLoadingData(false);
+                setIsLoadingCourse(false);
+                setIsLoadingStudents(false);
+            }
         }
     };
 
@@ -414,12 +432,16 @@ export const ManageCourse: React.FC = () => {
     };
 
     useEffect(() => {
+        const controller = new AbortController();
         if (id) {
-            loadAllCourseData(true);
+            loadAllCourseData(true, controller.signal);
         }
+        return () => {
+            controller.abort();
+        };
     }, [id]);
 
-    // Form State (Details)
+
     const [courseType, setCourseType] = useState<'Degree' | 'Higher National Diploma' | 'Diploma' | 'Advanced Certificate' | 'Certificate'>('Degree');
     const [commonData, setCommonData] = useState({
         name: '',
@@ -478,7 +500,7 @@ export const ManageCourse: React.FC = () => {
             setBatches(newBatches);
             setShowBatchModal(false);
 
-            // Reset form
+
             const nextNum = newBatches.length + 1;
             setBatchForm({
                 name: `Batch ${nextNum.toString().padStart(2, '0')}`,
@@ -497,7 +519,7 @@ export const ManageCourse: React.FC = () => {
         }
     };
 
-    // Specific Fields
+
     const [semesterCount, setSemesterCount] = useState(1);
     const [semesters, setSemesters] = useState<Semester[]>([{ subjects: [{ code: '', name: '', credits: '' }] }]);
     const [diplomaSubjects, setDiplomaSubjects] = useState<Subject[]>([{ code: '', name: '', credits: '' }]);
@@ -526,7 +548,7 @@ export const ManageCourse: React.FC = () => {
 
     const getFilteredEnrollmentRequests = () => {
         return enrollmentRequests.filter(req => {
-            // Role level filtering
+
             if (userRole === 'coordinator') {
                 if (req.rawApp && req.rawApp.approval_level < 1) return false;
             }
@@ -534,20 +556,22 @@ export const ManageCourse: React.FC = () => {
                 if (req.rawApp && req.rawApp.approval_level < 2) return false;
             }
 
-            // Type filtering (new vs existing)
+
             if (enrollmentTypeFilter !== 'all') {
                 const reqTypeLower = (req.type || '').toLowerCase();
                 if (enrollmentTypeFilter === 'new' && reqTypeLower !== 'new') return false;
                 if (enrollmentTypeFilter === 'existing' && reqTypeLower !== 'existing') return false;
             }
 
-            // Search query (name or reg no / id)
+
             if (enrollmentSearchQuery.trim()) {
                 const query = enrollmentSearchQuery.toLowerCase();
                 const nameMatch = (req.name || '').toLowerCase().includes(query);
+                const emailMatch = (req.email || '').toLowerCase().includes(query);
                 const idMatch = (req.id || '').toLowerCase().includes(query);
                 const realIdMatch = String(req.realId || '').toLowerCase().includes(query);
-                if (!nameMatch && !idMatch && !realIdMatch) return false;
+                const studentNumberMatch = (req.studentNumber || '').toLowerCase().includes(query);
+                if (!nameMatch && !emailMatch && !idMatch && !realIdMatch && !studentNumberMatch) return false;
             }
 
             return true;
@@ -593,10 +617,10 @@ export const ManageCourse: React.FC = () => {
         return subjectName;
     };
 
-    // Navigation State
+
     const [activeSection, _setActiveSection] = useState<'details' | 'exams' | 'results' | 'students' | 'materials' | 'enrollment_req' | 'approvals_req' | 'announcements' | 'waitlist' | null>(urlSection as any);
 
-    // Sync from URL changes (like Back/Forward buttons or refresh)
+
     useEffect(() => {
         _setSelectedBatch(urlBatch);
         if (urlBatch && !urlSection && userRole === 'lecturer') {
@@ -607,7 +631,7 @@ export const ManageCourse: React.FC = () => {
         }
     }, [urlBatch, urlSection, userRole]);
 
-    // Redefine setter functions to push state to URL and update state synchronously
+
     function setSelectedBatch(batch: string | null) {
         _setSelectedBatch(batch);
         if (batch && userRole === 'lecturer') {
@@ -623,10 +647,12 @@ export const ManageCourse: React.FC = () => {
         updateNavigation(selectedBatch, section);
     }
 
-    // Announcement States
+
     const [annTitle, setAnnTitle] = useState('');
     const [annContent, setAnnContent] = useState('');
     const [annType, setAnnType] = useState('Notice');
+    const [annFile, setAnnFile] = useState<File | null>(null);
+    const [isBroadcasting, setIsBroadcasting] = useState(false);
     const [announcementsList, setAnnouncementsList] = useState<any[]>([]);
 
     const handleBroadcastAnnouncement = async () => {
@@ -643,13 +669,15 @@ export const ManageCourse: React.FC = () => {
             minute: '2-digit'
         });
 
+        setIsBroadcasting(true);
         try {
             const response = await announcementService.create({
                 title: annTitle,
                 desc: annContent,
                 type: annType,
                 course_id: parseInt(id!),
-                batch: selectedBatch || null
+                batch: selectedBatch || null,
+                file: annFile
             });
 
             const newAnn = {
@@ -660,16 +688,22 @@ export const ManageCourse: React.FC = () => {
                 type: annType,
                 bgColor: annType === 'Important' ? '#FEF2F2' : (annType === 'Update' ? '#F0FDF4' : '#EFF6FF'),
                 iconColor: annType === 'Important' ? '#EF4444' : (annType === 'Update' ? '#22C55E' : '#3B82F6'),
-                batch: selectedBatch || undefined
+                batch: selectedBatch || undefined,
+                attachment_url: response.attachment_url,
+                attachment_name: response.attachment_name,
+                attachment_size: response.attachment_size
             };
 
             setAnnouncementsList([newAnn, ...announcementsList]);
             setAnnTitle('');
             setAnnContent('');
+            setAnnFile(null);
             toast.success('Announcement broadcasted successfully to all registered students!');
         } catch (err) {
             console.error('Failed to broadcast announcement:', err);
             toast.error('Failed to broadcast announcement.');
+        } finally {
+            setIsBroadcasting(false);
         }
     };
 
@@ -704,13 +738,13 @@ export const ManageCourse: React.FC = () => {
         );
     };
 
-    // Course Materials State
+
     const [materialsViewState, setMaterialsViewState] = useState<'semesters' | 'modules' | 'resources'>('semesters');
     const [materialsSelectedSemesterId, setMaterialsSelectedSemesterId] = useState<number | null>(null);
     const [materialsSelectedModuleId, setMaterialsSelectedModuleId] = useState<string | null>(null);
     const [materialsSemesters, setMaterialsSemesters] = useState<any[]>([]);
 
-    // Filtered materials semesters for lecturer
+
     const currentLecturerSubjectNames = (selectedBatch && userRole === 'lecturer')
         ? (() => {
             const batch = batches.find(b => b.name === selectedBatch);
@@ -743,7 +777,7 @@ export const ManageCourse: React.FC = () => {
             .filter(sem => sem.modules.length > 0)
         : materialsSemesters;
 
-    // Filtered batches for lecturer to show only batches where they teach a subject OR are assigned directly as batch instructor
+
     const displayedBatches = (userRole === 'lecturer')
         ? batches.filter(b => {
             const isBatchInstructor = (b as any).lecturerId?.toString() === currentAdminUser.id?.toString();
@@ -759,7 +793,7 @@ export const ManageCourse: React.FC = () => {
         })
         : batches;
 
-    // Auto-select semester if the lecturer is assigned to subjects in only one semester
+
     useEffect(() => {
         if (activeSection === 'materials' && userRole === 'lecturer' && materialsViewState === 'semesters') {
             if (filteredMaterialsSemesters.length === 1) {
@@ -792,7 +826,7 @@ export const ManageCourse: React.FC = () => {
                 }
                 const updated = await batchService.update(id!, targetBatch.id, payload);
 
-                // Update local batches state
+
                 setBatches(prev => prev.map(b => b.id === targetBatch.id ? {
                     ...b,
                     materials: updated.materials
@@ -804,18 +838,23 @@ export const ManageCourse: React.FC = () => {
         }
     };
 
-    // Load materials from selected batch
+
     useEffect(() => {
         if (!selectedBatch || batches.length === 0) return;
         const currentBatch = batches.find(b => b.name === selectedBatch);
         if (!currentBatch) return;
+
+        // Skip any materials generation if they haven't been loaded from the backend yet
+        if (currentBatch.materials === undefined) {
+            return;
+        }
 
         if (currentBatch.materials && currentBatch.materials.length > 0) {
             if (JSON.stringify(materialsSemesters) !== JSON.stringify(currentBatch.materials)) {
                 setMaterialsSemesters(currentBatch.materials);
             }
         } else {
-            // Generate empty structure
+
             let generated: any[] = [];
             if (['Certificate', 'Advanced Certificate'].includes(courseType)) {
                 generated = [
@@ -887,19 +926,37 @@ export const ManageCourse: React.FC = () => {
         }
     }, [selectedBatch, batches, course, courseType]);
 
-    // Automatically synchronize any materials changes back to Database (disabled to prevent infinite loops - manual saves are handled in event handlers)
-    /*
-    useEffect(() => {
-        if (materialsSemesters && materialsSemesters.length > 0 && selectedBatch) {
-            const currentBatch = batches.find(b => b.name === selectedBatch);
-            if (currentBatch && JSON.stringify(currentBatch.materials) !== JSON.stringify(materialsSemesters)) {
-                saveMaterialsToDatabase(materialsSemesters);
-            }
-        }
-    }, [materialsSemesters, id, selectedBatch, batches]);
-    */
 
-    // Automatically skip semester/subject view for Certificate and Advanced Certificate courses
+    // Fetch materials on-demand when activeSection is 'materials' and a batch is selected
+    useEffect(() => {
+        if (!selectedBatch || batches.length === 0 || activeSection !== 'materials') return;
+        const currentBatch = batches.find(b => b.name === selectedBatch);
+        if (!currentBatch) return;
+
+        // Only fetch if materials are not loaded yet (i.e. undefined)
+        if (currentBatch.materials === undefined) {
+            const loadMaterials = async () => {
+                try {
+                    setIsLoadingData(true);
+                    const materials = await batchService.getMaterials(id!, currentBatch.id);
+                    setBatches(prev => prev.map(b => b.id === currentBatch.id ? {
+                        ...b,
+                        materials: materials || []
+                    } : b));
+                } catch (err) {
+                    console.error("Failed to load materials:", err);
+                    toast.error("Failed to load materials for this batch.");
+                } finally {
+                    setIsLoadingData(false);
+                }
+            };
+            loadMaterials();
+        }
+    }, [selectedBatch, activeSection, batches, id]);
+
+
+
+
     useEffect(() => {
         if (activeSection === 'materials') {
             if (['Certificate', 'Advanced Certificate'].includes(courseType)) {
@@ -918,70 +975,83 @@ export const ManageCourse: React.FC = () => {
     const [editingMaterial, setEditingMaterial] = useState<any | null>(null);
     const [editingMaterialOriginalTitle, setEditingMaterialOriginalTitle] = useState<string>('');
 
-    // Request Management State
+
     const [enrollmentRequests, setEnrollmentRequests] = useState<any[]>([]);
     const [approvalRequests, setApprovalRequests] = useState<any[]>([]);
     const [isLoadingApprovals, setIsLoadingApprovals] = useState(false);
 
-    useEffect(() => {
-        if (realStudents.length > 0 && approvalRequests.length > 0) {
-            let updated = false;
-            const enriched = approvalRequests.map(req => {
-                const matched = realStudents.find((s: any) => {
-                    const reqHasNo = req.studentNumber && req.studentNumber !== 'CODL/2404';
-                    const sHasNo = s.student_number && s.student_number !== 'CODL/2404';
-                    if (reqHasNo && sHasNo) {
-                        return s.student_number === req.studentNumber;
-                    }
-                    if (req.email && s.email) {
-                        return s.email === req.email;
-                    }
-                    return s.full_name?.toLowerCase() === req.name?.toLowerCase() ||
-                           s.name?.toLowerCase() === req.name?.toLowerCase();
-                });
-                if (matched) {
-                    const newPhone = matched.phone || matched.mobilePhone || req.phone;
-                    const newNic = matched.nic || req.nic;
-                    const newAddress = matched.address || req.address;
-                    const newEmail = matched.email || req.email;
-                    const newName = matched.display_name || matched.displayName || matched.full_name || matched.name || req.name;
-                    const newStudentNumber = matched.student_number || req.studentNumber;
+    // Track IDs currently being actioned (for disabling buttons / showing spinner)
+    const [actioningIds, setActioningIds] = useState<Set<string | number>>(new Set());
+    const addActioning = (id: string | number) => setActioningIds(prev => new Set(prev).add(id));
+    const removeActioning = (id: string | number) => setActioningIds(prev => { const s = new Set(prev); s.delete(id); return s; });
 
-                    if (
-                        newPhone !== req.phone ||
-                        newNic !== req.nic ||
-                        newAddress !== req.address ||
-                        newEmail !== req.email ||
-                        newName !== req.name ||
-                        newStudentNumber !== req.studentNumber
-                    ) {
-                        updated = true;
-                        return {
-                            ...req,
-                            name: newName,
-                            studentNumber: newStudentNumber,
-                            email: newEmail,
-                            phone: newPhone,
-                            nic: newNic,
-                            address: newAddress
-                        };
-                    }
-                }
-                return req;
-            });
-            if (updated) {
-                setApprovalRequests(enriched);
-            }
-        }
-    }, [realStudents]);
     const handleActionRequest = async (requestId: string, action: 'approved' | 'rejected', type: 'approval' | 'enrollment', reason?: string) => {
+        if (actioningIds.has(requestId)) return;
+        addActioning(requestId);
+
+        const originalEnrollmentRequests = [...enrollmentRequests];
+        const originalApprovalRequests = [...approvalRequests];
+        const originalSelectedDetails = selectedRequestDetails ? { ...selectedRequestDetails } : null;
+
         if (type === 'enrollment') {
+            const nextLevelMap: Record<string, number> = {
+                secretary: 1,
+                coordinator: 2,
+                director: 3,
+                super_admin: 3
+            };
+            const nextLevel = nextLevelMap[userRole] || 3;
+
+            // Optimistic UI update
+            setEnrollmentRequests(prev => prev.map(req => {
+                if (req.realId?.toString() !== requestId?.toString()) return req;
+                const newStatus = action === 'rejected' ? 'rejected' : (nextLevel >= 3 ? 'approved' : 'pending');
+                const newLevel = action === 'rejected' ? req.rawApp?.approval_level : nextLevel;
+                const updatedRaw = req.rawApp ? {
+                    ...req.rawApp,
+                    status: newStatus,
+                    approval_level: newLevel
+                } : null;
+                return {
+                    ...req,
+                    status: newStatus,
+                    stages: {
+                        secretary: newLevel >= 1 || (newStatus === 'rejected' && newLevel === 0) ? (newStatus === 'rejected' && newLevel === 0 ? 'rejected' : 'approved') : 'pending',
+                        coordinator: newLevel >= 2 || (newStatus === 'rejected' && newLevel === 1) ? (newStatus === 'rejected' && newLevel === 1 ? 'rejected' : 'approved') : 'pending',
+                        director: newLevel >= 3 || (newStatus === 'rejected' && newLevel === 2) ? (newStatus === 'rejected' && newLevel === 2 ? 'rejected' : 'approved') : 'pending'
+                    },
+                    rawApp: updatedRaw
+                };
+            }));
+
+            if (selectedRequestDetails && selectedRequestDetails.realId?.toString() === requestId?.toString()) {
+                setSelectedRequestDetails((prev: any) => {
+                    if (!prev) return null;
+                    const newStatus = action === 'rejected' ? 'rejected' : (nextLevel >= 3 ? 'approved' : 'pending');
+                    const newLevel = action === 'rejected' ? prev.rawApp?.approval_level : nextLevel;
+                    const updatedRaw = prev.rawApp ? {
+                        ...prev.rawApp,
+                        status: newStatus,
+                        approval_level: newLevel
+                    } : null;
+                    return {
+                        ...prev,
+                        status: newStatus,
+                        stages: {
+                            secretary: newLevel >= 1 || (newStatus === 'rejected' && newLevel === 0) ? (newStatus === 'rejected' && newLevel === 0 ? 'rejected' : 'approved') : 'pending',
+                            coordinator: newLevel >= 2 || (newStatus === 'rejected' && newLevel === 1) ? (newStatus === 'rejected' && newLevel === 1 ? 'rejected' : 'approved') : 'pending',
+                            director: newLevel >= 3 || (newStatus === 'rejected' && newLevel === 2) ? (newStatus === 'rejected' && newLevel === 2 ? 'rejected' : 'approved') : 'pending'
+                        },
+                        rawApp: updatedRaw
+                    };
+                });
+            }
+
             try {
                 if (action === 'approved') {
                     const response = await courseApplicationService.approve(requestId);
                     toast.success('Application approved successfully!');
 
-                    // If application fully approved, add user to enrolled students list
                     if (response.status === 'approved' && response.user) {
                         const newStudent: EnrolledStudent = {
                             id: String(response.user.student_number || response.user.id),
@@ -1005,13 +1075,22 @@ export const ManageCourse: React.FC = () => {
                 }
                 loadAllCourseData(false);
             } catch (err: any) {
+                // Rollback
+                setEnrollmentRequests(originalEnrollmentRequests);
+                if (originalSelectedDetails) {
+                    setSelectedRequestDetails(originalSelectedDetails);
+                }
                 console.error('Error updating application', err);
                 toast.error(err.response?.data?.message || 'Failed to update application');
+            } finally {
+                removeActioning(requestId);
             }
         } else {
-            // Find the request
             const req = approvalRequests.find(r => r.id === requestId);
-            if (!req) return;
+            if (!req) {
+                removeActioning(requestId);
+                return;
+            }
 
             let nextStages = { ...req.stages };
             let nextStatus = req.status;
@@ -1034,6 +1113,7 @@ export const ManageCourse: React.FC = () => {
                 } else if (userRole === 'coordinator') {
                     if (req.stages?.secretary !== 'approved') {
                         toast.error('Secretary must approve first before Coordinator can act.');
+                        removeActioning(requestId);
                         return;
                     }
                     nextStages.coordinator = 'approved';
@@ -1042,12 +1122,36 @@ export const ManageCourse: React.FC = () => {
                 } else if (userRole === 'director') {
                     if (req.stages?.coordinator !== 'approved') {
                         toast.error('Coordinator must approve first before Director can act.');
+                        removeActioning(requestId);
                         return;
                     }
                     nextStages.director = 'approved';
                     nextStatus = 'approved';
                     currentStep = 3;
                 }
+            }
+
+            // Optimistic UI update
+            setApprovalRequests(prev => prev.map(item => {
+                if (item.id?.toString() !== requestId?.toString()) return item;
+                return {
+                    ...item,
+                    status: nextStatus,
+                    stages: nextStages,
+                    currentStep: currentStep
+                };
+            }));
+
+            if (selectedRequestDetails && selectedRequestDetails.id?.toString() === requestId?.toString()) {
+                setSelectedRequestDetails((prev: any) => {
+                    if (!prev) return null;
+                    return {
+                        ...prev,
+                        status: nextStatus,
+                        stages: nextStages,
+                        currentStep: currentStep
+                    };
+                });
             }
 
             try {
@@ -1082,8 +1186,15 @@ export const ManageCourse: React.FC = () => {
 
                 loadAllCourseData(false);
             } catch (err: any) {
+                // Rollback
+                setApprovalRequests(originalApprovalRequests);
+                if (originalSelectedDetails) {
+                    setSelectedRequestDetails(originalSelectedDetails);
+                }
                 console.error('Failed to update request:', err);
                 toast.error(err.response?.data?.message || 'Failed to update request.');
+            } finally {
+                removeActioning(requestId);
             }
         }
     };
@@ -1135,15 +1246,15 @@ export const ManageCourse: React.FC = () => {
         setShowDetailsModal(true);
     };
 
-    // Helpers
+
     const materialsActiveSemester = filteredMaterialsSemesters.find(s => s.id === materialsSelectedSemesterId) || null;
     const materialsActiveModule = materialsActiveSemester?.modules.find((m: any) => m.id === materialsSelectedModuleId) || null;
 
-    // Delete Confirmation State
+
     const [confirmConfig, setConfirmConfig] = useState<{ show: boolean, title: string, message: string, action: () => any }>({ show: false, title: '', message: '', action: () => { } });
     const [isConfirmActionProcessing, setIsConfirmActionProcessing] = useState(false);
 
-    // Students State
+
     const [searchQuery, setSearchQuery] = useState('');
     const [enrollmentSearchQuery, setEnrollmentSearchQuery] = useState('');
     const [enrollmentTypeFilter, setEnrollmentTypeFilter] = useState<'all' | 'new' | 'existing'>('all');
@@ -1179,7 +1290,7 @@ export const ManageCourse: React.FC = () => {
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [enrolledStudents, setEnrolledStudents] = useState<EnrolledStudent[]>([]);
 
-    // Results State
+
     const [selectedExamForResult, setSelectedExamForResult] = useState<string | null>(null);
     const [selectedSubjectForResult, setSelectedSubjectForResult] = useState<string | null>(null);
     const [isExporting, setIsExporting] = useState(false);
@@ -1275,14 +1386,14 @@ export const ManageCourse: React.FC = () => {
             if (regNoIndex === -1) regNoIndex = 0;
             if (gradeIndex === -1) gradeIndex = regNoIndex === 0 ? 1 : 0;
 
-            const hasHeader = parsedRows[0].some(cell => 
-                cell.toLowerCase().includes('reg') || 
-                cell.toLowerCase().includes('id') || 
-                cell.toLowerCase().includes('grade') || 
+            const hasHeader = parsedRows[0].some(cell =>
+                cell.toLowerCase().includes('reg') ||
+                cell.toLowerCase().includes('id') ||
+                cell.toLowerCase().includes('grade') ||
                 cell.toLowerCase().includes('result') ||
                 cell.toLowerCase().includes('student')
             );
-            
+
             const dataRows = hasHeader ? parsedRows.slice(1) : parsedRows;
 
             if (!importedResults) {
@@ -1295,10 +1406,10 @@ export const ManageCourse: React.FC = () => {
                 const matchingRow = dataRows.find(row => {
                     const csvRegNo = row[regNoIndex];
                     if (!csvRegNo || !existing.studentId) return false;
-                    
+
                     const cleanCsv = csvRegNo.toLowerCase().replace(/[^a-z0-9]/g, '');
                     const cleanExisting = existing.studentId.toLowerCase().replace(/[^a-z0-9]/g, '');
-                    
+
                     return cleanCsv === cleanExisting || cleanCsv.includes(cleanExisting) || cleanExisting.includes(cleanCsv);
                 });
 
@@ -1306,7 +1417,7 @@ export const ManageCourse: React.FC = () => {
                     const rawGrade = matchingRow[gradeIndex] || 'N/A';
                     let formattedGrade = rawGrade.trim().toUpperCase();
                     if (formattedGrade === 'NA' || formattedGrade === 'PENDING') formattedGrade = 'N/A';
-                    
+
                     mappedCount++;
                     return {
                         ...existing,
@@ -1319,7 +1430,7 @@ export const ManageCourse: React.FC = () => {
 
             setImportedResults(updatedResults);
             toast.success(`Successfully mapped ${mappedCount} student results from CSV!`);
-            
+
             if (csvInputRef.current) csvInputRef.current.value = '';
         };
         reader.readAsText(file);
@@ -1338,23 +1449,13 @@ export const ManageCourse: React.FC = () => {
         };
 
         const getStudentDetails = (studentNumber: string) => {
-            const enrolled = enrolledStudents.find(s => s.id === studentNumber);
+            const enrolled = enrolledStudents.find(s => s.id === studentNumber || String(s.real_id) === studentNumber);
             if (enrolled) return {
                 id: studentNumber,
                 name: enrolled.name,
                 displayName: enrolled.displayName || enrolled.name,
                 email: enrolled.email
             };
-
-            const real = realStudents.find(s => s.student_number === studentNumber || String(s.id) === studentNumber);
-            if (real) {
-                return {
-                    id: studentNumber,
-                    name: real.full_name || real.name || 'Student',
-                    displayName: real.display_name || real.fullName || real.name || 'Student',
-                    email: real.email || ''
-                };
-            }
 
             return {
                 id: studentNumber,
@@ -1373,7 +1474,7 @@ export const ManageCourse: React.FC = () => {
         const studentNotes = new Map<string, string>();
         const studentAttempts = new Map<string, number>();
 
-        // 1. Regular exam applications (must be approved, real application, and matching this exam + subject)
+
         approvalRequests.forEach(req => {
             if (req.status === 'approved' && req.isRealApplication) {
                 const isExamMatch = req.examKey?.toString() === selectedExamForResult.toString() ||
@@ -1389,7 +1490,7 @@ export const ManageCourse: React.FC = () => {
             }
         });
 
-        // 2. Postponement requests (must be approved and assigned to this exam + include this subject)
+
         waitlistPostponements.forEach((req: any) => {
             if (req.status === 'approved' || req.status === 'assigned') {
                 const isAssigned = req.raw?.assigned_exam_id?.toString() === selectedExamForResult.toString();
@@ -1407,7 +1508,7 @@ export const ManageCourse: React.FC = () => {
             }
         });
 
-        // 3. Reattempt requests (must be approved and assigned to this exam + match this subject)
+
         waitlistReattempts.forEach((req: any) => {
             if (req.status === 'approved' || req.status === 'assigned') {
                 const isAssigned = req.raw?.assigned_exam_id?.toString() === selectedExamForResult.toString();
@@ -1425,7 +1526,7 @@ export const ManageCourse: React.FC = () => {
             }
         });
 
-        // Also check approvalRequests for reattempts type
+
         approvalRequests.forEach(req => {
             if (req.status === 'approved' && req.type === 'reattempts') {
                 const isExamMatch = req.examKey?.toString() === selectedExamForResult.toString() ||
@@ -1441,13 +1542,13 @@ export const ManageCourse: React.FC = () => {
             }
         });
 
-        // Remove overlapping IDs to avoid double listing (prioritize: Reattempt > Postponement > Regular)
+
         postponementIds.forEach(id => regularIds.delete(id));
         reattemptIds.forEach(id => { regularIds.delete(id); postponementIds.delete(id); });
 
         const categorized: { id: string; name: string; displayName: string; email: string; studentType: 'Regular' | 'Postponement' | 'Reattempt'; attempt: number; specialNote: string }[] = [];
 
-        // Sorting each category in ascending order by Student ID / registration number
+
         const sortedRegular = Array.from(regularIds).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
         const sortedPostponement = Array.from(postponementIds).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
         const sortedReattempt = Array.from(reattemptIds).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
@@ -1640,7 +1741,7 @@ export const ManageCourse: React.FC = () => {
             return;
         }
 
-        // 1. Find subject id
+
         let subjectId: number | null = null;
         if (course) {
             if (course.semesters) {
@@ -1665,12 +1766,12 @@ export const ManageCourse: React.FC = () => {
             return;
         }
 
-        // 2. Map studentId to user_id
+
         const mappedGrades = importedResults.map(r => {
-            const studentUser = realStudents.find(
-                s => s.student_number === r.studentId || String(s.id) === r.studentId || s.email === r.studentId
+            const studentUser = enrolledStudents.find(
+                s => s.student_number === r.studentId || String(s.id) === r.studentId || String(s.real_id) === r.studentId || s.email === r.studentId
             );
-            const userId = studentUser ? studentUser.id : (Number(r.studentId) || null);
+            const userId = studentUser ? (studentUser.real_id || studentUser.id) : (Number(r.studentId) || null);
             return {
                 user_id: userId ? Number(userId) : null,
                 grade: r.grade,
@@ -1682,7 +1783,7 @@ export const ManageCourse: React.FC = () => {
         const semesterVal = (selectedExam as any)?.semester?.toString() || '1';
 
         try {
-            // 3. Save to database
+
             await examResultService.create({
                 course_id: Number(id),
                 subject_id: subjectId,
@@ -1693,7 +1794,7 @@ export const ManageCourse: React.FC = () => {
                 grades: mappedGrades
             });
 
-            // 4. Update exam status on database
+
             const nextReleasedSubjects = [...new Set([...releasedSubjects, selectedSubjectForResult])];
             setReleasedSubjects(nextReleasedSubjects);
 
@@ -1728,25 +1829,20 @@ export const ManageCourse: React.FC = () => {
         }
     };
 
-    const handleIdChange = (val: string) => {
+    const handleIdChange = async (val: string) => {
         setEnrollForm({ ...enrollForm, id: val, name: '', displayName: '', email: '' });
 
-        const allStudents = realStudents;
-
         if (!val) {
-            setIdSuggestions(allStudents);
-            setShowSuggestions(true);
+            setIdSuggestions([]);
+            setShowSuggestions(false);
         } else {
-            const matches = allStudents.filter(u => {
-                const sNumber = u.student_number || u.studentNumber || '';
-                const fName = u.full_name || u.fullName || '';
-                const email = u.email || '';
-                return sNumber.toLowerCase().includes(val.toLowerCase()) ||
-                    fName.toLowerCase().includes(val.toLowerCase()) ||
-                    email.toLowerCase().includes(val.toLowerCase());
-            });
-            setIdSuggestions(matches);
-            setShowSuggestions(true);
+            try {
+                const results = await userService.searchStudents(val);
+                setIdSuggestions(results || []);
+                setShowSuggestions(true);
+            } catch (err) {
+                console.error("Failed to query student suggestions:", err);
+            }
         }
     };
 
@@ -1788,7 +1884,7 @@ export const ManageCourse: React.FC = () => {
         }
     }, [course]);
 
-    // Sync batch data to form when entering details section
+
     useEffect(() => {
         if (selectedBatch && activeSection === 'details') {
             const currentBatch = batches.find(b => b.name === selectedBatch);
@@ -1804,7 +1900,7 @@ export const ManageCourse: React.FC = () => {
                     lecturerName: (currentBatch as any).lecturerName || ''
                 }));
 
-                // Set batch subjects
+
                 if (currentBatch.subjects && currentBatch.subjects.length > 0) {
                     setBatchSubjects(currentBatch.subjects);
                 } else {
@@ -1904,7 +2000,7 @@ export const ManageCourse: React.FC = () => {
                         status: commonData.status,
                         instructor_id: commonData.lecturerId || null
                     };
-                    // Include subject-lecturer assignments if any subjects have IDs
+
                     const subjectsWithIds = batchSubjects.filter(bs => bs.subjectId);
                     if (subjectsWithIds.length > 0) {
                         payload.subjects = subjectsWithIds.map(bs => ({
@@ -1942,7 +2038,7 @@ export const ManageCourse: React.FC = () => {
                     return;
                 }
             } else {
-                // If it's a mock batch (no id), just update state
+
                 const updatedBatches = batches.map(b => {
                     if (b.name === selectedBatch) {
                         return {
@@ -2052,7 +2148,7 @@ export const ManageCourse: React.FC = () => {
             return;
         }
 
-        // Check if student ID already enrolled
+
         if (enrolledStudents.some(s => s.id === enrollForm.id)) {
             toast.error('This student is already enrolled in this course.');
             return;
@@ -2077,6 +2173,48 @@ export const ManageCourse: React.FC = () => {
             setShowStudentModal(false);
             setEnrollForm({ id: '', name: '', displayName: '', email: '', date: new Date().toISOString().split('T')[0] });
         }
+    };
+
+    const handleExportStudents = () => {
+        if (filteredStudents.length === 0) {
+            toast.error("No students to export");
+            return;
+        }
+
+
+        const headers = ['Student ID', 'Student Name', 'Email', 'Phone', 'Enrollment Date', 'Batch'];
+
+
+        const csvRows = filteredStudents.map(student => [
+            `"${student.id || ''}"`,
+            `"${(student.displayName || student.name || '').replace(/"/g, '""')}"`,
+            `"${student.email || ''}"`,
+            `"${student.phone || ''}"`,
+            `"${student.enrollmentDate || ''}"`,
+            `"${student.batch || 'N/A'}"`
+        ]);
+
+
+        const csvContent = [headers.join(','), ...csvRows.map(row => row.join(','))].join('\n');
+
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+
+
+        const courseStr = course?.code ? course.code.replace(/[^a-zA-Z0-9-_]/g, '_') : 'course';
+        const batchStr = selectedBatch ? selectedBatch.toString().replace(/[^a-zA-Z0-9-_]/g, '_') : 'all';
+        const dateStr = new Date().toISOString().split('T')[0];
+
+        link.setAttribute("download", `Students_${courseStr}_${batchStr}_${dateStr}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        toast.success("Student list exported successfully!");
     };
 
     const handleOpenAddWaitlistModal = () => {
@@ -2196,12 +2334,12 @@ export const ManageCourse: React.FC = () => {
             return;
         }
 
-        const matchedRealStudent = realStudents.find(
-            rs => rs.student_number === waitlistForm.studentRegNo || rs.id?.toString() === waitlistForm.studentRegNo
+        const matchedRealStudent = enrolledStudents.find(
+            rs => rs.student_number === waitlistForm.studentRegNo || rs.id?.toString() === waitlistForm.studentRegNo || rs.real_id?.toString() === waitlistForm.studentRegNo
         );
 
         if (!matchedRealStudent) {
-            toast.error('Could not map the selected registration number to a database student.');
+            toast.error('Could not map the selected registration number to an enrolled student.');
             return;
         }
 
@@ -2210,7 +2348,7 @@ export const ManageCourse: React.FC = () => {
             return;
         }
 
-        const userId = matchedRealStudent.id;
+        const userId = matchedRealStudent.real_id || matchedRealStudent.id;
         const status = waitlistForm.approved ? 'approved' : 'pending';
 
         const findSubjectIdInCourse = (subjectLabel: string) => {
@@ -2265,7 +2403,7 @@ export const ManageCourse: React.FC = () => {
             } else {
                 const examText = waitlistForm.examTitle || (waitlistForm.examId ? exams.find(e => e.id.toString() === waitlistForm.examId.toString())?.title : '') || 'Exam';
                 if (isEdit && editingWaitlistRecord) {
-                    // Editing an existing single reattempt request
+
                     const subLabel = waitlistForm.selectedSubjects[0];
                     const subjId = findSubjectIdInCourse(subLabel);
                     if (!subjId) {
@@ -2288,7 +2426,7 @@ export const ManageCourse: React.FC = () => {
                     await reattemptRequestService.update(editingWaitlistRecord.id, payload);
                     toast.success('Reattempt request updated successfully');
                 } else {
-                    // Creating new reattempt request(s) - one per selected subject
+
                     for (let i = 0; i < waitlistForm.selectedSubjects.length; i++) {
                         const subLabel = waitlistForm.selectedSubjects[i];
                         const subjId = findSubjectIdInCourse(subLabel);
@@ -2357,7 +2495,7 @@ export const ManageCourse: React.FC = () => {
         return (
             <div className="cm-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '400px' }}>
                 <div style={{ textAlign: 'center', color: '#64748B' }}>
-                    <div style={{ width: '48px', height: '48px', border: '3px solid #E2E8F0', borderTopColor: '#7C3AED', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 16px' }} />
+                    <div style={{ width: '48px', height: '48px', border: '3px solid #E2E8F0', borderTopColor: 'var(--primary-color)', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 16px' }} />
                     <p style={{ fontWeight: 600 }}>Loading course...</p>
                 </div>
             </div>
@@ -2474,7 +2612,7 @@ export const ManageCourse: React.FC = () => {
 
                     <div className="admin-header-actions">
                         {!selectedBatch && !activeSection && (userRole === 'secretary' || userRole === 'coordinator' || userRole === 'director') && (
-                            <button className="create-exam-btn" onClick={() => setActiveSection('waitlist')} style={{ background: 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)', boxShadow: '0 4px 15px rgba(124,58,237,0.2)' }}>
+                            <button className="create-exam-btn" onClick={() => setActiveSection('waitlist')} style={{ background: 'linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%)', boxShadow: '0 4px 15px rgba(124,58,237,0.2)' }}>
                                 <List size={18} /> Waitlist
                             </button>
                         )}
@@ -2497,10 +2635,14 @@ export const ManageCourse: React.FC = () => {
                                     </button>
                                 )}
                                 <button className="create-exam-btn" style={{ background: 'linear-gradient(135deg, #0284C7 0%, #0369A1 100%)', boxShadow: '0 4px 15px rgba(2, 132, 199, 0.25)' }} onClick={() => {
+                                    if (filteredStudents.length === 0) {
+                                        toast.error("No students to export");
+                                        return;
+                                    }
                                     setIsExporting(true);
                                     setTimeout(() => {
                                         setIsExporting(false);
-                                        toast.success('Student list exported successfully');
+                                        handleExportStudents();
                                     }, 1500);
                                 }}>
                                     <Download size={18} /> {isExporting ? 'Exporting...' : 'Export List'}
@@ -2554,8 +2696,8 @@ export const ManageCourse: React.FC = () => {
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
                                         <div style={{
                                             width: '50px', height: '50px',
-                                            background: 'linear-gradient(135deg, #F5F3FF 0%, #EDE9FE 100%)',
-                                            color: '#7C3AED', borderRadius: '14px',
+                                            background: 'linear-gradient(135deg, #F5F3FF 0%, var(--primary-light) 100%)',
+                                            color: 'var(--primary-color)', borderRadius: '14px',
                                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                                             boxShadow: '0 4px 10px rgba(124, 58, 237, 0.1)'
                                         }}>
@@ -2583,7 +2725,7 @@ export const ManageCourse: React.FC = () => {
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                 <span style={{ fontSize: '11px', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>ENROLLED STUDENTS</span>
-                                                <span style={{ fontSize: '14px', fontWeight: 800, color: '#7C3AED' }}>{enrolledCount} / {maxEnrollment}</span>
+                                                <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--primary-color)' }}>{enrolledCount} / {maxEnrollment}</span>
                                             </div>
                                             {status.label === 'Upcoming' && (
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -2609,7 +2751,7 @@ export const ManageCourse: React.FC = () => {
                                             style={{
                                                 flex: 1, height: '48px', borderRadius: '12px',
                                                 fontSize: '14px', fontWeight: 700,
-                                                background: 'linear-gradient(to right, #7C3AED, #6D28D9)',
+                                                background: 'linear-gradient(to right, var(--primary-color), var(--primary-hover))',
                                                 border: 'none', color: '#FFFFFF', cursor: 'pointer',
                                                 boxShadow: '0 4px 12px rgba(124, 58, 237, 0.2)',
                                                 display: 'flex', alignItems: 'center', justifyContent: 'center'
@@ -2708,7 +2850,7 @@ export const ManageCourse: React.FC = () => {
                             <button
                                 onClick={() => setShowBatchModal(true)}
                                 style={{
-                                    background: 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)',
+                                    background: 'linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%)',
                                     color: '#FFF', border: 'none', padding: '16px 24px',
                                     borderRadius: '30px', display: 'flex', alignItems: 'center', gap: '8px',
                                     fontWeight: 600, fontSize: '15px',
@@ -2727,7 +2869,7 @@ export const ManageCourse: React.FC = () => {
 
             {selectedBatch && activeSection === null && (
                 <div className="management-nav-container">
-                    {/* Row 0: Request Management (Special Multi-Action Card) */}
+                    { }
                     <div className="nav-button-card" onClick={() => setActiveSection('enrollment_req')}>
                         <div style={{
                             position: 'absolute',
@@ -2737,7 +2879,7 @@ export const ManageCourse: React.FC = () => {
                             borderRadius: '20px',
                             background: 'rgba(124, 58, 237, 0.08)',
                             border: '1px solid rgba(124, 58, 237, 0.2)',
-                            color: '#7C3AED',
+                            color: 'var(--primary-color)',
                             fontSize: '11px',
                             fontWeight: 800,
                             textTransform: 'uppercase',
@@ -2751,8 +2893,8 @@ export const ManageCourse: React.FC = () => {
                                 width: '6px',
                                 height: '6px',
                                 borderRadius: '50%',
-                                background: '#7C3AED',
-                                boxShadow: '0 0 8px #7C3AED'
+                                background: 'var(--primary-color)',
+                                boxShadow: '0 0 8px var(--primary-color)'
                             }}></span>
                             {userRole === 'super_admin' ? 'Super Admin' : userRole.split('_').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
                         </div>
@@ -2768,7 +2910,7 @@ export const ManageCourse: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Row 1: Exam and Result Management */}
+                    { }
                     <div className="nav-button-card" onClick={() => setActiveSection('exams')}>
                         <div className="nav-card-icon" style={{ background: '#E0F2FE', color: '#0284C7' }}>
                             <Calendar size={28} />
@@ -2795,7 +2937,7 @@ export const ManageCourse: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Row 2: Course Configuration and Enrolled Students */}
+                    { }
                     <div className="nav-button-card" onClick={() => setActiveSection('students')}>
                         <div className="nav-card-icon" style={{ background: '#FEF2F2', color: '#DC2626' }}>
                             <Users size={28} />
@@ -2822,7 +2964,7 @@ export const ManageCourse: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Row 3: Course Materials */}
+                    { }
                     <div className="nav-button-card" onClick={() => setActiveSection('materials')}>
                         <div className="nav-card-icon" style={{ background: '#FFF7ED', color: '#EA580C' }}>
                             <Layers size={28} />
@@ -2885,13 +3027,67 @@ export const ManageCourse: React.FC = () => {
                                                 onChange={(e) => setAnnContent(e.target.value)}
                                             ></textarea>
                                         </div>
+                                        <div className="cm-form-group" style={{ maxWidth: '100%' }}>
+                                            <label>Attach PDF or Document (Optional)</label>
+                                            {!annFile ? (
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                    <label style={{
+                                                        display: 'inline-flex',
+                                                        alignItems: 'center',
+                                                        gap: '8px',
+                                                        padding: '9px 16px',
+                                                        background: '#F1F5F9',
+                                                        border: '1.5px dashed #CBD5E1',
+                                                        borderRadius: '8px',
+                                                        cursor: 'pointer',
+                                                        fontSize: '13px',
+                                                        fontWeight: 600,
+                                                        color: '#475569',
+                                                        transition: 'all 0.2s'
+                                                    }}>
+                                                        <Upload size={16} /> Choose PDF / Document
+                                                        <input
+                                                            type="file"
+                                                            style={{ display: 'none' }}
+                                                            accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.png,.jpg,.jpeg"
+                                                            onChange={(e) => {
+                                                                const file = e.target.files?.[0];
+                                                                if (file) {
+                                                                    if (file.size > 20 * 1024 * 1024) {
+                                                                        toast.error('File exceeds 20MB limit.');
+                                                                        return;
+                                                                    }
+                                                                    setAnnFile(file);
+                                                                }
+                                                            }}
+                                                        />
+                                                    </label>
+                                                    <span style={{ fontSize: '12px', color: '#94A3B8' }}>Max 20MB (PDF, DOCX, etc.)</span>
+                                                </div>
+                                            ) : (
+                                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', padding: '8px 14px', background: '#EEF2FF', border: '1px solid #C7D2FE', borderRadius: '8px' }}>
+                                                    <FileText size={16} color="#4F46E5" />
+                                                    <span style={{ fontSize: '13px', fontWeight: 600, color: '#1E293B' }}>{annFile.name}</span>
+                                                    <span style={{ fontSize: '12px', color: '#64748B' }}>({(annFile.size / (1024 * 1024)).toFixed(2)} MB)</span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setAnnFile(null)}
+                                                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#EF4444', display: 'flex', alignItems: 'center', padding: '2px' }}
+                                                        title="Remove attachment"
+                                                    >
+                                                        <X size={16} />
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
                                         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                                             <button
                                                 className="admin-btn-primary"
-                                                style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'linear-gradient(to right, #DB2777, #BE185D)', color: '#FFF', border: 'none', padding: '10px 24px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}
+                                                disabled={isBroadcasting}
+                                                style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'linear-gradient(to right, #DB2777, #BE185D)', color: '#FFF', border: 'none', padding: '10px 24px', borderRadius: '8px', cursor: isBroadcasting ? 'not-allowed' : 'pointer', fontWeight: 600, opacity: isBroadcasting ? 0.7 : 1 }}
                                                 onClick={handleBroadcastAnnouncement}
                                             >
-                                                <Send size={16} /> Broadcast Announcement
+                                                <Send size={16} /> {isBroadcasting ? 'Broadcasting...' : 'Broadcast Announcement'}
                                             </button>
                                         </div>
                                     </div>
@@ -2920,7 +3116,7 @@ export const ManageCourse: React.FC = () => {
                                                                 padding: '16px',
                                                                 borderRadius: '12px',
                                                                 background: '#F8FAFC',
-                                                                borderLeft: `4px solid ${ann.iconColor || '#7C3AED'}`
+                                                                borderLeft: `4px solid ${ann.iconColor || 'var(--primary-color)'}`
                                                             }}
                                                         >
                                                             <div>
@@ -2941,6 +3137,26 @@ export const ManageCourse: React.FC = () => {
                                                                 </div>
                                                                 <h4 style={{ margin: '0 0 6px 0', fontSize: '15px', fontWeight: 700, color: '#1E293B' }}>{ann.title}</h4>
                                                                 <p style={{ margin: 0, fontSize: '13px', color: '#475569', lineHeight: 1.5 }}>{ann.desc}</p>
+                                                                {ann.attachment_url && (
+                                                                    <div style={{ marginTop: '8px', display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 12px', background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '8px' }}>
+                                                                        <FileText size={14} color="#4F46E5" />
+                                                                        <span style={{ fontSize: '12px', fontWeight: 600, color: '#334155' }}>
+                                                                            {ann.attachment_name || 'Attached Document'}
+                                                                        </span>
+                                                                        {ann.attachment_size && (
+                                                                            <span style={{ fontSize: '11px', color: '#94A3B8' }}>({ann.attachment_size})</span>
+                                                                        )}
+                                                                        <a
+                                                                            href={ann.attachment_url}
+                                                                            target="_blank"
+                                                                            rel="noopener noreferrer"
+                                                                            style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontWeight: 700, color: '#4F46E5', textDecoration: 'none', marginLeft: '6px' }}
+                                                                            onClick={(e) => e.stopPropagation()}
+                                                                        >
+                                                                            <Download size={12} /> Open
+                                                                        </a>
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                             <button
                                                                 onClick={() => handleDeleteAnnouncement(ann)}
@@ -2971,13 +3187,13 @@ export const ManageCourse: React.FC = () => {
                         </div>
                     )}
 
-                    {/* 1. Edit Details Section */}
+                    { }
                     {activeSection === 'details' && (
                         <>
                             <div className="manage-section-main-card">
                                 <div className="section-card-content">
 
-                                    {/* Section 1: Basic Information */}
+                                    { }
                                     <div className="form-section-card no-shadow">
                                         <div className="section-header">
                                             <BookOpen size={18} />
@@ -3037,7 +3253,7 @@ export const ManageCourse: React.FC = () => {
                                         </div>
                                     </div>
 
-                                    {/* Section 2: Academic Structure */}
+                                    { }
                                     {!['Certificate', 'Advanced Certificate'].includes(courseType) && (
                                         <div className="form-section-card no-shadow">
                                             <div className="section-header">
@@ -3204,7 +3420,7 @@ export const ManageCourse: React.FC = () => {
                         </>
                     )}
 
-                    {/* 2. Manage Exams Section */}
+                    { }
                     {activeSection === 'exams' && (
                         <>
                             <div style={{ padding: '0 4px' }}>
@@ -3254,7 +3470,7 @@ export const ManageCourse: React.FC = () => {
                                                         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                                                         position: 'relative'
                                                     }} className="premium-exam-square-card" onClick={() => openExamDotMenu === exam.id && setOpenExamDotMenu(null)}>
-                                                        {/* Header: Icon and Status Badge */}
+                                                        { }
                                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
                                                             <div style={{
                                                                 width: '50px',
@@ -3292,7 +3508,7 @@ export const ManageCourse: React.FC = () => {
                                                             })()}</div>
                                                         </div>
 
-                                                        {/* Content */}
+                                                        { }
                                                         <div style={{ flex: 1 }}>
                                                             <div style={{
                                                                 fontSize: '11px',
@@ -3315,12 +3531,12 @@ export const ManageCourse: React.FC = () => {
                                                                 </div>
                                                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                                     <span style={{ fontSize: '11px', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>REG. STUDENTS</span>
-                                                                    <span style={{ fontSize: '14px', fontWeight: 800, color: '#7C3AED' }}>{getRegisteredStudentCount(exam)}</span>
+                                                                    <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--primary-color)' }}>{getRegisteredStudentCount(exam)}</span>
                                                                 </div>
                                                             </div>
                                                         </div>
 
-                                                        {/* Footer Actions: Manage Students + Three-dot menu */}
+                                                        { }
                                                         <div style={{ marginTop: '28px', display: 'flex', gap: '12px', alignItems: 'center' }}>
                                                             <button
                                                                 className="admin-btn-primary"
@@ -3330,7 +3546,7 @@ export const ManageCourse: React.FC = () => {
                                                                     borderRadius: '12px',
                                                                     fontSize: '14px',
                                                                     fontWeight: 700,
-                                                                    background: 'linear-gradient(to right, #7C3AED, #6D28D9)',
+                                                                    background: 'linear-gradient(to right, var(--primary-color), var(--primary-hover))',
                                                                     border: 'none',
                                                                     color: '#FFFFFF',
                                                                     cursor: 'pointer',
@@ -3345,7 +3561,7 @@ export const ManageCourse: React.FC = () => {
                                                                 <Users size={16} />
                                                                 Manage Students
                                                             </button>
-                                                            {/* Three-dot menu */}
+                                                            { }
                                                             <div style={{ position: 'relative' }}>
                                                                 <button
                                                                     style={{
@@ -3409,7 +3625,7 @@ export const ManageCourse: React.FC = () => {
                                                                                 navigate(`/admin/courses/manage/${id}/exams/edit/${exam.id}?batch=${encodeURIComponent(selectedBatch || '')}`);
                                                                             }}
                                                                         >
-                                                                            <Edit2 size={15} style={{ color: '#7C3AED' }} />
+                                                                            <Edit2 size={15} style={{ color: 'var(--primary-color)' }} />
                                                                             Edit
                                                                         </button>
                                                                         <div style={{ height: '1px', background: '#F1F5F9', margin: '0 12px' }} />
@@ -3455,7 +3671,7 @@ export const ManageCourse: React.FC = () => {
 
 
 
-                    {/* 3. Manage Results Section */}
+                    { }
                     {activeSection === 'results' && (
                         <>
                             {!selectedExamForResult ? (
@@ -3507,7 +3723,7 @@ export const ManageCourse: React.FC = () => {
                                                     boxShadow: '0 1px 3px rgba(0,0,0,0.02), 0 10px 25px -10px rgba(0,0,0,0.05)',
                                                     position: 'relative'
                                                 }}>
-                                                    {/* Header: Icon and Status Badge */}
+                                                    { }
                                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
                                                         <div style={{
                                                             width: '50px',
@@ -3532,7 +3748,7 @@ export const ManageCourse: React.FC = () => {
                                                         }}>{resolvedStatus === 'Results Released' ? 'RESULTS RELEASED' : (resolvedStatus === 'Result Updated' ? 'PARTIALLY RELEASED' : 'YET TO RELEASE')}</div>
                                                     </div>
 
-                                                    {/* Content */}
+                                                    { }
                                                     <div style={{ flex: 1 }}>
                                                         <div style={{ fontSize: '11px', fontWeight: 800, padding: '4px 10px', borderRadius: '6px', background: '#F1F5F9', color: '#64748B', textTransform: 'uppercase', display: 'inline-block', marginBottom: '12px' }}>{exam.type}</div>
                                                         <h4 style={{ fontSize: '19px', fontWeight: 800, color: '#0F172A', margin: '0 0 24px 0', lineHeight: 1.3 }}>{exam.title}</h4>
@@ -3543,12 +3759,12 @@ export const ManageCourse: React.FC = () => {
                                                             </div>
                                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                                 <span style={{ fontSize: '11px', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase' }}>REG. STUDENTS</span>
-                                                                <span style={{ fontSize: '14px', fontWeight: 800, color: '#7C3AED' }}>{getRegisteredStudentCount(exam)}</span>
+                                                                <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--primary-color)' }}>{getRegisteredStudentCount(exam)}</span>
                                                             </div>
                                                         </div>
                                                     </div>
 
-                                                    {/* Action */}
+                                                    { }
                                                     <div style={{ marginTop: '28px' }}>
                                                         <button
                                                             className="admin-btn-primary"
@@ -3674,7 +3890,7 @@ export const ManageCourse: React.FC = () => {
                                                             </div>
                                                         </div>
 
-                                                        {/* Tab headers */}
+                                                        { }
                                                         {(() => {
                                                             const allStudents = getEligibleStudentsForResults();
                                                             return (
@@ -3700,7 +3916,7 @@ export const ManageCourse: React.FC = () => {
                                                                                     padding: '10px 20px',
                                                                                     borderRadius: '12px',
                                                                                     border: 'none',
-                                                                                    background: isActive ? '#7C3AED' : 'transparent',
+                                                                                    background: isActive ? 'var(--primary-color)' : 'transparent',
                                                                                     color: isActive ? '#FFFFFF' : '#64748B',
                                                                                     fontWeight: 700,
                                                                                     fontSize: '14px',
@@ -3745,7 +3961,7 @@ export const ManageCourse: React.FC = () => {
                                                         })()}
 
                                                         <div className="form-section-card" style={{ marginTop: '16px', padding: '24px', background: '#FFFFFF', borderRadius: '16px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.06)' }}>
-                                                            {/* Card Header */}
+                                                            { }
                                                             {(() => {
                                                                 const allStudents = getEligibleStudentsForResults();
                                                                 const studentsInActiveTab = allStudents.filter(s => s.studentType === activeResultTab);
@@ -3806,7 +4022,7 @@ export const ManageCourse: React.FC = () => {
                                                                                         cursor: isRefreshing ? 'not-allowed' : 'pointer',
                                                                                         transition: 'all 0.2s ease'
                                                                                     }}
-                                                                                    onMouseEnter={(e) => { if (!isRefreshing) { e.currentTarget.style.background = '#F8FAFC'; e.currentTarget.style.color = '#7C3AED'; } }}
+                                                                                    onMouseEnter={(e) => { if (!isRefreshing) { e.currentTarget.style.background = '#F8FAFC'; e.currentTarget.style.color = 'var(--primary-color)'; } }}
                                                                                     onMouseLeave={(e) => { if (!isRefreshing) { e.currentTarget.style.background = '#FFFFFF'; e.currentTarget.style.color = '#64748B'; } }}
                                                                                 >
                                                                                     <RefreshCw
@@ -3852,7 +4068,7 @@ export const ManageCourse: React.FC = () => {
                                                                             </div>
                                                                         </div>
 
-                                                                        {/* Search Input */}
+                                                                        { }
                                                                         <div style={{ position: 'relative', marginBottom: '16px' }}>
                                                                             <input
                                                                                 type="text"
@@ -4017,21 +4233,21 @@ export const ManageCourse: React.FC = () => {
                                                                                                             height: '32px',
                                                                                                             borderRadius: '8px',
                                                                                                             cursor: 'pointer',
-                                                                                                            border: '1.5px solid #7C3AED',
+                                                                                                            border: '1.5px solid var(--primary-color)',
                                                                                                             background: '#FFFFFF',
-                                                                                                            color: '#7C3AED',
+                                                                                                            color: 'var(--primary-color)',
                                                                                                             display: 'flex',
                                                                                                             alignItems: 'center',
                                                                                                             justifyContent: 'center',
                                                                                                             transition: 'all 0.15s ease'
                                                                                                         }}
                                                                                                         onMouseEnter={(e) => {
-                                                                                                            e.currentTarget.style.background = '#7C3AED';
+                                                                                                            e.currentTarget.style.background = 'var(--primary-color)';
                                                                                                             e.currentTarget.style.color = '#FFFFFF';
                                                                                                         }}
                                                                                                         onMouseLeave={(e) => {
                                                                                                             e.currentTarget.style.background = '#FFFFFF';
-                                                                                                            e.currentTarget.style.color = '#7C3AED';
+                                                                                                            e.currentTarget.style.color = 'var(--primary-color)';
                                                                                                         }}
                                                                                                     >
                                                                                                         <Edit2 size={14} />
@@ -4057,7 +4273,7 @@ export const ManageCourse: React.FC = () => {
                         </>
                     )}
 
-                    {/* 4. Enrolled Students Section */}
+                    { }
                     {activeSection === 'students' && (
                         <>
                             <div className="manage-section-main-card">
@@ -4163,11 +4379,11 @@ export const ManageCourse: React.FC = () => {
                         </>
                     )}
 
-                    {/* 5. Course Materials Section */}
+                    { }
                     {activeSection === 'materials' && (
                         <div className="manage-section-main-card" style={{ background: 'transparent', border: 'none', boxShadow: 'none' }}>
                             <div className="section-card-content" style={{ padding: 0 }}>
-                                {/* VIEW 1: Semesters */}
+                                { }
                                 {materialsViewState === 'semesters' && (
                                     <div className="semester-selection-view">
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
@@ -4222,7 +4438,7 @@ export const ManageCourse: React.FC = () => {
                                     </div>
                                 )}
 
-                                {/* VIEW 2: Modules */}
+                                { }
                                 {materialsViewState === 'modules' && materialsActiveSemester && (
                                     <div className="modules-view">
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
@@ -4259,7 +4475,7 @@ export const ManageCourse: React.FC = () => {
                                     </div>
                                 )}
 
-                                {/* VIEW 3: Resources */}
+                                { }
                                 {materialsViewState === 'resources' && materialsActiveModule && (
                                     <div className="resources-view">
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
@@ -4274,7 +4490,7 @@ export const ManageCourse: React.FC = () => {
                                             </div>
                                         </div>
 
-                                        {/* Downloadable Resources List */}
+                                        { }
                                         <div style={{ marginBottom: '32px' }}>
                                             <h4 style={{ fontSize: '16px', fontWeight: 700, color: '#475569', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                 <FileText size={18} /> Downloads
@@ -4370,7 +4586,7 @@ export const ManageCourse: React.FC = () => {
                                             )}
                                         </div>
 
-                                        {/* Videos List */}
+                                        { }
                                         <div>
                                             <h4 style={{ fontSize: '16px', fontWeight: 700, color: '#475569', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                 <Video size={18} /> Lesson Recordings
@@ -4471,7 +4687,7 @@ export const ManageCourse: React.FC = () => {
                         </div>
                     )}
 
-                    {/* 6. Enrollment Requests Section */}
+                    { }
                     {activeSection === 'enrollment_req' && (
                         <div className="section-content-fade">
                             <div className="modern-admin-card" style={{ padding: '0', background: 'transparent', border: 'none', boxShadow: 'none' }}>
@@ -4564,7 +4780,7 @@ export const ManageCourse: React.FC = () => {
                                                                 </div>
                                                             </td>
                                                             <td>
-                                                                <div style={{ fontSize: '13px', fontWeight: 500, color: req.type.toLowerCase() === 'new' ? '#94A3B8' : '#7C3AED' }}>
+                                                                <div style={{ fontSize: '13px', fontWeight: 500, color: req.type.toLowerCase() === 'new' ? '#94A3B8' : 'var(--primary-color)' }}>
                                                                     {req.studentNumber || '-'}
                                                                 </div>
                                                             </td>
@@ -4597,7 +4813,15 @@ export const ManageCourse: React.FC = () => {
                                                                         (req.rawApp.approval_level === 1 && userRole === 'coordinator') ||
                                                                         (req.rawApp.approval_level === 2 && userRole === 'director')
                                                                     )) && (
-                                                                            <button className="at-action-btn approve" title={req.rawApp ? `Approve (Stage ${req.rawApp.approval_level + 1}/3)` : "Approve"} onClick={() => handleActionRequest(req.realId, 'approved', 'enrollment')}><Check size={16} /></button>
+                                                                            <button
+                                                                                className="at-action-btn approve"
+                                                                                title={req.rawApp ? `Approve (Stage ${req.rawApp.approval_level + 1}/3)` : "Approve"}
+                                                                                onClick={() => handleActionRequest(req.realId, 'approved', 'enrollment')}
+                                                                                disabled={actioningIds.has(req.realId)}
+                                                                                style={{ opacity: actioningIds.has(req.realId) ? 0.6 : 1 }}
+                                                                            >
+                                                                                {actioningIds.has(req.realId) ? <Loader size={14} style={{ animation: 'spin 0.7s linear infinite' }} /> : <Check size={16} />}
+                                                                            </button>
                                                                         )}
                                                                 </div>
                                                             </td>
@@ -4612,7 +4836,7 @@ export const ManageCourse: React.FC = () => {
                         </div>
                     )}
 
-                    {/* 7. Application Approvals Section */}
+                    { }
                     {activeSection === 'approvals_req' && (
                         <div className="section-content-fade">
                             <div className="admin-page-top-card" style={{ background: '#FFFFFF', padding: '32px', borderRadius: '24px', marginBottom: '24px', border: '1px solid rgba(0,0,0,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -4693,7 +4917,15 @@ export const ManageCourse: React.FC = () => {
                                                                     (userRole === 'coordinator' && (req.stages?.secretary || 'pending').toLowerCase() === 'approved' && (req.stages?.coordinator || 'pending').toLowerCase() === 'pending') ||
                                                                     (userRole === 'director' && (req.stages?.coordinator || 'pending').toLowerCase() === 'approved' && (req.stages?.director || 'pending').toLowerCase() === 'pending')
                                                                 ) && (
-                                                                        <button className="at-action-btn approve" title="Approve Request" onClick={() => handleActionRequest(req.id, 'approved', 'approval')}><Check size={16} /></button>
+                                                                        <button
+                                                                            className="at-action-btn approve"
+                                                                            title="Approve Request"
+                                                                            onClick={() => handleActionRequest(req.id, 'approved', 'approval')}
+                                                                            disabled={actioningIds.has(req.id)}
+                                                                            style={{ opacity: actioningIds.has(req.id) ? 0.6 : 1 }}
+                                                                        >
+                                                                            {actioningIds.has(req.id) ? <Loader size={14} style={{ animation: 'spin 0.7s linear infinite' }} /> : <Check size={16} />}
+                                                                        </button>
                                                                     )}
                                                             </div>
                                                         </td>
@@ -4726,7 +4958,7 @@ export const ManageCourse: React.FC = () => {
 
 
 
-            {/* 8. Waitlist Section */}
+            { }
             {activeSection === 'waitlist' && (
                 <div className="section-content-fade">
                     <div className="admin-page-top-card" style={{ background: '#FFFFFF', padding: '32px', borderRadius: '24px', marginBottom: '24px', border: '1px solid rgba(0,0,0,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -4747,7 +4979,7 @@ export const ManageCourse: React.FC = () => {
                             <button
                                 onClick={() => handleOpenAddWaitlistModal()}
                                 className="create-exam-btn"
-                                style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', height: '40px', padding: '0 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, border: 'none', background: 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)', color: '#FFFFFF', boxShadow: '0 4px 15px rgba(124,58,237,0.2)' }}
+                                style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', height: '40px', padding: '0 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, border: 'none', background: 'linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%)', color: '#FFFFFF', boxShadow: '0 4px 15px rgba(124,58,237,0.2)' }}
                             >
                                 <Plus size={18} /> Add Student
                             </button>
@@ -4791,7 +5023,7 @@ export const ManageCourse: React.FC = () => {
                                                 const isApproved = postponement.status === 'approved';
                                                 return (
                                                     <tr key={postponement.id}>
-                                                        <td style={{ paddingLeft: '24px', fontWeight: 700, color: '#7C3AED' }}>
+                                                        <td style={{ paddingLeft: '24px', fontWeight: 700, color: 'var(--primary-color)' }}>
                                                             {postponement.application_id}
                                                         </td>
                                                         <td>
@@ -4861,7 +5093,7 @@ export const ManageCourse: React.FC = () => {
                                                 const isApproved = reattempt.status === 'approved';
                                                 return (
                                                     <tr key={reattempt.id}>
-                                                        <td style={{ paddingLeft: '24px', fontWeight: 700, color: '#7C3AED' }}>
+                                                        <td style={{ paddingLeft: '24px', fontWeight: 700, color: 'var(--primary-color)' }}>
                                                             {reattempt.application_id}
                                                         </td>
                                                         <td>
@@ -4916,7 +5148,7 @@ export const ManageCourse: React.FC = () => {
                 </div>
             )}
 
-            {/* Add Student to Waitlist Modal */}
+            { }
             {showWaitlistAddModal && (
                 <div className="cm-modal-overlay" style={{ zIndex: 1100 }} onClick={() => setShowWaitlistAddModal(false)}>
                     <div className="cm-modal" style={{ maxWidth: '600px' }} onClick={e => e.stopPropagation()}>
@@ -5129,7 +5361,7 @@ export const ManageCourse: React.FC = () => {
                                                                             }));
                                                                         }
                                                                     }}
-                                                                    style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#7C3AED' }}
+                                                                    style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--primary-color)' }}
                                                                 />
                                                                 {subLabel}
                                                             </label>
@@ -5163,7 +5395,7 @@ export const ManageCourse: React.FC = () => {
                                             checked={waitlistForm.approved}
                                             onChange={e => setWaitlistForm(prev => ({ ...prev, approved: e.target.checked }))}
                                             onClick={e => e.stopPropagation()}
-                                            style={{ width: '20px', height: '20px', cursor: 'pointer', accentColor: '#7C3AED', margin: 0 }}
+                                            style={{ width: '20px', height: '20px', cursor: 'pointer', accentColor: 'var(--primary-color)', margin: 0 }}
                                         />
                                         <label htmlFor="addApprovedCheckbox" style={{ fontWeight: 600, color: '#334155', cursor: 'pointer', userSelect: 'none', fontSize: '14px', margin: 0 }}>Application Approved</label>
                                     </div>
@@ -5172,7 +5404,7 @@ export const ManageCourse: React.FC = () => {
 
                             <div className="cm-modal-footer">
                                 <button type="button" className="admin-btn-outline" onClick={() => setShowWaitlistAddModal(false)}>Cancel</button>
-                                <button type="submit" className="create-exam-btn" disabled={isSavingWaitlist} style={{ background: isSavingWaitlist ? '#A78BFA' : 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)', border: 'none', color: '#FFFFFF', opacity: isSavingWaitlist ? 0.7 : 1, cursor: isSavingWaitlist ? 'not-allowed' : 'pointer' }}>{isSavingWaitlist ? 'Saving...' : 'Add to Waitlist'}</button>
+                                <button type="submit" className="create-exam-btn" disabled={isSavingWaitlist} style={{ background: isSavingWaitlist ? '#A78BFA' : 'linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%)', border: 'none', color: '#FFFFFF', opacity: isSavingWaitlist ? 0.7 : 1, cursor: isSavingWaitlist ? 'not-allowed' : 'pointer' }}>{isSavingWaitlist ? 'Saving...' : 'Add to Waitlist'}</button>
                             </div>
                         </form>
                     </div>
@@ -5292,7 +5524,7 @@ export const ManageCourse: React.FC = () => {
                                         </div>
                                     )}
 
-                                    {/* dynamic checkboxes section */}
+                                    { }
                                     {(() => {
                                         const selectedExam = waitlistForm.type === 'postponement'
                                             ? exams.find(e => e.title === waitlistForm.examTitle)
@@ -5344,7 +5576,7 @@ export const ManageCourse: React.FC = () => {
                                                                             }));
                                                                         }
                                                                     }}
-                                                                    style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#7C3AED' }}
+                                                                    style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--primary-color)' }}
                                                                 />
                                                                 {subLabel}
                                                             </label>
@@ -5378,7 +5610,7 @@ export const ManageCourse: React.FC = () => {
                                             checked={waitlistForm.approved}
                                             onChange={e => setWaitlistForm(prev => ({ ...prev, approved: e.target.checked }))}
                                             onClick={e => e.stopPropagation()}
-                                            style={{ width: '20px', height: '20px', cursor: 'pointer', accentColor: '#7C3AED', margin: 0 }}
+                                            style={{ width: '20px', height: '20px', cursor: 'pointer', accentColor: 'var(--primary-color)', margin: 0 }}
                                         />
                                         <label htmlFor="editApprovedCheckbox" style={{ fontWeight: 600, color: '#334155', cursor: 'pointer', userSelect: 'none', fontSize: '14px', margin: 0 }}>Application Approved</label>
                                     </div>
@@ -5396,7 +5628,7 @@ export const ManageCourse: React.FC = () => {
                                 </button>
                                 <div style={{ display: 'flex', gap: '12px' }}>
                                     <button type="button" className="admin-btn-outline" onClick={() => { setShowWaitlistEditModal(false); setEditingWaitlistRecord(null); }}>Cancel</button>
-                                    <button type="submit" className="create-exam-btn" disabled={isSavingWaitlist} style={{ background: isSavingWaitlist ? '#A78BFA' : 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)', border: 'none', color: '#FFFFFF', opacity: isSavingWaitlist ? 0.7 : 1, cursor: isSavingWaitlist ? 'not-allowed' : 'pointer' }}>{isSavingWaitlist ? 'Saving...' : 'Save Changes'}</button>
+                                    <button type="submit" className="create-exam-btn" disabled={isSavingWaitlist} style={{ background: isSavingWaitlist ? '#A78BFA' : 'linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%)', border: 'none', color: '#FFFFFF', opacity: isSavingWaitlist ? 0.7 : 1, cursor: isSavingWaitlist ? 'not-allowed' : 'pointer' }}>{isSavingWaitlist ? 'Saving...' : 'Save Changes'}</button>
                                 </div>
                             </div>
                         </form>
@@ -5404,7 +5636,7 @@ export const ManageCourse: React.FC = () => {
                 </div>
             )}
 
-            {/* Exam creation is now handled in a separate page */}
+            { }
 
             {confirmConfig.show && (
                 <div className="cm-modal-overlay" style={{ zIndex: 1100 }}>
@@ -5628,7 +5860,7 @@ export const ManageCourse: React.FC = () => {
                                 <button
                                     type="submit"
                                     className="admin-btn-primary"
-                                    style={{ background: '#7C3AED' }}
+                                    style={{ background: 'var(--primary-color)' }}
                                     disabled={isSubmittingBatch}
                                 >
                                     {isSubmittingBatch ? 'Creating...' : 'Create Batch'}
@@ -5719,7 +5951,7 @@ export const ManageCourse: React.FC = () => {
                                 toast.success(editingMaterial ? 'Lesson recording updated successfully in database!' : 'Lesson recording added successfully to database!');
                             } catch (err: any) {
                                 console.error('Failed to save lesson recording:', err);
-                                toast.error('Failed to save lesson recording in database.');
+                                toast.error(err.response?.data?.message || 'Failed to save lesson recording in database.');
                             }
 
                             setShowVideoModal(false);
@@ -5798,12 +6030,27 @@ export const ManageCourse: React.FC = () => {
                                     return;
                                 }
 
-                                if (!fileForm.link) {
-                                    toast.error('Please provide an external cloud link.');
+                                let uploadedUrl = fileForm.link || '';
+                                let fileSize = 'Cloud Link';
+
+                                if (selectedFile) {
+                                    toast.info('Uploading file, please wait...');
+                                    const uploadRes = await batchService.uploadMaterial(targetBatch.id, selectedFile);
+                                    uploadedUrl = uploadRes.url;
+
+                                    const bytes = uploadRes.size || selectedFile.size;
+                                    if (bytes === 0) fileSize = '0 Bytes';
+                                    else {
+                                        const k = 1024;
+                                        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                                        const i = Math.floor(Math.log(bytes) / Math.log(k));
+                                        fileSize = parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+                                    }
+                                } else if (!editingMaterial) {
+                                    toast.error('Please select a file to upload.');
                                     return;
                                 }
 
-                                const uploadedUrl = fileForm.link;
                                 let updatedSemesters = [];
                                 if (editingMaterial) {
                                     updatedSemesters = materialsSemesters.map(sem => {
@@ -5820,7 +6067,7 @@ export const ManageCourse: React.FC = () => {
                                                             ...mat,
                                                             title: fileForm.title,
                                                             type: fileForm.type,
-                                                            size: 'Cloud Link',
+                                                            size: selectedFile ? fileSize : (mat.size || 'Cloud Link'),
                                                             url: uploadedUrl,
                                                             link: uploadedUrl
                                                         };
@@ -5833,7 +6080,7 @@ export const ManageCourse: React.FC = () => {
                                     const newFile = {
                                         title: fileForm.title,
                                         type: fileForm.type,
-                                        size: 'Cloud Link',
+                                        size: fileSize,
                                         locked: false,
                                         addedAt: new Date().toISOString(),
                                         url: uploadedUrl,
@@ -5845,7 +6092,7 @@ export const ManageCourse: React.FC = () => {
                                     });
                                 }
 
-                                // Sync the updated semesters list to the DB batch materials!
+
                                 const payload = {
                                     name: targetBatch.name,
                                     start_date: targetBatch.startDate,
@@ -5859,7 +6106,7 @@ export const ManageCourse: React.FC = () => {
                                 await batchService.update(id!, targetBatch.id, payload);
                                 setMaterialsSemesters(updatedSemesters);
 
-                                // Update the batch state
+
                                 setBatches(prev => prev.map(b => b.id === targetBatch.id ? { ...b, materials: updatedSemesters } : b));
 
                                 toast.success(editingMaterial ? 'Course material updated successfully in database!' : 'Course material added successfully to database!');
@@ -5902,17 +6149,27 @@ export const ManageCourse: React.FC = () => {
                                 </div>
                                 <div className="cm-form-group" style={{ marginTop: '20px' }}>
                                     <label style={{ color: '#475569', fontWeight: 600, marginBottom: '8px', display: 'block' }}>
-                                        External Link (OneDrive / Google Drive)
+                                        Upload Document / File
                                     </label>
                                     <input
-                                        type="url"
-                                        required
-                                        placeholder="e.g. https://drive.google.com/..."
+                                        type="file"
+                                        required={!editingMaterial}
                                         className="admin-input"
-                                        value={fileForm.link || ''}
-                                        onChange={(e) => setFileForm({ ...fileForm, link: e.target.value })}
-                                        style={{ width: '100%', height: '45px' }}
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0] || null;
+                                            setSelectedFile(file);
+                                            if (file && !fileForm.title) {
+                                                const titleWithoutExt = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+                                                setFileForm(prev => ({ ...prev, title: titleWithoutExt }));
+                                            }
+                                        }}
+                                        style={{ width: '100%', height: '45px', padding: '8px' }}
                                     />
+                                    {editingMaterial && (
+                                        <span style={{ fontSize: '12px', color: '#64748B', display: 'block', marginTop: '6px' }}>
+                                            Leave empty to keep current file: <strong>{editingMaterial.title}</strong>
+                                        </span>
+                                    )}
                                 </div>
                             </div>
                             <div className="cm-modal-footer" style={{ padding: '0 24px 24px 24px', borderTop: 'none', justifyContent: 'flex-end', gap: '12px' }}>
@@ -6281,7 +6538,7 @@ export const ManageCourse: React.FC = () => {
                                 <div className="detail-item" style={{ gridColumn: 'span 2', marginTop: '20px', padding: '20px', background: '#F8FAFC', borderRadius: '16px', border: '1px solid #E2E8F0' }}>
                                     <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', marginBottom: '16px', letterSpacing: '0.05em' }}>Approval Workflow Progress</label>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', position: 'relative' }}>
-                                        {/* Connector Line */}
+                                        { }
                                         <div style={{ position: 'absolute', top: '12px', left: '10%', right: '10%', height: '2px', background: '#E2E8F0', zIndex: 0 }}></div>
 
                                         {[
@@ -6337,10 +6594,10 @@ export const ManageCourse: React.FC = () => {
                                                     title: "Delete Approval Request",
                                                     message: "Are you sure you want to delete this approval request completely? This action cannot be undone.",
                                                     action: async () => {
-                                                        // 1. Delete from state
+
                                                         setApprovalRequests(prev => prev.filter(r => r.id !== selectedRequestDetails.id));
 
-                                                        // 2. Delete from database based on type
+
                                                         try {
                                                             if (selectedRequestDetails.isRealApplication) {
                                                                 await examApplicationService.delete(selectedRequestDetails.realId);
@@ -6407,9 +6664,9 @@ export const ManageCourse: React.FC = () => {
             })()}
 
             {confirmModal.show && (
-                <div 
-                    className="cm-modal-overlay" 
-                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }} 
+                <div
+                    className="cm-modal-overlay"
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     onClick={() => {
                         if (!isConfirmLoading) {
                             setConfirmModal(prev => ({ ...prev, show: false }));
@@ -6424,9 +6681,9 @@ export const ManageCourse: React.FC = () => {
                             <p style={{ color: '#64748B', fontSize: '14px', lineHeight: 1.5, margin: 0 }}>{confirmModal.message}</p>
                         </div>
                         <div className="cm-modal-footer" style={{ borderTop: 'none', padding: 0, display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-                            <button 
-                                className="admin-btn-outline" 
-                                style={{ height: '38px', padding: '0 16px', borderRadius: '8px', cursor: isConfirmLoading ? 'not-allowed' : 'pointer', fontWeight: 600, border: '1px solid #E2E8F0', background: '#FFFFFF', color: '#475569' }} 
+                            <button
+                                className="admin-btn-outline"
+                                style={{ height: '38px', padding: '0 16px', borderRadius: '8px', cursor: isConfirmLoading ? 'not-allowed' : 'pointer', fontWeight: 600, border: '1px solid #E2E8F0', background: '#FFFFFF', color: '#475569' }}
                                 disabled={isConfirmLoading}
                                 onClick={() => setConfirmModal(prev => ({ ...prev, show: false }))}
                             >
@@ -6434,14 +6691,14 @@ export const ManageCourse: React.FC = () => {
                             </button>
                             <button
                                 className="admin-btn-primary"
-                                style={{ 
-                                    height: '38px', 
-                                    padding: '0 16px', 
-                                    borderRadius: '8px', 
-                                    cursor: isConfirmLoading ? 'not-allowed' : 'pointer', 
-                                    fontWeight: 600, 
-                                    border: 'none', 
-                                    background: '#EF4444', 
+                                style={{
+                                    height: '38px',
+                                    padding: '0 16px',
+                                    borderRadius: '8px',
+                                    cursor: isConfirmLoading ? 'not-allowed' : 'pointer',
+                                    fontWeight: 600,
+                                    border: 'none',
+                                    background: '#EF4444',
                                     color: '#FFFFFF',
                                     opacity: isConfirmLoading ? 0.7 : 1,
                                     display: 'inline-flex',
