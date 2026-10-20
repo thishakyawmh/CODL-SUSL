@@ -8,22 +8,22 @@ import './CourseExaminations.css';
 const ExaminationResults: React.FC = () => {
     const navigate = useNavigate();
     const { id, examId } = useParams<{ id: string, examId: string }>();
-    
+
     const [loading, setLoading] = useState(true);
     const [isDownloading, setIsDownloading] = useState(false);
     const [courseTitle, setCourseTitle] = useState('Course Details');
     const [exam, setExam] = useState<{ title: string }>({ title: 'Examination Results' });
     const [results, setResults] = useState<any[]>([]);
-    
+
 
     const userStr = sessionStorage.getItem('user');
     let currentUser = null;
     if (userStr) {
         try {
             currentUser = JSON.parse(userStr);
-        } catch (e) {}
+        } catch (e) { }
     }
-    
+
     const studentName = currentUser?.fullName || currentUser?.full_name || currentUser?.name || 'Kasun Perera';
     const studentRegNo = currentUser?.student_number || currentUser?.studentNumber || 'CODL/2401';
 
@@ -42,20 +42,20 @@ const ExaminationResults: React.FC = () => {
         });
 
         const imgData = canvas.toDataURL('image/png');
-        
+
         const pdf = new jsPDF('p', 'mm', 'a4');
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = pdf.internal.pageSize.getHeight();
-        
+
         const imgWidth = pdfWidth;
         const imgHeight = (canvas.height * pdfWidth) / canvas.width;
-        
+
         let heightLeft = imgHeight;
         let position = 0;
-        
+
         pdf.addImage(imgData, 'PNG', 0, position, imgWidth, Math.min(imgHeight, pdfHeight));
         heightLeft -= pdfHeight;
-        
+
         while (heightLeft >= 0) {
             position = heightLeft - imgHeight;
             pdf.addPage();
@@ -167,9 +167,9 @@ const ExaminationResults: React.FC = () => {
 
 
                 const myGrades = await examResultService.getMyResults();
-                
 
-                const directGrades = myGrades.filter((g: any) => 
+
+                const directGrades = myGrades.filter((g: any) =>
                     g.exam_result?.course?.id?.toString() === id?.toString() &&
                     g.exam_result?.exam?.id?.toString() === examId?.toString()
                 );
@@ -183,7 +183,7 @@ const ExaminationResults: React.FC = () => {
 
                     const isPostponed = postponements.some((p: any) => {
                         const pOriginalTitle = p.exam_title || '';
-                        
+
 
                         const cleanPTitle = pOriginalTitle.toLowerCase().replace(/[^a-z0-9]/g, '');
                         const cleanTargetTitle = (targetExam?.title || '').toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -196,7 +196,7 @@ const ExaminationResults: React.FC = () => {
                                 const gradeSubjectCode = g.exam_result?.subject?.code;
                                 if (!gradeSubjectCode) return false;
                                 const cleanCode = gradeSubjectCode.toLowerCase().replace(/[^a-z0-9]/g, '');
-                                
+
                                 return p.exams.some((s: string) => {
                                     const cleanS = s.toLowerCase().replace(/[^a-z0-9]/g, '');
                                     return cleanS.includes(cleanCode);
@@ -212,7 +212,7 @@ const ExaminationResults: React.FC = () => {
 
                     const isReattempted = reattempts.some((r: any) => {
                         const rOriginalTitle = r.exam_title || '';
-                        
+
 
                         const cleanRTitle = rOriginalTitle.toLowerCase().replace(/[^a-z0-9]/g, '');
                         const cleanTargetTitle = (targetExam?.title || '').toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -229,14 +229,14 @@ const ExaminationResults: React.FC = () => {
 
 
                 const gradesList = ['F', 'E', 'D', 'C-', 'C', 'C+', 'B-', 'B', 'B+', 'A-', 'A', 'A+'];
-                
+
                 const mapGradeRow = (g: any, isIndirect: boolean, typeLabel?: string) => {
                     const threshold = g.exam_result?.min_repeat_grade || 'D';
                     const studentGrade = g.grade || 'Pending';
                     const sIdx = gradesList.indexOf(studentGrade.toUpperCase().trim());
                     const tIdx = gradesList.indexOf(threshold.toUpperCase().trim());
                     const isRepeat = sIdx !== -1 && tIdx !== -1 && sIdx < tIdx;
-                    
+
                     return {
                         code: g.exam_result?.subject?.code || 'SUBJ101',
                         name: g.exam_result?.subject?.name || 'Subject',
@@ -247,34 +247,34 @@ const ExaminationResults: React.FC = () => {
                     };
                 };
 
-                 const mappedDirect = directGrades.map((g: any) => mapGradeRow(g, false));
-                 const mappedIndirect = indirectGrades.map((g: any) => {
-                     const gradeSubjectId = g.exam_result?.subject?.id?.toString();
-                     const matchingReattempt = reattempts.find((r: any) => r.subject_id?.toString() === gradeSubjectId);
-                     
-                     let label = '';
-                     if (matchingReattempt) {
-                         const attemptNo = matchingReattempt.attempt || 2;
-                         label = `Attempt ${attemptNo}`;
-                     } else {
-                         label = ''; 
-                     }
-                     return mapGradeRow(g, true, label);
-                 });
+                const mappedDirect = directGrades.map((g: any) => mapGradeRow(g, false));
+                const mappedIndirect = indirectGrades.map((g: any) => {
+                    const gradeSubjectId = g.exam_result?.subject?.id?.toString();
+                    const matchingReattempt = reattempts.find((r: any) => r.subject_id?.toString() === gradeSubjectId);
+
+                    let label = '';
+                    if (matchingReattempt) {
+                        const attemptNo = matchingReattempt.attempt || 2;
+                        label = `Attempt ${attemptNo}`;
+                    } else {
+                        label = '';
+                    }
+                    return mapGradeRow(g, true, label);
+                });
 
 
-                 const mergedMap: Record<string, any> = {};
-                 mappedDirect.forEach((row: any) => {
-                     mergedMap[row.code] = row;
-                 });
-                 mappedIndirect.forEach((row: any) => {
-                     mergedMap[row.code] = row;
-                 });
+                const mergedMap: Record<string, any> = {};
+                mappedDirect.forEach((row: any) => {
+                    mergedMap[row.code] = row;
+                });
+                mappedIndirect.forEach((row: any) => {
+                    mergedMap[row.code] = row;
+                });
 
-                 const sortedResults = Object.values(mergedMap).sort((a: any, b: any) =>
-                     a.code.localeCompare(b.code, undefined, { numeric: true, sensitivity: 'base' })
-                 );
-                 setResults(sortedResults);
+                const sortedResults = Object.values(mergedMap).sort((a: any, b: any) =>
+                    a.code.localeCompare(b.code, undefined, { numeric: true, sensitivity: 'base' })
+                );
+                setResults(sortedResults);
             } catch (err) {
                 console.error("Failed to load results from backend:", err);
             } finally {
@@ -315,15 +315,15 @@ const ExaminationResults: React.FC = () => {
                             </div>
                         </div>
                         <div className="action-button-group results-right" data-html2canvas-ignore="true">
-                            <button 
-                                className="pro-action-btn secondary icon-only" 
+                            <button
+                                className="pro-action-btn secondary icon-only"
                                 title="Print Transcript"
                                 onClick={handlePrint}
                             >
                                 <Printer size={18} />
                             </button>
-                            <button 
-                                className="pro-action-btn primary small" 
+                            <button
+                                className="pro-action-btn primary small"
                                 style={{ gap: '8px' }}
                                 onClick={handleDownload}
                                 disabled={isDownloading}
