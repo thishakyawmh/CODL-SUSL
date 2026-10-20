@@ -947,7 +947,6 @@ class AIAnalyticsController extends Controller
             $escapedTemp = escapeshellarg($tempFile);
 
             exec("{$curlBin} -L -k -s -o {$escapedTemp} {$escapedUrl}", $output, $returnVar);
-
             if ($returnVar === 0 && file_exists($tempFile)) {
                 $data = file_get_contents($tempFile);
                 @unlink($tempFile);

@@ -6,6 +6,7 @@ import {
     ArrowLeft, Eye, Check, XCircle, Edit3, Save, User, ShieldCheck, Clock, Trash2,
     MapPin, CheckSquare, Info, Loader
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { mockAdminCourses } from '../../data/mockAdminData';
 import type {
     AdminCourse, CourseApplication,
@@ -14,6 +15,7 @@ import type {
 import { toast } from '../../utils/toast';
 import { courseApplicationService, examApplicationService } from '../../services/apiService';
 import { VerificationStages } from '../common/VerificationStages';
+import { ConfirmModal } from '../common/ConfirmModal';
 import './CourseManagement.css';
 import './ApplicationApprovals.css';
 
@@ -205,6 +207,8 @@ export const Applications: React.FC = () => {
     const [showRejectModal, setShowRejectModal] = useState(false);
     const [rejectionReason, setRejectionReason] = useState('');
     const [pendingAction, setPendingAction] = useState<{ id: string, type: string } | null>(null);
+    const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+    const [deleteAppId, setDeleteAppId] = useState<string | null>(null);
 
     const handleAction = async (id: string, action: 'approved' | 'rejected', type: string, reason?: string) => {
         if (actioningIds.has(id)) return; // Prevent double-click
@@ -356,11 +360,14 @@ export const Applications: React.FC = () => {
         }
     };
 
-    const handleDeleteApplication = async (id: string) => {
-        if (!window.confirm("Are you sure you want to delete this application request completely? This action cannot be undone.")) {
-            return;
-        }
+    const handleDeleteApplication = (id: string) => {
+        setDeleteAppId(id);
+        setConfirmDeleteOpen(true);
+    };
 
+    const executeDeleteApplication = async () => {
+        if (!deleteAppId) return;
+        const id = deleteAppId;
         const isReal = realEnrollmentApps.some(app => app.id === id);
         if (isReal) {
             try {
@@ -377,9 +384,11 @@ export const Applications: React.FC = () => {
             setExamApps(prev => prev.filter(app => app.id !== id));
             setPostponementReqs(prev => prev.filter(app => app.id !== id));
             setReattemptReqs(prev => prev.filter(app => app.id !== id));
-            toast.success("Application deleted successfully!");
+            toast.success("Application removed successfully!");
             setSelectedApplication(null);
         }
+        setConfirmDeleteOpen(false);
+        setDeleteAppId(null);
     };
 
     const filteredCourses = mockAdminCourses.filter(course => {
@@ -1227,66 +1236,74 @@ export const Applications: React.FC = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {sortedApplications.map((app) => (
-                                    <tr key={app.id}>
-                                        <td>
-                                            <div className="at-applicant">
-                                                <div>
-                                                    <span className="at-name">{app.displayName || app.applicantName}</span>
-                                                    <span className="at-email">{app.applicantEmail}</span>
+                                <AnimatePresence mode="popLayout">
+                                    {sortedApplications.map((app) => (
+                                        <motion.tr 
+                                            key={app.id}
+                                            initial={{ opacity: 0, y: 12 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, x: -20, backgroundColor: '#F8FAFC' }}
+                                            transition={{ duration: 0.25, ease: 'easeOut' }}
+                                        >
+                                            <td>
+                                                <div className="at-applicant">
+                                                    <div>
+                                                        <span className="at-name">{app.displayName || app.applicantName}</span>
+                                                        <span className="at-email">{app.applicantEmail}</span>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div className={`at-type-badge ${app.isNewApplicant ? 'new' : 'existing'}`}>
-                                                {app.isNewApplicant ? 'New' : 'Existing'}
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div style={{ fontSize: '13px', fontWeight: 500, color: app.isNewApplicant ? '#94A3B8' : 'var(--primary-color)' }}>
-                                                {app.studentNumber || '-'}
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div style={{ fontSize: '13px', color: '#64748B' }}>
-                                                {app.applicationDate}
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <span className={`at-status-badge ${app.status}`} style={{
-                                                background: getStatusColor(app.status).bg,
-                                                color: getStatusColor(app.status).text
-                                            }}>
-                                                {app.status}
-                                            </span>
-                                        </td>
-                                        <td style={{ textAlign: 'center' }}>
-                                            <VerificationStages stages={app.approvalStages} />
-                                        </td>
-                                        <td>
-                                            <div className="at-actions">
-                                                <button
-                                                    className="at-action-btn view"
-                                                    title="View Details"
-                                                    onClick={() => handleViewDetails(app)}
-                                                >
-                                                    <Eye size={16} />
-                                                </button>
-                                                {app.status === 'pending' && (currentAdminRole === 'coordinator' || currentAdminRole === 'director') && (
+                                            </td>
+                                            <td>
+                                                <div className={`at-type-badge ${app.isNewApplicant ? 'new' : 'existing'}`}>
+                                                    {app.isNewApplicant ? 'New' : 'Existing'}
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div style={{ fontSize: '13px', fontWeight: 500, color: app.isNewApplicant ? '#94A3B8' : 'var(--primary-color)' }}>
+                                                    {app.studentNumber || '-'}
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div style={{ fontSize: '13px', color: '#64748B' }}>
+                                                    {app.applicationDate}
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span className={`at-status-badge ${app.status}`} style={{
+                                                    background: getStatusColor(app.status).bg,
+                                                    color: getStatusColor(app.status).text
+                                                }}>
+                                                    {app.status}
+                                                </span>
+                                            </td>
+                                            <td style={{ textAlign: 'center' }}>
+                                                <VerificationStages stages={app.approvalStages} />
+                                            </td>
+                                            <td>
+                                                <div className="at-actions">
                                                     <button
-                                                        className="at-action-btn approve"
-                                                        title="Approve"
-                                                        onClick={() => handleAction(app.id, 'approved', 'enrollment')}
-                                                        disabled={actioningIds.has(app.id)}
-                                                        style={{ opacity: actioningIds.has(app.id) ? 0.6 : 1 }}
+                                                        className="at-action-btn view"
+                                                        title="View Details"
+                                                        onClick={() => handleViewDetails(app)}
                                                     >
-                                                        {actioningIds.has(app.id) ? <Loader size={14} style={{ animation: 'spin 0.7s linear infinite' }} /> : <Check size={16} />}
+                                                        <Eye size={16} />
                                                     </button>
-                                                )}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
+                                                    {app.status === 'pending' && (currentAdminRole === 'coordinator' || currentAdminRole === 'director') && (
+                                                        <button
+                                                            className="at-action-btn approve"
+                                                            title="Approve"
+                                                            onClick={() => handleAction(app.id, 'approved', 'enrollment')}
+                                                            disabled={actioningIds.has(app.id)}
+                                                            style={{ opacity: actioningIds.has(app.id) ? 0.6 : 1 }}
+                                                        >
+                                                            {actioningIds.has(app.id) ? <Loader size={14} style={{ animation: 'spin 0.7s linear infinite' }} /> : <Check size={16} />}
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </td>
+                                        </motion.tr>
+                                    ))}
+                                </AnimatePresence>
                             </tbody>
                         </table>
                         {applications.length === 0 && (
@@ -1335,55 +1352,63 @@ export const Applications: React.FC = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {examApps
-                                    .filter(app => app.course === selectedCourse.title)
-                                    .map(app => (
-                                        <tr key={app.id}>
-                                            <td>
-                                                <div className="at-applicant">
-                                                    <div>
-                                                        <span className="at-name">{app.studentName}</span>
-                                                        <span className="at-email">{app.studentNumber}</span>
+                                <AnimatePresence mode="popLayout">
+                                    {examApps
+                                        .filter(app => app.course === selectedCourse.title)
+                                        .map(app => (
+                                            <motion.tr 
+                                                key={app.id}
+                                                initial={{ opacity: 0, y: 12 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                exit={{ opacity: 0, x: -20, backgroundColor: '#F8FAFC' }}
+                                                transition={{ duration: 0.25, ease: 'easeOut' }}
+                                            >
+                                                <td>
+                                                    <div className="at-applicant">
+                                                        <div>
+                                                            <span className="at-name">{app.studentName}</span>
+                                                            <span className="at-email">{app.studentNumber}</span>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <div style={{ fontSize: '13px', fontWeight: 500 }}>{app.examTitle}</div>
-                                                <div style={{ fontSize: '11px', color: '#64748B' }}>{app.semester}</div>
-                                            </td>
-                                            <td style={{ fontSize: '13px' }}>{app.applicationDate}</td>
-                                            <td>
-                                                <span className={`at-status-badge ${app.status}`} style={{
-                                                    background: getStatusColor(app.status).bg,
-                                                    color: getStatusColor(app.status).text
-                                                }}>
-                                                    {app.status}
-                                                </span>
-                                            </td>
-                                            <td style={{ textAlign: 'center' }}>
-                                                <VerificationStages stages={app.approvalStages} />
-                                            </td>
-                                            <td>
-                                                <div className="at-actions">
-                                                    <button className="at-action-btn view" onClick={() => handleViewDetails(app)}><Eye size={16} /></button>
-                                                    {app.status === 'pending' && (
-                                                        (app.currentStep === 1 && currentAdminRole === 'secretary') ||
-                                                        (app.currentStep === 2 && currentAdminRole === 'coordinator') ||
-                                                        (app.currentStep === 3 && currentAdminRole === 'director')
-                                                    ) && (
-                                                        <button
-                                                            className="at-action-btn approve"
-                                                            onClick={() => handleAction(app.id, 'approved', 'exam')}
-                                                            disabled={actioningIds.has(app.id)}
-                                                            style={{ opacity: actioningIds.has(app.id) ? 0.6 : 1 }}
-                                                        >
-                                                            {actioningIds.has(app.id) ? <Loader size={14} style={{ animation: 'spin 0.7s linear infinite' }} /> : <Check size={16} />}
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
+                                                </td>
+                                                <td>
+                                                    <div style={{ fontSize: '13px', fontWeight: 500 }}>{app.examTitle}</div>
+                                                    <div style={{ fontSize: '11px', color: '#64748B' }}>{app.semester}</div>
+                                                </td>
+                                                <td style={{ fontSize: '13px' }}>{app.applicationDate}</td>
+                                                <td>
+                                                    <span className={`at-status-badge ${app.status}`} style={{
+                                                        background: getStatusColor(app.status).bg,
+                                                        color: getStatusColor(app.status).text
+                                                    }}>
+                                                        {app.status}
+                                                    </span>
+                                                </td>
+                                                <td style={{ textAlign: 'center' }}>
+                                                    <VerificationStages stages={app.approvalStages} />
+                                                </td>
+                                                <td>
+                                                    <div className="at-actions">
+                                                        <button className="at-action-btn view" onClick={() => handleViewDetails(app)}><Eye size={16} /></button>
+                                                        {app.status === 'pending' && (
+                                                            (app.currentStep === 1 && currentAdminRole === 'secretary') ||
+                                                            (app.currentStep === 2 && currentAdminRole === 'coordinator') ||
+                                                            (app.currentStep === 3 && currentAdminRole === 'director')
+                                                        ) && (
+                                                            <button
+                                                                className="at-action-btn approve"
+                                                                onClick={() => handleAction(app.id, 'approved', 'exam')}
+                                                                disabled={actioningIds.has(app.id)}
+                                                                style={{ opacity: actioningIds.has(app.id) ? 0.6 : 1 }}
+                                                            >
+                                                                {actioningIds.has(app.id) ? <Loader size={14} style={{ animation: 'spin 0.7s linear infinite' }} /> : <Check size={16} />}
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                            </motion.tr>
+                                        ))}
+                                </AnimatePresence>
                             </tbody>
                         </table>
                     </div>
@@ -1519,68 +1544,77 @@ export const Applications: React.FC = () => {
                     </div>
 
                     <div className="cm-grid">
-                        {filteredCourses.map(course => {
-                            const intakeStyle = getIntakeColor(course.intakeStatus);
-                            const levelStyle = getLevelColor(course.level);
-                            return (
-                                <div className="cm-course-card" key={course.id}>
-                                    <div className="cmc-header">
-                                        <span className="cmc-level" style={{ background: levelStyle.bg, color: levelStyle.text }}>
-                                            {course.level}
-                                        </span>
-                                        <span className="cmc-intake" style={{ background: intakeStyle.bg, color: intakeStyle.text }}>
-                                            {course.intakeStatus}
-                                        </span>
-                                    </div>
+                        <AnimatePresence mode="popLayout">
+                            {filteredCourses.map(course => {
+                                const intakeStyle = getIntakeColor(course.intakeStatus);
+                                const levelStyle = getLevelColor(course.level);
+                                return (
+                                    <motion.div 
+                                        className="cm-course-card" 
+                                        key={course.id}
+                                        initial={{ opacity: 0, scale: 0.95 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0, scale: 0.95 }}
+                                        transition={{ duration: 0.2 }}
+                                    >
+                                        <div className="cmc-header">
+                                            <span className="cmc-level" style={{ background: levelStyle.bg, color: levelStyle.text }}>
+                                                {course.level}
+                                            </span>
+                                            <span className="cmc-intake" style={{ background: intakeStyle.bg, color: intakeStyle.text }}>
+                                                {course.intakeStatus}
+                                            </span>
+                                        </div>
 
-                                    <h3 className="cmc-title">{course.title}</h3>
-                                    <p className="cmc-code">{course.code} • {course.department}</p>
+                                        <h3 className="cmc-title">{course.title}</h3>
+                                        <p className="cmc-code">{course.code} • {course.department}</p>
 
-                                    <div className="cmc-stats">
-                                        <div className="cmc-stat">
-                                            <UsersIcon size={14} />
-                                            <span><strong>{course.activeStudents}</strong> / {course.totalStudents}</span>
+                                        <div className="cmc-stats">
+                                            <div className="cmc-stat">
+                                                <UsersIcon size={14} />
+                                                <span><strong>{course.activeStudents}</strong> / {course.totalStudents}</span>
+                                            </div>
+                                            <div className="cmc-stat">
+                                                <Calendar size={14} />
+                                                <span>{course.duration}</span>
+                                            </div>
+                                            <div className="cmc-stat">
+                                                <Award size={14} />
+                                                <span>{course.batches.length} batch{course.batches.length > 1 ? 'es' : ''}</span>
+                                            </div>
                                         </div>
-                                        <div className="cmc-stat">
-                                            <Calendar size={14} />
-                                            <span>{course.duration}</span>
-                                        </div>
-                                        <div className="cmc-stat">
-                                            <Award size={14} />
-                                            <span>{course.batches.length} batch{course.batches.length > 1 ? 'es' : ''}</span>
-                                        </div>
-                                    </div>
 
-                                    <div className="cmc-faculty-info">
-                                        <div className="cmc-faculty-item">
-                                            <UserCheck size={13} />
-                                            <span>Secretary: <strong>{course.secretary || 'Not Assigned'}</strong></span>
+                                        <div className="cmc-faculty-info">
+                                            <div className="cmc-faculty-item">
+                                                <UserCheck size={13} />
+                                                <span>Secretary: <strong>{course.secretary || 'Not Assigned'}</strong></span>
+                                            </div>
+                                            <div className="cmc-faculty-item">
+                                                <ShieldCheck size={13} />
+                                                <span>Coordinator: <strong>{course.coordinator || 'Not Assigned'}</strong></span>
+                                            </div>
                                         </div>
-                                        <div className="cmc-faculty-item">
-                                            <ShieldCheck size={13} />
-                                            <span>Coordinator: <strong>{course.coordinator || 'Not Assigned'}</strong></span>
-                                        </div>
-                                    </div>
 
-                                    <div className="cmc-grid-actions">
-                                        <button
-                                            className="cmc-btn-manage big"
-                                            title="View Enrollments"
-                                            onClick={() => handleViewEnrollments(course)}
-                                        >
-                                            <FileText size={15} /> Enrollments
-                                        </button>
-                                        <button
-                                            className="cmc-btn-approvals big"
-                                            title="Manage Approvals"
-                                            onClick={() => handleViewApprovals(course)}
-                                        >
-                                            <CheckCircle2 size={15} /> Approvals
-                                        </button>
-                                    </div>
-                                </div>
-                            );
-                        })}
+                                        <div className="cmc-grid-actions">
+                                            <button
+                                                className="cmc-btn-manage big"
+                                                title="View Enrollments"
+                                                onClick={() => handleViewEnrollments(course)}
+                                            >
+                                                <FileText size={15} /> Enrollments
+                                            </button>
+                                            <button
+                                                className="cmc-btn-approvals big"
+                                                title="Manage Approvals"
+                                                onClick={() => handleViewApprovals(course)}
+                                            >
+                                                <CheckCircle2 size={15} /> Approvals
+                                            </button>
+                                        </div>
+                                    </motion.div>
+                                );
+                            })}
+                        </AnimatePresence>
                     </div>
 
                     {filteredCourses.length === 0 && (
@@ -1639,6 +1673,21 @@ export const Applications: React.FC = () => {
                 onConfirm={handleRejectConfirm}
                 reason={rejectionReason}
                 setReason={setRejectionReason}
+            />
+
+            <ConfirmModal
+                isOpen={confirmDeleteOpen}
+                title="Delete Application"
+                description="Are you sure you want to delete this application request completely? This action cannot be undone."
+                confirmText="Yes, Delete"
+                variant="danger"
+                onClose={() => {
+                    setConfirmDeleteOpen(false);
+                    setDeleteAppId(null);
+                }}
+                onConfirm={() => {
+                    executeDeleteApplication();
+                }}
             />
         </div>
     );

@@ -12,6 +12,7 @@
   "dependencies": {
     "@svg-maps/sri-lanka": "^2.0.0",
     "axios": "^1.16.1",
+    "framer-motion": "^13.1.0",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1",
     "lucide-react": "^0.577.0",

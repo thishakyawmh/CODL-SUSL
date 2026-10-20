@@ -47,7 +47,13 @@ class CourseApplicationController extends Controller
             $query->where('status', $request->status);
         }
 
-        return response()->json($query->orderBy('created_at', 'desc')->get());
+        $query->orderBy('created_at', 'desc');
+
+        if ($request->has('page')) {
+            return response()->json($query->paginate(15));
+        }
+
+        return response()->json($query->get());
     }
 
      
@@ -163,6 +169,8 @@ class CourseApplicationController extends Controller
             'approval_level' => 0,
             'is_new_applicant' => $isNewApplicant,
         ]);
+
+        \App\Http\Controllers\CourseController::clearManageCourseCache($validated['course_id']);
 
         return response()->json(
             $application->load(['course', 'batch']),
@@ -508,12 +516,20 @@ class CourseApplicationController extends Controller
     public function destroy(Request $request, $id)
     {
         $user = $request->user();
-        if (!$user || $user->role !== 'super_admin') {
-            return response()->json(['message' => 'Unauthorized. Only Super Admin can delete applications.'], 403);
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized.'], 401);
         }
 
         $application = CourseApplication::findOrFail($id);
         $courseId = $application->course_id;
+
+        $isSuperAdmin = $user->role === 'super_admin';
+        $isCourseSecretary = $user->role === 'secretary' && $application->course && $application->course->secretary_id === $user->id;
+
+        if (!$isSuperAdmin && !$isCourseSecretary) {
+            return response()->json(['message' => 'Unauthorized. Only Super Admin or the Course Secretary can delete applications.'], 403);
+        }
+
         $application->delete();
         \App\Http\Controllers\CourseController::clearManageCourseCache($courseId);
 

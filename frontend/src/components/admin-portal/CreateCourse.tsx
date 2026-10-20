@@ -320,7 +320,7 @@ export const CreateCourse: React.FC = () => {
     return (
         <div className="cm-container">
             <div style={{
-                marginBottom: '20px',
+                marginBottom: '36px',
                 display: 'flex',
                 alignItems: 'stretch',
                 gap: '8px'

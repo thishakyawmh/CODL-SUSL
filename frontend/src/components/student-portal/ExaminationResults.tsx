@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Download, Printer } from 'lucide-react';
 import { courseService, examService, examResultService } from '../../services/apiService';
+import { toast } from '../../utils/toast';
 import './CourseExaminations.css';
 
 const ExaminationResults: React.FC = () => {
@@ -120,7 +121,7 @@ const ExaminationResults: React.FC = () => {
 
         } catch (error) {
             console.error('Print failed:', error);
-            alert('Failed to print transcript. Please try again.');
+            toast.error('Failed to print transcript. Please try again.');
         }
     };
 
@@ -131,7 +132,7 @@ const ExaminationResults: React.FC = () => {
             pdf.save(fileName);
         } catch (error) {
             console.error('PDF download failed:', error);
-            alert('Failed to generate PDF. Please try again.');
+            toast.error('Failed to generate PDF. Please try again.');
         }
     };
 

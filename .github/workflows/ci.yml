@@ -1,0 +1,90 @@
+name: CODL-SUSL CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  backend-test:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: codl_susl_test
+          MYSQL_ROOT_PASSWORD: password
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, pdo_mysql, xml, bcmath
+
+      - name: Prepare backend .env
+        working-directory: backend
+        run: |
+          if [ -f .env ]; then
+            echo ".env already exists"
+          elif [ -f .env.example ]; then
+            cp .env.example .env
+          else
+            echo "No .env.example found — creating minimal .env for CI"
+            cat > .env <<'EOF'
+APP_NAME=Laravel
+APP_ENV=testing
+APP_KEY=
+APP_DEBUG=true
+APP_URL=http://localhost
+LOG_CHANNEL=stack
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=codl_susl_test
+DB_USERNAME=root
+DB_PASSWORD=password
+CACHE_DRIVER=file
+SESSION_DRIVER=file
+QUEUE_CONNECTION=sync
+MAIL_MAILER=smtp
+EOF
+          fi
+
+      - name: Install Dependencies
+        working-directory: backend
+        run: composer install --prefer-dist --no-progress --no-suggest
+
+      - name: Generate key
+        working-directory: backend
+        run: php artisan key:generate --no-interaction
+
+      - name: Execute tests
+        working-directory: backend
+        run: php artisan test
+
+  frontend-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build

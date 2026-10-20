@@ -624,6 +624,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                     if (style.color === 'purple') doc.setTextColor(124, 58, 237);
                     else if (style.color === 'red') doc.setTextColor(239, 68, 68);
                     else if (style.color === 'orange') doc.setTextColor(217, 119, 6);
+                    else if (style.color === 'green') doc.setTextColor(16, 185, 129);
                     else if (style.color === 'gray') doc.setTextColor(100, 116, 139);
                     else doc.setTextColor(15, 23, 42);
                 } else {
@@ -883,6 +884,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
             }
 
 
+            // Section IV: ACADEMIC ENTRY REQUIREMENTS EVIDENCE
             doc.addPage();
             y = margin;
 
@@ -945,10 +947,123 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
             y += 4;
 
 
+            // Section V: CAREER PATH READINESS PREDICTOR
             doc.addPage();
             y = margin;
 
-            addText('V. AI ACTIONABLE RECOMMENDATIONS', margin, { fontSize: 14, fontStyle: 'bold', color: 'purple' });
+            addText('V. CAREER PATH READINESS PREDICTOR', margin, { fontSize: 14, fontStyle: 'bold', color: 'purple' });
+            y += 10;
+
+            if (overview.career_readiness && overview.career_readiness.length > 0) {
+                overview.career_readiness.forEach((path: any) => {
+                    checkPageOverflow(40);
+                    addText(path.role, margin + 5, { fontSize: 10.5, fontStyle: 'bold' });
+                    
+                    const scoreColor = path.readiness >= 75 ? 'green' : (path.readiness >= 50 ? 'orange' : 'red');
+                    doc.setFont('helvetica', 'bold');
+                    doc.setFontSize(9.5);
+                    if (scoreColor === 'green') doc.setTextColor(16, 185, 129);
+                    else if (scoreColor === 'orange') doc.setTextColor(217, 119, 6);
+                    else doc.setTextColor(239, 68, 68);
+                    doc.text(`${path.readiness}% Taught`, pageWidth - margin - 5, y, { align: 'right' });
+                    y += 4;
+
+                    // Draw progress bar
+                    const totalBarWidth = 100;
+                    const barHeight = 4;
+                    doc.setFillColor(241, 245, 249);
+                    doc.rect(margin + 5, y, totalBarWidth, barHeight, 'F');
+                    
+                    if (scoreColor === 'green') doc.setFillColor(16, 185, 129);
+                    else if (scoreColor === 'orange') doc.setFillColor(245, 158, 11);
+                    else doc.setFillColor(239, 68, 68);
+                    doc.rect(margin + 5, y, (path.readiness / 100) * totalBarWidth, barHeight, 'F');
+                    y += barHeight + 5;
+
+                    // Matched domains list
+                    if (path.matched_domains && path.matched_domains.length > 0) {
+                        checkPageOverflow(15);
+                        const matchedText = `Matched Domains: ${path.matched_domains.join(', ')}`;
+                        const splitMatched = doc.splitTextToSize(matchedText, pageWidth - margin * 2 - 15);
+                        doc.setFont('helvetica', 'normal');
+                        doc.setFontSize(9);
+                        doc.setTextColor(100, 116, 139);
+                        doc.text(splitMatched, margin + 5, y);
+                        y += (splitMatched.length * 4.5) + 1;
+                    }
+
+                    // Missing domains list
+                    if (path.missing_domains && path.missing_domains.length > 0) {
+                        checkPageOverflow(15);
+                        const missingText = `Missing Domains: ${path.missing_domains.join(', ')}`;
+                        const splitMissing = doc.splitTextToSize(missingText, pageWidth - margin * 2 - 15);
+                        doc.setFont('helvetica', 'normal');
+                        doc.setFontSize(9);
+                        doc.setTextColor(239, 68, 68);
+                        doc.text(splitMissing, margin + 5, y);
+                        y += (splitMissing.length * 4.5) + 1;
+                    }
+                    y += 5;
+                });
+            } else {
+                addText('No career path readiness predictor data available.', margin + 5, { fontSize: 10, color: 'gray' });
+                y += 5;
+            }
+
+            // Section VI: GRADUATE THREAT ALERTS
+            doc.addPage();
+            y = margin;
+
+            addText('VI. GRADUATE THREAT ALERTS', margin, { fontSize: 14, fontStyle: 'bold', color: 'purple' });
+            y += 10;
+
+            if (overview.emerging_tech_alerts && overview.emerging_tech_alerts.length > 0) {
+                overview.emerging_tech_alerts.forEach((alert: any) => {
+                    checkPageOverflow(35);
+                    addText(alert.tech, margin + 5, { fontSize: 10.5, fontStyle: 'bold' });
+                    
+                    const severityColor = alert.severity === 'Critical' ? 'red' : 'orange';
+                    doc.setFont('helvetica', 'bold');
+                    doc.setFontSize(9.5);
+                    if (severityColor === 'red') doc.setTextColor(239, 68, 68);
+                    else doc.setTextColor(217, 119, 6);
+                    doc.text(`${alert.severity} Risk`, pageWidth - margin - 5, y, { align: 'right' });
+                    y += 5;
+
+                    // Prevalence
+                    checkPageOverflow(12);
+                    addText(`Prevalence in Industry Surveys: ${alert.demand_pct}%`, margin + 5, { fontSize: 9.5, fontStyle: 'normal', color: 'gray' });
+                    y += 5;
+
+                    // Recommendation (AI Action)
+                    if (alert.recommendation) {
+                        checkPageOverflow(20);
+                        const recText = `AI Action: ${alert.recommendation}`;
+                        const splitRec = doc.splitTextToSize(recText, pageWidth - margin * 2 - 15);
+                        doc.setFont('helvetica', 'normal');
+                        doc.setFontSize(9);
+                        doc.setTextColor(15, 23, 42);
+                        doc.setDrawColor(239, 68, 68);
+                        doc.setLineWidth(0.5);
+                        doc.line(margin + 5, y - 2, margin + 5, y + (splitRec.length * 4.5) - 2);
+                        doc.text(splitRec, margin + 8, y);
+                        doc.setLineWidth(0.2); // reset to default
+                        y += (splitRec.length * 4.5) + 6;
+                    }
+                    y += 4;
+                });
+            } else {
+                addText('No graduate threat alerts identified.', margin + 5, { fontSize: 10, color: 'gray' });
+                y += 5;
+            }
+
+            y += 4;
+
+
+            doc.addPage();
+            y = margin;
+
+            addText('VII. AI ACTIONABLE RECOMMENDATIONS', margin, { fontSize: 14, fontStyle: 'bold', color: 'purple' });
             y += 10;
 
             if (!recommendations || recommendations.length === 0) {
@@ -998,7 +1113,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
             doc.addPage();
             y = margin;
 
-            addText('VI. EXISTING CURRICULUM STRUCTURE', margin, { fontSize: 14, fontStyle: 'bold', color: 'purple' });
+            addText('VIII. EXISTING CURRICULUM STRUCTURE', margin, { fontSize: 14, fontStyle: 'bold', color: 'purple' });
             y += 10;
 
             if (fullCourseData?.semesters && fullCourseData.semesters.length > 0) {
@@ -1329,7 +1444,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                                         marginTop: '10px',
                                         width: 'fit-content'
                                     }}>
-                                        <span>📢</span>
+
                                         <span>
                                             {overview.kpis.evidence_status === 'insufficient'
                                                 ? `Insufficient program-specific evidence. Only ${overview.kpis.student_count || 0} relevant student responses and ${overview.kpis.industry_count || 0} relevant industry responses were found.`
@@ -1482,12 +1597,12 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
 
                                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px solid rgba(0,0,0,0.04)', paddingTop: '10px', fontSize: '11.5px', color: '#64748B' }}>
                                                         <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
-                                                            <span>🏢 Industry: <strong>{sub.relevant_industry_responses}/{sub.total_industry_responses} ({sub.industry_pct}%)</strong></span>
-                                                            <span>🎓 Student: <strong>{sub.relevant_student_responses}/{sub.total_student_responses} ({sub.student_pct}%)</strong></span>
+                                                            <span>Industry: <strong>{sub.relevant_industry_responses}/{sub.total_industry_responses} ({sub.industry_pct}%)</strong></span>
+                                                            <span>Student: <strong>{sub.relevant_student_responses}/{sub.total_student_responses} ({sub.student_pct}%)</strong></span>
                                                         </div>
                                                         <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', color: '#475569' }}>
-                                                            <span>📖 Curriculum: <strong style={{ color: sub.curriculum_coverage_status === 'Not Covered' ? '#EF4444' : '#10B981' }}>{sub.curriculum_coverage_status}</strong></span>
-                                                            <span>⚡ Confidence: <strong>{sub.evidence_confidence}</strong></span>
+                                                            <span>Curriculum: <strong style={{ color: sub.curriculum_coverage_status === 'Not Covered' ? '#EF4444' : '#10B981' }}>{sub.curriculum_coverage_status}</strong></span>
+                                                            <span>Confidence: <strong>{sub.evidence_confidence}</strong></span>
                                                         </div>
                                                         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '4px' }}>
                                                             {sub.evidence_sources && sub.evidence_sources.map((src: string, i: number) => (
@@ -1495,7 +1610,7 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                                                             ))}
                                                         </div>
                                                         <div style={{ marginTop: '4px' }}>
-                                                            🔑 Skills: <strong style={{ color: '#475569' }}>{sub.skills.join(', ')}</strong>
+                                                            Skills: <strong style={{ color: '#475569' }}>{sub.skills.join(', ')}</strong>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1662,87 +1777,87 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                                     );
                                 })()}
                             </div>
-                            
+
                             {/* Preferred Learning & Training Methods */}
                             <div className="ai-chart-card" style={{ marginTop: '20px' }}>
-                                    <h4>Preferred Learning & Training Methods</h4>
-                                    <p className="text-slate-400 text-xs mb-4" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Teaching and training modes preferred by applicants and employers ranked by weighted overall demand (70% Industry / 30% Student).</p>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '12px' }}>
-                                        {(() => {
-                                            const studentMethods = overview.learning_preferences_data?.student_methods || [];
-                                            const industryPractices = overview.learning_preferences_data?.industry_practices || [];
+                                <h4>Preferred Learning & Training Methods</h4>
+                                <p className="text-slate-400 text-xs mb-4" style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: 500 }}>Teaching and training modes preferred by applicants and employers ranked by weighted overall demand (70% Industry / 30% Student).</p>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '12px' }}>
+                                    {(() => {
+                                        const studentMethods = overview.learning_preferences_data?.student_methods || [];
+                                        const industryPractices = overview.learning_preferences_data?.industry_practices || [];
 
-                                            const methodMap: Record<string, { student: number; industry: number }> = {};
+                                        const methodMap: Record<string, { student: number; industry: number }> = {};
 
-                                            studentMethods.forEach((m: any) => {
-                                                const name = m.name;
-                                                if (!methodMap[name]) {
-                                                    methodMap[name] = { student: 0, industry: 0 };
-                                                }
-                                                methodMap[name].student = m.value;
-                                            });
-
-                                            industryPractices.forEach((p: any) => {
-                                                const name = p.name;
-                                                if (!methodMap[name]) {
-                                                    methodMap[name] = { student: 0, industry: 0 };
-                                                }
-                                                methodMap[name].industry = p.value;
-                                            });
-
-                                            const combinedMethods = Object.keys(methodMap).map(name => {
-                                                const { student, industry } = methodMap[name];
-                                                const overallVal = Math.round((industry * 0.70) + (student * 0.30));
-                                                const studentMatch = studentMethods.find((m: any) => m.name === name);
-                                                const alignmentLevel = studentMatch?.alignment_level || (overallVal >= 15 ? 'High' : (overallVal >= 8 ? 'Medium' : 'Low'));
-
-                                                return {
-                                                    name,
-                                                    studentVal: student,
-                                                    industryVal: industry,
-                                                    overallVal,
-                                                    alignment_level: alignmentLevel
-                                                };
-                                            });
-
-                                            const topMethods = combinedMethods
-                                                .sort((a, b) => b.overallVal - a.overallVal)
-                                                .slice(0, 4);
-
-                                            if (topMethods.length === 0) {
-                                                return <div className="text-center text-slate-400 py-6 text-sm">Insufficient data points.</div>;
+                                        studentMethods.forEach((m: any) => {
+                                            const name = m.name;
+                                            if (!methodMap[name]) {
+                                                methodMap[name] = { student: 0, industry: 0 };
                                             }
+                                            methodMap[name].student = m.value;
+                                        });
 
-                                            return topMethods.map((item: any, idx: number) => (
-                                                <div key={idx} style={{
-                                                    borderBottom: '1px solid #F1F5F9',
-                                                    paddingBottom: '12px',
-                                                    fontSize: '13px'
-                                                }}>
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                                                        <span style={{ fontWeight: 700, color: '#1E293B' }}>{item.name}</span>
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                            <span style={{ fontWeight: 800, color: 'var(--primary-color)' }}>{item.overallVal}% Overall Demand</span>
-                                                            <span style={{
-                                                                backgroundColor: item.alignment_level === 'High' ? '#DCFCE7' : (item.alignment_level === 'Medium' ? '#FEF3C7' : '#F1F5F9'),
-                                                                color: item.alignment_level === 'High' ? '#15803D' : (item.alignment_level === 'Medium' ? '#B45309' : '#475569'),
-                                                                padding: '2px 6px',
-                                                                borderRadius: '6px',
-                                                                fontSize: '10px',
-                                                                fontWeight: 700
-                                                            }}>
-                                                                {item.alignment_level} Alignment
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                    <div className="bar-bg" style={{ height: '8px', backgroundColor: '#F3F4F6', borderRadius: '4px', margin: '4px 0 0 0' }}>
-                                                        <div className="bar-fill purple" style={{ width: `${item.overallVal}%`, height: '100%', backgroundColor: '#8B5CF6', borderRadius: '4px' }}></div>
+                                        industryPractices.forEach((p: any) => {
+                                            const name = p.name;
+                                            if (!methodMap[name]) {
+                                                methodMap[name] = { student: 0, industry: 0 };
+                                            }
+                                            methodMap[name].industry = p.value;
+                                        });
+
+                                        const combinedMethods = Object.keys(methodMap).map(name => {
+                                            const { student, industry } = methodMap[name];
+                                            const overallVal = Math.round((industry * 0.70) + (student * 0.30));
+                                            const studentMatch = studentMethods.find((m: any) => m.name === name);
+                                            const alignmentLevel = studentMatch?.alignment_level || (overallVal >= 15 ? 'High' : (overallVal >= 8 ? 'Medium' : 'Low'));
+
+                                            return {
+                                                name,
+                                                studentVal: student,
+                                                industryVal: industry,
+                                                overallVal,
+                                                alignment_level: alignmentLevel
+                                            };
+                                        });
+
+                                        const topMethods = combinedMethods
+                                            .sort((a, b) => b.overallVal - a.overallVal)
+                                            .slice(0, 4);
+
+                                        if (topMethods.length === 0) {
+                                            return <div className="text-center text-slate-400 py-6 text-sm">Insufficient data points.</div>;
+                                        }
+
+                                        return topMethods.map((item: any, idx: number) => (
+                                            <div key={idx} style={{
+                                                borderBottom: '1px solid #F1F5F9',
+                                                paddingBottom: '12px',
+                                                fontSize: '13px'
+                                            }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                                                    <span style={{ fontWeight: 700, color: '#1E293B' }}>{item.name}</span>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                        <span style={{ fontWeight: 800, color: 'var(--primary-color)' }}>{item.overallVal}% Overall Demand</span>
+                                                        <span style={{
+                                                            backgroundColor: item.alignment_level === 'High' ? '#DCFCE7' : (item.alignment_level === 'Medium' ? '#FEF3C7' : '#F1F5F9'),
+                                                            color: item.alignment_level === 'High' ? '#15803D' : (item.alignment_level === 'Medium' ? '#B45309' : '#475569'),
+                                                            padding: '2px 6px',
+                                                            borderRadius: '6px',
+                                                            fontSize: '10px',
+                                                            fontWeight: 700
+                                                        }}>
+                                                            {item.alignment_level} Alignment
+                                                        </span>
                                                     </div>
                                                 </div>
-                                            ));
-                                        })()}
-                                    </div>
+                                                <div className="bar-bg" style={{ height: '8px', backgroundColor: '#F3F4F6', borderRadius: '4px', margin: '4px 0 0 0' }}>
+                                                    <div className="bar-fill purple" style={{ width: `${item.overallVal}%`, height: '100%', backgroundColor: '#8B5CF6', borderRadius: '4px' }}></div>
+                                                </div>
+                                            </div>
+                                        ));
+                                    })()}
                                 </div>
+                            </div>
                         </div>
                     )}
                 </div>
@@ -1905,115 +2020,118 @@ const ProgramDashboard: React.FC<{ course: Course, onBack: () => void }> = ({ co
                                 </div>
                             )}
                         </div>
-                                    {/* AI Career Paths & Emerging Tech Alerts Section */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', marginTop: '24px' }}>
-                    
-                    {/* Widget 1: Career Path Readiness Predictor */}
-                    <div className="ai-chart-card" style={{ margin: 0, border: '1px solid #E2E8F0', background: '#FFFFFF', display: 'flex', flexDirection: 'column', width: '100%' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-                            <div style={{ backgroundColor: '#F3E8FF', color: 'var(--primary-color)', padding: '10px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <Award size={20} />
+                        {/* AI Career Paths & Emerging Tech Alerts Section */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', marginTop: '24px' }}>
+
+                            {/* Widget 1: Career Path Readiness Predictor */}
+                            <div className="ai-chart-card" style={{ margin: 0, border: '1px solid #E2E8F0', background: '#FFFFFF', display: 'flex', flexDirection: 'column', width: '100%' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                                    <div style={{ backgroundColor: '#F3E8FF', color: 'var(--primary-color)', padding: '10px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <Award size={20} />
+                                    </div>
+                                    <div>
+                                        <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#1E293B', margin: 0 }}>Career Path Readiness Predictor</h3>
+                                        <p style={{ fontSize: '12px', color: '#64748B', margin: '2px 0 0 0', fontWeight: 500 }}>Predictive alignment of curriculum against professional job roles</p>
+                                    </div>
+                                </div>
+
+                                {(!overview.career_readiness || overview.career_readiness.length === 0) ? (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '18px 20px', minHeight: '120px' }}>
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
+                                        <span style={{ fontSize: '13px', color: '#64748B', fontWeight: 500 }}>No career paths matched for this program.</span>
+                                    </div>
+                                ) : (
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
+                                        {overview.career_readiness.map((path: any) => (
+                                            <div key={path.role} style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '14px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                                                <div>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                                        <span style={{ fontSize: '13.5px', fontWeight: 700, color: '#1E293B' }}>{path.role}</span>
+                                                        <span style={{
+                                                            fontSize: '13px', fontWeight: 800,
+                                                            color: path.readiness >= 75 ? '#059669' : (path.readiness >= 50 ? '#D97706' : '#DC2626')
+                                                        }}>{path.readiness}% Taught</span>
+                                                    </div>
+
+                                                    {/* Progress bar */}
+                                                    <div style={{ height: '7px', borderRadius: '999px', background: '#E2E8F0', overflow: 'hidden', marginBottom: '10px' }}>
+                                                        <div style={{
+                                                            height: '100%', borderRadius: '999px',
+                                                            background: path.readiness >= 75 ? 'linear-gradient(90deg, #10B981, #34D399)' : (path.readiness >= 50 ? 'linear-gradient(90deg, #F59E0B, #FBBF24)' : 'linear-gradient(90deg, #EF4444, #F87171)'),
+                                                            width: `${path.readiness}%`, transition: 'width 0.6s ease'
+                                                        }} />
+                                                    </div>
+                                                </div>
+
+                                                {/* Matched / Missing Domains details */}
+                                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '6px' }}>
+                                                    {path.matched_domains.map((d: string) => (
+                                                        <span key={d} style={{ background: '#E0F2FE', color: '#0369A1', border: '1px solid #BAE6FD', fontSize: '10px', fontWeight: 600, padding: '2px 8px', borderRadius: '20px' }}>
+                                                            ✓ {d}
+                                                        </span>
+                                                    ))}
+                                                    {path.missing_domains.map((d: string) => (
+                                                        <span key={d} style={{ background: '#FEE2E2', color: '#991B1B', border: '1px solid #FCA5A5', fontSize: '10px', fontWeight: 600, padding: '2px 8px', borderRadius: '20px' }}>
+                                                            ✕ {d}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
-                            <div>
-                                <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#1E293B', margin: 0 }}>AI Career Path Readiness Predictor</h3>
-                                <p style={{ fontSize: '12px', color: '#64748B', margin: '2px 0 0 0', fontWeight: 500 }}>Predictive alignment of curriculum against professional job roles</p>
+
+                            {/* Widget 2: AI Graduate Threat Alerts */}
+                            <div className="ai-chart-card" style={{ margin: 0, border: '1px solid #FEE2E2', background: 'linear-gradient(135deg, #FFF5F5 0%, #FFF 100%)', display: 'flex', flexDirection: 'column', width: '100%' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                                    <div style={{ backgroundColor: '#FEE2E2', color: '#DC2626', padding: '10px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
+                                    </div>
+                                    <div>
+                                        <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#991B1B', margin: 0 }}>Graduate Threat Alerts</h3>
+                                        <p style={{ fontSize: '12px', color: '#B91C1C', margin: '2px 0 0 0', fontWeight: 500 }}>Common graduate skill gaps and critical threats identified in industry surveys</p>
+                                    </div>
+                                </div>
+
+                                {(!overview.emerging_tech_alerts || overview.emerging_tech_alerts.length === 0) ? (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '18px 20px', minHeight: '120px' }}>
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
+                                        <span style={{ fontSize: '13px', color: '#065F46', fontWeight: 500 }}>Syllabus is fully aligned with all active industry technology demands.</span>
+                                    </div>
+                                ) : (
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
+                                        {overview.emerging_tech_alerts.map((alert: any) => (
+                                            <div key={alert.tech} style={{ background: '#FFFFFF', border: '1px solid #FEE2E2', borderRadius: '12px', padding: '14px 16px', boxShadow: '0 1px 3px rgba(220, 38, 38, 0.03)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                                                <div>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', marginBottom: '6px' }}>
+                                                        <span style={{ fontSize: '14px', fontWeight: 800, color: '#991B1B' }}>{alert.tech}</span>
+                                                        <span style={{
+                                                            fontSize: '10.5px', fontWeight: 700, padding: '2px 8px', borderRadius: '20px',
+                                                            background: alert.severity === 'Critical' ? '#FEE2E2' : '#FEF3C7',
+                                                            color: alert.severity === 'Critical' ? '#991B1B' : '#D97706',
+                                                            border: `1px solid ${alert.severity === 'Critical' ? '#FCA5A5' : '#FCD34D'}`,
+                                                            whiteSpace: 'nowrap',
+                                                            flexShrink: 0
+                                                        }}>{alert.severity} Risk</span>
+                                                    </div>
+
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#7F1D1D', fontWeight: 600, margin: '4px 0 10px 0' }}>
+                                                        <span>Prevalence in Industry Surveys:</span>
+                                                        <span style={{ color: '#DC2626', fontWeight: 800 }}>{alert.demand_pct}%</span>
+                                                    </div>
+                                                </div>
+
+                                                <div style={{ fontSize: '12px', color: '#4B5563', lineHeight: 1.5, background: '#F9FAFB', padding: '8px 12px', borderRadius: '8px', borderLeft: '3px solid #DC2626', marginTop: '6px' }}>
+                                                    <strong>AI Action:</strong> {alert.recommendation}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         </div>
-
-                        {(!overview.career_readiness || overview.career_readiness.length === 0) ? (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '18px 20px', minHeight: '120px' }}>
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
-                                <span style={{ fontSize: '13px', color: '#64748B', fontWeight: 500 }}>No career paths matched for this program.</span>
-                            </div>
-                        ) : (
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
-                                {overview.career_readiness.map((path: any) => (
-                                    <div key={path.role} style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '14px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                                        <div>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                                                <span style={{ fontSize: '13.5px', fontWeight: 700, color: '#1E293B' }}>{path.role}</span>
-                                                <span style={{ 
-                                                    fontSize: '13px', fontWeight: 800, 
-                                                    color: path.readiness >= 75 ? '#059669' : (path.readiness >= 50 ? '#D97706' : '#DC2626')
-                                                }}>{path.readiness}% Taught</span>
-                                            </div>
-                                            
-                                            {/* Progress bar */}
-                                            <div style={{ height: '7px', borderRadius: '999px', background: '#E2E8F0', overflow: 'hidden', marginBottom: '10px' }}>
-                                                <div style={{ 
-                                                    height: '100%', borderRadius: '999px', 
-                                                    background: path.readiness >= 75 ? 'linear-gradient(90deg, #10B981, #34D399)' : (path.readiness >= 50 ? 'linear-gradient(90deg, #F59E0B, #FBBF24)' : 'linear-gradient(90deg, #EF4444, #F87171)'),
-                                                    width: `${path.readiness}%`, transition: 'width 0.6s ease' 
-                                                }} />
-                                            </div>
-                                        </div>
-
-                                        {/* Matched / Missing Domains details */}
-                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '6px' }}>
-                                            {path.matched_domains.map((d: string) => (
-                                                <span key={d} style={{ background: '#E0F2FE', color: '#0369A1', border: '1px solid #BAE6FD', fontSize: '10px', fontWeight: 600, padding: '2px 8px', borderRadius: '20px' }}>
-                                                    ✓ {d}
-                                                </span>
-                                            ))}
-                                            {path.missing_domains.map((d: string) => (
-                                                <span key={d} style={{ background: '#FEE2E2', color: '#991B1B', border: '1px solid #FCA5A5', fontSize: '10px', fontWeight: 600, padding: '2px 8px', borderRadius: '20px' }}>
-                                                    ✕ {d}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
                     </div>
-
-                    {/* Widget 2: AI Graduate Threat Alerts */}
-                    <div className="ai-chart-card" style={{ margin: 0, border: '1px solid #FEE2E2', background: 'linear-gradient(135deg, #FFF5F5 0%, #FFF 100%)', display: 'flex', flexDirection: 'column', width: '100%' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-                            <div style={{ backgroundColor: '#FEE2E2', color: '#DC2626', padding: '10px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                            </div>
-                            <div>
-                                <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#991B1B', margin: 0 }}>AI Graduate Threat Alerts</h3>
-                                <p style={{ fontSize: '12px', color: '#B91C1C', margin: '2px 0 0 0', fontWeight: 500 }}>Common graduate skill gaps and critical threats identified in industry surveys</p>
-                            </div>
-                        </div>
-
-                        {(!overview.emerging_tech_alerts || overview.emerging_tech_alerts.length === 0) ? (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '18px 20px', minHeight: '120px' }}>
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
-                                <span style={{ fontSize: '13px', color: '#065F46', fontWeight: 500 }}>Syllabus is fully aligned with all active industry technology demands.</span>
-                            </div>
-                        ) : (
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
-                                {overview.emerging_tech_alerts.map((alert: any) => (
-                                    <div key={alert.tech} style={{ background: '#FFFFFF', border: '1px solid #FEE2E2', borderRadius: '12px', padding: '14px 16px', boxShadow: '0 1px 3px rgba(220, 38, 38, 0.03)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                                        <div>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                                                <span style={{ fontSize: '14px', fontWeight: 800, color: '#991B1B' }}>{alert.tech}</span>
-                                                <span style={{ 
-                                                    fontSize: '10.5px', fontWeight: 700, padding: '2px 8px', borderRadius: '20px',
-                                                    background: alert.severity === 'Critical' ? '#FEE2E2' : '#FEF3C7',
-                                                    color: alert.severity === 'Critical' ? '#991B1B' : '#D97706',
-                                                    border: `1px solid ${alert.severity === 'Critical' ? '#FCA5A5' : '#FCD34D'}`
-                                                }}>{alert.severity} Risk</span>
-                                            </div>
-                                            
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#7F1D1D', fontWeight: 600, margin: '4px 0 10px 0' }}>
-                                                <span>Prevalence in Industry Surveys:</span>
-                                                <span style={{ color: '#DC2626', fontWeight: 800 }}>{alert.demand_pct}%</span>
-                                            </div>
-                                        </div>
-                                        
-                                        <div style={{ fontSize: '12px', color: '#4B5563', lineHeight: 1.5, background: '#F9FAFB', padding: '8px 12px', borderRadius: '8px', borderLeft: '3px solid #DC2626', marginTop: '6px' }}>
-                                            <strong>AI Action:</strong> {alert.recommendation}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                </div>      </div>
                 </div>
             </div>
 
