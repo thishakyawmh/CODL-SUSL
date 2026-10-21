@@ -503,6 +503,7 @@ export const announcementService = {
     create: async (data: FormData | {
         course_id?: number | null;
         batch?: string | null;
+        group?: string | null;
         title: string;
         desc: string;
         type: string;

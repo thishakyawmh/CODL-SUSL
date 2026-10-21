@@ -13,18 +13,28 @@ export const CourseAnnouncements: React.FC = () => {
     React.useEffect(() => {
         const fetchStudentBatchAndAnnouncements = async () => {
             let activeBatch = 'Batch 01';
+            let activeGroup: string | null = null;
             try {
                 const response = await courseService.getStudentCourses();
                 const matched = response.find((c: any) => c.id.toString() === course.id.toString());
-                if (matched && matched.pivot?.batch) {
-                    activeBatch = matched.pivot.batch;
+                if (matched) {
+                    if (matched.pivot?.batch) {
+                        activeBatch = matched.pivot.batch;
+                    }
+                    if (matched.pivot?.group) {
+                        activeGroup = matched.pivot.group;
+                    }
                 }
             } catch (e) {
                 console.error("Failed to fetch student batch for announcements:", e);
             }
 
             try {
-                const data = await announcementService.getAll({ course_id: course.id, batch: activeBatch });
+                const data = await announcementService.getAll({ 
+                    course_id: course.id, 
+                    batch: activeBatch, 
+                    group: activeGroup || undefined 
+                });
                 const processed = data.map((ann: any) => {
                     const annType = ann.type || 'Notice';
                     const iconColor = annType === 'Important' ? '#EF4444' : (annType === 'Update' ? '#10B981' : '#3B82F6');
@@ -35,6 +45,7 @@ export const CourseAnnouncements: React.FC = () => {
                         title: ann.title,
                         desc: ann.desc,
                         type: annType,
+                        group: ann.group,
                         date: new Date(ann.created_at || new Date()).toLocaleDateString('en-US', {
                             month: 'short',
                             day: 'numeric',
@@ -86,6 +97,11 @@ export const CourseAnnouncements: React.FC = () => {
                                         <span className="ann-card-tag" style={{ color: ann.iconColor, backgroundColor: `${ann.iconColor}10` }}>
                                             {ann.type}
                                         </span>
+                                        {ann.group && (
+                                            <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '10px', background: '#EDE9FE', color: '#6D28D9', border: '1px solid #DDD6FE' }}>
+                                                {ann.group}
+                                            </span>
+                                        )}
                                         <span className="ann-card-date">{ann.date}</span>
                                     </div>
                                     <h3 className="ann-card-title">{ann.title}</h3>

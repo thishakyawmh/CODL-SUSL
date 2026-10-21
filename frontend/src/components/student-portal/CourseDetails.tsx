@@ -45,6 +45,7 @@ export const CourseDetails: React.FC = () => {
 
         const loadData = async () => {
             let activeBatch = 'Batch 01';
+            let activeGroup: string | null = null;
             try {
                 const response = await courseService.getStudentCourses({ refresh: true });
                 const matched = response.find((c: any) => c.id.toString() === course.id.toString());
@@ -54,6 +55,7 @@ export const CourseDetails: React.FC = () => {
                         setStudentBatch(matched.pivot.batch);
                     }
                     if (matched.pivot?.group) {
+                        activeGroup = matched.pivot.group;
                         setStudentGroup(matched.pivot.group);
                     } else {
                         setStudentGroup(null);
@@ -83,7 +85,11 @@ export const CourseDetails: React.FC = () => {
 
 
             try {
-                const data = await announcementService.getAll({ course_id: course.id, batch: activeBatch });
+                const data = await announcementService.getAll({ 
+                    course_id: course.id, 
+                    batch: activeBatch, 
+                    group: activeGroup || undefined 
+                });
                 const processed = data.map((ann: any) => {
                     const annType = ann.type || 'Notice';
                     const iconColor = annType === 'Important' ? '#EF4444' : (annType === 'Update' ? '#10B981' : '#3B82F6');
@@ -91,6 +97,7 @@ export const CourseDetails: React.FC = () => {
                     return {
                         ...ann,
                         type: annType,
+                        group: ann.group,
                         icon: annType === 'Important' ? <Bell size={18} /> : (annType === 'Update' ? <MessageSquare size={18} /> : <Info size={18} />),
                         iconColor,
                         bgColor,
@@ -346,6 +353,11 @@ export const CourseDetails: React.FC = () => {
                                             <div className="ann-meta">
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                     <span className="ann-tag" style={{ color: ann.iconColor, backgroundColor: `${ann.iconColor}10` }}>{ann.type}</span>
+                                                    {ann.group && (
+                                                        <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '10px', background: '#EDE9FE', color: '#6D28D9', border: '1px solid #DDD6FE' }}>
+                                                            {ann.group}
+                                                        </span>
+                                                    )}
                                                     <span className="ann-date">{ann.date}</span>
                                                 </div>
                                             </div>

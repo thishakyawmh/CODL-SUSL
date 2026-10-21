@@ -16,7 +16,7 @@ class CourseController extends Controller
             'category',
             'secretary',
             'coordinator',
-            'batches:id,course_id,name,start_date,registration_deadline,max_enrollments,subtitle,status'
+            'batches:id,course_id,name,start_date,registration_deadline,max_enrollments,subtitle,status,groups'
         ])->withCount(['batches', 'students']);
         
         if ($user && $user->role === 'secretary') {

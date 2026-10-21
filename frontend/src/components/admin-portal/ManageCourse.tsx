@@ -216,6 +216,7 @@ export const ManageCourse: React.FC = () => {
                     bgColor: ann.type === 'Important' ? '#FEF2F2' : (ann.type === 'Update' ? '#F0FDF4' : '#EFF6FF'),
                     iconColor: ann.type === 'Important' ? '#EF4444' : (ann.type === 'Update' ? '#22C55E' : '#3B82F6'),
                     batch: ann.batch || undefined,
+                    group: ann.group || undefined,
                     attachment_url: ann.attachment_url,
                     attachment_name: ann.attachment_name,
                     attachment_size: ann.attachment_size
@@ -671,6 +672,7 @@ export const ManageCourse: React.FC = () => {
     const [annTitle, setAnnTitle] = useState('');
     const [annContent, setAnnContent] = useState('');
     const [annType, setAnnType] = useState('Notice');
+    const [annGroup, setAnnGroup] = useState('');
     const [annFile, setAnnFile] = useState<File | null>(null);
     const [isBroadcasting, setIsBroadcasting] = useState(false);
     const [announcementsList, setAnnouncementsList] = useState<any[]>([]);
@@ -697,6 +699,7 @@ export const ManageCourse: React.FC = () => {
                 type: annType,
                 course_id: parseInt(id!),
                 batch: selectedBatch || null,
+                group: annGroup || null,
                 file: annFile
             });
 
@@ -709,6 +712,7 @@ export const ManageCourse: React.FC = () => {
                 bgColor: annType === 'Important' ? '#FEF2F2' : (annType === 'Update' ? '#F0FDF4' : '#EFF6FF'),
                 iconColor: annType === 'Important' ? '#EF4444' : (annType === 'Update' ? '#22C55E' : '#3B82F6'),
                 batch: selectedBatch || undefined,
+                group: annGroup || undefined,
                 attachment_url: response.attachment_url,
                 attachment_name: response.attachment_name,
                 attachment_size: response.attachment_size
@@ -717,8 +721,9 @@ export const ManageCourse: React.FC = () => {
             setAnnouncementsList([newAnn, ...announcementsList]);
             setAnnTitle('');
             setAnnContent('');
+            setAnnGroup('');
             setAnnFile(null);
-            toast.success('Announcement broadcasted successfully to all registered students!');
+            toast.success(annGroup ? `Announcement broadcasted to ${annGroup} successfully!` : 'Announcement broadcasted successfully to all registered students!');
         } catch (err) {
             console.error('Failed to broadcast announcement:', err);
             toast.error('Failed to broadcast announcement.');
@@ -3290,8 +3295,8 @@ export const ManageCourse: React.FC = () => {
                                         <h3>Batch Announcements</h3>
                                     </div>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '20px 0' }}>
-                                        <div style={{ display: 'flex', gap: '20px', width: '100%' }}>
-                                            <div className="cm-form-group" style={{ flex: 1 }}>
+                                        <div style={{ display: 'flex', gap: '20px', width: '100%', flexWrap: 'wrap' }}>
+                                            <div className="cm-form-group" style={{ flex: 1, minWidth: '220px' }}>
                                                 <label>Announcement Title</label>
                                                 <input
                                                     type="text"
@@ -3301,7 +3306,7 @@ export const ManageCourse: React.FC = () => {
                                                     onChange={(e) => setAnnTitle(e.target.value)}
                                                 />
                                             </div>
-                                            <div className="cm-form-group" style={{ width: '200px' }}>
+                                            <div className="cm-form-group" style={{ width: '180px' }}>
                                                 <label>Type / Priority</label>
                                                 <select
                                                     className="admin-input"
@@ -3313,6 +3318,26 @@ export const ManageCourse: React.FC = () => {
                                                     <option value="Update">Update (Green)</option>
                                                 </select>
                                             </div>
+                                            {(() => {
+                                                const currentBatchForAnn = batches.find(b => b.name === selectedBatch);
+                                                const batchAnnGroups = currentBatchForAnn?.groups || [];
+                                                if (batchAnnGroups.length === 0) return null;
+                                                return (
+                                                    <div className="cm-form-group" style={{ width: '180px' }}>
+                                                        <label>Target Group (Optional)</label>
+                                                        <select
+                                                            className="admin-input"
+                                                            value={annGroup}
+                                                            onChange={(e) => setAnnGroup(e.target.value)}
+                                                        >
+                                                            <option value="">All Groups</option>
+                                                            {batchAnnGroups.map((g, idx) => (
+                                                                <option key={idx} value={g}>{g}</option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
+                                                );
+                                            })()}
                                         </div>
                                         <div className="cm-form-group" style={{ maxWidth: '100%' }}>
                                             <label>Message Content</label>
@@ -3430,6 +3455,21 @@ export const ManageCourse: React.FC = () => {
                                                                     >
                                                                         {ann.type}
                                                                     </span>
+                                                                    {ann.group && (
+                                                                        <span
+                                                                            style={{
+                                                                                fontSize: '11px',
+                                                                                fontWeight: 700,
+                                                                                padding: '2px 8px',
+                                                                                borderRadius: '4px',
+                                                                                color: '#6D28D9',
+                                                                                background: '#EDE9FE',
+                                                                                border: '1px solid #DDD6FE'
+                                                                            }}
+                                                                        >
+                                                                            {ann.group}
+                                                                        </span>
+                                                                    )}
                                                                     <span style={{ fontSize: '12px', color: '#94A3B8' }}>{ann.date}</span>
                                                                 </div>
                                                                 <h4 style={{ margin: '0 0 6px 0', fontSize: '15px', fontWeight: 700, color: '#1E293B' }}>{ann.title}</h4>

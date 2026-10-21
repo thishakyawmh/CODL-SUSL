@@ -20,12 +20,16 @@ interface Announcement {
     attachment_size?: string | null;
     course_id?: number | null;
     batch?: string | null;
+    group?: string | null;
+    author_id?: number | null;
+    author_role?: string | null;
     course_title?: string | null;
     course_code?: string | null;
 }
 
 export const AdminAnnouncements: React.FC = () => {
     const currentUser = getCurrentAdminUser();
+    const isCoordinatorOrSecretary = currentUser.role === 'coordinator' || currentUser.role === 'secretary';
     const [announcements, setAnnouncements] = useState<Announcement[]>([]);
     const [courses, setCourses] = useState<any[]>([]);
     const [showPublishForm, setShowPublishForm] = useState(false);
@@ -39,6 +43,7 @@ export const AdminAnnouncements: React.FC = () => {
     const [targetScope, setTargetScope] = useState<'global' | 'course'>('global');
     const [selectedCourseId, setSelectedCourseId] = useState<string>('');
     const [selectedBatch, setSelectedBatch] = useState<string>('');
+    const [selectedGroup, setSelectedGroup] = useState<string>('');
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [fileError, setFileError] = useState<string | null>(null);
     const [isDragging, setIsDragging] = useState(false);
@@ -85,6 +90,9 @@ export const AdminAnnouncements: React.FC = () => {
                     attachment_size: ann.attachment_size,
                     course_id: ann.course_id,
                     batch: ann.batch,
+                    group: ann.group,
+                    author_id: ann.author_id,
+                    author_role: ann.author_role,
                     course_title: cInfo?.title || (ann.course ? ann.course.title : null),
                     course_code: cInfo?.code || (ann.course ? ann.course.code : null)
                 };
@@ -144,13 +152,18 @@ export const AdminAnnouncements: React.FC = () => {
                 type: annType,
                 course_id: targetScope === 'course' && selectedCourseId ? Number(selectedCourseId) : null,
                 batch: targetScope === 'course' && selectedBatch ? selectedBatch : null,
+                group: targetScope === 'course' && selectedBatch && selectedGroup ? selectedGroup : null,
                 file: selectedFile
             });
 
             setToastMessage(
                 targetScope === 'global' 
-                    ? 'Global announcement broadcasted successfully!' 
-                    : 'Course announcement published successfully!'
+                    ? (isCoordinatorOrSecretary 
+                        ? 'Broadcast sent to all students enrolled across your assigned courses!' 
+                        : 'Global announcement broadcasted successfully!')
+                    : (selectedGroup 
+                        ? `Notice posted for ${selectedGroup} successfully!` 
+                        : 'Course announcement published successfully!')
             );
             setShowSuccessToast(true);
             setTimeout(() => setShowSuccessToast(false), 3500);
@@ -162,6 +175,7 @@ export const AdminAnnouncements: React.FC = () => {
             setFileError(null);
             setSelectedCourseId('');
             setSelectedBatch('');
+            setSelectedGroup('');
             setTargetScope('global');
             setShowPublishForm(false);
 
@@ -207,6 +221,20 @@ export const AdminAnnouncements: React.FC = () => {
 
     const selectedCourseObj = courses.find(c => String(c.id) === String(selectedCourseId));
     const availableBatches: string[] = selectedCourseObj?.batches?.map((b: any) => b.name) || [];
+    const selectedBatchObj = selectedCourseObj?.batches?.find((b: any) => b.name === selectedBatch);
+
+    const availableGroups: string[] = React.useMemo(() => {
+        if (!selectedBatchObj || !selectedBatchObj.groups) return [];
+        if (Array.isArray(selectedBatchObj.groups)) return selectedBatchObj.groups;
+        if (typeof selectedBatchObj.groups === 'string') {
+            try {
+                return JSON.parse(selectedBatchObj.groups);
+            } catch {
+                return [];
+            }
+        }
+        return [];
+    }, [selectedBatchObj]);
 
     const filteredAnnouncements = announcements.filter(ann => {
         if (filterScope === 'global') return !ann.course_id;
@@ -259,8 +287,12 @@ export const AdminAnnouncements: React.FC = () => {
                                 >
                                     <Globe size={16} />
                                     <div className="scope-pill-text">
-                                        <strong>Global Broadcast</strong>
-                                        <span>Display to all registered students on their main dashboard</span>
+                                        <strong>{isCoordinatorOrSecretary ? 'Broadcast to All My Courses' : 'Global Broadcast'}</strong>
+                                        <span>
+                                            {isCoordinatorOrSecretary 
+                                                ? 'Display on the main dashboard of all students enrolled in your assigned courses' 
+                                                : 'Display to all registered students on their main dashboard'}
+                                        </span>
                                     </div>
                                 </button>
 
@@ -272,15 +304,15 @@ export const AdminAnnouncements: React.FC = () => {
                                     <BookOpen size={16} />
                                     <div className="scope-pill-text">
                                         <strong>Course Specific Notice</strong>
-                                        <span>Target students enrolled in a specific degree or batch</span>
+                                        <span>Target students enrolled in a specific degree, batch, or group</span>
                                     </div>
                                 </button>
                             </div>
                         </div>
 
-                        {/* If Course scope chosen, show course & batch picker */}
+                        {/* If Course scope chosen, show course, batch & group picker */}
                         {targetScope === 'course' && (
-                            <div className="form-grid">
+                            <div className={`form-grid ${selectedBatch ? 'three-cols' : ''}`}>
                                 <div className="form-group">
                                     <label>Select Target Course <span style={{ color: '#EF4444' }}>*</span></label>
                                     <select
@@ -288,6 +320,7 @@ export const AdminAnnouncements: React.FC = () => {
                                         onChange={(e) => {
                                             setSelectedCourseId(e.target.value);
                                             setSelectedBatch('');
+                                            setSelectedGroup('');
                                         }}
                                         required
                                     >
@@ -304,7 +337,10 @@ export const AdminAnnouncements: React.FC = () => {
                                     <label>Target Batch (Optional)</label>
                                     <select
                                         value={selectedBatch}
-                                        onChange={(e) => setSelectedBatch(e.target.value)}
+                                        onChange={(e) => {
+                                            setSelectedBatch(e.target.value);
+                                            setSelectedGroup('');
+                                        }}
                                     >
                                         <option value="">All Batches in this Course</option>
                                         {availableBatches.map(batchName => (
@@ -314,6 +350,29 @@ export const AdminAnnouncements: React.FC = () => {
                                         ))}
                                     </select>
                                 </div>
+
+                                {selectedBatch && (
+                                    <div className="form-group">
+                                        <label>Target Group (Optional)</label>
+                                        {availableGroups.length > 0 ? (
+                                            <select
+                                                value={selectedGroup}
+                                                onChange={(e) => setSelectedGroup(e.target.value)}
+                                            >
+                                                <option value="">All Groups in this Batch</option>
+                                                {availableGroups.map(groupName => (
+                                                    <option key={groupName} value={groupName}>
+                                                        {groupName}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        ) : (
+                                            <select disabled style={{ opacity: 0.6, cursor: 'not-allowed' }}>
+                                                <option>No groups defined for this batch</option>
+                                            </select>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         )}
 
@@ -485,13 +544,23 @@ export const AdminAnnouncements: React.FC = () => {
                                             </span>
 
                                             {ann.course_title ? (
-                                                <span className="course-identifier-badge" title={ann.course_title}>
-                                                    <BookOpen size={12} style={{ marginRight: '4px' }} />
-                                                    {ann.course_code || 'Course'} {ann.batch ? `• ${ann.batch}` : ''}
-                                                </span>
+                                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                                                    <span className="course-identifier-badge" title={ann.course_title}>
+                                                        <BookOpen size={12} style={{ marginRight: '4px' }} />
+                                                        {ann.course_code || 'Course'} {ann.batch ? `• ${ann.batch}` : ''}
+                                                    </span>
+                                                    {ann.group && (
+                                                        <span className="group-identifier-badge" title={`Notice targeted to ${ann.group}`}>
+                                                            {ann.group}
+                                                        </span>
+                                                    )}
+                                                </div>
                                             ) : (
                                                 <span className="global-identifier-badge">
-                                                    <Globe size={12} style={{ marginRight: '4px' }} /> Global
+                                                    <Globe size={12} style={{ marginRight: '4px' }} />
+                                                    {ann.author_role === 'coordinator' || ann.author_role === 'secretary' 
+                                                        ? 'My Courses Broadcast' 
+                                                        : 'Global'}
                                                 </span>
                                             )}
                                         </div>
