@@ -14,6 +14,7 @@ class CourseApplication extends Model
         'applicant_nic',
         'course_id',
         'batch_id',
+        'group',
         'status',
         'approval_level',
         'phone',

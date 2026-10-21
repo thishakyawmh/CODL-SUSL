@@ -58,6 +58,8 @@ const AIAnalytics = lazy(() => import('./components/admin-portal/AIAnalytics').t
 const ManageForms = lazy(() => import('./components/admin-portal/ManageForms').then(m => ({ default: m.ManageForms })));
 const AdminAnnouncements = lazy(() => import('./components/admin-portal/AdminAnnouncements').then(m => ({ default: m.AdminAnnouncements })));
 const ActivityLogs = lazy(() => import('./components/admin-portal/ActivityLogs').then(m => ({ default: m.ActivityLogs })));
+const BatchGroupManagement = lazy(() => import('./components/admin-portal/BatchGroupManagement').then(m => ({ default: m.BatchGroupManagement })));
+const BatchGroupExchangeRequests = lazy(() => import('./components/admin-portal/BatchGroupExchangeRequests').then(m => ({ default: m.BatchGroupExchangeRequests })));
 
 import { systemSettingService } from './services/apiService';
 const MaintenancePage = lazy(() => import('./components/common/MaintenancePage').then(m => ({ default: m.MaintenancePage })));
@@ -492,6 +494,14 @@ function App() {
             <Route
               path="courses/manage/:id/exams/:examId/students"
               element={<ManageExamStudents />}
+            />
+            <Route
+              path="courses/manage/:id/batches/:batchId/groups"
+              element={<BatchGroupManagement />}
+            />
+            <Route
+              path="courses/manage/:id/batches/:batchId/exchange-requests"
+              element={<BatchGroupExchangeRequests />}
             />
 
 

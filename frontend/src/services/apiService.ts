@@ -211,8 +211,16 @@ export const courseService = {
         const response = await api.get(`/courses/${courseId}/students`);
         return response.data;
     },
-    enrollStudent: async (courseId: string, data: { student_id: string; batch?: string }) => {
+    enrollStudent: async (courseId: string, data: { student_id: string; batch?: string; group?: string }) => {
         const response = await api.post(`/courses/${courseId}/enroll`, data);
+        return response.data;
+    },
+    updateStudentGroup: async (courseId: string | number, studentId: string | number, group: string | null) => {
+        const response = await api.put(`/courses/${courseId}/students/${studentId}/group`, { group });
+        return response.data;
+    },
+    exchangeStudentGroup: async (courseId: string | number, data: { target_group: string; reason?: string }) => {
+        const response = await api.post(`/student/courses/${courseId}/exchange-group`, data);
         return response.data;
     },
     unenrollStudent: async (courseId: string, studentId: string) => {
@@ -266,6 +274,18 @@ export const batchService = {
         });
         clearApiCache('materials');
         return response.data;
+    },
+    manageGroups: async (courseId: string | number, batchId: string | number, data: { groups: string[]; assignments?: { student_id: string | number; group: string | null }[] }) => {
+        const response = await api.post(`/courses/${courseId}/batches/${batchId}/groups`, data);
+        return response.data;
+    },
+    getGroupRequests: async (courseId: string | number, batchId: string | number) => {
+        const response = await api.get(`/courses/${courseId}/batches/${batchId}/group-requests`);
+        return response.data;
+    },
+    resolveGroupRequest: async (courseId: string | number, batchId: string | number, requestId: string | number, data: { action: 'approve' | 'reject'; comment?: string }) => {
+        const response = await api.post(`/courses/${courseId}/batches/${batchId}/group-requests/${requestId}/resolve`, data);
+        return response.data;
     }
 };
 
@@ -286,7 +306,7 @@ export const courseApplicationService = {
         const response = await api.post('/course-applications', data);
         return response.data;
     },
-    approve: async (id: string, data?: any) => {
+    approve: async (id: string, data?: { comment?: string; documents_verified?: any; group?: string | null }) => {
         const response = await api.post(`/course-applications/${id}/approve`, data);
         return response.data;
     },

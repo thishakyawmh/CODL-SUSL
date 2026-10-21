@@ -19,10 +19,12 @@ class Batch extends Model
         'status',
         'instructor_id',
         'materials',
+        'groups',
     ];
 
     protected $casts = [
         'materials' => 'array',
+        'groups' => 'array',
     ];
 
     public function course()

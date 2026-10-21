@@ -60,6 +60,37 @@
     color: var(--primary-color);
 }
 
+.course-group-label-wrapper {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    background-color: #F5F3FF;
+    border: 1px solid #DDD6FE;
+    color: var(--primary-color);
+}
+
+.course-group-pencil-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 3px;
+    border-radius: 4px;
+    color: var(--primary-color);
+    transition: all 0.2s ease;
+}
+
+.course-group-pencil-btn:hover {
+    background: #EDE9FE;
+    transform: scale(1.15);
+}
+
 .course-type-label.diploma {
     background-color: #F3E8FF;
     color: #9333EA;

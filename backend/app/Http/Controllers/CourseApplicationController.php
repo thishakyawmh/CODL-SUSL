@@ -19,7 +19,7 @@ class CourseApplicationController extends Controller
 
         $query = CourseApplication::with([
             'course:id,title,code',
-            'batch:id,name,course_id',
+            'batch:id,name,course_id,groups',
             'user:id,full_name,display_name,email,student_number',
             'secretaryApprover:id,full_name',
             'coordinatorApprover:id,full_name',
@@ -250,6 +250,9 @@ class CourseApplicationController extends Controller
                     $application->approved_by_coordinator = $user->id;
                     $application->coordinator_comment = $comment;
                     $application->coordinator_approved_at = now();
+                    if ($request->has('group')) {
+                        $application->group = $request->input('group') ?: null;
+                    }
                     $application->approval_level = 2;
                     $application->status = 'pending';
                     break;
@@ -344,7 +347,12 @@ class CourseApplicationController extends Controller
                     if ($newUser) {
 
                         $batchName = $application->batch ? $application->batch->name : null;
-                        $newUser->courses()->syncWithoutDetaching([$application->course_id => ['batch' => $batchName]]);
+                        $newUser->courses()->syncWithoutDetaching([
+                            $application->course_id => [
+                                'batch' => $batchName,
+                                'group' => $application->group ?? null,
+                            ]
+                        ]);
                         $application->user_id = $newUser->id;
                     }
                     break;

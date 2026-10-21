@@ -65,6 +65,7 @@ export interface CourseApplication {
     otherQualifications?: string;
     isNewApplicant?: boolean;
     documentsVerified?: { personal: boolean; educational: boolean };
+    group?: string;
 }
 
 export interface LetterRequestAdmin {
@@ -181,6 +182,7 @@ export interface AdminBatch {
     subtitle: string;
     status: string;
     subjects?: BatchSubject[]; 
+    groups?: string[];
 }
 
 export interface AdminCourse {

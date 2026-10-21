@@ -1,10 +1,11 @@
 import React from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
-import { ArrowLeft, BookOpen, FileText, Bell, MessageSquare, Info, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, BookOpen, FileText, Bell, MessageSquare, Info, ChevronLeft, ChevronRight, Pencil, Users, Check, Loader } from 'lucide-react';
 import {
     courseService,
     announcementService
 } from '../../services/apiService';
+import { toast } from '../../utils/toast';
 import './CourseDetails.css';
 
 export interface Course {
@@ -29,16 +30,52 @@ export const CourseDetails: React.FC = () => {
     const [newMaterialsCount, setNewMaterialsCount] = React.useState(0);
     const [newExamsCount, setNewExamsCount] = React.useState(0);
 
+    // Group state
+    const [studentGroup, setStudentGroup] = React.useState<string | null>(null);
+    const [pendingGroupRequest, setPendingGroupRequest] = React.useState<any>(null);
+    const [studentBatch, setStudentBatch] = React.useState<string>('');
+    const [availableGroups, setAvailableGroups] = React.useState<string[]>([]);
+    const [isExchangeModalOpen, setIsExchangeModalOpen] = React.useState(false);
+    const [selectedTargetGroup, setSelectedTargetGroup] = React.useState<string>('');
+    const [exchangeReason, setExchangeReason] = React.useState<string>('');
+    const [isSubmittingExchange, setIsSubmittingExchange] = React.useState(false);
+
     React.useEffect(() => {
         if (!course.id) return;
 
         const loadData = async () => {
             let activeBatch = 'Batch 01';
             try {
-                const response = await courseService.getStudentCourses();
+                const response = await courseService.getStudentCourses({ refresh: true });
                 const matched = response.find((c: any) => c.id.toString() === course.id.toString());
-                if (matched && matched.pivot?.batch) {
-                    activeBatch = matched.pivot.batch;
+                if (matched) {
+                    if (matched.pivot?.batch) {
+                        activeBatch = matched.pivot.batch;
+                        setStudentBatch(matched.pivot.batch);
+                    }
+                    if (matched.pivot?.group) {
+                        setStudentGroup(matched.pivot.group);
+                    } else {
+                        setStudentGroup(null);
+                    }
+                    if (matched.pending_group_request) {
+                        setPendingGroupRequest(matched.pending_group_request);
+                    } else {
+                        setPendingGroupRequest(null);
+                    }
+
+                    if (matched.batches && Array.isArray(matched.batches)) {
+                        const batchObj = matched.batches.find((b: any) => b.name === activeBatch);
+                        if (batchObj && batchObj.groups) {
+                            let parsed: string[] = [];
+                            if (Array.isArray(batchObj.groups)) {
+                                parsed = batchObj.groups;
+                            } else if (typeof batchObj.groups === 'string') {
+                                try { parsed = JSON.parse(batchObj.groups); } catch (e) { parsed = []; }
+                            }
+                            setAvailableGroups(parsed);
+                        }
+                    }
                 }
             } catch (e) {
                 console.error("Failed to fetch student batch for announcements:", e);
@@ -197,6 +234,28 @@ export const CourseDetails: React.FC = () => {
         }
     ];
 
+    const handleRequestExchange = async () => {
+        if (!selectedTargetGroup || selectedTargetGroup === studentGroup) {
+            toast.error('Please select a different group to exchange to.');
+            return;
+        }
+        try {
+            setIsSubmittingExchange(true);
+            const res = await courseService.exchangeStudentGroup(course.id, {
+                target_group: selectedTargetGroup,
+                reason: exchangeReason.trim() || undefined
+            });
+            setPendingGroupRequest(res.pending_request || { requested_group: selectedTargetGroup, status: 'pending' });
+            toast.success(res.message || `Exchange request submitted for ${selectedTargetGroup}! Awaiting staff approval.`);
+            setIsExchangeModalOpen(false);
+        } catch (err: any) {
+            console.error('Failed to exchange group:', err);
+            toast.error(err.response?.data?.message || 'Failed to exchange group. Please try again.');
+        } finally {
+            setIsSubmittingExchange(false);
+        }
+    };
+
     return (
         <div className="course-details-container">
             <div className="portal-navigation-container">
@@ -215,6 +274,27 @@ export const CourseDetails: React.FC = () => {
                 <div className="course-header-labels">
                     <span className="course-code-label">{course.code}</span>
                     <span className={`course-type-label ${course.type.toLowerCase()}`}>{course.type}</span>
+                    <div className="course-group-label-wrapper">
+                        <span>Group: {studentGroup || 'Unassigned'}</span>
+                        {pendingGroupRequest && (
+                            <span style={{ fontSize: '11px', background: '#FEF3C7', color: '#92400E', padding: '2px 8px', borderRadius: '8px', fontWeight: 700 }}>
+                                Requested: {pendingGroupRequest.requested_group} (Pending)
+                            </span>
+                        )}
+                        <button
+                            type="button"
+                            className="course-group-pencil-btn"
+                            title="Exchange between groups"
+                            onClick={() => {
+                                const defaultOther = availableGroups.find(g => g !== studentGroup) || '';
+                                setSelectedTargetGroup(pendingGroupRequest?.requested_group || defaultOther);
+                                setExchangeReason(pendingGroupRequest?.reason || '');
+                                setIsExchangeModalOpen(true);
+                            }}
+                        >
+                            <Pencil size={13} />
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -298,6 +378,200 @@ export const CourseDetails: React.FC = () => {
                     </div>
                 )}
             </div>
+
+            {/* Student Group Exchange Modal */}
+            {isExchangeModalOpen && (
+                <div 
+                    className="modal-overlay" 
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        background: 'rgba(15, 23, 42, 0.45)',
+                        backdropFilter: 'blur(4px)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 2000
+                    }}
+                    onClick={() => !isSubmittingExchange && setIsExchangeModalOpen(false)}
+                >
+                    <div 
+                        className="modal-content"
+                        onClick={e => e.stopPropagation()}
+                        style={{
+                            maxWidth: '460px',
+                            width: '92%',
+                            borderRadius: '20px',
+                            background: '#FFFFFF',
+                            padding: '28px',
+                            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+                        }}
+                    >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '18px' }}>
+                            <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: '#F5F3FF', color: 'var(--primary-color)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <Users size={22} />
+                            </div>
+                            <div>
+                                <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#0F172A', margin: 0 }}>Exchange Group</h3>
+                                <p style={{ color: '#64748B', fontSize: '13px', margin: '2px 0 0 0' }}>Request or switch to another group in your batch</p>
+                            </div>
+                        </div>
+
+                        <div style={{ background: '#F8FAFC', borderRadius: '12px', padding: '14px', marginBottom: '20px', border: '1px solid #E2E8F0' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                                <span style={{ fontSize: '13px', color: '#64748B', fontWeight: 600 }}>Current Batch:</span>
+                                <span style={{ fontSize: '13px', fontWeight: 700, color: '#1E293B' }}>{studentBatch || 'N/A'}</span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ fontSize: '13px', color: '#64748B', fontWeight: 600 }}>Existing Group:</span>
+                                <span style={{ 
+                                    fontSize: '12px', 
+                                    fontWeight: 700, 
+                                    color: studentGroup ? 'var(--primary-color)' : '#64748B',
+                                    background: studentGroup ? '#F5F3FF' : '#E2E8F0',
+                                    padding: '2px 10px',
+                                    borderRadius: '12px',
+                                    border: studentGroup ? '1px solid #DDD6FE' : 'none'
+                                }}>
+                                    {studentGroup || 'Unassigned'}
+                                </span>
+                            </div>
+                        </div>
+
+                        {pendingGroupRequest && (
+                            <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', padding: '10px 14px', borderRadius: '10px', fontSize: '12px', color: '#B45309', marginBottom: '16px' }}>
+                                You currently have a pending request to exchange into <strong>{pendingGroupRequest.requested_group}</strong>. Submitting a new selection will update your pending request.
+                            </div>
+                        )}
+
+                        <div style={{ marginBottom: '20px' }}>
+                            <label style={{ fontSize: '13px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '10px' }}>
+                                Change to Group:
+                            </label>
+                            {availableGroups.length > 0 ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                    {availableGroups.map(groupName => {
+                                        const isCurrent = groupName === studentGroup;
+                                        return (
+                                            <label
+                                                key={groupName}
+                                                style={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'space-between',
+                                                    padding: '10px 14px',
+                                                    borderRadius: '10px',
+                                                    border: selectedTargetGroup === groupName ? '2px solid var(--primary-color)' : '1px solid #CBD5E1',
+                                                    background: selectedTargetGroup === groupName ? '#F5F3FF' : (isCurrent ? '#F8FAFC' : '#FFFFFF'),
+                                                    cursor: isCurrent ? 'default' : 'pointer',
+                                                    opacity: isCurrent ? 0.65 : 1
+                                                }}
+                                            >
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                    <input
+                                                        type="radio"
+                                                        name="target_group_choice"
+                                                        value={groupName}
+                                                        disabled={isCurrent}
+                                                        checked={selectedTargetGroup === groupName}
+                                                        onChange={() => setSelectedTargetGroup(groupName)}
+                                                    />
+                                                    <span style={{ fontSize: '14px', fontWeight: 700, color: '#1E293B' }}>{groupName}</span>
+                                                </div>
+                                                {isCurrent && (
+                                                    <span style={{ fontSize: '11px', color: '#64748B', fontWeight: 600, background: '#E2E8F0', padding: '2px 8px', borderRadius: '8px' }}>
+                                                        Current Group
+                                                    </span>
+                                                )}
+                                            </label>
+                                        );
+                                    })}
+                                </div>
+                            ) : (
+                                <div style={{ padding: '16px', background: '#F8FAFC', borderRadius: '10px', textAlign: 'center', color: '#64748B', fontSize: '13px' }}>
+                                    No other groups are currently configured for this batch.
+                                </div>
+                            )}
+                        </div>
+
+                        <div style={{ marginBottom: '24px' }}>
+                            <label style={{ fontSize: '13px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '6px' }}>
+                                Reason for Exchange (Optional):
+                            </label>
+                            <input
+                                type="text"
+                                placeholder="e.g. Schedule conflict with project group"
+                                style={{
+                                    width: '100%',
+                                    height: '40px',
+                                    padding: '0 12px',
+                                    borderRadius: '10px',
+                                    border: '1px solid #CBD5E1',
+                                    fontSize: '13px'
+                                }}
+                                value={exchangeReason}
+                                onChange={e => setExchangeReason(e.target.value)}
+                            />
+                        </div>
+
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                            <button
+                                type="button"
+                                style={{
+                                    height: '40px',
+                                    padding: '0 18px',
+                                    borderRadius: '10px',
+                                    border: '1px solid #CBD5E1',
+                                    background: '#FFFFFF',
+                                    fontSize: '13px',
+                                    fontWeight: 600,
+                                    color: '#475569',
+                                    cursor: 'pointer'
+                                }}
+                                disabled={isSubmittingExchange}
+                                onClick={() => setIsExchangeModalOpen(false)}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                style={{
+                                    height: '40px',
+                                    padding: '0 20px',
+                                    borderRadius: '10px',
+                                    border: 'none',
+                                    background: 'var(--primary-color)',
+                                    color: '#FFFFFF',
+                                    fontSize: '13px',
+                                    fontWeight: 700,
+                                    cursor: isSubmittingExchange || !selectedTargetGroup || selectedTargetGroup === studentGroup ? 'not-allowed' : 'pointer',
+                                    opacity: isSubmittingExchange || !selectedTargetGroup || selectedTargetGroup === studentGroup ? 0.6 : 1,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '6px'
+                                }}
+                                disabled={isSubmittingExchange || !selectedTargetGroup || selectedTargetGroup === studentGroup}
+                                onClick={handleRequestExchange}
+                            >
+                                {isSubmittingExchange ? (
+                                    <>
+                                        <Loader size={16} style={{ animation: 'spin 0.7s linear infinite' }} />
+                                        <span>Submitting...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Check size={16} />
+                                        <span>{pendingGroupRequest ? 'Update Request' : 'Request to Exchange'}</span>
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

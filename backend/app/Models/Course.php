@@ -56,6 +56,6 @@ class Course extends Model
 
     public function students()
     {
-        return $this->belongsToMany(User::class, 'user_courses')->withPivot('batch')->withTimestamps();
+        return $this->belongsToMany(User::class, 'user_courses')->withPivot('batch', 'group')->withTimestamps();
     }
 }

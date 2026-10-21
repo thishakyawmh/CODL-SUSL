@@ -75,6 +75,7 @@ interface EnrolledStudent {
     status: string;
     payment: string;
     batch?: string;
+    group?: string | null;
 }
 
 export const ManageCourse: React.FC = () => {
@@ -109,7 +110,7 @@ export const ManageCourse: React.FC = () => {
     const [realStudents, setRealStudents] = useState<any[]>([]);
     const [isLoadingStudents, setIsLoadingStudents] = useState(true);
     const [realLecturers, setRealLecturers] = useState<any[]>([]);
-    const [batches, setBatches] = useState<{ id?: number, name: string, startDate: string, registrationDeadline: string, maxEnrollments: string, subtitle: string, status: string, materials?: any[], subjects?: BatchSubject[], lecturerId?: string | number, lecturerName?: string }[]>([]);
+    const [batches, setBatches] = useState<{ id?: number, name: string, startDate: string, registrationDeadline: string, maxEnrollments: string, subtitle: string, status: string, materials?: any[], subjects?: BatchSubject[], lecturerId?: string | number, lecturerName?: string, groups?: string[] }[]>([]);
     const [isLoadingData, setIsLoadingData] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -185,6 +186,7 @@ export const ManageCourse: React.FC = () => {
                     subtitle: b.subtitle || 'Academic Intake Phase',
                     status: b.status,
                     materials: b.materials,
+                    groups: Array.isArray(b.groups) ? b.groups : [],
                     lecturerId: b.instructor_id || undefined,
                     lecturerName: b.instructor?.full_name || '',
                     subjects: (b.subjects || []).map((s: any) => ({
@@ -1003,8 +1005,32 @@ export const ManageCourse: React.FC = () => {
     const addActioning = (id: string | number) => setActioningIds(prev => new Set(prev).add(id));
     const removeActioning = (id: string | number) => setActioningIds(prev => { const s = new Set(prev); s.delete(id); return s; });
 
-    const handleActionRequest = async (requestId: string, action: 'approved' | 'rejected', type: 'approval' | 'enrollment', reason?: string) => {
+    const handleActionRequest = async (requestId: string, action: 'approved' | 'rejected', type: 'approval' | 'enrollment', reason?: string, assignedGroup?: string | null) => {
         if (actioningIds.has(requestId)) return;
+
+        // If coordinator is approving an enrollment application and no group choice was specified yet:
+        if (type === 'enrollment' && action === 'approved' && assignedGroup === undefined) {
+            const req = enrollmentRequests.find(r => r.realId?.toString() === requestId?.toString());
+            const currentApprovalLevel = req?.rawApp ? req.rawApp.approval_level : 0;
+            const isCoordinatorStage = userRole === 'coordinator' || currentApprovalLevel === 1;
+
+            if (isCoordinatorStage) {
+                const targetBatch = batches.find(b => b.id === req?.rawApp?.batch_id || b.name === req?.batch);
+                if (targetBatch && targetBatch.groups && targetBatch.groups.length > 0) {
+                    setCoordinatorApprovalModal({
+                        show: true,
+                        requestId: requestId,
+                        studentName: req?.name || 'Applicant',
+                        batchName: targetBatch.name,
+                        availableGroups: targetBatch.groups,
+                        selectedGroup: targetBatch.groups[0] || '',
+                        comment: reason || ''
+                    });
+                    return;
+                }
+            }
+        }
+
         addActioning(requestId);
 
         const originalEnrollmentRequests = [...enrollmentRequests];
@@ -1028,7 +1054,8 @@ export const ManageCourse: React.FC = () => {
                 const updatedRaw = req.rawApp ? {
                     ...req.rawApp,
                     status: newStatus,
-                    approval_level: newLevel
+                    approval_level: newLevel,
+                    group: assignedGroup !== undefined ? assignedGroup : req.rawApp.group
                 } : null;
                 return {
                     ...req,
@@ -1050,7 +1077,8 @@ export const ManageCourse: React.FC = () => {
                     const updatedRaw = prev.rawApp ? {
                         ...prev.rawApp,
                         status: newStatus,
-                        approval_level: newLevel
+                        approval_level: newLevel,
+                        group: assignedGroup !== undefined ? assignedGroup : prev.rawApp.group
                     } : null;
                     return {
                         ...prev,
@@ -1067,10 +1095,14 @@ export const ManageCourse: React.FC = () => {
 
             try {
                 if (action === 'approved') {
-                    const response = await courseApplicationService.approve(requestId);
+                    const response = await courseApplicationService.approve(requestId, {
+                        comment: reason,
+                        group: assignedGroup !== undefined ? assignedGroup : undefined
+                    });
                     toast.success('Application approved successfully!');
 
                     if (response.status === 'approved' && response.user) {
+                        const targetReq = enrollmentRequests.find(r => r.realId?.toString() === requestId?.toString());
                         const newStudent: EnrolledStudent = {
                             id: String(response.user.student_number || response.user.id),
                             name: response.user.full_name || response.user.name,
@@ -1078,12 +1110,14 @@ export const ManageCourse: React.FC = () => {
                             phone: response.user.phone || 'N/A',
                             enrollmentDate: new Date().toISOString().split('T')[0],
                             status: 'Active',
-                            payment: 'Paid'
+                            payment: 'Paid',
+                            batch: targetReq?.batch || undefined,
+                            group: assignedGroup !== undefined ? assignedGroup : (response.group || null)
                         };
 
                         setEnrolledStudents(prev => {
                             const exists = prev.some(s => s.id === newStudent.id);
-                            if (exists) return prev;
+                            if (exists) return prev.map(s => s.id === newStudent.id ? { ...s, group: newStudent.group } : s);
                             return [...prev, newStudent];
                         });
                     }
@@ -1307,6 +1341,193 @@ export const ManageCourse: React.FC = () => {
     const [idSuggestions, setIdSuggestions] = useState<any[]>([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [enrolledStudents, setEnrolledStudents] = useState<EnrolledStudent[]>([]);
+
+    const [selectedGroupFilter, setSelectedGroupFilter] = useState<string>('all');
+
+    // Batch Groups Management Modal State
+    const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
+    const [activeBatchForGroups, setActiveBatchForGroups] = useState<{ id?: number; name: string; groups?: string[] } | null>(null);
+    const [groupList, setGroupList] = useState<string[]>([]);
+    const [newGroupName, setNewGroupName] = useState('');
+    const [studentGroupAssignments, setStudentGroupAssignments] = useState<{ [studentId: string]: string | null }>({});
+    const [groupModalSearch, setGroupModalSearch] = useState('');
+    const [groupModalFilter, setGroupModalFilter] = useState<string>('all');
+    const [selectedStudentsForBulk, setSelectedStudentsForBulk] = useState<string[]>([]);
+    const [bulkTargetGroup, setBulkTargetGroup] = useState<string>('');
+    const [isSavingGroups, setIsSavingGroups] = useState(false);
+
+    // Coordinator Application Approval Group Selection Modal State
+    const [coordinatorApprovalModal, setCoordinatorApprovalModal] = useState<{
+        show: boolean;
+        requestId: string;
+        studentName: string;
+        batchName: string;
+        availableGroups: string[];
+        selectedGroup: string;
+        comment: string;
+    }>({
+        show: false,
+        requestId: '',
+        studentName: '',
+        batchName: '',
+        availableGroups: [],
+        selectedGroup: '',
+        comment: ''
+    });
+
+    const openGroupModalForBatch = (batchObj: { id?: number; name: string; groups?: string[] }) => {
+        if (id && batchObj.id) {
+            navigate(`/admin/courses/manage/${id}/batches/${batchObj.id}/groups`);
+            return;
+        }
+        setActiveBatchForGroups(batchObj);
+        const existingGroups = Array.isArray(batchObj.groups) ? [...batchObj.groups] : [];
+        setGroupList(existingGroups);
+        setNewGroupName('');
+        setGroupModalSearch('');
+        setGroupModalFilter('all');
+        setSelectedStudentsForBulk([]);
+        setBulkTargetGroup(existingGroups[0] || '');
+
+        // Map students in this batch to their current groups
+        const assignments: { [studentId: string]: string | null } = {};
+        enrolledStudents
+            .filter(s => s.batch?.trim().toLowerCase() === batchObj.name.trim().toLowerCase())
+            .forEach(s => {
+                assignments[s.id] = s.group || null;
+            });
+        setStudentGroupAssignments(assignments);
+        setIsGroupModalOpen(true);
+    };
+
+    const handleAddGroupToBatch = () => {
+        const trimmed = newGroupName.trim();
+        if (!trimmed) {
+            toast.error('Please enter a group name (e.g. Group A)');
+            return;
+        }
+        if (groupList.some(g => g.toLowerCase() === trimmed.toLowerCase())) {
+            toast.error(`Group "${trimmed}" already exists.`);
+            return;
+        }
+        const updated = [...groupList, trimmed];
+        setGroupList(updated);
+        setNewGroupName('');
+        if (!bulkTargetGroup) setBulkTargetGroup(trimmed);
+        toast.success(`Group "${trimmed}" added.`);
+    };
+
+    const handleRemoveGroupFromBatch = (groupToRemove: string) => {
+        const countUsing = Object.values(studentGroupAssignments).filter(g => g === groupToRemove).length;
+        if (countUsing > 0) {
+            if (!window.confirm(`There are ${countUsing} student(s) currently in "${groupToRemove}". Removing this group will set them to Unassigned. Continue?`)) {
+                return;
+            }
+            setStudentGroupAssignments(prev => {
+                const next = { ...prev };
+                Object.keys(next).forEach(id => {
+                    if (next[id] === groupToRemove) next[id] = null;
+                });
+                return next;
+            });
+        }
+        setGroupList(prev => prev.filter(g => g !== groupToRemove));
+        toast.info(`Group "${groupToRemove}" removed.`);
+    };
+
+    const handleSaveBatchGroups = async () => {
+        if (!activeBatchForGroups || !activeBatchForGroups.id) return;
+        try {
+            setIsSavingGroups(true);
+            const assignmentsArray = Object.entries(studentGroupAssignments).map(([studentId, group]) => ({
+                student_id: studentId,
+                group: group || null
+            }));
+
+            await batchService.manageGroups(id!, activeBatchForGroups.id, {
+                groups: groupList,
+                assignments: assignmentsArray
+            });
+
+            // Update local batches state
+            setBatches(prev => prev.map(b => b.id === activeBatchForGroups.id ? { ...b, groups: groupList } : b));
+
+            // Update local enrolledStudents state
+            setEnrolledStudents(prev => prev.map(s => {
+                if (studentGroupAssignments[s.id] !== undefined) {
+                    return { ...s, group: studentGroupAssignments[s.id] };
+                }
+                return s;
+            }));
+
+            toast.success(`Groups for batch "${activeBatchForGroups.name}" saved successfully!`);
+            setIsGroupModalOpen(false);
+        } catch (err: any) {
+            console.error('Failed to save batch groups:', err);
+            toast.error(err.response?.data?.message || 'Failed to save batch groups.');
+        } finally {
+            setIsSavingGroups(false);
+        }
+    };
+
+    const handleUpdateStudentGroup = async (studentId: string, group: string | null) => {
+        try {
+            // Optimistic update
+            setEnrolledStudents(prev => prev.map(s => s.id === studentId ? { ...s, group } : s));
+            await courseService.updateStudentGroup(id!, studentId, group);
+            toast.success(`Student group updated to ${group || 'Unassigned'}.`);
+        } catch (err: any) {
+            console.error('Failed to update student group:', err);
+            toast.error(err.response?.data?.message || 'Failed to update student group.');
+            loadAllCourseData(false);
+        }
+    };
+
+    const availableGroups = React.useMemo(() => {
+        if (selectedBatch) {
+            const batchObj = batches.find(b => b.name?.trim().toLowerCase() === selectedBatch.trim().toLowerCase());
+            if (batchObj && batchObj.groups && batchObj.groups.length > 0) {
+                return batchObj.groups;
+            }
+        }
+        const groupSet = new Set<string>();
+        batches.forEach(b => (b.groups || []).forEach(g => groupSet.add(g)));
+        enrolledStudents.forEach(s => { if (s.group) groupSet.add(s.group); });
+        return Array.from(groupSet);
+    }, [selectedBatch, batches, enrolledStudents]);
+
+    const getAvailableGroupsForStudent = (student: EnrolledStudent) => {
+        if (student.batch) {
+            const batchObj = batches.find(b => b.name?.trim().toLowerCase() === student.batch?.trim().toLowerCase());
+            if (batchObj && batchObj.groups && batchObj.groups.length > 0) {
+                return batchObj.groups;
+            }
+        }
+        return availableGroups;
+    };
+
+    const batchStudentsForModal = React.useMemo(() => {
+        if (!activeBatchForGroups) return [];
+        return enrolledStudents
+            .filter(s => s.batch?.trim().toLowerCase() === activeBatchForGroups.name.trim().toLowerCase())
+            .filter(s => {
+                if (!groupModalSearch) return true;
+                const q = groupModalSearch.toLowerCase();
+                return (
+                    s.name.toLowerCase().includes(q) ||
+                    (s.displayName && s.displayName.toLowerCase().includes(q)) ||
+                    s.id.toLowerCase().includes(q) ||
+                    s.email.toLowerCase().includes(q)
+                );
+            })
+            .filter(s => {
+                if (groupModalFilter === 'all') return true;
+                const currentG = studentGroupAssignments[s.id] || null;
+                if (groupModalFilter === 'unassigned') return !currentG;
+                return currentG === groupModalFilter;
+            })
+            .sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true, sensitivity: 'base' }));
+    }, [activeBatchForGroups, enrolledStudents, groupModalSearch, groupModalFilter, studentGroupAssignments]);
 
 
     const [selectedExamForResult, setSelectedExamForResult] = useState<string | null>(null);
@@ -2541,7 +2762,9 @@ export const ManageCourse: React.FC = () => {
                 (s.displayName && s.displayName.toLowerCase().includes(searchQuery.toLowerCase())) ||
                 s.id.toLowerCase().includes(searchQuery.toLowerCase());
             const matchesBatch = !selectedBatch || s.batch?.toString().trim().toLowerCase() === selectedBatch.toString().trim().toLowerCase();
-            return matchesSearch && matchesBatch;
+            const matchesGroup = selectedGroupFilter === 'all' ||
+                (selectedGroupFilter === 'unassigned' ? !s.group : s.group === selectedGroupFilter);
+            return matchesSearch && matchesBatch && matchesGroup;
         })
         .sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true, sensitivity: 'base' }));
 
@@ -2778,6 +3001,27 @@ export const ManageCourse: React.FC = () => {
                                         >
                                             Manage Modules
                                         </button>
+                                        {(userRole === 'coordinator' || userRole === 'super_admin' || userRole === 'admin' || userRole === 'director') && (
+                                            <button
+                                                type="button"
+                                                className="hover-lift"
+                                                title="Manage Groups within this batch"
+                                                style={{
+                                                    height: '48px', padding: '0 14px', borderRadius: '12px',
+                                                    background: '#F8FAFC', border: '1px solid #E2E8F0',
+                                                    color: '#334155', fontSize: '13px', fontWeight: 700,
+                                                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px',
+                                                    boxShadow: '0 1px 3px rgba(0,0,0,0.05)', whiteSpace: 'nowrap'
+                                                }}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    openGroupModalForBatch(batchObj);
+                                                }}
+                                            >
+                                                <Users size={16} color="var(--primary-color)" />
+                                                <span>Groups {batchObj.groups && batchObj.groups.length > 0 ? `(${batchObj.groups.length})` : ''}</span>
+                                            </button>
+                                        )}
                                         {userRole !== 'secretary' && userRole !== 'lecturer' && (
                                             <div style={{ position: 'relative' }}>
                                                 <button
@@ -2803,6 +3047,23 @@ export const ManageCourse: React.FC = () => {
                                                         boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)',
                                                         border: '1px solid #E2E8F0', width: '160px', zIndex: 10, overflow: 'hidden'
                                                     }}>
+                                                        {(userRole === 'coordinator' || userRole === 'super_admin' || userRole === 'admin' || userRole === 'director') && (
+                                                            <button
+                                                                style={{
+                                                                    width: '100%', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '8px',
+                                                                    background: 'none', border: 'none', borderBottom: '1px solid #F1F5F9',
+                                                                    color: '#475569', fontSize: '14px', fontWeight: 500, cursor: 'pointer', textAlign: 'left' as const
+                                                                }}
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setOpenBatchMenu(null);
+                                                                    openGroupModalForBatch(batchObj);
+                                                                }}
+                                                                className="hover-bg-slate"
+                                                            >
+                                                                <Users size={16} /> Manage Groups
+                                                            </button>
+                                                        )}
                                                         <button
                                                             style={{
                                                                 width: '100%', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '8px',
@@ -2995,6 +3256,24 @@ export const ManageCourse: React.FC = () => {
                             <ArrowLeft size={18} style={{ transform: 'rotate(180deg)' }} />
                         </div>
                     </div>
+
+                    {(userRole === 'coordinator' || userRole === 'super_admin' || userRole === 'admin' || userRole === 'director') && (
+                        <div className="nav-button-card" onClick={() => {
+                            const curBatch = batches.find(b => b.name?.trim().toLowerCase() === selectedBatch?.trim().toLowerCase());
+                            if (curBatch) openGroupModalForBatch(curBatch);
+                        }}>
+                            <div className="nav-card-icon" style={{ background: '#F5F3FF', color: 'var(--primary-color)' }}>
+                                <Users size={28} />
+                            </div>
+                            <div className="nav-card-content">
+                                <h3>Batch Groups</h3>
+                                <p>Create and organize student groups (Group A, Group B) for {selectedBatch}.</p>
+                            </div>
+                            <div className="nav-card-arrow">
+                                <ArrowLeft size={18} style={{ transform: 'rotate(180deg)' }} />
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -4301,17 +4580,58 @@ export const ManageCourse: React.FC = () => {
                             <div className="manage-section-main-card">
                                 <div className="section-card-content">
                                     <div className="form-section-card no-shadow" style={{ paddingTop: '20px' }}>
-                                        <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
                                             <div className="search-box-wrapper" style={{ position: 'relative' }}>
                                                 <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#64748B' }} />
                                                 <input
                                                     type="text"
                                                     placeholder="Search by name or ID..."
                                                     className="admin-input"
-                                                    style={{ paddingLeft: '36px', width: '320px', height: '40px' }}
+                                                    style={{ paddingLeft: '36px', width: '300px', height: '40px' }}
                                                     value={searchQuery}
                                                     onChange={(e) => setSearchQuery(e.target.value)}
                                                 />
+                                            </div>
+
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                    <span style={{ fontSize: '13px', fontWeight: 700, color: '#64748B' }}>Filter by Group:</span>
+                                                    <select
+                                                        className="admin-input"
+                                                        style={{ height: '40px', minWidth: '150px', padding: '0 12px', fontSize: '13px', fontWeight: 600, borderRadius: '10px' }}
+                                                        value={selectedGroupFilter}
+                                                        onChange={(e) => setSelectedGroupFilter(e.target.value)}
+                                                    >
+                                                        <option value="all">All Groups ({enrolledStudents.filter(s => !selectedBatch || s.batch?.trim().toLowerCase() === selectedBatch.trim().toLowerCase()).length})</option>
+                                                        {availableGroups.map(g => (
+                                                            <option key={g} value={g}>
+                                                                {g} ({enrolledStudents.filter(s => s.group === g && (!selectedBatch || s.batch?.trim().toLowerCase() === selectedBatch.trim().toLowerCase())).length})
+                                                            </option>
+                                                        ))}
+                                                        <option value="unassigned">
+                                                            Unassigned ({enrolledStudents.filter(s => !s.group && (!selectedBatch || s.batch?.trim().toLowerCase() === selectedBatch.trim().toLowerCase())).length})
+                                                        </option>
+                                                    </select>
+                                                </div>
+
+                                                {(userRole === 'coordinator' || userRole === 'super_admin' || userRole === 'admin' || userRole === 'director') && selectedBatch && (
+                                                    <button
+                                                        type="button"
+                                                        className="admin-btn-secondary"
+                                                        style={{
+                                                            height: '40px', padding: '0 14px', borderRadius: '10px',
+                                                            fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px',
+                                                            background: '#F5F3FF', color: 'var(--primary-color)', border: '1px solid #DDD6FE', cursor: 'pointer'
+                                                        }}
+                                                        onClick={() => {
+                                                            const currentBatchObj = batches.find(b => b.name?.trim().toLowerCase() === selectedBatch.trim().toLowerCase());
+                                                            if (currentBatchObj) openGroupModalForBatch(currentBatchObj);
+                                                        }}
+                                                    >
+                                                        <Users size={15} />
+                                                        <span>Manage Groups</span>
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
 
@@ -4319,10 +4639,12 @@ export const ManageCourse: React.FC = () => {
                                             <table className="cm-table interactive-table">
                                                 <thead>
                                                     <tr>
-                                                        <th style={{ width: '40%' }}>Student Name</th>
+                                                        <th style={{ width: '30%' }}>Student Name</th>
                                                         <th style={{ width: '15%' }}>Student ID</th>
-                                                        <th style={{ width: '30%' }}>Enrollment</th>
-                                                        <th style={{ width: '15%' }}>Manage</th>
+                                                        <th style={{ width: '15%' }}>Batch</th>
+                                                        <th style={{ width: '18%' }}>Group</th>
+                                                        <th style={{ width: '12%' }}>Enrollment</th>
+                                                        <th style={{ width: '10%' }}>Manage</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -4338,6 +4660,54 @@ export const ManageCourse: React.FC = () => {
                                                             </td>
                                                             <td>
                                                                 <span className="id-badge-minimal">{student.id}</span>
+                                                            </td>
+                                                            <td>
+                                                                <span style={{ fontSize: '13px', fontWeight: 600, color: '#334155' }}>
+                                                                    {student.batch || 'No Batch'}
+                                                                </span>
+                                                            </td>
+                                                            <td>
+                                                                {(userRole === 'coordinator' || userRole === 'super_admin' || userRole === 'admin' || userRole === 'director') ? (
+                                                                    <select
+                                                                        className="admin-input"
+                                                                        title="Change Student Group"
+                                                                        style={{
+                                                                            height: '32px',
+                                                                            padding: '0 10px',
+                                                                            borderRadius: '8px',
+                                                                            fontSize: '12px',
+                                                                            fontWeight: 700,
+                                                                            background: student.group ? '#F5F3FF' : '#F8FAFC',
+                                                                            border: student.group ? '1px solid #DDD6FE' : '1px solid #CBD5E1',
+                                                                            color: student.group ? 'var(--primary-color)' : '#94A3B8',
+                                                                            cursor: 'pointer'
+                                                                        }}
+                                                                        value={student.group || ''}
+                                                                        onChange={async (e) => {
+                                                                            const newGroup = e.target.value || null;
+                                                                            await handleUpdateStudentGroup(student.id, newGroup);
+                                                                        }}
+                                                                    >
+                                                                        <option value="">Unassigned</option>
+                                                                        {getAvailableGroupsForStudent(student).map(g => (
+                                                                            <option key={g} value={g}>{g}</option>
+                                                                        ))}
+                                                                    </select>
+                                                                ) : (
+                                                                    <span
+                                                                        style={{
+                                                                            display: 'inline-block',
+                                                                            padding: '4px 10px',
+                                                                            borderRadius: '6px',
+                                                                            fontSize: '12px',
+                                                                            fontWeight: 700,
+                                                                            background: student.group ? '#F5F3FF' : '#F1F5F9',
+                                                                            color: student.group ? 'var(--primary-color)' : '#64748B'
+                                                                        }}
+                                                                    >
+                                                                        {student.group || 'Unassigned'}
+                                                                    </span>
+                                                                )}
                                                             </td>
                                                             <td>
                                                                 <div style={{ color: '#475569', fontSize: '13px', fontWeight: 500 }}>{student.enrollmentDate}</div>
@@ -6746,6 +7116,490 @@ export const ManageCourse: React.FC = () => {
                                         Deleting...
                                     </>
                                 ) : 'Confirm'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Batch Group Management Modal */}
+            {isGroupModalOpen && activeBatchForGroups && (
+                <div
+                    className="cm-modal-overlay"
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}
+                    onClick={() => !isSavingGroups && setIsGroupModalOpen(false)}
+                >
+                    <div
+                        className="cm-modal"
+                        onClick={e => e.stopPropagation()}
+                        style={{
+                            maxWidth: '820px',
+                            width: '92%',
+                            maxHeight: '90vh',
+                            overflowY: 'auto',
+                            borderRadius: '20px',
+                            background: '#FFFFFF',
+                            padding: '32px',
+                            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+                        }}
+                    >
+                        {/* Modal Header */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px', borderBottom: '1px solid #F1F5F9', paddingBottom: '16px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#F5F3FF', color: 'var(--primary-color)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <Users size={22} />
+                                </div>
+                                <div>
+                                    <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#0F172A', margin: 0 }}>
+                                        Manage Groups: {activeBatchForGroups.name}
+                                    </h2>
+                                    <p style={{ color: '#64748B', fontSize: '13px', margin: '4px 0 0 0' }}>
+                                        Create groups within this batch and assign or move students between groups.
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => !isSavingGroups && setIsGroupModalOpen(false)}
+                                style={{ background: '#F1F5F9', border: 'none', width: '36px', height: '36px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748B', cursor: 'pointer' }}
+                            >
+                                <X size={18} />
+                            </button>
+                        </div>
+
+                        {/* Section 1: Batch Groups Configuration */}
+                        <div style={{ background: '#F8FAFC', borderRadius: '16px', padding: '20px', marginBottom: '24px', border: '1px solid #E2E8F0' }}>
+                            <label style={{ fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#475569', marginBottom: '12px', display: 'block' }}>
+                                1. Batch Groups
+                            </label>
+
+                            {/* Active Group Pills */}
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
+                                {groupList.length === 0 ? (
+                                    <div style={{ fontSize: '13px', color: '#94A3B8', fontStyle: 'italic', padding: '6px 0' }}>
+                                        No groups created for this batch yet. Add your first group below (e.g. Group A, Group B).
+                                    </div>
+                                ) : (
+                                    groupList.map(groupName => {
+                                        const count = Object.values(studentGroupAssignments).filter(g => g === groupName).length;
+                                        return (
+                                            <div
+                                                key={groupName}
+                                                style={{
+                                                    display: 'inline-flex',
+                                                    alignItems: 'center',
+                                                    gap: '8px',
+                                                    padding: '6px 14px',
+                                                    borderRadius: '20px',
+                                                    background: '#FFFFFF',
+                                                    border: '1px solid #CBD5E1',
+                                                    fontSize: '13px',
+                                                    fontWeight: 700,
+                                                    color: '#1E293B',
+                                                    boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+                                                }}
+                                            >
+                                                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--primary-color)' }}></span>
+                                                <span>{groupName}</span>
+                                                <span style={{ fontSize: '11px', background: '#F1F5F9', padding: '2px 8px', borderRadius: '10px', color: '#64748B' }}>
+                                                    {count} {count === 1 ? 'student' : 'students'}
+                                                </span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleRemoveGroupFromBatch(groupName)}
+                                                    style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer', padding: 0, display: 'flex' }}
+                                                    title={`Remove ${groupName}`}
+                                                >
+                                                    <X size={14} />
+                                                </button>
+                                            </div>
+                                        );
+                                    })
+                                )}
+                            </div>
+
+                            {/* Add Group Input & Preset */}
+                            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                                <input
+                                    type="text"
+                                    placeholder="Enter group name (e.g. Group A, Group B)..."
+                                    className="admin-input"
+                                    style={{ flex: 1, height: '42px', fontSize: '14px', background: '#FFFFFF' }}
+                                    value={newGroupName}
+                                    onChange={(e) => setNewGroupName(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            handleAddGroupToBatch();
+                                        }
+                                    }}
+                                />
+                                <button
+                                    type="button"
+                                    className="admin-btn-primary"
+                                    style={{ height: '42px', padding: '0 18px', borderRadius: '10px', fontSize: '13px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}
+                                    onClick={handleAddGroupToBatch}
+                                >
+                                    <Plus size={16} /> Add Group
+                                </button>
+                                {groupList.length === 0 && (
+                                    <button
+                                        type="button"
+                                        className="admin-btn-secondary"
+                                        style={{ height: '42px', padding: '0 14px', borderRadius: '10px', fontSize: '12px', fontWeight: 700, background: '#FFFFFF', border: '1px solid #CBD5E1', color: '#475569', cursor: 'pointer' }}
+                                        onClick={() => {
+                                            setGroupList(['Group A', 'Group B']);
+                                            if (!bulkTargetGroup) setBulkTargetGroup('Group A');
+                                            toast.success('Added Group A & Group B presets.');
+                                        }}
+                                    >
+                                        Preset: Group A & B
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Section 2: Student Assignments */}
+                        <div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
+                                <div>
+                                    <label style={{ fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#475569', margin: 0 }}>
+                                        2. Student Group Assignments
+                                    </label>
+                                    <p style={{ color: '#64748B', fontSize: '12px', margin: '2px 0 0 0' }}>
+                                        Move individual students or select multiple students to assign them to a group in bulk.
+                                    </p>
+                                </div>
+
+                                {/* Modal Filter Controls */}
+                                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                    <input
+                                        type="text"
+                                        placeholder="Search batch students..."
+                                        className="admin-input"
+                                        style={{ height: '36px', width: '180px', fontSize: '12px' }}
+                                        value={groupModalSearch}
+                                        onChange={(e) => setGroupModalSearch(e.target.value)}
+                                    />
+                                    <select
+                                        className="admin-input"
+                                        style={{ height: '36px', padding: '0 10px', fontSize: '12px' }}
+                                        value={groupModalFilter}
+                                        onChange={(e) => setGroupModalFilter(e.target.value)}
+                                    >
+                                        <option value="all">All Groups</option>
+                                        <option value="unassigned">Unassigned</option>
+                                        {groupList.map(g => (
+                                            <option key={g} value={g}>{g}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
+                            {/* Bulk Action Bar */}
+                            {groupList.length > 0 && (
+                                <div style={{ background: '#F1F5F9', padding: '10px 14px', borderRadius: '10px', marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                        <input
+                                            type="checkbox"
+                                            id="selectAllBatchStudents"
+                                            checked={
+                                                batchStudentsForModal.length > 0 &&
+                                                batchStudentsForModal.every(s => selectedStudentsForBulk.includes(s.id))
+                                            }
+                                            onChange={(e) => {
+                                                if (e.target.checked) {
+                                                    setSelectedStudentsForBulk(batchStudentsForModal.map(s => s.id));
+                                                } else {
+                                                    setSelectedStudentsForBulk([]);
+                                                }
+                                            }}
+                                        />
+                                        <label htmlFor="selectAllBatchStudents" style={{ fontSize: '12px', fontWeight: 700, color: '#334155', cursor: 'pointer' }}>
+                                            Select All ({selectedStudentsForBulk.length} selected)
+                                        </label>
+                                    </div>
+
+                                    {selectedStudentsForBulk.length > 0 && (
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <span style={{ fontSize: '12px', color: '#475569', fontWeight: 600 }}>Assign selected to:</span>
+                                            <select
+                                                className="admin-input"
+                                                style={{ height: '32px', padding: '0 8px', fontSize: '12px' }}
+                                                value={bulkTargetGroup}
+                                                onChange={(e) => setBulkTargetGroup(e.target.value)}
+                                            >
+                                                <option value="">Unassigned</option>
+                                                {groupList.map(g => (
+                                                    <option key={g} value={g}>{g}</option>
+                                                ))}
+                                            </select>
+                                            <button
+                                                type="button"
+                                                className="admin-btn-primary"
+                                                style={{ height: '32px', padding: '0 12px', borderRadius: '6px', fontSize: '12px', fontWeight: 700 }}
+                                                onClick={() => {
+                                                    setStudentGroupAssignments(prev => {
+                                                        const next = { ...prev };
+                                                        selectedStudentsForBulk.forEach(id => {
+                                                            next[id] = bulkTargetGroup || null;
+                                                        });
+                                                        return next;
+                                                    });
+                                                    toast.success(`Assigned ${selectedStudentsForBulk.length} students to ${bulkTargetGroup || 'Unassigned'}.`);
+                                                    setSelectedStudentsForBulk([]);
+                                                }}
+                                            >
+                                                Apply
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Batch Students Table */}
+                            <div style={{ maxHeight: '280px', overflowY: 'auto', border: '1px solid #E2E8F0', borderRadius: '12px' }}>
+                                {batchStudentsForModal.length === 0 ? (
+                                    <div style={{ padding: '30px', textAlign: 'center', color: '#94A3B8', fontSize: '13px' }}>
+                                        No students found enrolled in this batch.
+                                    </div>
+                                ) : (
+                                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                                        <thead>
+                                            <tr style={{ background: '#F8FAFC', borderBottom: '1px solid #E2E8F0', color: '#64748B', textAlign: 'left' }}>
+                                                <th style={{ width: '40px', padding: '10px 12px' }}></th>
+                                                <th style={{ padding: '10px 12px' }}>Student</th>
+                                                <th style={{ padding: '10px 12px' }}>ID / Number</th>
+                                                <th style={{ padding: '10px 12px', width: '180px' }}>Assigned Group</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {batchStudentsForModal.map(student => {
+                                                const currentAssigned = studentGroupAssignments[student.id] || null;
+                                                const isSelected = selectedStudentsForBulk.includes(student.id);
+                                                return (
+                                                    <tr key={student.id} style={{ borderBottom: '1px solid #F1F5F9', background: isSelected ? '#F5F3FF' : '#FFFFFF' }}>
+                                                        <td style={{ padding: '10px 12px', textAlign: 'center' }}>
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={isSelected}
+                                                                onChange={(e) => {
+                                                                    if (e.target.checked) {
+                                                                        setSelectedStudentsForBulk(prev => [...prev, student.id]);
+                                                                    } else {
+                                                                        setSelectedStudentsForBulk(prev => prev.filter(id => id !== student.id));
+                                                                    }
+                                                                }}
+                                                            />
+                                                        </td>
+                                                        <td style={{ padding: '10px 12px' }}>
+                                                            <div style={{ fontWeight: 700, color: '#1E293B' }}>{student.displayName || student.name}</div>
+                                                            <div style={{ fontSize: '11px', color: '#64748B' }}>{student.email}</div>
+                                                        </td>
+                                                        <td style={{ padding: '10px 12px' }}>
+                                                            <span className="id-badge-minimal" style={{ fontSize: '11px' }}>{student.id}</span>
+                                                        </td>
+                                                        <td style={{ padding: '10px 12px' }}>
+                                                            <select
+                                                                className="admin-input"
+                                                                style={{
+                                                                    height: '32px',
+                                                                    padding: '0 8px',
+                                                                    fontSize: '12px',
+                                                                    fontWeight: 700,
+                                                                    background: currentAssigned ? '#F5F3FF' : '#F8FAFC',
+                                                                    color: currentAssigned ? 'var(--primary-color)' : '#64748B',
+                                                                    border: currentAssigned ? '1px solid #DDD6FE' : '1px solid #CBD5E1',
+                                                                    borderRadius: '8px',
+                                                                    cursor: 'pointer'
+                                                                }}
+                                                                value={currentAssigned || ''}
+                                                                onChange={(e) => {
+                                                                    const val = e.target.value || null;
+                                                                    setStudentGroupAssignments(prev => ({
+                                                                        ...prev,
+                                                                        [student.id]: val
+                                                                    }));
+                                                                }}
+                                                            >
+                                                                <option value="">Unassigned</option>
+                                                                {groupList.map(g => (
+                                                                    <option key={g} value={g}>{g}</option>
+                                                                ))}
+                                                            </select>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Modal Footer */}
+                        <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'flex-end', gap: '12px', borderTop: '1px solid #F1F5F9', paddingTop: '16px' }}>
+                            <button
+                                type="button"
+                                className="admin-btn-outline"
+                                style={{ height: '42px', padding: '0 20px', borderRadius: '10px', fontSize: '13px', fontWeight: 600 }}
+                                disabled={isSavingGroups}
+                                onClick={() => setIsGroupModalOpen(false)}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                className="admin-btn-primary"
+                                style={{ height: '42px', padding: '0 24px', borderRadius: '10px', fontSize: '13px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}
+                                disabled={isSavingGroups}
+                                onClick={handleSaveBatchGroups}
+                            >
+                                {isSavingGroups ? (
+                                    <>
+                                        <Loader size={16} style={{ animation: 'spin 0.7s linear infinite' }} />
+                                        <span>Saving Groups...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Check size={16} />
+                                        <span>Save Group Changes</span>
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Coordinator Application Approval Modal with Group Assignment */}
+            {coordinatorApprovalModal.show && (
+                <div
+                    className="cm-modal-overlay"
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}
+                    onClick={() => setCoordinatorApprovalModal(prev => ({ ...prev, show: false }))}
+                >
+                    <div
+                        className="cm-modal"
+                        onClick={e => e.stopPropagation()}
+                        style={{
+                            maxWidth: '480px',
+                            width: '92%',
+                            borderRadius: '20px',
+                            background: '#FFFFFF',
+                            padding: '28px',
+                            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+                        }}
+                    >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                            <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: '#ECFDF5', color: '#10B981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <UserCheck size={22} />
+                            </div>
+                            <div>
+                                <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#0F172A', margin: 0 }}>Coordinator Approval</h2>
+                                <p style={{ color: '#64748B', fontSize: '13px', margin: '2px 0 0 0' }}>Assign student to a group for {coordinatorApprovalModal.batchName}</p>
+                            </div>
+                        </div>
+
+                        <div style={{ background: '#F8FAFC', borderRadius: '12px', padding: '14px', marginBottom: '20px', border: '1px solid #E2E8F0' }}>
+                            <div style={{ fontSize: '14px', color: '#1E293B', fontWeight: 700 }}>{coordinatorApprovalModal.studentName}</div>
+                            <div style={{ fontSize: '12px', color: '#64748B', marginTop: '2px' }}>Target Batch: {coordinatorApprovalModal.batchName}</div>
+                        </div>
+
+                        <div style={{ marginBottom: '20px' }}>
+                            <label style={{ fontSize: '13px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '10px' }}>
+                                Add Student to Group:
+                            </label>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                {coordinatorApprovalModal.availableGroups.map(groupName => (
+                                    <label
+                                        key={groupName}
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '10px',
+                                            padding: '10px 14px',
+                                            borderRadius: '10px',
+                                            border: coordinatorApprovalModal.selectedGroup === groupName ? '2px solid var(--primary-color)' : '1px solid #CBD5E1',
+                                            background: coordinatorApprovalModal.selectedGroup === groupName ? '#F5F3FF' : '#FFFFFF',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.15s ease'
+                                        }}
+                                    >
+                                        <input
+                                            type="radio"
+                                            name="coord_group_choice"
+                                            value={groupName}
+                                            checked={coordinatorApprovalModal.selectedGroup === groupName}
+                                            onChange={() => setCoordinatorApprovalModal(prev => ({ ...prev, selectedGroup: groupName }))}
+                                        />
+                                        <span style={{ fontSize: '14px', fontWeight: 700, color: '#1E293B' }}>{groupName}</span>
+                                    </label>
+                                ))}
+                                <label
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '10px',
+                                        padding: '10px 14px',
+                                        borderRadius: '10px',
+                                        border: coordinatorApprovalModal.selectedGroup === '' ? '2px solid #94A3B8' : '1px solid #CBD5E1',
+                                        background: coordinatorApprovalModal.selectedGroup === '' ? '#F1F5F9' : '#FFFFFF',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.15s ease'
+                                    }}
+                                >
+                                    <input
+                                        type="radio"
+                                        name="coord_group_choice"
+                                        value=""
+                                        checked={coordinatorApprovalModal.selectedGroup === ''}
+                                        onChange={() => setCoordinatorApprovalModal(prev => ({ ...prev, selectedGroup: '' }))}
+                                    />
+                                    <span style={{ fontSize: '14px', fontWeight: 600, color: '#64748B' }}>Unassigned (Assign Later)</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div style={{ marginBottom: '20px' }}>
+                            <label style={{ fontSize: '13px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '6px' }}>
+                                Coordinator Comment (Optional):
+                            </label>
+                            <input
+                                type="text"
+                                placeholder="e.g. Approved and assigned to group"
+                                className="admin-input"
+                                style={{ width: '100%', height: '40px', fontSize: '13px' }}
+                                value={coordinatorApprovalModal.comment}
+                                onChange={(e) => setCoordinatorApprovalModal(prev => ({ ...prev, comment: e.target.value }))}
+                            />
+                        </div>
+
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                            <button
+                                type="button"
+                                className="admin-btn-outline"
+                                style={{ height: '40px', padding: '0 16px', borderRadius: '10px', fontSize: '13px' }}
+                                onClick={() => setCoordinatorApprovalModal(prev => ({ ...prev, show: false }))}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                className="admin-btn-primary"
+                                style={{ height: '40px', padding: '0 20px', borderRadius: '10px', fontSize: '13px', fontWeight: 700, background: '#10B981', display: 'flex', alignItems: 'center', gap: '6px' }}
+                                onClick={() => {
+                                    handleActionRequest(
+                                        coordinatorApprovalModal.requestId,
+                                        'approved',
+                                        'enrollment',
+                                        coordinatorApprovalModal.comment,
+                                        coordinatorApprovalModal.selectedGroup || null
+                                    );
+                                    setCoordinatorApprovalModal(prev => ({ ...prev, show: false }));
+                                }}
+                            >
+                                <Check size={16} /> Confirm & Approve
                             </button>
                         </div>
                     </div>

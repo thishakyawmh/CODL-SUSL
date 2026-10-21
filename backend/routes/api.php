@@ -53,6 +53,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Student routes
     Route::get('/student/courses', [UserController::class, 'getStudentCourses']);
+    Route::post('/student/courses/{courseId}/exchange-group', [UserController::class, 'exchangeStudentGroup']);
     Route::get('/student/dashboard-overview', [UserController::class, 'getStudentDashboardOverview']);
     Route::get('/student/courses/{courseId}/materials', [UserController::class, 'getCourseMaterials']);
     Route::get('/student/applications', [UserController::class, 'getStudentApplications']);
@@ -155,6 +156,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/manage-course/{courseId}', [CourseController::class, 'manageCourseData']);
     Route::post('/courses/{id}/enroll', [CourseController::class, 'enrollStudent']);
     Route::delete('/courses/{id}/students/{studentId}', [CourseController::class, 'unenrollStudent']);
+    Route::put('/courses/{id}/students/{studentId}/group', [CourseController::class, 'updateStudentGroup']);
     
     // Batches
     Route::get('/courses/{id}/batches', [BatchController::class, 'index']);
@@ -162,6 +164,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/courses/{id}/batches', [BatchController::class, 'store']);
     Route::put('/courses/{id}/batches/{batchId}', [BatchController::class, 'update']);
     Route::delete('/courses/{id}/batches/{batchId}', [BatchController::class, 'destroy']);
+    Route::post('/courses/{id}/batches/{batchId}/groups', [BatchController::class, 'manageGroups']);
+    Route::get('/courses/{id}/batches/{batchId}/group-requests', [BatchController::class, 'getGroupRequests']);
+    Route::post('/courses/{id}/batches/{batchId}/group-requests/{requestId}/resolve', [BatchController::class, 'resolveGroupRequest']);
     Route::post('/batches/{batchId}/upload-material', [BatchController::class, 'uploadMaterial']);
 
 

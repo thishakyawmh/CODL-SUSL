@@ -3,6 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\Course;
+use App\Models\Batch;
+use App\Models\ActivityLog;
+use App\Http\Controllers\CourseController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -142,7 +146,86 @@ class UserController extends Controller
     public function getStudentCourses(Request $request)
     {
         $user = $request->user();
-        return response()->json($user->courses);
+        $courses = $user->courses()->with('batches:id,course_id,name,groups')->get();
+
+        $pendingRequests = \App\Models\GroupExchangeRequest::where('user_id', $user->id)
+            ->where('status', 'pending')
+            ->get()
+            ->keyBy('course_id');
+
+        $courses->each(function ($course) use ($pendingRequests) {
+            $course->pending_group_request = $pendingRequests->get($course->id);
+        });
+
+        return response()->json($courses);
+    }
+
+    public function exchangeStudentGroup(Request $request, $courseId)
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'target_group' => 'required|string|max:100',
+            'reason' => 'nullable|string|max:500',
+        ]);
+
+        $enrollment = \Illuminate\Support\Facades\DB::table('user_courses')
+            ->where('user_id', $user->id)
+            ->where('course_id', $courseId)
+            ->first();
+
+        if (!$enrollment) {
+            return response()->json(['message' => 'You are not enrolled in this course.'], 404);
+        }
+
+        $course = Course::findOrFail($courseId);
+        $batchName = $enrollment->batch;
+
+        // Verify target group exists in batch groups if batch is configured
+        $batch = null;
+        if ($batchName) {
+            $batch = Batch::where('course_id', $courseId)
+                ->where('name', $batchName)
+                ->first();
+        }
+
+        $targetGroup = trim($validated['target_group']);
+
+        if ($batch && !empty($batch->groups)) {
+            $allowedGroups = is_array($batch->groups) ? $batch->groups : json_decode($batch->groups, true);
+            if (!in_array($targetGroup, (array)$allowedGroups)) {
+                return response()->json(['message' => "Group '{$targetGroup}' does not exist for {$batchName}."], 422);
+            }
+        }
+
+        $exchangeRequest = \App\Models\GroupExchangeRequest::updateOrCreate(
+            [
+                'user_id' => $user->id,
+                'course_id' => $courseId,
+                'status' => 'pending',
+            ],
+            [
+                'batch_id' => $batch ? $batch->id : null,
+                'batch_name' => $batchName,
+                'current_group' => $enrollment->group,
+                'requested_group' => $targetGroup,
+                'reason' => $validated['reason'] ?? null,
+            ]
+        );
+
+        ActivityLog::log(
+            $user->id,
+            "Submitted group exchange request",
+            "Student {$user->full_name} (" . ($user->student_number ?: $user->id) . ") requested group exchange from " . ($enrollment->group ?: 'Unassigned') . " to {$targetGroup} in {$course->title} ({$batchName}). Reason: " . ($validated['reason'] ?? 'None provided'),
+            'user'
+        );
+
+        return response()->json([
+            'message' => "Group exchange request submitted successfully! Awaiting staff approval.",
+            'pending_request' => $exchangeRequest,
+            'current_group' => $enrollment->group,
+            'batch' => $batchName
+        ]);
     }
 
     public function getCourseMaterials(Request $request, $courseId)

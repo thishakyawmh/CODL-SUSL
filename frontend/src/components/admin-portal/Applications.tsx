@@ -180,7 +180,11 @@ export const Applications: React.FC = () => {
                         approvedAt: app.director_approved_at ? app.director_approved_at.split('T')[0] : null,
                         comment: app.director_comment
                     }
-                ]
+                ],
+                batch: app.batch || null,
+                batchName: app.batch?.name || '',
+                batchGroups: app.batch?.groups || [],
+                group: app.group || null
             }));
             // Run exam applications fetch in parallel with mapping work
             const examFetchPromise = fetchRealExamApplications();
@@ -210,7 +214,59 @@ export const Applications: React.FC = () => {
     const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
     const [deleteAppId, setDeleteAppId] = useState<string | null>(null);
 
-    const handleAction = async (id: string, action: 'approved' | 'rejected', type: string, reason?: string) => {
+    // Coordinator group selection modal during approval
+    const [coordinatorApprovalModal, setCoordinatorApprovalModal] = useState<{
+        show: boolean;
+        requestId: string;
+        studentName: string;
+        batchName: string;
+        availableGroups: string[];
+        selectedGroup: string;
+        comment: string;
+    }>({
+        show: false,
+        requestId: '',
+        studentName: '',
+        batchName: '',
+        availableGroups: [],
+        selectedGroup: '',
+        comment: ''
+    });
+
+    const handleAction = async (id: string, action: 'approved' | 'rejected', type: string, reason?: string, assignedGroup?: string | null) => {
+        // If coordinator stage approving an enrollment application and no group specified yet:
+        if (type === 'enrollment' && action === 'approved' && assignedGroup === undefined) {
+            const app = realEnrollmentApps.find(a => a.id === id);
+            const isCoordinatorStage = currentAdminRole === 'coordinator' || (app && app.approvalLevel === 1);
+            
+            let groups: string[] = [];
+            if (app) {
+                if (Array.isArray(app.batchGroups)) {
+                    groups = app.batchGroups;
+                } else if (typeof app.batchGroups === 'string') {
+                    try {
+                        const parsed = JSON.parse(app.batchGroups);
+                        if (Array.isArray(parsed)) groups = parsed;
+                    } catch (e) {
+                        groups = [];
+                    }
+                }
+            }
+
+            if (isCoordinatorStage && groups.length > 0) {
+                setCoordinatorApprovalModal({
+                    show: true,
+                    requestId: id,
+                    studentName: app?.displayName || app?.applicantName || 'Applicant',
+                    batchName: app?.batchName || 'Selected Batch',
+                    availableGroups: groups,
+                    selectedGroup: app?.group || groups[0] || '',
+                    comment: reason || ''
+                });
+                return;
+            }
+        }
+
         if (actioningIds.has(id)) return; // Prevent double-click
         addActioning(id);
 
@@ -250,7 +306,14 @@ export const Applications: React.FC = () => {
                         comment: reason || (action === 'approved' ? 'Approved' : 'Rejected')
                     } : s
                 );
-                return { ...app, status: newStatus, approvalLevel: newLevel, approvalStages: newStages, rejectionReason: action === 'rejected' ? (reason || 'Rejected') : app.rejectionReason };
+                return { 
+                    ...app, 
+                    status: newStatus, 
+                    approvalLevel: newLevel, 
+                    approvalStages: newStages, 
+                    group: assignedGroup !== undefined ? assignedGroup : app.group,
+                    rejectionReason: action === 'rejected' ? (reason || 'Rejected') : app.rejectionReason 
+                };
             });
 
         if (type === 'exam') {
@@ -310,7 +373,8 @@ export const Applications: React.FC = () => {
                         }
                         const response = await courseApplicationService.approve(id, {
                             comment: reason || 'Approved',
-                            documents_verified: docsVerified
+                            documents_verified: docsVerified,
+                            group: assignedGroup !== undefined ? assignedGroup : undefined
                         });
                         // Patch with actual server response (e.g. generated student number)
                         if (response) {
@@ -318,6 +382,7 @@ export const Applications: React.FC = () => {
                                 studentNumber: response.generated_student_number || response.user?.student_number || '',
                                 approvalLevel: response.approval_level ?? 3,
                                 status: response.status ?? 'approved',
+                                group: assignedGroup !== undefined ? assignedGroup : (response.group || app?.group || null)
                             };
                             setRealEnrollmentApps(prev => prev.map(a => a.id === id ? { ...a, ...serverPatch } : a));
                             if (selectedApplication?.id === id) setSelectedApplication((p: any) => ({ ...p, ...serverPatch }));
@@ -635,6 +700,32 @@ export const Applications: React.FC = () => {
                                         ) : (
                                             <span className="am-value">{selectedApplication.officialAddress || 'N/A'}</span>
                                         )}
+                                    </div>
+                                </div>
+
+                                <div className="am-section-divider">
+                                    <h4><BookOpen size={16} /> Course & Batch Allocation</h4>
+                                </div>
+                                <div className="am-details-grid">
+                                    <div className="am-detail-item">
+                                        <span className="am-label">Course</span>
+                                        <span className="am-value" style={{ fontWeight: 600, color: 'var(--primary-color)' }}>{selectedApplication.courseTitle || 'N/A'}</span>
+                                    </div>
+                                    <div className="am-detail-item">
+                                        <span className="am-label">Assigned Batch</span>
+                                        <span className="am-value">{selectedApplication.batchName || 'Not Assigned'}</span>
+                                    </div>
+                                    <div className="am-detail-item">
+                                        <span className="am-label">Assigned Group</span>
+                                        <span className="am-value">
+                                            {selectedApplication.group ? (
+                                                <span style={{ display: 'inline-block', background: '#F5F3FF', color: 'var(--primary-color)', padding: '2px 10px', borderRadius: '12px', fontWeight: 700, fontSize: '12px', border: '1px solid #DDD6FE' }}>
+                                                    {selectedApplication.group}
+                                                </span>
+                                            ) : (
+                                                <span style={{ color: '#94A3B8' }}>Unassigned</span>
+                                            )}
+                                        </span>
                                     </div>
                                 </div>
                             </>
@@ -1250,6 +1341,18 @@ export const Applications: React.FC = () => {
                                                     <div>
                                                         <span className="at-name">{app.displayName || app.applicantName}</span>
                                                         <span className="at-email">{app.applicantEmail}</span>
+                                                        {app.batchName && (
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
+                                                                <span style={{ fontSize: '11px', color: '#475569', background: '#F1F5F9', padding: '1px 7px', borderRadius: '4px', fontWeight: 600 }}>
+                                                                    {app.batchName}
+                                                                </span>
+                                                                {app.group && (
+                                                                    <span style={{ fontSize: '11px', color: 'var(--primary-color)', background: '#F5F3FF', border: '1px solid #DDD6FE', padding: '1px 7px', borderRadius: '4px', fontWeight: 700 }}>
+                                                                        {app.group}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </td>
@@ -1689,6 +1792,140 @@ export const Applications: React.FC = () => {
                     executeDeleteApplication();
                 }}
             />
+
+            {/* Coordinator Application Approval Modal with Group Assignment */}
+            {coordinatorApprovalModal.show && (
+                <div
+                    className="cm-modal-overlay"
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3000 }}
+                    onClick={() => setCoordinatorApprovalModal(prev => ({ ...prev, show: false }))}
+                >
+                    <div
+                        className="cm-modal"
+                        onClick={e => e.stopPropagation()}
+                        style={{
+                            maxWidth: '480px',
+                            width: '92%',
+                            borderRadius: '20px',
+                            background: '#FFFFFF',
+                            padding: '28px',
+                            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+                        }}
+                    >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                            <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: '#ECFDF5', color: '#10B981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <UserCheck size={22} />
+                            </div>
+                            <div>
+                                <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#0F172A', margin: 0 }}>Coordinator Approval</h2>
+                                <p style={{ color: '#64748B', fontSize: '13px', margin: '2px 0 0 0' }}>Assign student to a group for {coordinatorApprovalModal.batchName}</p>
+                            </div>
+                        </div>
+
+                        <div style={{ background: '#F8FAFC', borderRadius: '12px', padding: '14px', marginBottom: '20px', border: '1px solid #E2E8F0' }}>
+                            <div style={{ fontSize: '14px', color: '#1E293B', fontWeight: 700 }}>{coordinatorApprovalModal.studentName}</div>
+                            <div style={{ fontSize: '12px', color: '#64748B', marginTop: '2px' }}>Target Batch: {coordinatorApprovalModal.batchName}</div>
+                        </div>
+
+                        <div style={{ marginBottom: '20px' }}>
+                            <label style={{ fontSize: '13px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '10px' }}>
+                                Add Student to Group:
+                            </label>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                {coordinatorApprovalModal.availableGroups.map(groupName => (
+                                    <label
+                                        key={groupName}
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '10px',
+                                            padding: '10px 14px',
+                                            borderRadius: '10px',
+                                            border: coordinatorApprovalModal.selectedGroup === groupName ? '2px solid var(--primary-color)' : '1px solid #CBD5E1',
+                                            background: coordinatorApprovalModal.selectedGroup === groupName ? '#F5F3FF' : '#FFFFFF',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.15s ease'
+                                        }}
+                                    >
+                                        <input
+                                            type="radio"
+                                            name="coord_group_choice_apps"
+                                            value={groupName}
+                                            checked={coordinatorApprovalModal.selectedGroup === groupName}
+                                            onChange={() => setCoordinatorApprovalModal(prev => ({ ...prev, selectedGroup: groupName }))}
+                                        />
+                                        <span style={{ fontSize: '14px', fontWeight: 700, color: '#1E293B' }}>{groupName}</span>
+                                    </label>
+                                ))}
+                                <label
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '10px',
+                                        padding: '10px 14px',
+                                        borderRadius: '10px',
+                                        border: coordinatorApprovalModal.selectedGroup === '' ? '2px solid #94A3B8' : '1px solid #CBD5E1',
+                                        background: coordinatorApprovalModal.selectedGroup === '' ? '#F1F5F9' : '#FFFFFF',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.15s ease'
+                                    }}
+                                >
+                                    <input
+                                        type="radio"
+                                        name="coord_group_choice_apps"
+                                        value=""
+                                        checked={coordinatorApprovalModal.selectedGroup === ''}
+                                        onChange={() => setCoordinatorApprovalModal(prev => ({ ...prev, selectedGroup: '' }))}
+                                    />
+                                    <span style={{ fontSize: '14px', fontWeight: 600, color: '#64748B' }}>Unassigned (Assign Later)</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div style={{ marginBottom: '20px' }}>
+                            <label style={{ fontSize: '13px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '6px' }}>
+                                Coordinator Comment (Optional):
+                            </label>
+                            <input
+                                type="text"
+                                placeholder="e.g. Approved and assigned to group"
+                                className="admin-input"
+                                style={{ width: '100%', height: '40px', fontSize: '13px' }}
+                                value={coordinatorApprovalModal.comment}
+                                onChange={(e) => setCoordinatorApprovalModal(prev => ({ ...prev, comment: e.target.value }))}
+                            />
+                        </div>
+
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                            <button
+                                type="button"
+                                className="admin-btn-outline"
+                                style={{ height: '40px', padding: '0 16px', borderRadius: '10px', fontSize: '13px' }}
+                                onClick={() => setCoordinatorApprovalModal(prev => ({ ...prev, show: false }))}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                className="admin-btn-primary"
+                                style={{ height: '40px', padding: '0 20px', borderRadius: '10px', fontSize: '13px', fontWeight: 700, background: '#10B981', display: 'flex', alignItems: 'center', gap: '6px', color: '#FFFFFF', border: 'none', cursor: 'pointer' }}
+                                onClick={() => {
+                                    handleAction(
+                                        coordinatorApprovalModal.requestId,
+                                        'approved',
+                                        'enrollment',
+                                        coordinatorApprovalModal.comment,
+                                        coordinatorApprovalModal.selectedGroup || null
+                                    );
+                                    setCoordinatorApprovalModal(prev => ({ ...prev, show: false }));
+                                }}
+                            >
+                                <Check size={16} /> Confirm & Approve
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

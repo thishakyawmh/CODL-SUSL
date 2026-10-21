@@ -307,6 +307,7 @@ class CourseController extends Controller
             $validated = $request->validate([
                 'student_id' => 'required|string',
                 'batch' => 'nullable|string',
+                'group' => 'nullable|string',
             ]);
             
             $course = Course::findOrFail($id);
@@ -316,7 +317,11 @@ class CourseController extends Controller
                 ->orWhere('email', $validated['student_id'])
                 ->firstOrFail();
                 
-            $course->students()->syncWithoutDetaching([$user->id => ['batch' => $validated['batch']]]);
+            $pivotData = ['batch' => $validated['batch'] ?? null];
+            if (array_key_exists('group', $validated)) {
+                $pivotData['group'] = $validated['group'];
+            }
+            $course->students()->syncWithoutDetaching([$user->id => $pivotData]);
             self::clearManageCourseCache($id);
 
 
@@ -371,6 +376,40 @@ class CourseController extends Controller
             
             return response()->json(['message' => 'Student suspended/unenrolled successfully']);
         });
+    }
+
+    public function updateStudentGroup(Request $request, $id, $studentId)
+    {
+        $validated = $request->validate([
+            'group' => 'nullable|string|max:100',
+        ]);
+
+        $course = Course::findOrFail($id);
+        $user = \App\Models\User::where('student_number', $studentId)
+            ->orWhere('id', $studentId)
+            ->firstOrFail();
+
+        $course->students()->updateExistingPivot($user->id, [
+            'group' => $validated['group'] ?? null,
+        ]);
+
+        self::clearManageCourseCache($id);
+
+        $admin = $request->user();
+        if ($admin) {
+            \App\Models\ActivityLog::log(
+                $admin->id,
+                "Updated student group for {$user->full_name}",
+                "Student: " . ($user->student_number ?: $user->id) . " assigned to " . ($validated['group'] ?: 'Unassigned') . " in course {$course->code}",
+                'user'
+            );
+        }
+
+        return response()->json([
+            'message' => 'Student group updated successfully',
+            'group' => $validated['group'] ?? null,
+            'student_id' => $user->student_number ?: (string)$user->id,
+        ]);
     }
 
     public static function clearManageCourseCache($courseId)
@@ -451,6 +490,7 @@ class CourseController extends Controller
                 'status' => ucfirst($student->status) ?: 'Active',
                 'payment' => 'Verified',
                 'batch' => $student->pivot->batch,
+                'group' => $student->pivot->group ?? null,
             ];
         });
     }
@@ -475,6 +515,7 @@ class CourseController extends Controller
                 'max_enrollments',
                 'subtitle',
                 'status',
+                'groups',
                 'created_at',
                 'updated_at'
             ]);
@@ -529,7 +570,11 @@ class CourseController extends Controller
     private function getCourseRequests($courseId): array
     {
         return [
-            'enrollment_requests' => \App\Models\CourseApplication::where('course_id', $courseId)->with('user:id,full_name,display_name,email,student_number')->get(),
+            'enrollment_requests' => \App\Models\CourseApplication::where('course_id', $courseId)
+                ->with([
+                    'user:id,full_name,display_name,email,student_number',
+                    'batch:id,name,course_id,groups'
+                ])->get(),
             'exam_applications' => \App\Models\ExamApplication::where('course_id', $courseId)->with('user:id,full_name,display_name,email,student_number')->get(),
             'postponement_requests' => \App\Models\PostponementRequest::where('course_id', $courseId)->with('user:id,full_name,display_name,email,student_number')->get(),
             'reattempt_requests' => \App\Models\ReattemptRequest::where('course_id', $courseId)->with(['user:id,full_name,display_name,email,student_number', 'subject'])->get(),
