@@ -50,17 +50,12 @@ class AuthController extends Controller
             'password' => 'required',
         ]);
 
-        \Log::info('Login attempt', [
-            'login' => $request->login,
-            'password_length' => strlen($request->password),
-        ]);
-
         $user = User::where('email', $request->login)
                     ->orWhere('student_number', $request->login)
                     ->first();
 
         if (!$user) {
-            \Log::warning('Login failed: user not found', ['login' => $request->login]);
+            \Log::warning('Login failed: user not found');
             return response()->json([
                 'message' => 'Invalid login credentials'
             ], 401);
@@ -74,17 +69,8 @@ class AuthController extends Controller
             ], 503);
         }
 
-        \Log::info('User found', [
-            'id' => $user->id,
-            'student_number' => $user->student_number,
-            'role' => $user->role,
-        ]);
-
         if (!Hash::check($request->password, $user->password)) {
-            \Log::warning('Login failed: password mismatch', [
-                'user_id' => $user->id,
-                'input_password_length' => strlen($request->password),
-            ]);
+            \Log::warning('Login failed: password mismatch', ['user_id' => $user->id]);
             return response()->json([
                 'message' => 'Invalid login credentials'
             ], 401);
@@ -223,7 +209,7 @@ class AuthController extends Controller
         \Illuminate\Support\Facades\DB::table('password_reset_tokens')->updateOrInsert(
             ['email' => $request->email],
             [
-                'token' => $token,
+                'token' => Hash::make($token),
                 'created_at' => now()
             ]
         );
@@ -235,6 +221,10 @@ class AuthController extends Controller
             );
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Password reset email failed to send: ' . $e->getMessage());
+            \Illuminate\Support\Facades\DB::table('password_reset_tokens')
+                ->where('email', $user->email)
+                ->delete();
+
             return response()->json([
                 'message' => 'Failed to send reset email. Please try again later.'
             ], 500);
@@ -256,10 +246,9 @@ class AuthController extends Controller
 
         $record = \Illuminate\Support\Facades\DB::table('password_reset_tokens')
             ->where('email', $request->email)
-            ->where('token', $request->token)
             ->first();
 
-        if (!$record) {
+        if (!$record || !Hash::check($request->token, $record->token)) {
             return response()->json([
                 'message' => 'Invalid reset token.'
             ], 422);
