@@ -140,10 +140,10 @@ Route::middleware('auth:sanctum')->group(function () {
     
     // Categories
     Route::get('/categories', [\App\Http\Controllers\CategoryController::class, 'index']);
-    Route::post('/categories', [\App\Http\Controllers\CategoryController::class, 'store']);
+    Route::post('/categories', [\App\Http\Controllers\CategoryController::class, 'store'])->middleware('role:super_admin,director');
     Route::get('/categories/{id}', [\App\Http\Controllers\CategoryController::class, 'show']);
-    Route::put('/categories/{id}', [\App\Http\Controllers\CategoryController::class, 'update']);
-    Route::delete('/categories/{id}', [\App\Http\Controllers\CategoryController::class, 'destroy']);
+    Route::put('/categories/{id}', [\App\Http\Controllers\CategoryController::class, 'update'])->middleware('role:super_admin,director');
+    Route::delete('/categories/{id}', [\App\Http\Controllers\CategoryController::class, 'destroy'])->middleware('role:super_admin,director');
 
     // Courses
     Route::get('/courses', [CourseController::class, 'index']);
@@ -178,41 +178,41 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Exams
     Route::get('/courses/{id}/exams', [ExamController::class, 'index']);
-    Route::post('/courses/{id}/exams', [ExamController::class, 'store']);
-    Route::put('/exams/{id}', [ExamController::class, 'update']);
-    Route::delete('/exams/{id}', [ExamController::class, 'destroy']);
-    Route::post('/exams/upload-timetable', [ExamController::class, 'uploadTimetable']);
+    Route::post('/courses/{id}/exams', [ExamController::class, 'store'])->middleware('role:super_admin,director,coordinator,secretary,lecturer');
+    Route::put('/exams/{id}', [ExamController::class, 'update'])->middleware('role:super_admin,director,coordinator,secretary,lecturer');
+    Route::delete('/exams/{id}', [ExamController::class, 'destroy'])->middleware('role:super_admin,director,coordinator,secretary,lecturer');
+    Route::post('/exams/upload-timetable', [ExamController::class, 'uploadTimetable'])->middleware('role:super_admin,director,coordinator,secretary,lecturer');
 
     // Announcements
     Route::get('/announcements', [AnnouncementController::class, 'index']);
-    Route::post('/announcements', [AnnouncementController::class, 'store']);
-    Route::delete('/announcements/{id}', [AnnouncementController::class, 'destroy']);
+    Route::post('/announcements', [AnnouncementController::class, 'store'])->middleware('role:super_admin,director,coordinator,secretary,lecturer');
+    Route::delete('/announcements/{id}', [AnnouncementController::class, 'destroy'])->middleware('role:super_admin,director,coordinator,secretary,lecturer');
 
     // Exam Applications
-    Route::get('/exam-applications', [ExamApplicationController::class, 'index']);
-    Route::post('/exam-applications', [ExamApplicationController::class, 'store']);
-    Route::put('/exam-applications/{id}', [ExamApplicationController::class, 'update']);
-    Route::delete('/exam-applications/{id}', [ExamApplicationController::class, 'destroy']);
+    Route::get('/exam-applications', [ExamApplicationController::class, 'index'])->middleware('role:super_admin,director,coordinator,secretary,lecturer');
+    Route::post('/exam-applications', [ExamApplicationController::class, 'store'])->middleware('role:student');
+    Route::put('/exam-applications/{id}', [ExamApplicationController::class, 'update'])->middleware('role:super_admin,director,coordinator,secretary,lecturer');
+    Route::delete('/exam-applications/{id}', [ExamApplicationController::class, 'destroy'])->middleware('role:super_admin,director,coordinator,secretary,lecturer');
     Route::get('/student/exam-applications', [ExamApplicationController::class, 'myApplications']);
 
     // Postponement Requests
-    Route::get('/postponement-requests', [\App\Http\Controllers\PostponementRequestController::class, 'index']);
-    Route::post('/postponement-requests', [\App\Http\Controllers\PostponementRequestController::class, 'store']);
-    Route::put('/postponement-requests/{id}', [\App\Http\Controllers\PostponementRequestController::class, 'update']);
-    Route::delete('/postponement-requests/{id}', [\App\Http\Controllers\PostponementRequestController::class, 'destroy']);
+    Route::get('/postponement-requests', [\App\Http\Controllers\PostponementRequestController::class, 'index'])->middleware('role:super_admin,director,coordinator,secretary,lecturer');
+    Route::post('/postponement-requests', [\App\Http\Controllers\PostponementRequestController::class, 'store'])->middleware('role:student');
+    Route::put('/postponement-requests/{id}', [\App\Http\Controllers\PostponementRequestController::class, 'update'])->middleware('role:super_admin,director,coordinator,secretary,lecturer');
+    Route::delete('/postponement-requests/{id}', [\App\Http\Controllers\PostponementRequestController::class, 'destroy'])->middleware('role:super_admin,director,coordinator,secretary,lecturer');
     Route::get('/student/postponement-requests', [\App\Http\Controllers\PostponementRequestController::class, 'myRequests']);
 
     // Reattempt Requests
-    Route::get('/reattempt-requests', [\App\Http\Controllers\ReattemptRequestController::class, 'index']);
-    Route::post('/reattempt-requests', [\App\Http\Controllers\ReattemptRequestController::class, 'store']);
-    Route::put('/reattempt-requests/{id}', [\App\Http\Controllers\ReattemptRequestController::class, 'update']);
-    Route::delete('/reattempt-requests/{id}', [\App\Http\Controllers\ReattemptRequestController::class, 'destroy']);
+    Route::get('/reattempt-requests', [\App\Http\Controllers\ReattemptRequestController::class, 'index'])->middleware('role:super_admin,director,coordinator,secretary,lecturer');
+    Route::post('/reattempt-requests', [\App\Http\Controllers\ReattemptRequestController::class, 'store'])->middleware('role:student');
+    Route::put('/reattempt-requests/{id}', [\App\Http\Controllers\ReattemptRequestController::class, 'update'])->middleware('role:super_admin,director,coordinator,secretary,lecturer');
+    Route::delete('/reattempt-requests/{id}', [\App\Http\Controllers\ReattemptRequestController::class, 'destroy'])->middleware('role:super_admin,director,coordinator,secretary,lecturer');
     Route::get('/student/reattempt-requests', [\App\Http\Controllers\ReattemptRequestController::class, 'myRequests']);
 
     // Exam Results
-    Route::get('/exam-results', [\App\Http\Controllers\ExamResultController::class, 'index']);
-    Route::post('/exam-results', [\App\Http\Controllers\ExamResultController::class, 'store']);
+    Route::get('/exam-results', [\App\Http\Controllers\ExamResultController::class, 'index'])->middleware('role:super_admin,director,coordinator,secretary,lecturer');
+    Route::post('/exam-results', [\App\Http\Controllers\ExamResultController::class, 'store'])->middleware('role:super_admin,director,coordinator,secretary,lecturer');
     Route::get('/exam-results/my', [\App\Http\Controllers\ExamResultController::class, 'myResults']);
-    Route::get('/exam-results/exam/{examId}', [\App\Http\Controllers\ExamResultController::class, 'getByExam']);
+    Route::get('/exam-results/exam/{examId}', [\App\Http\Controllers\ExamResultController::class, 'getByExam'])->middleware('role:super_admin,director,coordinator,secretary,lecturer');
 
 });
