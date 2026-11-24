@@ -124,6 +124,21 @@ class AuthController extends Controller
             return response()->json(['message' => 'Failed to verify Google credential.'], 500);
         }
 
+        $expectedClientId = config('services.google.client_id');
+        $issuer = $payload['iss'] ?? null;
+        $expiresAt = isset($payload['exp']) ? (int) $payload['exp'] : 0;
+        $audience = $payload['aud'] ?? null;
+
+        if (
+            !$expectedClientId ||
+            !is_string($audience) ||
+            !hash_equals($expectedClientId, $audience) ||
+            !in_array($issuer, ['accounts.google.com', 'https://accounts.google.com'], true) ||
+            $expiresAt <= time()
+        ) {
+            return response()->json(['message' => 'Google credential is not valid for this application.'], 401);
+        }
+
         $email = $payload['email'] ?? null;
         $name = $payload['name'] ?? 'Google User';
         $avatar = $payload['picture'] ?? null;
