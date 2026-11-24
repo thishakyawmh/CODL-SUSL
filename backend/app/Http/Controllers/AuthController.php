@@ -198,8 +198,8 @@ class AuthController extends Controller
 
         if (!$user || !in_array($user->role, ['student', 'applicant'])) {
             return response()->json([
-                'message' => "We couldn't find a user with that email address."
-            ], 422);
+                'message' => 'If an eligible account exists for that email, a password reset link will be sent.'
+            ]);
         }
 
 
