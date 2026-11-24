@@ -296,14 +296,28 @@ class CourseController extends Controller
         return response()->json($courses);
     }
 
-    public function getEnrolledStudents($id)
+    public function getEnrolledStudents(Request $request, $id)
     {
         $course = Course::findOrFail($id);
+        if (!$this->canAccessCourseManagement($request->user(), $course)) {
+            return response()->json(['message' => 'You are not authorized to view this course roster.'], 403);
+        }
+
         return response()->json($this->mapEnrolledStudents($course));
     }
 
     public function enrollStudent(Request $request, $id)
     {
+        $course = Course::findOrFail($id);
+        $user = $request->user();
+        if (
+            !$user ||
+            !in_array($user->role, ['super_admin', 'director', 'coordinator', 'secretary']) ||
+            !$this->canAccessCourseManagement($user, $course)
+        ) {
+            return response()->json(['message' => 'You are not authorized to enroll students in this course.'], 403);
+        }
+
         return DB::transaction(function () use ($request, $id) {
             $validated = $request->validate([
                 'student_id' => 'required|string',
@@ -350,6 +364,16 @@ class CourseController extends Controller
 
     public function unenrollStudent(Request $request, $id, $studentId)
     {
+        $course = Course::findOrFail($id);
+        $user = $request->user();
+        if (
+            !$user ||
+            !in_array($user->role, ['super_admin', 'director', 'coordinator', 'secretary']) ||
+            !$this->canAccessCourseManagement($user, $course)
+        ) {
+            return response()->json(['message' => 'You are not authorized to unenroll students from this course.'], 403);
+        }
+
         return DB::transaction(function () use ($request, $id, $studentId) {
             $course = Course::findOrFail($id);
             $user = \App\Models\User::where('student_number', $studentId)
@@ -374,6 +398,46 @@ class CourseController extends Controller
         });
     }
 
+    /**
+     * Authorize staff access to a course's management data.
+     * Lecturers must be assigned to a batch or subject in the course.
+     */
+    private function canAccessCourseManagement($user, Course $course): bool
+    {
+        if (!$user) {
+            return false;
+        }
+
+        if (in_array($user->role, ['super_admin', 'director'])) {
+            return true;
+        }
+
+        if (
+            ($user->role === 'coordinator' && (int) $course->coordinator_id === (int) $user->id) ||
+            ($user->role === 'secretary' && (int) $course->secretary_id === (int) $user->id)
+        ) {
+            return true;
+        }
+
+        if ($user->role !== 'lecturer') {
+            return false;
+        }
+
+        $assignedToBatch = \\App\\Models\\Batch::where('course_id', $course->id)
+            ->where('instructor_id', $user->id)
+            ->exists();
+
+        if ($assignedToBatch) {
+            return true;
+        }
+
+        return DB::table('batch_subject_instructor')
+            ->join('batches', 'batches.id', '=', 'batch_subject_instructor.batch_id')
+            ->where('batches.course_id', $course->id)
+            ->where('batch_subject_instructor.instructor_id', $user->id)
+            ->exists();
+    }
+
     public static function clearManageCourseCache($courseId)
     {
         try {
@@ -387,6 +451,11 @@ class CourseController extends Controller
     public function manageCourseData(Request $request, $courseId)
     {
         $user = $request->user();
+        $course = Course::findOrFail($courseId);
+        if (!$this->canAccessCourseManagement($user, $course)) {
+            return response()->json(['message' => 'You are not authorized to manage this course.'], 403);
+        }
+
         $isLecturer = $user && $user->role === 'lecturer';
         $cacheSuffix = $isLecturer ? "lecturer_{$user->id}" : "admin";
         
