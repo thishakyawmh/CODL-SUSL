@@ -166,14 +166,14 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
     // Course Applications
-    Route::get('/course-applications', [CourseApplicationController::class, 'index']);
+    Route::get('/course-applications', [CourseApplicationController::class, 'index'])->middleware('role:super_admin,director,coordinator,secretary');
     Route::get('/course-applications/my', [CourseApplicationController::class, 'myApplications'])->middleware('role:student');
-    Route::get('/course-applications/{id}', [CourseApplicationController::class, 'show']);
+    Route::get('/course-applications/{id}', [CourseApplicationController::class, 'show'])->middleware('role:super_admin,director,coordinator,secretary,student');
     Route::post('/course-applications', [CourseApplicationController::class, 'store'])->middleware('role:student');
     Route::post('/course-applications/{id}/approve', [CourseApplicationController::class, 'approve']);
     Route::post('/course-applications/{id}/reject', [CourseApplicationController::class, 'reject']);
-    Route::put('/course-applications/{id}/verify-docs', [CourseApplicationController::class, 'updateDocumentsVerified']);
-    Route::post('/course-applications/check-nic', [CourseApplicationController::class, 'checkNic']);
+    Route::put('/course-applications/{id}/verify-docs', [CourseApplicationController::class, 'updateDocumentsVerified'])->middleware('role:super_admin,director,coordinator,secretary');
+    Route::post('/course-applications/check-nic', [CourseApplicationController::class, 'checkNic'])->middleware('role:super_admin,director,coordinator,secretary');
     Route::delete('/course-applications/{id}', [CourseApplicationController::class, 'destroy']);
 
     // Exams
