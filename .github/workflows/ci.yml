@@ -2,7 +2,7 @@ name: CODL-SUSL CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, master, develop ]
+    branches: [ main, master, develop, "audit/**" ]
   pull_request:
     branches: [ main, master ]
 
