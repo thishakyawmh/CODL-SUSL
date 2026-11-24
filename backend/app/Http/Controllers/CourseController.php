@@ -494,8 +494,15 @@ class CourseController extends Controller
         
         $announcements = \App\Models\Announcement::where('course_id', $courseId)->latest()->get();
         
-        $requests = $this->getCourseRequests($courseId);
-        
+        $requests = $user && $user->role === 'lecturer'
+            ? [
+                'enrollment_requests' => collect(),
+                'exam_applications' => collect(),
+                'postponement_requests' => collect(),
+                'reattempt_requests' => collect(),
+            ]
+            : $this->getCourseRequests($courseId);
+
         return array_merge([
             'course' => $course,
             'enrolled_students' => $enrolledStudents,
