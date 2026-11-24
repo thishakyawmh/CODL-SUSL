@@ -161,6 +161,10 @@ class AuthController extends Controller
             }
         }
 
+        if ($user && $user->status !== 'active') {
+            return response()->json(['message' => 'This account is not active. Please contact support.'], 403);
+        }
+
         if (!$user) {
 
             $user = User::create([
