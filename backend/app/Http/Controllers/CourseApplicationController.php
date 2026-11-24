@@ -72,11 +72,25 @@ class CourseApplicationController extends Controller
     }
 
      
-    public function show($id)
+    public function show(Request $request, $id)
     {
         $application = CourseApplication::with(['course', 'batch', 'user',
             'secretaryApprover', 'coordinatorApprover', 'directorApprover'])
             ->findOrFail($id);
+
+        $user = $request->user();
+        $staffRoles = ['super_admin', 'director', 'coordinator', 'secretary'];
+        $isStaff = $user && in_array($user->role, $staffRoles);
+        $isOwner = $user &&
+            $user->role === 'student' &&
+            (
+                (int) $application->user_id === (int) $user->id ||
+                strtolower((string) $application->applicant_email) === strtolower((string) $user->email)
+            );
+
+        if (!$isStaff && !$isOwner) {
+            return response()->json(['message' => 'You are not authorized to view this application.'], 403);
+        }
 
         return response()->json($application);
     }
