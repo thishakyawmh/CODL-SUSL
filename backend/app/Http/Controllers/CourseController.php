@@ -66,39 +66,45 @@ class CourseController extends Controller
                 'coordinator_id' => 'nullable|exists:users,id',
                 'category_id' => 'nullable|exists:categories,id',
                 'semesters' => 'nullable|array',
+                'semesters.*.name' => 'required_with:semesters|string|max:255',
+                'semesters.*.subjects' => 'sometimes|array',
+                'semesters.*.subjects.*.name' => 'required|string|max:255',
+                'semesters.*.subjects.*.code' => 'nullable|string|max:100',
+                'semesters.*.subjects.*.credits' => 'required|numeric|min:0',
                 'subjects' => 'nullable|array',
+                'subjects.*.name' => 'required|string|max:255',
+                'subjects.*.code' => 'nullable|string|max:100',
+                'subjects.*.credits' => 'required|numeric|min:0',
             ]);
 
             $courseData = \Illuminate\Support\Arr::except($validated, ['semesters', 'subjects']);
-            $course = Course::create($courseData);
 
+            $course = DB::transaction(function () use ($courseData, $validated) {
+                $course = Course::create($courseData);
 
-            if ($request->has('semesters')) {
-                foreach ($request->semesters as $semData) {
+                foreach ($validated['semesters'] ?? [] as $semData) {
                     $semester = $course->semesters()->create(['name' => $semData['name']]);
-                    if (isset($semData['subjects'])) {
-                        foreach ($semData['subjects'] as $subData) {
-                            $semester->subjects()->create([
-                                'course_id' => $course->id,
-                                'name' => $subData['name'],
-                                'code' => $subData['code'] ?? ($course->code . '-' . rand(100, 999)),
-                                'credits' => $subData['credits'],
-                            ]);
-                        }
+
+                    foreach ($semData['subjects'] ?? [] as $subData) {
+                        $semester->subjects()->create([
+                            'course_id' => $course->id,
+                            'name' => $subData['name'],
+                            'code' => $subData['code'] ?? ($course->code . '-' . random_int(100, 999)),
+                            'credits' => $subData['credits'],
+                        ]);
                     }
                 }
-            }
 
-
-            if ($request->has('subjects')) {
-                foreach ($request->subjects as $subData) {
+                foreach ($validated['subjects'] ?? [] as $subData) {
                     $course->subjects()->create([
                         'name' => $subData['name'],
-                        'code' => $subData['code'] ?? ($course->code . '-' . rand(100, 999)),
+                        'code' => $subData['code'] ?? ($course->code . '-' . random_int(100, 999)),
                         'credits' => $subData['credits'],
                     ]);
                 }
-            }
+
+                return $course;
+            });
 
             \App\Models\ActivityLog::log($user->id, 'Created new Course', "Course: {$course->title} ({$course->code})", 'course');
 
@@ -118,7 +124,7 @@ class CourseController extends Controller
             throw $e;
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Course Creation Error: ' . $e->getMessage());
-            return response()->json(['message' => $e->getMessage()], 500);
+            return response()->json(['message' => 'Unable to create course. Please try again.'], 500);
         }
     }
 
@@ -270,11 +276,6 @@ class CourseController extends Controller
     public function publicIndex()
     {
 
-        \App\Models\Batch::where('status', 'Upcoming')
-            ->whereNotNull('registration_deadline')
-            ->where('registration_deadline', '<', now()->toDateString())
-            ->update(['status' => 'Active']);
-
         $courses = Course::whereHas('batches', function ($q) {
                 $q->where('status', 'Upcoming')
                   ->where(function ($query) {
@@ -295,14 +296,28 @@ class CourseController extends Controller
         return response()->json($courses);
     }
 
-    public function getEnrolledStudents($id)
+    public function getEnrolledStudents(Request $request, $id)
     {
         $course = Course::findOrFail($id);
+        if (!$this->canAccessCourseManagement($request->user(), $course)) {
+            return response()->json(['message' => 'You are not authorized to view this course roster.'], 403);
+        }
+
         return response()->json($this->mapEnrolledStudents($course));
     }
 
     public function enrollStudent(Request $request, $id)
     {
+        $course = Course::findOrFail($id);
+        $user = $request->user();
+        if (
+            !$user ||
+            !in_array($user->role, ['super_admin', 'director', 'coordinator', 'secretary']) ||
+            !$this->canAccessCourseManagement($user, $course)
+        ) {
+            return response()->json(['message' => 'You are not authorized to enroll students in this course.'], 403);
+        }
+
         return DB::transaction(function () use ($request, $id) {
             $validated = $request->validate([
                 'student_id' => 'required|string',
@@ -349,6 +364,16 @@ class CourseController extends Controller
 
     public function unenrollStudent(Request $request, $id, $studentId)
     {
+        $course = Course::findOrFail($id);
+        $user = $request->user();
+        if (
+            !$user ||
+            !in_array($user->role, ['super_admin', 'director', 'coordinator', 'secretary']) ||
+            !$this->canAccessCourseManagement($user, $course)
+        ) {
+            return response()->json(['message' => 'You are not authorized to unenroll students from this course.'], 403);
+        }
+
         return DB::transaction(function () use ($request, $id, $studentId) {
             $course = Course::findOrFail($id);
             $user = \App\Models\User::where('student_number', $studentId)
@@ -373,6 +398,46 @@ class CourseController extends Controller
         });
     }
 
+    /**
+     * Authorize staff access to a course's management data.
+     * Lecturers must be assigned to a batch or subject in the course.
+     */
+    private function canAccessCourseManagement($user, Course $course): bool
+    {
+        if (!$user) {
+            return false;
+        }
+
+        if (in_array($user->role, ['super_admin', 'director'])) {
+            return true;
+        }
+
+        if (
+            ($user->role === 'coordinator' && (int) $course->coordinator_id === (int) $user->id) ||
+            ($user->role === 'secretary' && (int) $course->secretary_id === (int) $user->id)
+        ) {
+            return true;
+        }
+
+        if ($user->role !== 'lecturer') {
+            return false;
+        }
+
+        $assignedToBatch = \App\Models\Batch::where('course_id', $course->id)
+            ->where('instructor_id', $user->id)
+            ->exists();
+
+        if ($assignedToBatch) {
+            return true;
+        }
+
+        return DB::table('batch_subject_instructor')
+            ->join('batches', 'batches.id', '=', 'batch_subject_instructor.batch_id')
+            ->where('batches.course_id', $course->id)
+            ->where('batch_subject_instructor.instructor_id', $user->id)
+            ->exists();
+    }
+
     public static function clearManageCourseCache($courseId)
     {
         try {
@@ -386,6 +451,11 @@ class CourseController extends Controller
     public function manageCourseData(Request $request, $courseId)
     {
         $user = $request->user();
+        $course = Course::findOrFail($courseId);
+        if (!$this->canAccessCourseManagement($user, $course)) {
+            return response()->json(['message' => 'You are not authorized to manage this course.'], 403);
+        }
+
         $isLecturer = $user && $user->role === 'lecturer';
         $cacheSuffix = $isLecturer ? "lecturer_{$user->id}" : "admin";
         
@@ -424,8 +494,15 @@ class CourseController extends Controller
         
         $announcements = \App\Models\Announcement::where('course_id', $courseId)->latest()->get();
         
-        $requests = $this->getCourseRequests($courseId);
-        
+        $requests = $user && $user->role === 'lecturer'
+            ? [
+                'enrollment_requests' => collect(),
+                'exam_applications' => collect(),
+                'postponement_requests' => collect(),
+                'reattempt_requests' => collect(),
+            ]
+            : $this->getCourseRequests($courseId);
+
         return array_merge([
             'course' => $course,
             'enrolled_students' => $enrolledStudents,
@@ -447,10 +524,10 @@ class CourseController extends Controller
                 'name' => $student->full_name,
                 'displayName' => $student->display_name,
                 'email' => $student->email,
-                'phone' => $student->phone ?? '077 123 4567',
-                'enrollmentDate' => $student->pivot->created_at ? $student->pivot->created_at->toDateString() : now()->toDateString(),
-                'status' => ucfirst($student->status) ?: 'Active',
-                'payment' => 'Verified',
+                'phone' => $student->phone,
+                'enrollmentDate' => $student->pivot->created_at?->toDateString(),
+                'status' => $student->status ? ucfirst($student->status) : 'Active',
+                'payment' => null,
                 'batch' => $student->pivot->batch,
             ];
         });
@@ -458,12 +535,6 @@ class CourseController extends Controller
 
     private function getBatchesForManageCourse($courseId, $user)
     {
-
-        \App\Models\Batch::where('course_id', $courseId)
-            ->where('status', 'Upcoming')
-            ->whereNotNull('registration_deadline')
-            ->where('registration_deadline', '<', now()->toDateString())
-            ->update(['status' => 'Active']);
 
         $batchQuery = \App\Models\Batch::where('course_id', $courseId)
             ->select([
@@ -502,6 +573,17 @@ class CourseController extends Controller
                 if ($subject->pivot->instructor_id) {
                     $instructorIds[] = $subject->pivot->instructor_id;
                 }
+            }
+        }
+
+        // Reflect expired registration windows in this response without mutating data during a read.
+        foreach ($batches as $batch) {
+            if (
+                $batch->status === 'Upcoming' &&
+                $batch->registration_deadline &&
+                $batch->registration_deadline < now()->toDateString()
+            ) {
+                $batch->status = 'Active';
             }
         }
 

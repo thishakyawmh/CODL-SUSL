@@ -50,17 +50,12 @@ class AuthController extends Controller
             'password' => 'required',
         ]);
 
-        \Log::info('Login attempt', [
-            'login' => $request->login,
-            'password_length' => strlen($request->password),
-        ]);
-
         $user = User::where('email', $request->login)
                     ->orWhere('student_number', $request->login)
                     ->first();
 
         if (!$user) {
-            \Log::warning('Login failed: user not found', ['login' => $request->login]);
+            \Log::warning('Login failed: user not found');
             return response()->json([
                 'message' => 'Invalid login credentials'
             ], 401);
@@ -74,17 +69,8 @@ class AuthController extends Controller
             ], 503);
         }
 
-        \Log::info('User found', [
-            'id' => $user->id,
-            'student_number' => $user->student_number,
-            'role' => $user->role,
-        ]);
-
         if (!Hash::check($request->password, $user->password)) {
-            \Log::warning('Login failed: password mismatch', [
-                'user_id' => $user->id,
-                'input_password_length' => strlen($request->password),
-            ]);
+            \Log::warning('Login failed: password mismatch', ['user_id' => $user->id]);
             return response()->json([
                 'message' => 'Invalid login credentials'
             ], 401);
@@ -138,6 +124,21 @@ class AuthController extends Controller
             return response()->json(['message' => 'Failed to verify Google credential.'], 500);
         }
 
+        $expectedClientId = config('services.google.client_id');
+        $issuer = $payload['iss'] ?? null;
+        $expiresAt = isset($payload['exp']) ? (int) $payload['exp'] : 0;
+        $audience = $payload['aud'] ?? null;
+
+        if (
+            !$expectedClientId ||
+            !is_string($audience) ||
+            !hash_equals($expectedClientId, $audience) ||
+            !in_array($issuer, ['accounts.google.com', 'https://accounts.google.com'], true) ||
+            $expiresAt <= time()
+        ) {
+            return response()->json(['message' => 'Google credential is not valid for this application.'], 401);
+        }
+
         $email = $payload['email'] ?? null;
         $name = $payload['name'] ?? 'Google User';
         $avatar = $payload['picture'] ?? null;
@@ -158,6 +159,10 @@ class AuthController extends Controller
                     'maintenance' => true
                 ], 503);
             }
+        }
+
+        if ($user && $user->status !== 'active') {
+            return response()->json(['message' => 'This account is not active. Please contact support.'], 403);
         }
 
         if (!$user) {
@@ -212,8 +217,8 @@ class AuthController extends Controller
 
         if (!$user || !in_array($user->role, ['student', 'applicant'])) {
             return response()->json([
-                'message' => "We couldn't find a user with that email address."
-            ], 422);
+                'message' => 'If an eligible account exists for that email, a password reset link will be sent.'
+            ]);
         }
 
 
@@ -223,7 +228,7 @@ class AuthController extends Controller
         \Illuminate\Support\Facades\DB::table('password_reset_tokens')->updateOrInsert(
             ['email' => $request->email],
             [
-                'token' => $token,
+                'token' => Hash::make($token),
                 'created_at' => now()
             ]
         );
@@ -235,6 +240,10 @@ class AuthController extends Controller
             );
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Password reset email failed to send: ' . $e->getMessage());
+            \Illuminate\Support\Facades\DB::table('password_reset_tokens')
+                ->where('email', $user->email)
+                ->delete();
+
             return response()->json([
                 'message' => 'Failed to send reset email. Please try again later.'
             ], 500);
@@ -256,10 +265,9 @@ class AuthController extends Controller
 
         $record = \Illuminate\Support\Facades\DB::table('password_reset_tokens')
             ->where('email', $request->email)
-            ->where('token', $request->token)
             ->first();
 
-        if (!$record) {
+        if (!$record || !Hash::check($request->token, $record->token)) {
             return response()->json([
                 'message' => 'Invalid reset token.'
             ], 422);
