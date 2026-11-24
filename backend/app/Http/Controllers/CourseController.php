@@ -276,11 +276,6 @@ class CourseController extends Controller
     public function publicIndex()
     {
 
-        \App\Models\Batch::where('status', 'Upcoming')
-            ->whereNotNull('registration_deadline')
-            ->where('registration_deadline', '<', now()->toDateString())
-            ->update(['status' => 'Active']);
-
         $courses = Course::whereHas('batches', function ($q) {
                 $q->where('status', 'Upcoming')
                   ->where(function ($query) {
@@ -453,10 +448,10 @@ class CourseController extends Controller
                 'name' => $student->full_name,
                 'displayName' => $student->display_name,
                 'email' => $student->email,
-                'phone' => $student->phone ?? '077 123 4567',
-                'enrollmentDate' => $student->pivot->created_at ? $student->pivot->created_at->toDateString() : now()->toDateString(),
-                'status' => ucfirst($student->status) ?: 'Active',
-                'payment' => 'Verified',
+                'phone' => $student->phone,
+                'enrollmentDate' => $student->pivot->created_at?->toDateString(),
+                'status' => $student->status ? ucfirst($student->status) : 'Active',
+                'payment' => null,
                 'batch' => $student->pivot->batch,
             ];
         });
@@ -464,12 +459,6 @@ class CourseController extends Controller
 
     private function getBatchesForManageCourse($courseId, $user)
     {
-
-        \App\Models\Batch::where('course_id', $courseId)
-            ->where('status', 'Upcoming')
-            ->whereNotNull('registration_deadline')
-            ->where('registration_deadline', '<', now()->toDateString())
-            ->update(['status' => 'Active']);
 
         $batchQuery = \App\Models\Batch::where('course_id', $courseId)
             ->select([
@@ -508,6 +497,17 @@ class CourseController extends Controller
                 if ($subject->pivot->instructor_id) {
                     $instructorIds[] = $subject->pivot->instructor_id;
                 }
+            }
+        }
+
+        // Reflect expired registration windows in this response without mutating data during a read.
+        foreach ($batches as $batch) {
+            if (
+                $batch->status === 'Upcoming' &&
+                $batch->registration_deadline &&
+                $batch->registration_deadline < now()->toDateString()
+            ) {
+                $batch->status = 'Active';
             }
         }
 
