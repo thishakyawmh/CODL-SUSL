@@ -1,0 +1,40 @@
+name: CODL Audit Validation
+
+on:
+  pull_request:
+    branches: [main, master]
+  push:
+    branches: ["audit/**"]
+
+jobs:
+  backend-static-checks:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: mbstring, pdo_mysql, xml, bcmath
+      - name: Validate Composer metadata
+        run: composer validate --no-check-publish
+      - name: Check PHP syntax
+        run: find app routes config database -name '*.php' -print0 | xargs -0 -n1 php -l
+
+  frontend-build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run build
