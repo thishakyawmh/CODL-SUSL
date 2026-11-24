@@ -66,39 +66,45 @@ class CourseController extends Controller
                 'coordinator_id' => 'nullable|exists:users,id',
                 'category_id' => 'nullable|exists:categories,id',
                 'semesters' => 'nullable|array',
+                'semesters.*.name' => 'required_with:semesters|string|max:255',
+                'semesters.*.subjects' => 'sometimes|array',
+                'semesters.*.subjects.*.name' => 'required|string|max:255',
+                'semesters.*.subjects.*.code' => 'nullable|string|max:100',
+                'semesters.*.subjects.*.credits' => 'required|numeric|min:0',
                 'subjects' => 'nullable|array',
+                'subjects.*.name' => 'required|string|max:255',
+                'subjects.*.code' => 'nullable|string|max:100',
+                'subjects.*.credits' => 'required|numeric|min:0',
             ]);
 
             $courseData = \Illuminate\Support\Arr::except($validated, ['semesters', 'subjects']);
-            $course = Course::create($courseData);
 
+            $course = DB::transaction(function () use ($courseData, $validated) {
+                $course = Course::create($courseData);
 
-            if ($request->has('semesters')) {
-                foreach ($request->semesters as $semData) {
+                foreach ($validated['semesters'] ?? [] as $semData) {
                     $semester = $course->semesters()->create(['name' => $semData['name']]);
-                    if (isset($semData['subjects'])) {
-                        foreach ($semData['subjects'] as $subData) {
-                            $semester->subjects()->create([
-                                'course_id' => $course->id,
-                                'name' => $subData['name'],
-                                'code' => $subData['code'] ?? ($course->code . '-' . rand(100, 999)),
-                                'credits' => $subData['credits'],
-                            ]);
-                        }
+
+                    foreach ($semData['subjects'] ?? [] as $subData) {
+                        $semester->subjects()->create([
+                            'course_id' => $course->id,
+                            'name' => $subData['name'],
+                            'code' => $subData['code'] ?? ($course->code . '-' . random_int(100, 999)),
+                            'credits' => $subData['credits'],
+                        ]);
                     }
                 }
-            }
 
-
-            if ($request->has('subjects')) {
-                foreach ($request->subjects as $subData) {
+                foreach ($validated['subjects'] ?? [] as $subData) {
                     $course->subjects()->create([
                         'name' => $subData['name'],
-                        'code' => $subData['code'] ?? ($course->code . '-' . rand(100, 999)),
+                        'code' => $subData['code'] ?? ($course->code . '-' . random_int(100, 999)),
                         'credits' => $subData['credits'],
                     ]);
                 }
-            }
+
+                return $course;
+            });
 
             \App\Models\ActivityLog::log($user->id, 'Created new Course', "Course: {$course->title} ({$course->code})", 'course');
 
@@ -118,7 +124,7 @@ class CourseController extends Controller
             throw $e;
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Course Creation Error: ' . $e->getMessage());
-            return response()->json(['message' => $e->getMessage()], 500);
+            return response()->json(['message' => 'Unable to create course. Please try again.'], 500);
         }
     }
 
