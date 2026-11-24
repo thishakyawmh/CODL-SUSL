@@ -62,10 +62,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('role:super_admin,director,coordinator,secretary,lecturer')->group(function () {
         Route::get('/admin/track-students/search', [UserController::class, 'searchStudents'])->middleware('throttle:api');
         Route::get('/admin/track-students/{id}/details', [UserController::class, 'getStudentTrackingDetails']);
-        Route::get('/admin/stats', [StatsController::class, 'getAdminStats']);
-        Route::get('/admin/dashboard-full', [StatsController::class, 'getFullDashboardData']);
-        Route::get('/admin/activity-logs', [StatsController::class, 'getActivityLogs']);
-        Route::get('/admin/health-stats', [StatsController::class, 'getSystemHealthStats']);
     });
 
     // Staff/Course Management routes
@@ -108,6 +104,18 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/admin/industry-analysis/sectors/{id}', [StudentInterestController::class, 'deleteIndustrySector']);
         Route::post('/admin/industry-analysis/config', [StudentInterestController::class, 'storeIndustryConfig']);
         Route::delete('/admin/industry-analysis/config/{id}', [StudentInterestController::class, 'deleteIndustryConfig']);
+    });
+
+    // Dashboard summaries for course management staff (excluding lecturers).
+    Route::middleware('role:super_admin,director,coordinator,secretary')->group(function () {
+        Route::get('/admin/stats', [StatsController::class, 'getAdminStats']);
+        Route::get('/admin/dashboard-full', [StatsController::class, 'getFullDashboardData']);
+    });
+
+    // Operational diagnostics and audit logs are limited to senior administrators.
+    Route::middleware('role:super_admin,director')->group(function () {
+        Route::get('/admin/activity-logs', [StatsController::class, 'getActivityLogs']);
+        Route::get('/admin/health-stats', [StatsController::class, 'getSystemHealthStats']);
     });
 
     // Super Admin / Director Management routes
