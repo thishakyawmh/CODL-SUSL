@@ -423,7 +423,7 @@ class CourseController extends Controller
             return false;
         }
 
-        $assignedToBatch = \\App\\Models\\Batch::where('course_id', $course->id)
+        $assignedToBatch = \App\Models\Batch::where('course_id', $course->id)
             ->where('instructor_id', $user->id)
             ->exists();
 
