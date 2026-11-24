@@ -82,7 +82,7 @@ class CourseApplicationController extends Controller
         $staffRoles = ['super_admin', 'director', 'coordinator', 'secretary'];
         $isStaff = $user && in_array($user->role, $staffRoles);
         $isOwner = $user &&
-            $user->role === 'student' &&
+            in_array($user->role, ['student', 'pro_student', 'applicant']) &&
             (
                 (int) $application->user_id === (int) $user->id ||
                 strtolower((string) $application->applicant_email) === strtolower((string) $user->email)
